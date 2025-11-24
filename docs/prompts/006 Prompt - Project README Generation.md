@@ -10,8 +10,6 @@ Oto pliki projektu, które należy przeanalizować:
 
 <tech_stack>
 
-
-
 </tech_stack>
 
 <dependencies>
