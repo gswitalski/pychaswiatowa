@@ -1,0 +1,74 @@
+---
+alwaysApply: true
+---
+
+# AI Rules for StrummerBox
+
+StrummerBox to aplikacja internetowa zaprojektowana dla gitarzystów-amatorów i organizatorów spotkań towarzyskich. Jej głównym celem jest zastąpienie niewygodnych, papierowych śpiewników prostym i elastycznym narzędziem cyfrowym. Aplikacja umożliwia tworzenie prywatnej biblioteki piosenek z akordami, układanie z nich repertuarów na konkretne okazje oraz błyskawiczne udostępnianie ich uczestnikom wydarzenia za pomocą kodów QR i linków. StrummerBox oferuje dwa główne interfejsy: rozbudowany tryb zarządzania dla przygotowującego (organizatora) oraz uproszczony, czytelny widok z tekstami dla śpiewających (biesiadników), zoptymalizowany pod kątem urządzeń mobilnych.
+
+## Tech Stack
+
+- Angular 19
+- Angular Material
+
+## Project Structure
+
+When introducing changes to the project, always follow the directory structure below:
+
+
+Root Level:
+
+- ./src/ - Main source code directory containing the application
+- ./src/app/ - Core application folder with components, services, and modules
+- ./src/assets/ - Static assets like images, fonts, and configuration files
+- ./src/environments/ - Environment-specific configuration files (dev, prod, staging)
+- ./angular.json - Angular CLI workspace configuration file
+- ./package.json - Node.js dependencies and scripts configuration
+- ./tsconfig.json - TypeScript compiler configuration for the workspace
+- ./tsconfig.app.json - Application-specific TypeScript configuration
+- ./tsconfig.spec.json - TypeScript configuration for unit tests
+
+Application Structure:
+
+- ./src/app/core/ - Singleton services, guards, interceptors, and app-wide utilities
+- ./src/app/core/services/ - Global services used across multiple pages (auth, API, notifications)
+- ./src/app/core/models/ - Global interfaces and types used throughout the application
+- ./src/app/core/interceptors/ - HTTP interceptors for authentication, error handling
+- ./src/app/shared/ - Reusable components, directives, pipes used across features
+- ./src/app/shared/services/ - Utility services shared between multiple pages
+- ./src/app/shared/models/ - Common data models and interfaces for shared functionality
+
+- ./src/app/layout/ - Layout components eg. default-layout, admin-panel-layout
+
+- ./src/app/shared/ - Reusable components, directives, pipes used across features
+
+- ./src/app/pages/ - Page-level components for routing
+- ./src/app/pages/{page-name}/ - {page-name} page and its specific functionality
+- ./src/app/pages/{page-name}/components/ - {page-name}-specific UI components
+- ./src/app/pages/{page-name}/services/ - {page-name}-specific business logic services
+- ./src/app/pages/dashboard/{page-name}/ - {page-name}-specific interfaces and data types
+
+Testing and Documentation:
+
+- ./src/app/**/*.spec.ts - Unit test files alongside their respective components/services
+- ./e2e/ - End-to-end test files and configuration
+- ./docs/ - Project documentation and architectural decisions
+- ./.github/ - GitHub workflows, issue templates, and CI/CD configurations
+
+`./public` - public assets
+
+When modifying the directory structure, always update this section.
+
+## Coding practices
+
+### Guidelines for clean code
+
+- Prioritize error handling and edge cases
+- Handle errors and edge cases at the beginning of functions.
+- Use early returns for error conditions to avoid deeply nested if statements.
+- Place the happy path last in the function for improved readability.
+- Avoid unnecessary else statements; use if-return pattern instead.
+- Use guard clauses to handle preconditions and invalid states early.
+- Implement proper error logging and user-friendly error messages.
+- Consider using custom error types or error factories for consistent error handling.
+- use 4 cahracters as an indent

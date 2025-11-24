@@ -1,0 +1,184 @@
+---
+alwaysApply: false
+---
+# Zasady implementacji REST API w Supabase z użyciem TypeScript
+
+Ten dokument określa najlepsze praktyki i standardy tworzenia backendu w architekturze "Backend as a Service" z wykorzystaniem Supabase i TypeScript. Celem jest zapewnienie spójności, bezpieczeństwa i wysokiej jakości kodu.
+
+## Architektura i Struktura Edge Functions
+
+Ta sekcja opisuje zarówno wymaganą przez Supabase strukturę plików, jak i zalecaną, modularną architekturę wewnętrzną dla każdej funkcji, która zapewnia skalowalność i łatwość utrzymania kodu.
+
+**ZALECANE: Stosuj poniższą modularną strukturę dla KAŻDEJ Edge Function, niezależnie od jej początkowej złożoności.**
+
+### Podstawowe Zasady Supabase
+
+**KRYTYCZNE: Supabase rozpoznaje funkcje TYLKO na pierwszym poziomie katalogu `supabase/functions/`**
+
+-   **Struktura katalogu funkcji:** Każda funkcja musi znajdować się w osobnym katalogu wewnątrz `supabase/functions/`.
+-   **Nazwa endpointa:** Nazwa katalogu funkcji staje się bezpośrednio nazwą endpointa (np. katalog `me` tworzy endpoint `/functions/v1/me`).
+-   **Plik wejściowy:** Każda funkcja musi zawierać plik `index.ts`, który jest punktem wejściowym i obsługuje przychodzące żądania.
+-   **Nazewnictwo:** Nazwy katalogów funkcji powinny być w formacie `kebab-case`.
+
+### Rekomendowana Architektura Modularna
+
+Każda funkcja powinna być zorganizowana według wzorca separacji odpowiedzialności, aby oddzielić routing, obsługę żądań i logikę biznesową.
+
+1.  **`index.ts`** - Tylko routing i obsługa błędów na najwyższym poziomie.
+2.  **`*.handlers.ts`** - Handlery dla poszczególnych endpointów/zasobów (walidacja, formatowanie odpowiedzi).
+3.  **`*.service.ts`** - Czysta logika biznesowa i operacje na danych.
+4.  **`*.types.ts`** - Typy specyficzne dla danego zasobu (opcjonalnie).
+
+### Przykładowe Struktury Katalogów
+
+Poniższe przykłady pokazują, jak skalować architekturę w zależności od złożoności funkcji.
+
+#### Mała funkcja (1-2 endpointy)
+```
+supabase/functions/profile/
+  ├── index.ts              # routing
+  ├── profile.handlers.ts   # handlery GET, PUT
+  └── profile.service.ts    # logika biznesowa
+```
+
+#### Średnia funkcja (3-5 endpointów, np. `/me/*`)
+Dla logicznie powiązanych endpointów (np. `/me/profile`, `/me/settings`), użyj jednej funkcji z wewnętrznym routingiem.
+
+```
+supabase/functions/me/
+  ├── index.ts                  # główny router
+  ├── profile.handlers.ts       # handlery dla /me/profile
+  ├── profile.service.ts        # logika profilu
+  ├── settings.handlers.ts      # handlery dla /me/settings
+  └── settings.service.ts       # logika ustawień
+```
+
+#### Duża funkcja (6+ endpointów)
+```
+supabase/functions/songs/
+  ├── index.ts                      # główny router
+  ├── handlers/
+  │   ├── songs.handlers.ts         # CRUD dla piosenek
+  │   ├── publish.handlers.ts       # publikacja/odpublikowanie
+  │   └── share.handlers.ts         # generowanie linków
+  ├── services/
+  │   ├── songs.service.ts          # operacje na piosenkach
+  │   ├── publish.service.ts        # logika publikacji
+  │   └── share.service.ts          # logika udostępniania
+  └── types/
+      └── songs.types.ts            # typy specyficzne dla piosenek
+```
+
+### Wzorzec implementacji - index.ts (Router)
+
+**Rola**: Przyjmowanie requestów, routing do właściwych handlerów, obsługa błędów na najwyższym poziomie.
+
+**Kluczowe zasady dla `index.ts`**:
+- ❌ NIGDY nie umieszczaj logiki biznesowej bezpośrednio w `index.ts`
+- ❌ NIGDY nie wykonuj zapytań do bazy danych w `index.ts`
+- ✅ TYLKO routing, autoryzacja na wysokim poziomie i obsługa błędów
+- ✅ Import routerów z plików `*.handlers.ts`
+
+### Wzorzec implementacji - *.handlers.ts (Handlers + Router)
+
+**Rola**: Obsługa konkretnych endpointów, walidacja requestów, wywołanie serwisów, formatowanie odpowiedzi.
+
+**Kluczowe zasady dla `*.handlers.ts`**:
+- ✅ Eksportuj osobne funkcje dla każdego handlera (np. `handleGetProfile`, `handleUpdateProfile`)
+- ✅ Eksportuj funkcję router (np. `profileRouter`) do użycia w `index.ts`
+- ✅ Handlery odpowiadają za walidację requestu i formatowanie response
+- ✅ Handlery delegują logikę biznesową do plików `*.service.ts`
+- ❌ Handlery NIE wykonują złożonych operacji na danych - to rola serwisów
+- ✅ Każdy handler loguje operację (info level minimum)
+
+### Wzorzec implementacji dla zagnieżdżonych ścieżek
+
+Dla endpointów typu `/me/biesiada/repertoires/{id}/songs/{songId}`:
+
+**Kluczowe zasady dla routerów z regex**:
+- ✅ Sprawdzaj NAJPIERW dłuższe/bardziej specyficzne ścieżki
+- ✅ Używaj capture groups `([^/]+)` do wyciągania parametrów z URL
+- ✅ Zwracaj `null` gdy ścieżka nie pasuje (pozwala na próbę innych routerów)
+- ✅ Waliduj HTTP method osobno dla każdej ścieżki
+- ✅ Parametry URL przekazuj jako argumenty do handlerów
+
+### Wzorzec implementacji - *.service.ts (Business Logic)
+
+**Rola**: Logika biznesowa, operacje na danych, zapytania do bazy.
+
+**Kluczowe zasady dla `*.service.ts`**:
+- ✅ Eksportuj funkcje z prefiksem akcji (np. `get`, `update`, `create`, `delete`)
+- ✅ Przyjmuj parametry jako obiekt z nazwanymi właściwościami
+- ✅ Definiuj stałe dla kolumn SELECT na początku pliku
+- ✅ Wykonuj walidację logiki biznesowej (długość, format, relacje)
+- ✅ Rzucaj ApplicationError dla błędów biznesowych
+- ✅ Loguj operacje na poziomie error i warn
+- ✅ Zwracaj typy DTO, nie raw types z bazy
+- ❌ Serwisy NIE formatują HTTP response - to rola handlerów
+
+### Konwencje nazewnictwa plików modularnych
+
+| Typ pliku | Nazwa | Przykład | Opis |
+|-----------|-------|----------|------|
+| Router główny | `index.ts` | `index.ts` | Zawsze w głównym katalogu funkcji |
+| Handlery | `{zasób}.handlers.ts` | `profile.handlers.ts` | Handlery HTTP dla zasobu |
+| Serwisy | `{zasób}.service.ts` | `profile.service.ts` | Logika biznesowa |
+| Typy | `{zasób}.types.ts` | `songs.types.ts` | Typy specyficzne dla zasobu |
+| Utilities | `{zasób}.utils.ts` | `validation.utils.ts` | Funkcje pomocnicze |
+
+## Współdzielony Kod
+
+Współdzielone narzędzia i funkcje pomocnicze (np. obsługa błędów, klient Supabase, logger) trzymaj w katalogu `functions/_shared/`.
+
+## Struktura Projektu i Nazewnictwo
+
+-   Organizuj funkcje Supabase (Edge Functions) według logiki domenowej lub funkcji biznesowej.
+-   Stosuj spójne nazewnictwo dla plików, funkcji i zmiennych (np. `kebab-case` dla plików, `camelCase` dla funkcji i zmiennych).
+
+## Walidacja i Oczyszczanie Danych
+
+-   Do walidacji wszystkich danych przychodzących (body, parametry, zapytania) używaj biblioteki takiej jak Zod.
+-   Definiuj precyzyjne schematy dla obiektów transferu danych (DTO), aby zapewnić integralność danych wejściowych.
+-   Oczyszczaj dane wejściowe, aby chronić system przed atakami typu XSS i innymi zagrożeniami.
+
+## Uwierzytelnianie i Autoryzacja
+
+-   Wykorzystuj wbudowane mechanizmy uwierzytelniania Supabase oparte na JWT.
+-   Implementuj polityki bezpieczeństwa na poziomie wiersza (Row Level Security - RLS) bezpośrednio w bazie danych, aby zapewnić szczegółową kontrolę dostępu.
+-   Weryfikuj tożsamość i uprawnienia użytkownika na początku każdej chronionej funkcji.
+
+## Obsługa Błędów
+
+-   Zaimplementuj spójny, scentralizowany mechanizm obsługi błędów.
+-   Zwracaj jasne i ustrukturyzowane komunikaty o błędach wraz z odpowiednimi kodami statusu HTTP.
+-   Prowadź logi błędów w celu ułatwienia debugowania i monitorowania aplikacji.
+
+## Logika Biznesowa
+
+-   Oddzielaj logikę biznesową od warstwy obsługi żądań i odpowiedzi (request/response).
+-   Twórz dedykowane warstwy serwisowe lub funkcje pomocnicze do obsługi złożonych operacji.
+-   Korzystaj z oficjalnej biblioteki klienckiej Supabase (`supabase-js`) do interakcji z bazą danych.
+
+## Interakcja z Bazą Danych
+
+-   Do złożonych zapytań i operacji wykorzystuj widoki oraz funkcje RPC (Remote Procedure Call) w bazie danych PostgreSQL.
+-   Pobieraj z bazy danych tylko te kolumny, które są niezbędne do wykonania danej operacji.
+-   Wykorzystuj transakcje bazodanowe do zapewnienia atomowości operacji składających się z wielu kroków.
+
+## Typowanie w TypeScript
+
+-   Generuj typy TypeScript bezpośrednio ze schematu bazy danych za pomocą komendy `supabase gen types typescript`.
+-   Używaj wygenerowanych typów w DTO, warstwach serwisowych i podczas interakcji z bazą danych, aby zapewnić pełne bezpieczeństwo typów.
+-   Definiuj jawne interfejsy i typy dla argumentów wejściowych oraz wartości zwracanych przez funkcje.
+
+## Projektowanie API
+
+-   Projektuj punkty końcowe API zgodnie z zasadami i konwencjami RESTful.
+-   Używaj odpowiednich metod HTTP (GET, POST, PUT, DELETE, PATCH) zgodnie z ich semantycznym przeznaczeniem.
+-   Zachowuj spójną i przewidywalną strukturę adresów URL w całym API.
+
+## Testowanie Lokalnie
+
+-   Uruchamiaj funkcje lokalnie: `supabase functions serve nazwa-funkcji`
+-   Testuj endpoint pod adresem: `http://localhost:54321/functions/v1/nazwa-funkcji`
+-   Używaj nagłówka `Authorization: Bearer TOKEN` dla endpointów wymagających uwierzytelnienia

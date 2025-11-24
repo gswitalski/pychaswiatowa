@@ -1,0 +1,105 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+## Github Action Rules - StrummerBox (Angular 20 + Supabase)
+
+### Sprawdzenia przed tworzeniem workflow
+
+- Check if `package.json` exists in project root and summarize key scripts
+- Check if `angular.json` exists and identify project configuration (build, test, e2e)
+- Check if `.nvmrc` exists in project root to determine Node.js version
+- Check if `.env.example` exists in project root to identify key `env:` variables
+- Check if `vitest.config.ts` or `vitest.config.mts` exists for unit tests configuration
+- Check if `playwright.config.ts` exists for E2E tests configuration
+- Check if `supabase/config.toml` exists for Supabase configuration
+- Always use PowerShell command to verify branch: `git branch -a`
+- Always use `env:` variables and secrets attached to jobs instead of global workflows
+- Always use `npm ci` for Node-based dependency setup (it's non-interactive by default)
+- Extract common steps into composite actions in separate files
+
+### Specyficzne komendy dla Angular 20
+
+- Use `npm ci` for installing dependencies (non-interactive)
+- Use `ng build --configuration production` for production builds
+- Use `ng lint` for linting (ensure ESLint is configured)
+- Use `npm run test -- --run` for Vitest unit tests (non-interactive mode)
+- Use `npx playwright test --reporter=list` for E2E tests (non-interactive)
+- Use `ng build --configuration production --output-hashing=all` for optimized builds
+
+### Specyficzne komendy dla Supabase
+
+- Use `npx supabase db diff --schema public` for database migrations check
+- Use `npx supabase db lint` for database linting
+- Use `deno test --allow-all --unstable` for Edge Functions tests
+- Use `npx supabase gen types typescript` for generating TypeScript types
+
+### Windows PowerShell - polecenia nieinteraktywne
+
+Once you're done, as a final step conduct the following using PowerShell commands:
+
+1) For each public action, fetch the latest version (use only major version):
+
+```powershell
+$response = Invoke-RestMethod -Uri "https://api.github.com/repos/{owner}/{repo}/releases/latest" -ErrorAction SilentlyContinue
+if ($response.tag_name -match 'v?(\d+)') { $matches[1] }
+```
+
+2) (Ask if needed) Fetch README.md to verify we're not using deprecated actions:
+
+```powershell
+$readme = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/{owner}/{repo}/refs/tags/v{TAG_VERSION}/README.md" -ErrorAction SilentlyContinue
+Write-Output $readme
+```
+
+3) (Ask if needed) Fetch repo metadata to check if action is archived:
+
+```powershell
+$repo = Invoke-RestMethod -Uri "https://api.github.com/repos/{owner}/{repo}" -ErrorAction SilentlyContinue
+Write-Output "Archived: $($repo.archived)"
+```
+
+4) (Ask if needed) For linter issues, fetch action.yml directly from GitHub:
+
+```powershell
+$actionYml = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/{owner}/{repo}/refs/heads/{main/master}/action.yml" -ErrorAction SilentlyContinue
+Write-Output $actionYml
+```
+
+### Zalecane GitHub Actions dla stosu StrummerBox
+
+- `actions/checkout@v4` - checking out repository
+- `actions/setup-node@v4` - setting up Node.js environment
+- `actions/cache@v4` - caching npm dependencies
+- `actions/upload-artifact@v4` - uploading build artifacts
+- `docker://supabase/cli:latest` - Supabase CLI for migrations
+- `microsoft/playwright-github-action@v1` - Playwright browser installation
+- `digitalocean/action-doctl@v2` - DigitalOcean CLI for deployment
+
+### Przykładowe non-interactive commands dla CI/CD
+
+```powershell
+# Install dependencies (non-interactive)
+npm ci
+
+# Run linting (non-interactive)
+npm run lint
+
+# Run unit tests with Vitest (non-interactive)
+npm run test -- --run --coverage
+
+# Build Angular app (non-interactive)
+npm run build -- --configuration production
+
+# Run Playwright E2E tests (non-interactive, headless)
+npx playwright install --with-deps
+npx playwright test --reporter=list
+
+# Supabase migrations (non-interactive)
+npx supabase db push --password $env:SUPABASE_DB_PASSWORD
+
+# Supabase Edge Functions deploy (non-interactive)
+npx supabase functions deploy --project-ref $env:SUPABASE_PROJECT_REF
+```
