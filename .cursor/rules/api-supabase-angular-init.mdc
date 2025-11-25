@@ -1,13 +1,13 @@
-# Supabase Angular Initialization
+# Supabase Angular Initialization - PychaŚwiatowa
 
-Ten dokument zawiera przewodnik do utworzenia struktury plików niezbędnej do integracji Supabase z projektem Angular.
+Ten dokument zawiera przewodnik do utworzenia struktury plików niezbędnej do integracji Supabase z projektem Angular dla aplikacji PychaŚwiatowa (cyfrowa książka kucharska).
 
 ## Wymagania wstępne
 
-- Projekt powinien używać Angular 19 i TypeScript 5
+- Projekt powinien używać Angular 20 i TypeScript 5
 - Zainstaluj pakiet `@supabase/supabase-js`
 - Upewnij się, że plik `/supabase/config.toml` istnieje
-- Upewnij się, że plik `/src/types/database.types.ts` istnieje i zawiera poprawne definicje typów dla bazy danych
+- Upewnij się, że plik `/shared/types/database.types.ts` istnieje i zawiera poprawne definicje typów dla bazy danych
 
 **WAŻNE:** Sprawdź wymagania wstępne przed wykonaniem poniższych kroków. Jeśli nie są spełnione, zatrzymaj się i zapytaj użytkownika o rozwiązanie.
 
@@ -65,36 +65,40 @@ Utwórz katalog `/src/app/core/services/` oraz plik serwisu:
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
-import type { Database } from '../../../types/database.types';
+import type { Database } from '../../../../shared/types/database.types';
 
 @Injectable({
-  providedIn: 'root'
+    providedIn: 'root'
 })
 export class SupabaseService {
-  private supabase: SupabaseClient<Database>;
+    private supabase: SupabaseClient<Database>;
 
-  constructor() {
-    this.supabase = createClient<Database>(
-      environment.supabase.url,
-      environment.supabase.anonKey
-    );
-  }
+    constructor() {
+        this.supabase = createClient<Database>(
+            environment.supabase.url,
+            environment.supabase.anonKey
+        );
+    }
 
-  get client(): SupabaseClient<Database> {
-    return this.supabase;
-  }
+    get client(): SupabaseClient<Database> {
+        return this.supabase;
+    }
 
-  get auth() {
-    return this.supabase.auth;
-  }
+    get auth() {
+        return this.supabase.auth;
+    }
 
-  get from() {
-    return this.supabase.from.bind(this.supabase);
-  }
+    get from() {
+        return this.supabase.from.bind(this.supabase);
+    }
+
+    get storage() {
+        return this.supabase.storage;
+    }
 }
 ```
 
-Ten serwis inicjalizuje klienta Supabase i udostępnia go w całej aplikacji poprzez system Dependency Injection w Angular. Serwis używa `providedIn: 'root'`, co sprawia, że jest singletonem dostępnym globalnie.
+Ten serwis inicjalizuje klienta Supabase i udostępnia go w całej aplikacji poprzez system Dependency Injection w Angular. Serwis używa `providedIn: 'root'`, co sprawia, że jest singletonem dostępnym globalnie. Dodano również dostęp do `storage` dla obsługi zdjęć przepisów.
 
 ### 3. Konfiguracja Angular.json
 
@@ -131,36 +135,79 @@ import { Component, inject, OnInit } from '@angular/core';
 import { SupabaseService } from './core/services/supabase.service';
 
 @Component({
-  selector: 'app-example',
-  standalone: true,
-  template: `...`
+    selector: 'app-example',
+    standalone: true,
+    template: `...`
 })
 export class ExampleComponent implements OnInit {
-  private supabase = inject(SupabaseService);
+    private supabase = inject(SupabaseService);
 
-  async ngOnInit() {
-    // Przykład: pobieranie danych
-    const { data, error } = await this.supabase
-      .from('songs')
-      .select('*');
-    
-    if (error) {
-      console.error('Error:', error);
-      return;
+    async ngOnInit() {
+        // Przykład: pobieranie przepisów użytkownika
+        const { data: recipes, error } = await this.supabase
+            .from('recipes')
+            .select('*, categories(name), recipe_tags(tags(name))')
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Błąd pobierania przepisów:', error);
+            return;
+        }
+
+        console.log('Przepisy:', recipes);
     }
-    
-    console.log('Songs:', data);
-  }
 
-  // Przykład: autentykacja
-  async signIn(email: string, password: string) {
-    const { data, error } = await this.supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    return { data, error };
-  }
+    // Przykład: autentykacja
+    async signIn(email: string, password: string) {
+        const { data, error } = await this.supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        return { data, error };
+    }
+
+    // Przykład: dodawanie nowego przepisu
+    async addRecipe(recipe: {
+        name: string;
+        description?: string;
+        category_id?: number;
+        ingredients: any;
+        steps: any;
+    }) {
+        const { data, error } = await this.supabase
+            .from('recipes')
+            .insert([recipe])
+            .select()
+            .single();
+
+        return { data, error };
+    }
+
+    // Przykład: przesyłanie zdjęcia przepisu
+    async uploadRecipeImage(file: File, recipeId: number) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${recipeId}-${Date.now()}.${fileExt}`;
+        const filePath = `recipe-images/${fileName}`;
+
+        const { data, error } = await this.supabase.storage
+            .from('recipes')
+            .upload(filePath, file);
+
+        if (error) {
+            console.error('Błąd przesyłania zdjęcia:', error);
+            return { data: null, error };
+        }
+
+        // Aktualizacja ścieżki zdjęcia w przepisie
+        const { error: updateError } = await this.supabase
+            .from('recipes')
+            .update({ image_path: filePath })
+            .eq('id', recipeId);
+
+        return { data: filePath, error: updateError };
+    }
 }
 ```
 
@@ -210,5 +257,9 @@ export const routes: Routes = [
 - Serwis `SupabaseService` jest singletonem dostępnym w całej aplikacji
 - Używaj funkcji `inject()` zamiast konstruktora dla Dependency Injection (zgodnie z najnowszymi praktykami Angular)
 - Wszystkie operacje na bazie danych są w pełni typowane dzięki importowi `Database` z `database.types.ts`
-- Klient Supabase jest dostępny przez właściwość `client` w serwisie, ale możesz też używać skrótów `auth` i `from` dla wygody
-- Guard `authGuard` jest funkcyjnym guardem (zgodnie z najnowszymi praktykami Angular 19)
+- Klient Supabase jest dostępny przez właściwość `client` w serwisie, ale możesz też używać skrótów `auth`, `from` i `storage` dla wygody
+- Guard `authGuard` jest funkcyjnym guardem (zgodnie z najnowszymi praktykami Angular 20)
+- Pamiętaj o filtrowaniu przepisów z `deleted_at IS NULL` dla obsługi soft delete
+- Zdjęcia przepisów są przechowywane w Supabase Storage w buckecie `recipes`
+- Używaj relacji w zapytaniach (np. `select('*, categories(name)')`) aby uniknąć problemu N+1
+- Row Level Security (RLS) zapewnia, że użytkownicy mają dostęp tylko do swoich danych
