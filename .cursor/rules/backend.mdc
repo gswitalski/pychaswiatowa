@@ -35,38 +35,38 @@ Poniższe przykłady pokazują, jak skalować architekturę w zależności od z�
 
 #### Mała funkcja (1-2 endpointy)
 ```
-supabase/functions/profile/
-  ├── index.ts              # routing
-  ├── profile.handlers.ts   # handlery GET, PUT
-  └── profile.service.ts    # logika biznesowa
+supabase/functions/categories/
+  ├── index.ts                 # routing
+  ├── categories.handlers.ts   # handler GET (read-only)
+  └── categories.service.ts    # logika biznesowa
 ```
 
-#### Średnia funkcja (3-5 endpointów, np. `/me/*`)
-Dla logicznie powiązanych endpointów (np. `/me/profile`, `/me/settings`), użyj jednej funkcji z wewnętrznym routingiem.
+#### Średnia funkcja (3-5 endpointów)
+Dla logicznie powiązanych endpointów, użyj jednej funkcji z wewnętrznym routingiem.
 
 ```
-supabase/functions/me/
+supabase/functions/recipes/
   ├── index.ts                  # główny router
-  ├── profile.handlers.ts       # handlery dla /me/profile
-  ├── profile.service.ts        # logika profilu
-  ├── settings.handlers.ts      # handlery dla /me/settings
-  └── settings.service.ts       # logika ustawień
+  ├── recipes.handlers.ts       # handlery CRUD dla przepisów
+  ├── recipes.service.ts        # logika przepisów
+  ├── search.handlers.ts        # handlery dla wyszukiwania
+  └── search.service.ts         # logika wyszukiwania
 ```
 
 #### Duża funkcja (6+ endpointów)
 ```
-supabase/functions/songs/
+supabase/functions/recipes/
   ├── index.ts                      # główny router
   ├── handlers/
-  │   ├── songs.handlers.ts         # CRUD dla piosenek
-  │   ├── publish.handlers.ts       # publikacja/odpublikowanie
-  │   └── share.handlers.ts         # generowanie linków
+  │   ├── recipes.handlers.ts       # CRUD dla przepisów
+  │   ├── tags.handlers.ts          # zarządzanie tagami
+  │   └── collections.handlers.ts   # zarządzanie kolekcjami
   ├── services/
-  │   ├── songs.service.ts          # operacje na piosenkach
-  │   ├── publish.service.ts        # logika publikacji
-  │   └── share.service.ts          # logika udostępniania
+  │   ├── recipes.service.ts        # operacje na przepisach
+  │   ├── tags.service.ts           # logika tagów
+  │   └── collections.service.ts    # logika kolekcji
   └── types/
-      └── songs.types.ts            # typy specyficzne dla piosenek
+      └── recipes.types.ts          # typy specyficzne dla przepisów
 ```
 
 ### Wzorzec implementacji - index.ts (Router)
@@ -93,7 +93,7 @@ supabase/functions/songs/
 
 ### Wzorzec implementacji dla zagnieżdżonych ścieżek
 
-Dla endpointów typu `/me/biesiada/repertoires/{id}/songs/{songId}`:
+Dla endpointów typu `/recipes/{id}/collections/{collectionId}` lub `/recipes/{id}/tags/{tagId}`:
 
 **Kluczowe zasady dla routerów z regex**:
 - ✅ Sprawdzaj NAJPIERW dłuższe/bardziej specyficzne ścieżki
@@ -121,14 +121,131 @@ Dla endpointów typu `/me/biesiada/repertoires/{id}/songs/{songId}`:
 | Typ pliku | Nazwa | Przykład | Opis |
 |-----------|-------|----------|------|
 | Router główny | `index.ts` | `index.ts` | Zawsze w głównym katalogu funkcji |
-| Handlery | `{zasób}.handlers.ts` | `profile.handlers.ts` | Handlery HTTP dla zasobu |
-| Serwisy | `{zasób}.service.ts` | `profile.service.ts` | Logika biznesowa |
-| Typy | `{zasób}.types.ts` | `songs.types.ts` | Typy specyficzne dla zasobu |
+| Handlery | `{zasób}.handlers.ts` | `recipes.handlers.ts` | Handlery HTTP dla zasobu |
+| Serwisy | `{zasób}.service.ts` | `recipes.service.ts` | Logika biznesowa |
+| Typy | `{zasób}.types.ts` | `recipes.types.ts` | Typy specyficzne dla zasobu |
 | Utilities | `{zasób}.utils.ts` | `validation.utils.ts` | Funkcje pomocnicze |
 
 ## Współdzielony Kod
 
 Współdzielone narzędzia i funkcje pomocnicze (np. obsługa błędów, klient Supabase, logger) trzymaj w katalogu `functions/_shared/`.
+
+## Specyfika Projektu PychaŚwiatowa
+
+### Struktura Bazy Danych
+
+Aplikacja operuje na następujących głównych encjach:
+
+#### Tabele główne:
+- **`profiles`** - Rozszerzone dane profilu użytkownika (powiązane z `auth.users`)
+- **`recipes`** - Przepisy kulinarne z polami `ingredients` i `steps` w formacie JSONB
+- **`categories`** - Słownik predefiniowanych kategorii (np. "Obiad", "Deser", "Zupa")
+- **`tags`** - Tagi definiowane przez użytkowników (unikalne per użytkownik)
+- **`collections`** - Zbiory przepisów tworzone przez użytkowników (np. "Dania na święta")
+
+#### Tabele łączące (Junction Tables):
+- **`recipe_tags`** - Relacja wiele-do-wielu między przepisami a tagami
+- **`recipe_collections`** - Relacja wiele-do-wielu między przepisami a kolekcjami
+
+### Kluczowe Koncepcje Biznesowe
+
+#### Soft Delete dla przepisów
+- Tabela `recipes` używa kolumny `deleted_at` do miękkiego usuwania
+- **KRYTYCZNE**: Wszystkie zapytania SELECT muszą filtrować `WHERE deleted_at IS NULL`
+- Operacja DELETE powinna ustawiać `deleted_at = now()`, nie usuwać fizycznie rekordu
+
+#### Format JSONB dla składników i kroków
+Kolumny `ingredients` i `steps` przechowują dane w formacie:
+```json
+[
+  { "type": "header", "content": "Nagłówek sekcji" },
+  { "type": "item", "content": "Element listy (składnik lub krok)" }
+]
+```
+- Użyj funkcji pomocniczej `parse_text_to_jsonb(text)` do konwersji surowego tekstu na JSONB
+- Linie rozpoczynające się od `#` są traktowane jako nagłówki sekcji
+
+#### Dostępne widoki i funkcje bazodanowe
+- **`recipe_details`** - Widok agregujący dane przepisów z kategoriami, tagami i kolekcjami (zapobiega problemowi N+1)
+- **`parse_text_to_jsonb(text)`** - Funkcja PostgreSQL do parsowania tekstu na JSONB
+- **Trigger `updated_at`** - Automatyczna aktualizacja `updated_at` na tabelach `profiles`, `recipes`, `collections`
+
+#### Obsługa obrazów (Supabase Storage)
+- Obrazy przepisów są przechowywane w Supabase Storage
+- Tabela `recipes` zawiera tylko ścieżkę do pliku w kolumnie `image_path`
+- Bucket storage wymaga osobnych polityk RLS
+
+### Row Level Security (RLS)
+
+**KRYTYCZNE**: Wszystkie tabele mają włączone RLS:
+- Użytkownik może operować TYLKO na własnych danych (`auth.uid() = user_id`)
+- Tabela `categories` jest read-only dla użytkowników (słownik systemowy)
+- Junction tables (`recipe_tags`, `recipe_collections`) wymagają własności zarówno przepisu jak i tagu/kolekcji
+
+### Rekomendowane Struktury Edge Functions
+
+#### Dla MVP sugerowana struktura:
+
+```
+supabase/functions/
+  ├── _shared/
+  │   ├── supabase-client.ts      # Klient Supabase
+  │   ├── errors.ts               # ApplicationError i obsługa błędów
+  │   ├── logger.ts               # Logger
+  │   └── auth.ts                 # Utility do weryfikacji JWT
+  ├── recipes/
+  │   ├── index.ts                # Router główny
+  │   ├── recipes.handlers.ts     # CRUD dla przepisów
+  │   ├── recipes.service.ts      # Logika biznesowa przepisów
+  │   └── recipes.types.ts        # DTO i typy dla przepisów
+  ├── collections/
+  │   ├── index.ts                # Router główny
+  │   ├── collections.handlers.ts # CRUD dla kolekcji
+  │   └── collections.service.ts  # Logika biznesowa kolekcji
+  ├── tags/
+  │   ├── index.ts                # Router główny
+  │   ├── tags.handlers.ts        # CRUD dla tagów
+  │   └── tags.service.ts         # Logika biznesowa tagów
+  └── profile/
+      ├── index.ts                # Router główny
+      ├── profile.handlers.ts     # GET, PUT dla profilu
+      └── profile.service.ts      # Logika biznesowa profilu
+```
+
+### Walidacja Specyficzna dla Domeny
+
+Przy tworzeniu schematów Zod uwzględnij następujące limity:
+
+#### Recipes:
+- `name`: 1-150 znaków, wymagane
+- `description`: opcjonalne
+- `ingredients`: wymagane, minimum 1 element
+- `steps`: wymagane, minimum 1 element
+- `category_id`: opcjonalne (referencja do `categories`)
+
+#### Tags:
+- `name`: 1-50 znaków, wymagane
+- Automatyczna normalizacja do lowercase podczas zapisu (UNIQUE constraint: `user_id, lower(name)`)
+
+#### Collections:
+- `name`: 1-100 znaków, wymagane
+- `description`: opcjonalne
+- Unique constraint: `user_id, name` (case-sensitive)
+
+### Wyszukiwanie Pełnotekstowe
+
+- Tabela `recipes` ma indeks GIN na wektorze `tsvector` dla kolumn `name` i `ingredients`
+- Użyj widoku `recipe_details` lub zapytań RPC dla efektywnego wyszukiwania
+- Wyszukiwanie powinno obejmować: nazwę przepisu, składniki i tagi
+
+### Najlepsze Praktyki dla Tego Projektu
+
+1. **Używaj widoku `recipe_details`** zamiast ręcznych JOIN-ów gdzie to możliwe
+2. **Zawsze filtruj `deleted_at IS NULL`** dla przepisów
+3. **Weryfikuj własność zasobów** przed operacjami UPDATE/DELETE (choć RLS to zabezpiecza)
+4. **Używaj transakcji** przy operacjach na wielu tabelach (np. tworzenie przepisu z tagami)
+5. **Loguj operacje na zasobach** dla łatwiejszego debugowania
+6. **Zwracaj szczegółowe błędy walidacji** (np. "Przepis musi mieć przynajmniej jeden składnik")
 
 ## Struktura Projektu i Nazewnictwo
 
