@@ -41,3 +41,11 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Angular production environment (zawiera wrażliwe klucze produkcyjne)
+src/environments/environment.production.ts

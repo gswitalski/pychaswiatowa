@@ -4,7 +4,7 @@ Ten dokument zawiera przewodnik do utworzenia struktury plików niezbędnej do i
 
 ## Wymagania wstępne
 
-- Projekt powinien używać Angular 20 i TypeScript 5
+- Projekt powinien używać Angular 21 i TypeScript 5
 - Zainstaluj pakiet `@supabase/supabase-js`
 - Upewnij się, że plik `/supabase/config.toml` istnieje
 - Upewnij się, że plik `/shared/types/database.types.ts` istnieje i zawiera poprawne definicje typów dla bazy danych
@@ -126,7 +126,79 @@ Upewnij się, że w pliku `angular.json` skonfigurowano wymianę plików środow
 }
 ```
 
-### 4. Przykład użycia
+### 4. Bezpieczeństwo - `.gitignore` i plik template
+
+**WAŻNE:** Plik produkcyjny zawiera wrażliwe dane i NIE POWINIEN być commitowany do repozytorium!
+
+#### 4.1. Zaktualizuj `.gitignore`
+
+Dodaj do pliku `.gitignore` ignorowanie pliku produkcyjnego:
+
+```gitignore
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Angular production environment (zawiera wrażliwe klucze produkcyjne)
+src/environments/environment.production.ts
+```
+
+#### 4.2. Utwórz plik template
+
+Utwórz plik `/src/environments/environment.production.template.ts`:
+
+```ts
+// Template dla environment.production.ts
+//
+// INSTRUKCJA:
+// 1. Skopiuj ten plik do: environment.production.ts
+// 2. Uzupełnij prawdziwe wartości z Twojego projektu Supabase
+// 3. NIE commituj pliku environment.production.ts do repozytorium!
+//
+// Gdzie znaleźć wartości:
+// - Zaloguj się do dashboard Supabase: https://supabase.com/dashboard
+// - Wybierz swój projekt
+// - Przejdź do: Settings > API
+// - Skopiuj "Project URL" jako 'url'
+// - Skopiuj "anon/public" key jako 'anonKey'
+
+export const environment = {
+    production: true,
+    supabase: {
+        url: 'YOUR_PRODUCTION_SUPABASE_URL',      // np. https://xxxxxxxxxxxxx.supabase.co
+        anonKey: 'YOUR_PRODUCTION_SUPABASE_ANON_KEY'  // klucz anon/public z dashboard
+    }
+};
+```
+
+#### 4.3. Dokumentacja dla zespołu
+
+Opcjonalnie utwórz plik `/src/environments/README.md` z instrukcjami dla zespołu deweloperskiego, który wyjaśnia:
+- Strukturę plików środowiskowych
+- Jak działa wymiana plików w Angular
+- Setup dla nowych deweloperów
+- Zasady bezpieczeństwa
+- Integrację z CI/CD
+
+#### 4.4. Struktura finalna katalogu `/src/environments/`
+
+```
+src/environments/
+├── environment.ts                     ✅ Commitowany (domyślny - lokalna instancja)
+├── environment.development.ts         ✅ Commitowany (dev - lokalna instancja)
+├── environment.production.ts          ❌ ZIGNOROWANY w Git (produkcja - wrażliwe dane)
+├── environment.production.template.ts ✅ Commitowany (template bez wrażliwych danych)
+└── README.md                          ✅ Commitowany (opcjonalna dokumentacja)
+```
+
+**Uwagi dotyczące bezpieczeństwa:**
+- Pliki `environment.ts` i `environment.development.ts` używają lokalnej instancji Supabase (127.0.0.1:54321) ze standardowym kluczem demo - bezpieczne do commitowania
+- Plik `environment.production.ts` zawiera rzeczywiste klucze produkcyjne - MUSI być zignorowany w Git
+- Plik `environment.production.template.ts` służy jako szablon dla zespołu - bezpieczny do commitowania
+- W CI/CD (GitHub Actions) plik produkcyjny powinien być tworzony dynamicznie z GitHub Secrets
+
+### 5. Przykład użycia
 
 **W komponencie:**
 
@@ -211,7 +283,7 @@ export class ExampleComponent implements OnInit {
 }
 ```
 
-### 5. Opcjonalnie: Guard dla chronionych tras
+### 6. Opcjonalnie: Guard dla chronionych tras
 
 Możesz stworzyć guard do ochrony tras wymagających autentykacji:
 
@@ -254,12 +326,23 @@ export const routes: Routes = [
 
 ## Notatki
 
+### Architektura i praktyki Angular
 - Serwis `SupabaseService` jest singletonem dostępnym w całej aplikacji
 - Używaj funkcji `inject()` zamiast konstruktora dla Dependency Injection (zgodnie z najnowszymi praktykami Angular)
 - Wszystkie operacje na bazie danych są w pełni typowane dzięki importowi `Database` z `database.types.ts`
 - Klient Supabase jest dostępny przez właściwość `client` w serwisie, ale możesz też używać skrótów `auth`, `from` i `storage` dla wygody
 - Guard `authGuard` jest funkcyjnym guardem (zgodnie z najnowszymi praktykami Angular 20)
+
+### Zmienne środowiskowe i bezpieczeństwo
+- **Angular NIE używa plików `.env`** - zamiast tego używa plików `environment.ts`, które są kompilowane do bundle'a podczas budowania
+- Pliki środowiskowe dla lokalnej instancji (`environment.ts`, `environment.development.ts`) są bezpieczne do commitowania
+- Plik `environment.production.ts` MUSI być zignorowany w `.gitignore` - zawiera wrażliwe klucze produkcyjne
+- Użyj pliku `environment.production.template.ts` jako szablonu dla zespołu deweloperskiego
+- W CI/CD twórz plik produkcyjny dynamicznie z GitHub Secrets (nigdy nie commituj kluczy produkcyjnych!)
+
+### Supabase i baza danych
 - Pamiętaj o filtrowaniu przepisów z `deleted_at IS NULL` dla obsługi soft delete
 - Zdjęcia przepisów są przechowywane w Supabase Storage w buckecie `recipes`
 - Używaj relacji w zapytaniach (np. `select('*, categories(name)')`) aby uniknąć problemu N+1
 - Row Level Security (RLS) zapewnia, że użytkownicy mają dostęp tylko do swoich danych
+- Klucz `anonKey` jest techniczne "publiczny" (używany w przeglądarce), ale jest zabezpieczony przez RLS w bazie danych
