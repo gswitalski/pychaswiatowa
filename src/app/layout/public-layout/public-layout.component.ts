@@ -11,3 +11,4 @@ import { PublicHeaderComponent } from '../../shared/components/public-header/pub
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicLayoutComponent {}
+

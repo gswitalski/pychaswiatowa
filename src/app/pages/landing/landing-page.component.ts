@@ -10,3 +10,4 @@ import { HeroComponent } from './components/hero/hero.component';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LandingPageComponent {}
+

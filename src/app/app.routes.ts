@@ -13,6 +13,13 @@ export const routes: Routes = [
                         (m) => m.LandingPageComponent
                     ),
             },
+            {
+                path: 'register',
+                loadComponent: () =>
+                    import('./pages/register/register-page.component').then(
+                        (m) => m.RegisterPageComponent
+                    ),
+            },
         ],
     },
 ];

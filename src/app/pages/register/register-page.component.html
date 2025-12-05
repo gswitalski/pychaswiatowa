@@ -1,0 +1,12 @@
+<div class="register-page">
+    @if (state().error; as error) {
+        <div class="error-message">
+            {{ error.message }}
+        </div>
+    }
+
+    <stbo-register-form
+        [isLoading]="state().isLoading"
+        (registerSubmit)="onRegisterSubmit($event)"
+    />
+</div>

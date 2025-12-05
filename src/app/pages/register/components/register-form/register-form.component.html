@@ -1,0 +1,83 @@
+<mat-card class="register-card">
+    <mat-card-header>
+        <mat-card-title>Zarejestruj się</mat-card-title>
+        <mat-card-subtitle>Utwórz konto w StrummerBox</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="submitForm()">
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Email</mat-label>
+                <input
+                    matInput
+                    type="email"
+                    formControlName="email"
+                    placeholder="twoj@email.com"
+                />
+                @if (form.controls.email.invalid && form.controls.email.touched) {
+                    <mat-error>{{ getEmailErrorMessage() }}</mat-error>
+                }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Nazwa wyświetlana</mat-label>
+                <input
+                    matInput
+                    type="text"
+                    formControlName="displayName"
+                    placeholder="Twoja nazwa"
+                />
+                @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
+                    <mat-error>{{ getDisplayNameErrorMessage() }}</mat-error>
+                }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Hasło</mat-label>
+                <input
+                    matInput
+                    type="password"
+                    formControlName="password"
+                    placeholder="Minimum 8 znaków"
+                />
+                @if (form.controls.password.invalid && form.controls.password.touched) {
+                    <mat-error>{{ getPasswordErrorMessage() }}</mat-error>
+                }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Potwierdź hasło</mat-label>
+                <input
+                    matInput
+                    type="password"
+                    formControlName="passwordConfirm"
+                    placeholder="Powtórz hasło"
+                />
+                @if (form.controls.passwordConfirm.invalid && form.controls.passwordConfirm.touched) {
+                    <mat-error>{{ getPasswordConfirmErrorMessage() }}</mat-error>
+                }
+            </mat-form-field>
+
+            <button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                class="full-width submit-button"
+                [disabled]="isLoading || form.invalid"
+            >
+                @if (isLoading) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                } @else {
+                    Zarejestruj się
+                }
+            </button>
+        </form>
+    </mat-card-content>
+
+    <mat-card-actions align="end">
+        <span class="login-link">
+            Masz już konto?
+            <a routerLink="/login" mat-button color="primary">Zaloguj się</a>
+        </span>
+    </mat-card-actions>
+</mat-card>

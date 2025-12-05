@@ -6,6 +6,7 @@
  * and type safety between the frontend and the backend.
  */
 import { Tables, TablesInsert, TablesUpdate } from '../types/database.types';
+import { FormControl } from '@angular/forms';
 
 // #region --- Base Entity Type Aliases ---
 
@@ -184,5 +185,40 @@ export type ProfileDto = Pick<Profile, 'id' | 'username'>;
  * Command model for updating a user's profile.
  */
 export type UpdateProfileCommand = Partial<Pick<Profile, 'username'>>;
+
+// #endregion
+
+// #region --- Auth ---
+
+/**
+ * Represents the form controls for the registration form.
+ */
+export interface RegisterFormViewModel {
+    email: FormControl<string>;
+    displayName: FormControl<string>;
+    password: FormControl<string>;
+    passwordConfirm: FormControl<string>;
+}
+
+/**
+ * DTO for sending sign-up request to Supabase.
+ */
+export interface SignUpRequestDto {
+    email: string;
+    password: string;
+    options: {
+        data: {
+            username: string;
+        };
+    };
+}
+
+/**
+ * Simplified type for handling API errors.
+ */
+export interface ApiError {
+    message: string;
+    status: number;
+}
 
 // #endregion
