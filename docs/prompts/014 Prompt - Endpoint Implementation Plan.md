@@ -4,25 +4,21 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
+#### `GET /profile`
 
-#### POST /auth/resend-confirmation
-- **Method:** POST
-- **Path:** `/auth/resend-confirmation`
-- **Description:** Resends the confirmation email to a user with an unconfirmed account. This endpoint calls the underlying Supabase functionality to issue a new confirmation link.
-- **Request JSON:**
-```json
-{
-  "email": "organizer@example.com"
-}
-```
-- **Response JSON:**
-```json
-{
-  "message": "If an account with this email exists and is not yet confirmed, a new confirmation link has been sent."
-}
-```
-- **Success:** `200 OK` (A generic success message is returned to prevent user enumeration).
-- **Errors:** `400 Bad Request` (invalid email format).
+-   **Description**: Retrieve the profile for the authenticated user.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "id": "a1b2c3d4-...",
+          "username": "john.doe"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `404 Not Found`
 
 
 </route_api_specification>
