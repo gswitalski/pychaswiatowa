@@ -1,0 +1,46 @@
+.public-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: var(--mat-sys-surface);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.logo-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--mat-sys-primary);
+}
+
+.spacer {
+    flex: 1;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@media (max-width: 599px) {
+    .logo-text {
+        font-size: 1.2rem;
+    }
+
+    .header-actions {
+        gap: 4px;
+
+        a {
+            font-size: 0.875rem;
+            padding: 0 8px;
+        }
+    }
+}
