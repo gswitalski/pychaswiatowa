@@ -35,4 +35,5 @@ Twoim zadaniem jest:
 </unresolved_issues>
 </conversation_summary>
 
-Końcowy wynik powinien zawierać tylko treść w formacie markdown. Upewnij się, że Twoje podsumowanie jest jasne, zwięzłe i zapewnia cenne informacje dla następnego etapu planowania architektury UI i integracji z API.
+Końcowy wynik powinien zawierać tylko treść w formacie markdown w pliku 
+'docs/results/010 UI Architecture Planning Summary.md'. Upewnij się, że Twoje podsumowanie jest jasne, zwięzłe i zapewnia cenne informacje dla następnego etapu planowania architektury UI i integracji z API.
