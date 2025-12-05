@@ -106,7 +106,7 @@ Końcowym wynikiem powinien być dobrze zorganizowany plan wdrożenia w formacie
 
 ## 2. Szczegóły żądania
 - Metoda HTTP: [GET/POST/PUT/DELETE]
-- StrukturKędzierzyn-Koźlea URL: [wzorzec URL]
+- Struktura URL: [wzorzec URL]
 - Parametry:
   - Wymagane: [Lista wymaganych parametrów]
   - Opcjonalne: [Lista opcjonalnych parametrów]

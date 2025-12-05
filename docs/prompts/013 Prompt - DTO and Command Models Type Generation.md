@@ -40,5 +40,5 @@ Pamiętaj:
 - W razie potrzeby używaj funkcji TypeScript, takich jak Pick, Omit, Partial itp.
 - Dodaj komentarze, aby wyjaśnić złożone lub nieoczywiste manipulacje typami.
 
-Końcowy wynik powinien składać się wyłącznie z definicji typów DTO i Command Model, które zapiszesz w pliku packages/contracts/types.ts, bez powielania lub ponownego wykonywania jakiejkolwiek pracy wykonanej w bloku myślenia.
+Końcowy wynik powinien składać się wyłącznie z definicji typów DTO i Command Model, które zapiszesz w pliku shared/contracts/types.ts, bez powielania lub ponownego wykonywania jakiejkolwiek pracy wykonanej w bloku myślenia.
 
