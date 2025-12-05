@@ -328,6 +328,45 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
 
 ---
 
+### Profiles
+
+#### `GET /profile`
+
+-   **Description**: Retrieve the profile for the authenticated user.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "id": "a1b2c3d4-...",
+          "username": "john.doe"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `404 Not Found`
+
+---
+
+#### `PUT /profile`
+
+-   **Description**: Update the profile for the authenticated user.
+-   **Request Payload**:
+    ```json
+    {
+      "username": "new.john.doe"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**: (The full updated profile object)
+-   **Error Response**:
+    -   **Code**: `400 Bad Request`
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `404 Not Found`
+
+---
+
 ## 3. Authentication and Authorization
 
 -   **Authentication**: The API will use JWT (JSON Web Tokens) provided by Supabase Authentication. The client is responsible for obtaining the JWT upon user login/signup and including it in the `Authorization` header for all subsequent requests (e.g., `Authorization: Bearer <YOUR_JWT>`).

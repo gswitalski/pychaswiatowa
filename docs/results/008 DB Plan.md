@@ -143,4 +143,25 @@ RLS zostanie włączone dla wszystkich tabel przechowujących dane użytkownikó
     - **Funkcja do parsowania**: Zostanie utworzona funkcja PostgreSQL, która będzie przyjmować surowy tekst i konwertować go na strukturę JSONB dla `ingredients` i `steps`.
     - **Widok `recipe_details`**: Zostanie utworzony widok, który połączy dane z tabel `recipes`, `categories`, `tags` i `collections`, aby uprościć zapytania po stronie klienta i unikać problemu N+1.
     - **Trigger `updated_at`**: Zostanie utworzony trigger, który automatycznie zaktualizuje kolumnę `updated_at` przy każdej modyfikacji wiersza w tabelach `profiles`, `recipes`, `collections`.
+    - **Trigger `handle_new_user`**: Zostanie utworzony trigger, który automatycznie tworzy publiczny profil dla każdego nowo zarejestrowanego użytkownika. Proces ten zapewnia spójność danych między tabelą `auth.users` a `public.profiles`. Funkcja odczytuje dodatkowe metadane (takie jak `username`) przekazane podczas rejestracji z frontendu.
+        ```sql
+        -- Creates a function that will be run by the trigger
+        create function public.handle_new_user()
+        returns trigger as $$
+        begin
+          insert into public.profiles (id, username)
+          values (
+            new.id,
+            -- Reads the 'username' field from the metadata passed from the frontend
+            new.raw_user_meta_data->>'username'
+          );
+          return new;
+        end;
+        $$ language plpgsql security definer;
+
+        -- Creates a trigger that runs the function after each user is added
+        create trigger on_auth_user_created
+          after insert on auth.users
+          for each row execute procedure public.handle_new_user();
+        ```
 4.  **Supabase Storage**: Zdjęcia będą przechowywane w Supabase Storage. Tabela `recipes` przechowuje jedynie ścieżkę do pliku. Dostęp do bucketów będzie chroniony osobnymi politykami RLS w panelu Supabase.

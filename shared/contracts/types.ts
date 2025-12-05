@@ -24,6 +24,9 @@ export type Tag = Tables<'tags'>;
 /** Alias for the 'collections' table row type. */
 export type Collection = Tables<'collections'>;
 
+/** Alias for the 'profiles' table row type. */
+export type Profile = Tables<'profiles'>;
+
 // #endregion
 
 // #region --- Generic API Structures ---
@@ -167,5 +170,19 @@ export type UpdateCollectionCommand = Partial<CreateCollectionCommand>;
 export type AddRecipeToCollectionCommand = {
     recipe_id: number;
 };
+
+// #endregion
+
+// #region --- Profiles ---
+
+/**
+ * DTO for the user profile.
+ */
+export type ProfileDto = Pick<Profile, 'id' | 'username'>;
+
+/**
+ * Command model for updating a user's profile.
+ */
+export type UpdateProfileCommand = Partial<Pick<Profile, 'username'>>;
 
 // #endregion
