@@ -18,12 +18,12 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-**7. Formularz Przepisu (Dodaj/Edytuj)**
-- **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
-- **Główny cel:** Tworzenie i modyfikacja przepisu.
-- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje (dane podstawowe, składniki, kroki), pola do edycji nazwy, opisu, zdjęcia, kategorii, tagów.
-- **Kluczowe komponenty widoku:** `mat-stepper` (opcjonalnie), `mat-form-field`, `mat-select`, `mat-chip-list` z inputem, komponent do przesyłania plików, interaktywna lista z funkcją "przeciągnij i upuść" (Angular CDK).
-- **Względy UX, dostępności i bezpieczeństwa:** Przejrzysty podział formularza. Funkcja "przeciągnij i upuść" ułatwia reorganizację. Jasne komunikaty walidacji.
+**6. Szczegóły Przepisu**
+- **Ścieżka:** `/recipes/:id`
+- **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji.
+- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (z podziałem na sekcje), przypisane kategorie i tagi.
+- **Kluczowe komponenty widoku:** `mat-list`, `mat-chip-list`, przyciski akcji ("Edytuj", "Usuń", "Dodaj do kolekcji").
+- **Względy UX, dostępności i bezpieczeństwa:** Responsywny układ dwukolumnowy przechodzący w jednokolumnowy. Modal potwierdzający usunięcie.
 
 
 </view>
@@ -31,16 +31,16 @@ Najpierw przejrzyj następujące informacje:
 
 4. User Stories:
 <user_stories>
--   *ID:* US-003
--   *Tytuł:* Dodawanie nowego przepisu
--   *Opis:* Jako użytkownik, chcę dodać nowy przepis do mojej cyfrowej książki kucharskiej, wypełniając prosty formularz, abym mógł zdigitalizować moje receptury.
+-   *ID:* US-004
+-   *Tytuł:* Przeglądanie szczegółów przepisu
+-   *Opis:* Jako użytkownik, chcę móc wyświetlić pełne szczegóły zapisanego przepisu w czytelnym układzie, abym mógł z niego wygodnie korzystać podczas gotowania.
 -   *Kryteria akceptacji:*
-    1.  Formularz dodawania przepisu zawiera pola na: nazwę (tekst), opis (tekst), zdjęcie (przesyłanie pliku), składniki (`textarea`), kroki (`textarea`).
-    2.  Pola nazwa, składniki i kroki są wymagane.
-    3.  Tekst wklejony w pole "składniki" jest dzielony na poszczególne pozycje według znaków nowej linii.
-    4.  Tekst wklejony w pole "kroki" jest dzielony na poszczególne pozycje według znaków nowej linii.
-    5.  Linie w polach "składniki" i "kroki", które zaczynają się od `#`, są traktowane jako nagłówki sekcji.
-    6.  Po pomyślnym zapisaniu formularza, jestem przekierowany na stronę nowo utworzonego przepisu.
+    1.  Na stronie przepisu widoczne są: nazwa, opis, zdjęcie, lista składników i lista kroków.
+    2.  Na widoku desktopowym składniki i kroki są wyświetlane obok siebie w dwóch kolumnach.
+    3.  Jeśli składniki lub kroki posiadają sekcje, są one wyraźnie oddzielone nagłówkami.
+    4.  Przesłane zdjęcie jest automatycznie skalowane i przycinane, aby pasowało do wyznaczonego kontenera.
+    5.  Na stronie przepisu widoczne są również przypisane kategorie i tagi.
+    6.  Jako właściciel przepisu, widzę przyciski "Edytuj" i "Usuń".
 
 </user_stories>
 
