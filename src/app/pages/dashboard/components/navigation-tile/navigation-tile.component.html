@@ -1,0 +1,9 @@
+<mat-card class="navigation-tile" [routerLink]="tileData.link">
+    <mat-card-header>
+        @if (tileData.icon) {
+            <mat-icon mat-card-avatar>{{ tileData.icon }}</mat-icon>
+        }
+        <mat-card-title>{{ tileData.title }}</mat-card-title>
+    </mat-card-header>
+</mat-card>
+
