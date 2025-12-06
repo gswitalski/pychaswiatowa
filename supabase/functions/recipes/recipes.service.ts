@@ -6,6 +6,7 @@
 import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
+import { Json } from '../_shared/database.types.ts';
 
 /**
  * DTO for an item on the recipe list.
@@ -36,6 +37,46 @@ export interface PaginatedResponseDto<T> {
 }
 
 /**
+ * Represents a single content item within a recipe's ingredients or steps.
+ * Can be either a header or a regular item.
+ */
+export type RecipeContentItem =
+    | { type: 'header'; content: string }
+    | { type: 'item'; content: string };
+
+/**
+ * Represents the structured content for a recipe's ingredients or steps.
+ */
+export type RecipeContent = RecipeContentItem[];
+
+/**
+ * DTO for a recipe tag.
+ */
+export interface TagDto {
+    id: number;
+    name: string;
+}
+
+/**
+ * DTO for the detailed view of a single recipe.
+ * Based on the `recipe_details` view, with strongly-typed JSONB fields.
+ */
+export interface RecipeDetailDto {
+    id: number;
+    user_id: string;
+    category_id: number | null;
+    name: string;
+    description: string | null;
+    image_path: string | null;
+    created_at: string;
+    updated_at: string;
+    category_name: string | null;
+    ingredients: RecipeContent;
+    steps: RecipeContent;
+    tags: TagDto[];
+}
+
+/**
  * Options for querying recipes.
  */
 export interface GetRecipesOptions {
@@ -50,6 +91,10 @@ export interface GetRecipesOptions {
 
 /** Columns to select for recipe list queries. */
 const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at';
+
+/** Columns to select for recipe detail queries. */
+const RECIPE_DETAIL_SELECT_COLUMNS =
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, ingredients, steps, tags';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -229,5 +274,130 @@ export async function getRecipes(
             totalItems,
         },
     };
+}
+
+/**
+ * Parses JSONB content (ingredients or steps) to strongly-typed RecipeContent array.
+ *
+ * @param jsonContent - Raw JSONB content from the database
+ * @returns Parsed RecipeContent array
+ */
+function parseRecipeContent(jsonContent: Json | null): RecipeContent {
+    if (!jsonContent || !Array.isArray(jsonContent)) {
+        return [];
+    }
+
+    return jsonContent
+        .filter(
+            (item): item is { type: string; content: string } =>
+                typeof item === 'object' &&
+                item !== null &&
+                'type' in item &&
+                'content' in item
+        )
+        .map((item) => ({
+            type: item.type === 'header' ? 'header' : 'item',
+            content: String(item.content),
+        })) as RecipeContent;
+}
+
+/**
+ * Parses JSONB tags to strongly-typed TagDto array.
+ *
+ * @param jsonTags - Raw JSONB tags from the database
+ * @returns Parsed TagDto array
+ */
+function parseTagsContent(jsonTags: Json | null): TagDto[] {
+    if (!jsonTags || !Array.isArray(jsonTags)) {
+        return [];
+    }
+
+    return jsonTags
+        .filter(
+            (item): item is { id: number; name: string } =>
+                typeof item === 'object' &&
+                item !== null &&
+                'id' in item &&
+                'name' in item
+        )
+        .map((item) => ({
+            id: Number(item.id),
+            name: String(item.name),
+        }));
+}
+
+/**
+ * Retrieves a single recipe by its ID for the authenticated user.
+ * Uses the `recipe_details` view which includes joined data from categories and tags.
+ * RLS policies automatically filter by user_id and deleted_at IS NULL.
+ *
+ * @param client - The authenticated Supabase client
+ * @param id - The recipe ID to retrieve
+ * @returns RecipeDetailDto with full recipe details
+ * @throws ApplicationError with NOT_FOUND if recipe doesn't exist or user has no access
+ * @throws ApplicationError with INTERNAL_ERROR for database errors
+ */
+export async function getRecipeById(
+    client: TypedSupabaseClient,
+    id: number
+): Promise<RecipeDetailDto> {
+    logger.info('Fetching recipe by ID', { recipeId: id });
+
+    const { data, error } = await client
+        .from('recipe_details')
+        .select(RECIPE_DETAIL_SELECT_COLUMNS)
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        // PGRST116 means no rows returned (single() expects exactly one row)
+        if (error.code === 'PGRST116') {
+            logger.warn('Recipe not found', { recipeId: id });
+            throw new ApplicationError(
+                'NOT_FOUND',
+                `Recipe with ID ${id} not found`
+            );
+        }
+
+        logger.error('Database error while fetching recipe', {
+            recipeId: id,
+            errorCode: error.code,
+            errorMessage: error.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe');
+    }
+
+    // This should not happen due to single() and RLS, but handle defensively
+    if (!data) {
+        logger.warn('Recipe not found (null data)', { recipeId: id });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            `Recipe with ID ${id} not found`
+        );
+    }
+
+    // Map the database row to RecipeDetailDto with proper type conversions
+    const recipeDetail: RecipeDetailDto = {
+        id: data.id!,
+        user_id: data.user_id!,
+        category_id: data.category_id,
+        name: data.name!,
+        description: data.description,
+        image_path: data.image_path,
+        created_at: data.created_at!,
+        updated_at: data.updated_at!,
+        category_name: data.category_name,
+        ingredients: parseRecipeContent(data.ingredients),
+        steps: parseRecipeContent(data.steps),
+        tags: parseTagsContent(data.tags),
+    };
+
+    logger.info('Recipe fetched successfully', {
+        recipeId: id,
+        recipeName: recipeDetail.name,
+        tagsCount: recipeDetail.tags.length,
+    });
+
+    return recipeDetail;
 }
 

@@ -7,7 +7,13 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
-import { getRecipes, PaginatedResponseDto, RecipeListItemDto } from './recipes.service.ts';
+import {
+    getRecipes,
+    getRecipeById,
+    PaginatedResponseDto,
+    RecipeListItemDto,
+    RecipeDetailDto,
+} from './recipes.service.ts';
 
 /** Maximum allowed limit for pagination. */
 const MAX_LIMIT = 100;
@@ -155,46 +161,139 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
 }
 
 /**
+ * Validates and parses a recipe ID from URL path segment.
+ *
+ * @param recipeIdParam - The raw ID string from URL path
+ * @returns The parsed recipe ID as a positive integer
+ * @throws ApplicationError with VALIDATION_ERROR if ID is not a valid positive integer
+ */
+function parseAndValidateRecipeId(recipeIdParam: string): number {
+    const recipeId = parseInt(recipeIdParam, 10);
+
+    if (isNaN(recipeId) || recipeId <= 0 || !Number.isInteger(recipeId)) {
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            `Invalid recipe ID: '${recipeIdParam}'. ID must be a positive integer.`
+        );
+    }
+
+    return recipeId;
+}
+
+/**
+ * Handles GET /recipes/{id} request.
+ * Returns detailed information about a single recipe for the authenticated user.
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - The recipe ID extracted from the URL path
+ * @returns Response with RecipeDetailDto on success, or error response
+ */
+export async function handleGetRecipeById(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling GET /recipes/{id} request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Call the service to get recipe details
+        const result: RecipeDetailDto = await getRecipeById(client, recipeId);
+
+        logger.info('GET /recipes/{id} completed successfully', {
+            userId: user.id,
+            recipeId: result.id,
+            recipeName: result.name,
+        });
+
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
+ * Extracts the recipe ID from a URL path if it matches /recipes/{id} pattern.
+ * Returns null if the path doesn't match the pattern or is the base /recipes path.
+ *
+ * @param url - The URL object to extract path from
+ * @returns The recipe ID string if present, null otherwise
+ */
+function extractRecipeIdFromPath(url: URL): string | null {
+    // Get the pathname and extract the part after /recipes/
+    // Expected format: /functions/v1/recipes or /functions/v1/recipes/{id}
+    const pathname = url.pathname;
+
+    // Match pattern: /recipes/{id} where id is captured
+    // This handles both local (/recipes/123) and deployed (/functions/v1/recipes/123) paths
+    const recipeIdMatch = pathname.match(/\/recipes\/([^/]+)$/);
+
+    if (recipeIdMatch && recipeIdMatch[1]) {
+        return recipeIdMatch[1];
+    }
+
+    return null;
+}
+
+/**
  * Recipes router - routes HTTP methods to appropriate handlers.
- * Currently supports only GET method for listing recipes.
- * Future endpoints (POST, GET/:id, PUT/:id, DELETE/:id) will be added here.
+ * Supports:
+ * - GET /recipes - List all recipes (paginated)
+ * - GET /recipes/{id} - Get single recipe by ID
  *
  * @param req - The incoming HTTP request
  * @returns Response from the appropriate handler, or 405 Method Not Allowed
  */
 export async function recipesRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
+    const url = new URL(req.url);
 
-    switch (method) {
-        case 'GET':
-            return handleGetRecipes(req);
+    // Extract recipe ID from path (if present)
+    const recipeId = extractRecipeIdFromPath(url);
 
-        case 'OPTIONS':
-            // Handle CORS preflight request
-            return new Response(null, {
-                status: 204,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-                },
-            });
-
-        default:
-            logger.warn('Method not allowed', { method });
-            return new Response(
-                JSON.stringify({
-                    code: 'METHOD_NOT_ALLOWED',
-                    message: `Method ${method} not allowed`,
-                }),
-                {
-                    status: 405,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Allow': 'GET, OPTIONS',
-                    },
-                }
-            );
+    // Handle CORS preflight request
+    if (method === 'OPTIONS') {
+        return new Response(null, {
+            status: 204,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+            },
+        });
     }
+
+    // Route GET requests
+    if (method === 'GET') {
+        // If recipe ID is present, get single recipe
+        if (recipeId) {
+            return handleGetRecipeById(req, recipeId);
+        }
+
+        // Otherwise, list all recipes
+        return handleGetRecipes(req);
+    }
+
+    // Method not allowed
+    logger.warn('Method not allowed', { method, path: url.pathname });
+    return new Response(
+        JSON.stringify({
+            code: 'METHOD_NOT_ALLOWED',
+            message: `Method ${method} not allowed`,
+        }),
+        {
+            status: 405,
+            headers: {
+                'Content-Type': 'application/json',
+                'Allow': 'GET, OPTIONS',
+            },
+        }
+    );
 }
 
