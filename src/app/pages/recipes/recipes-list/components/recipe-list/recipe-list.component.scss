@@ -1,0 +1,39 @@
+.recipe-list-container {
+    position: relative;
+    min-height: 200px;
+
+    &.is-loading {
+        .recipes-grid {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    }
+}
+
+.loading-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+.loading-indicator {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+}
+
+.recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    transition: opacity 0.2s ease;
+}
+
+@media (max-width: 600px) {
+    .recipes-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+

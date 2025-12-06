@@ -1,0 +1,21 @@
+<a [routerLink]="['/recipes', recipe().id]" class="recipe-card-link">
+    <mat-card class="recipe-card">
+        <div class="card-image-container">
+            @if (recipe().image_path) {
+                <img
+                    [src]="recipe().image_path"
+                    [alt]="recipe().name"
+                    class="card-image"
+                />
+            } @else {
+                <div class="card-image-placeholder">
+                    <mat-icon>restaurant_menu</mat-icon>
+                </div>
+            }
+        </div>
+        <mat-card-content>
+            <h3 class="recipe-name">{{ recipe().name }}</h3>
+        </mat-card-content>
+    </mat-card>
+</a>
+

@@ -1,0 +1,82 @@
+<div class="filters-container">
+    <div class="filters-row">
+        <!-- Search field -->
+        <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Szukaj przepisu</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input
+                matInput
+                type="text"
+                [value]="searchQuery"
+                (input)="onSearchInput($any($event.target).value)"
+                placeholder="Wpisz nazwę przepisu..."
+            />
+        </mat-form-field>
+
+        <!-- Sort select -->
+        <mat-form-field appearance="outline" class="sort-field">
+            <mat-label>Sortuj</mat-label>
+            <mat-select
+                [value]="sortOption"
+                (selectionChange)="onSortChange($event.value)"
+            >
+                @for (option of sortOptions; track option.value) {
+                    <mat-option [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
+        <!-- Category select -->
+        <mat-form-field appearance="outline" class="category-field">
+            <mat-label>Kategoria</mat-label>
+            <mat-select
+                [value]="categoryId"
+                (selectionChange)="onCategoryChange($event.value)"
+            >
+                <mat-option [value]="null">Wszystkie kategorie</mat-option>
+                @for (category of categories(); track category.id) {
+                    <mat-option [value]="category.id">
+                        {{ category.name }}
+                    </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+    </div>
+
+    <!-- Tags section -->
+    <div class="tags-section">
+        <mat-form-field appearance="outline" class="tags-field">
+            <mat-label>Filtruj po tagach</mat-label>
+            <mat-chip-grid #chipGrid>
+                @for (tag of selectedTags; track tag) {
+                    <mat-chip-row (removed)="removeTag(tag)">
+                        {{ tag }}
+                        <mat-icon matChipRemove>cancel</mat-icon>
+                    </mat-chip-row>
+                }
+            </mat-chip-grid>
+            <input
+                matInput
+                placeholder="Dodaj tag..."
+                [matChipInputFor]="chipGrid"
+                [matAutocomplete]="auto"
+                [value]="tagInput()"
+                (input)="onTagInputChange($any($event.target).value)"
+                (matChipInputTokenEnd)="addTag($event.value)"
+            />
+            <mat-autocomplete
+                #auto="matAutocomplete"
+                (optionSelected)="addTag($event.option.value)"
+            >
+                @for (tag of filteredTags(); track tag.id) {
+                    <mat-option [value]="tag.name">
+                        {{ tag.name }}
+                    </mat-option>
+                }
+            </mat-autocomplete>
+        </mat-form-field>
+    </div>
+</div>
+

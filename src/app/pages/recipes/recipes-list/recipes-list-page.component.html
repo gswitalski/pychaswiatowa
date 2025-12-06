@@ -7,14 +7,34 @@
         </a>
     </header>
 
-    <mat-card class="placeholder-card">
-        <mat-card-content>
-            <mat-icon class="placeholder-icon">menu_book</mat-icon>
-            <p>Lista przepisów - w budowie</p>
-            <a mat-stroked-button routerLink="/recipes/new">
-                Dodaj swój pierwszy przepis
-            </a>
-        </mat-card-content>
-    </mat-card>
-</div>
+    @if (isInitialLoading()) {
+        <div class="initial-loading">
+            <div class="loading-spinner"></div>
+            <p>Ładowanie...</p>
+        </div>
+    } @else {
+        <pych-recipes-filters
+            [initialFilters]="filters()"
+            [categories]="categories()"
+            [tags]="tags()"
+            (filtersChange)="onFiltersChange($event)"
+        />
 
+        <pych-recipe-list
+            [recipes]="recipes()"
+            [isLoading]="isLoading()"
+        />
+
+        @if (pagination().totalItems > 0) {
+            <mat-paginator
+                [length]="pagination().totalItems"
+                [pageSize]="paginationState().limit"
+                [pageIndex]="paginationState().page - 1"
+                [pageSizeOptions]="pageSizeOptions"
+                (page)="onPageChange($event)"
+                showFirstLastButtons
+                aria-label="Wybierz stronę"
+            />
+        }
+    }
+</div>

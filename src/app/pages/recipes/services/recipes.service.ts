@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, map, switchMap } from 'rxjs';
+import { Observable, from, map } from 'rxjs';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import {
     RecipeDetailDto,
@@ -7,7 +7,27 @@ import {
     UpdateRecipeCommand,
     RecipeContent,
     TagDto,
+    PaginatedResponseDto,
+    RecipeListItemDto,
 } from '../../../../../shared/contracts/types';
+
+/**
+ * Parametry zapytania do pobierania listy przepisów
+ */
+export interface GetRecipesParams {
+    /** Format: 'column.direction' np. 'created_at.desc' */
+    sort?: string;
+    /** Liczba elementów na stronie */
+    limit?: number;
+    /** Numer strony (zaczyna od 1) */
+    page?: number;
+    /** Fraza do wyszukiwania w nazwie przepisu */
+    search?: string;
+    /** ID kategorii do filtrowania */
+    categoryId?: number | null;
+    /** Lista nazw tagów do filtrowania */
+    tags?: string[];
+}
 
 @Injectable({
     providedIn: 'root',
@@ -26,6 +46,22 @@ export class RecipesService {
                 }
                 if (!result.data) {
                     throw new Error('Przepis nie został znaleziony');
+                }
+                return result.data;
+            })
+        );
+    }
+
+    /**
+     * Fetches paginated list of recipes with optional filtering and sorting
+     */
+    getRecipes(
+        params: GetRecipesParams = {}
+    ): Observable<PaginatedResponseDto<RecipeListItemDto>> {
+        return from(this.fetchRecipes(params)).pipe(
+            map((result) => {
+                if (result.error) {
+                    throw result.error;
                 }
                 return result.data;
             })
@@ -77,6 +113,160 @@ export class RecipesService {
                 }
             })
         );
+    }
+
+    private async fetchRecipes(params: GetRecipesParams): Promise<{
+        data: PaginatedResponseDto<RecipeListItemDto>;
+        error: Error | null;
+    }> {
+        const {
+            sort = 'created_at.desc',
+            limit = 12,
+            page = 1,
+            search,
+            categoryId,
+            tags,
+        } = params;
+
+        const [column, order] = sort.split('.');
+        const ascending = order === 'asc';
+
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const {
+            data: { user },
+        } = await this.supabase.auth.getUser();
+
+        if (!user) {
+            return {
+                data: {
+                    data: [],
+                    pagination: { currentPage: 1, totalPages: 0, totalItems: 0 },
+                },
+                error: new Error('Użytkownik niezalogowany'),
+            };
+        }
+
+        // Najpierw sprawdź czy mamy filtry po tagach
+        let recipeIdsFromTags: number[] | null = null;
+
+        if (tags && tags.length > 0) {
+            recipeIdsFromTags = await this.getRecipeIdsByTags(tags, user.id);
+
+            // Jeśli nie znaleziono przepisów z tymi tagami, zwróć pusty wynik
+            if (recipeIdsFromTags.length === 0) {
+                return {
+                    data: {
+                        data: [],
+                        pagination: { currentPage: page, totalPages: 0, totalItems: 0 },
+                    },
+                    error: null,
+                };
+            }
+        }
+
+        // Buduj zapytanie
+        let query = this.supabase
+            .from('recipes')
+            .select('id, name, image_path, created_at', { count: 'exact' })
+            .eq('user_id', user.id);
+
+        // Filtr po wyszukiwaniu
+        if (search && search.trim()) {
+            query = query.ilike('name', `%${search.trim()}%`);
+        }
+
+        // Filtr po kategorii
+        if (categoryId) {
+            query = query.eq('category_id', categoryId);
+        }
+
+        // Filtr po tagach (jeśli mamy listę ID przepisów z tagami)
+        if (recipeIdsFromTags) {
+            query = query.in('id', recipeIdsFromTags);
+        }
+
+        // Sortowanie i paginacja
+        const { data, error, count } = await query
+            .order(column, { ascending })
+            .range(from, to);
+
+        if (error) {
+            return {
+                data: {
+                    data: [],
+                    pagination: { currentPage: 1, totalPages: 0, totalItems: 0 },
+                },
+                error,
+            };
+        }
+
+        const totalItems = count ?? 0;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        return {
+            data: {
+                data: data ?? [],
+                pagination: {
+                    currentPage: page,
+                    totalPages,
+                    totalItems,
+                },
+            },
+            error: null,
+        };
+    }
+
+    /**
+     * Pobiera ID przepisów które mają wszystkie podane tagi
+     */
+    private async getRecipeIdsByTags(
+        tagNames: string[],
+        userId: string
+    ): Promise<number[]> {
+        // Pobierz ID tagów
+        const { data: tagData } = await this.supabase
+            .from('tags')
+            .select('id')
+            .eq('user_id', userId)
+            .in('name', tagNames);
+
+        if (!tagData || tagData.length === 0) {
+            return [];
+        }
+
+        const tagIds = tagData.map((t) => t.id);
+
+        // Znajdź przepisy które mają WSZYSTKIE te tagi
+        const { data: recipeTagsData } = await this.supabase
+            .from('recipe_tags')
+            .select('recipe_id, tag_id')
+            .in('tag_id', tagIds);
+
+        if (!recipeTagsData) {
+            return [];
+        }
+
+        // Grupuj po recipe_id i sprawdź czy przepis ma wszystkie tagi
+        const recipeTagCount = new Map<number, Set<number>>();
+
+        for (const rt of recipeTagsData) {
+            if (!recipeTagCount.has(rt.recipe_id)) {
+                recipeTagCount.set(rt.recipe_id, new Set());
+            }
+            recipeTagCount.get(rt.recipe_id)!.add(rt.tag_id);
+        }
+
+        // Zwróć tylko przepisy które mają wszystkie wymagane tagi
+        const result: number[] = [];
+        for (const [recipeId, tagSet] of recipeTagCount) {
+            if (tagIds.every((tagId) => tagSet.has(tagId))) {
+                result.push(recipeId);
+            }
+        }
+
+        return result;
     }
 
     private async fetchRecipeById(id: number): Promise<{

@@ -1,0 +1,22 @@
+<div class="recipe-list-container" [class.is-loading]="isLoading()">
+    @if (isLoading() && recipes().length === 0) {
+        <div class="loading-overlay">
+            <mat-spinner diameter="48"></mat-spinner>
+        </div>
+    } @else if (recipes().length === 0) {
+        <pych-empty-state />
+    } @else {
+        <div class="recipes-grid">
+            @for (recipe of recipes(); track recipe.id) {
+                <pych-recipe-card [recipe]="recipe" />
+            }
+        </div>
+
+        @if (isLoading()) {
+            <div class="loading-indicator">
+                <mat-spinner diameter="32"></mat-spinner>
+            </div>
+        }
+    }
+</div>
+
