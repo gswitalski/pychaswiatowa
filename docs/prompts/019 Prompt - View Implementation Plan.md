@@ -18,12 +18,12 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-**6. Szczegóły Przepisu**
-- **Ścieżka:** `/recipes/:id`
-- **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji.
-- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (z podziałem na sekcje), przypisane kategorie i tagi.
-- **Kluczowe komponenty widoku:** `mat-list`, `mat-chip-list`, przyciski akcji ("Edytuj", "Usuń", "Dodaj do kolekcji").
-- **Względy UX, dostępności i bezpieczeństwa:** Responsywny układ dwukolumnowy przechodzący w jednokolumnowy. Modal potwierdzający usunięcie.
+**5. Lista Przepisów (Moje przepisy)**
+- **Ścieżka:** `/recipes`
+- **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie wszystkich przepisów użytkownika.
+- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pole wyszukiwania, kontrolki do sortowania i filtrowania (kategorie, tagi), paginacja.
+- **Kluczowe komponenty widoku:** `mat-paginator`, `mat-card`, `mat-form-field`, `mat-select`, `mat-chip-list`, komponent "stanu pustego".
+- **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy przy zmianie filtrów. Wskaźniki ładowania. Obsługa stanu pustego z wezwaniem do akcji.
 
 
 </view>
@@ -31,16 +31,14 @@ Najpierw przejrzyj następujące informacje:
 
 4. User Stories:
 <user_stories>
--   *ID:* US-004
--   *Tytuł:* Przeglądanie szczegółów przepisu
--   *Opis:* Jako użytkownik, chcę móc wyświetlić pełne szczegóły zapisanego przepisu w czytelnym układzie, abym mógł z niego wygodnie korzystać podczas gotowania.
+-   *ID:* US-007
+-   *Tytuł:* Przeglądanie listy wszystkich przepisów
+-   *Opis:* Jako użytkownik, chcę widzieć listę wszystkich moich dodanych przepisów, abym mógł szybko zorientować się w mojej kolekcji i wybrać interesującą mnie pozycję.
 -   *Kryteria akceptacji:*
-    1.  Na stronie przepisu widoczne są: nazwa, opis, zdjęcie, lista składników i lista kroków.
-    2.  Na widoku desktopowym składniki i kroki są wyświetlane obok siebie w dwóch kolumnach.
-    3.  Jeśli składniki lub kroki posiadają sekcje, są one wyraźnie oddzielone nagłówkami.
-    4.  Przesłane zdjęcie jest automatycznie skalowane i przycinane, aby pasowało do wyznaczonego kontenera.
-    5.  Na stronie przepisu widoczne są również przypisane kategorie i tagi.
-    6.  Jako właściciel przepisu, widzę przyciski "Edytuj" i "Usuń".
+    1.  Dostępna jest strona "Moje przepisy", która wyświetla wszystkie przepisy użytkownika.
+    2.  Każdy przepis na liście jest reprezentowany przez miniaturkę zdjęcia i nazwę.
+    3.  Kliknięcie na pozycję na liście przenosi mnie do strony szczegółów danego przepisu.
+    4.  Mam możliwość sortowania listy alfabetycznie oraz po dacie dodania (od najnowszych do najstarszych i odwrotnie).
 
 </user_stories>
 
