@@ -1,0 +1,18 @@
+<section class="content-section">
+    <h2 class="section-title">{{ title() }}</h2>
+
+    @if (content().length > 0) {
+        <ul class="content-list">
+            @for (item of content(); track $index) {
+                @if (item.type === 'header') {
+                    <li class="content-header">{{ item.content }}</li>
+                } @else {
+                    <li class="content-item">{{ item.content }}</li>
+                }
+            }
+        </ul>
+    } @else {
+        <p class="empty-content">Brak elementów</p>
+    }
+</section>
+

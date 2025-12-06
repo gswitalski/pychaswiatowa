@@ -66,6 +66,19 @@ export class RecipesService {
         );
     }
 
+    /**
+     * Deletes a recipe by its ID
+     */
+    deleteRecipe(id: number): Observable<void> {
+        return from(this.performDeleteRecipe(id)).pipe(
+            map((result) => {
+                if (result.error) {
+                    throw result.error;
+                }
+            })
+        );
+    }
+
     private async fetchRecipeById(id: number): Promise<{
         data: RecipeDetailDto | null;
         error: Error | null;
@@ -155,6 +168,32 @@ export class RecipesService {
         }
 
         return { data: { id: recipe.id }, error: null };
+    }
+
+    private async performDeleteRecipe(id: number): Promise<{ error: Error | null }> {
+        const {
+            data: { user },
+        } = await this.supabase.auth.getUser();
+
+        if (!user) {
+            return { error: new Error('Użytkownik niezalogowany') };
+        }
+
+        // Delete recipe tags first (foreign key constraint)
+        await this.supabase.from('recipe_tags').delete().eq('recipe_id', id);
+
+        // Delete the recipe
+        const { error } = await this.supabase
+            .from('recipes')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
+
+        if (error) {
+            return { error };
+        }
+
+        return { error: null };
     }
 
     private async performUpdateRecipe(

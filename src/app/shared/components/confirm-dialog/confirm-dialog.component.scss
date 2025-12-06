@@ -1,0 +1,14 @@
+mat-dialog-content {
+    p {
+        font-size: 1rem;
+        color: var(--mat-sys-on-surface-variant);
+        margin: 0;
+        line-height: 1.5;
+    }
+}
+
+mat-dialog-actions {
+    gap: 8px;
+    padding: 16px 24px;
+}
+

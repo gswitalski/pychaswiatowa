@@ -5,22 +5,58 @@
         </a>
         <h1>Szczegóły przepisu</h1>
         <span class="spacer"></span>
-        @if (recipeId()) {
-            <a mat-stroked-button [routerLink]="['/recipes', recipeId(), 'edit']">
-                <mat-icon>edit</mat-icon>
-                Edytuj
-            </a>
-        }
     </header>
 
-    <mat-card class="placeholder-card">
-        <mat-card-content>
-            <mat-icon class="placeholder-icon">restaurant</mat-icon>
-            <p>Szczegóły przepisu #{{ recipeId() }} - w budowie</p>
-            <a mat-stroked-button routerLink="/recipes">
-                Wróć do listy przepisów
-            </a>
-        </mat-card-content>
-    </mat-card>
-</div>
+    @if (isLoading()) {
+        <div class="loading-state">
+            <mat-spinner diameter="48"></mat-spinner>
+            <p>Ładowanie przepisu...</p>
+        </div>
+    } @else if (error()) {
+        <mat-card class="error-card">
+            <mat-card-content>
+                <mat-icon class="error-icon">error_outline</mat-icon>
+                @if (error()!.status === 404) {
+                    <h2>Nie znaleziono przepisu</h2>
+                    <p>Przepis, którego szukasz, nie istnieje lub został usunięty.</p>
+                } @else {
+                    <h2>Wystąpił błąd</h2>
+                    <p>{{ error()!.message }}</p>
+                }
+                <button mat-raised-button (click)="onBackToList()">
+                    <mat-icon>arrow_back</mat-icon>
+                    Wróć do listy przepisów
+                </button>
+            </mat-card-content>
+        </mat-card>
+    } @else if (hasRecipe()) {
+        <div class="recipe-content">
+            <div class="recipe-main">
+                <pych-recipe-image
+                    [imageUrl]="recipe()!.image_path"
+                    [recipeName]="recipe()!.name ?? ''"
+                />
 
+                <pych-recipe-header [recipe]="recipe()!" />
+
+                <pych-recipe-actions
+                    (editClicked)="onEdit()"
+                    (deleteClicked)="onDelete()"
+                    (addToCollectionClicked)="onAddToCollection()"
+                />
+            </div>
+
+            <div class="recipe-details">
+                <pych-recipe-content-list
+                    title="Składniki"
+                    [content]="recipe()!.ingredients"
+                />
+
+                <pych-recipe-content-list
+                    title="Kroki przygotowania"
+                    [content]="recipe()!.steps"
+                />
+            </div>
+        </div>
+    }
+</div>

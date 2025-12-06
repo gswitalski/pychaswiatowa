@@ -1,5 +1,5 @@
 .recipe-detail-page {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 24px;
 }
@@ -11,7 +11,7 @@
     margin-bottom: 24px;
 
     h1 {
-        font-size: 2rem;
+        font-size: 1.5rem;
         font-weight: 500;
         color: var(--mat-sys-on-background);
         margin: 0;
@@ -20,36 +20,99 @@
     .spacer {
         flex: 1;
     }
+}
 
-    a {
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px;
+    gap: 16px;
+
+    p {
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 1rem;
+        margin: 0;
+    }
+}
+
+.error-card {
+    max-width: 500px;
+    margin: 0 auto;
+
+    mat-card-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 48px 24px;
+    }
+
+    .error-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--mat-sys-error);
+        margin-bottom: 16px;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface);
+        margin: 0 0 8px;
+    }
+
+    p {
+        color: var(--mat-sys-on-surface-variant);
+        margin: 0 0 24px;
+    }
+
+    button {
         mat-icon {
             margin-right: 8px;
         }
     }
 }
 
-.placeholder-card {
-    mat-card-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 64px;
-        text-align: center;
+.recipe-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+}
+
+.recipe-main {
+    position: sticky;
+    top: 24px;
+}
+
+.recipe-details {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+@media (max-width: 900px) {
+    .recipe-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
     }
 
-    .placeholder-icon {
-        font-size: 64px;
-        width: 64px;
-        height: 64px;
-        color: var(--mat-sys-on-surface-variant);
-        margin-bottom: 16px;
-    }
-
-    p {
-        font-size: 1.125rem;
-        color: var(--mat-sys-on-surface-variant);
-        margin: 0 0 24px;
+    .recipe-main {
+        position: static;
     }
 }
 
+@media (max-width: 600px) {
+    .recipe-detail-page {
+        padding: 16px;
+    }
+
+    .page-header {
+        h1 {
+            font-size: 1.25rem;
+        }
+    }
+}

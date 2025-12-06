@@ -1,0 +1,38 @@
+.dialog-description {
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0 0 16px;
+    font-size: 0.875rem;
+}
+
+.loading-state {
+    display: flex;
+    justify-content: center;
+    padding: 32px;
+}
+
+.collections-list {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 8px;
+}
+
+.new-collection-field {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.toggle-create-btn {
+    width: 100%;
+
+    mat-icon {
+        margin-right: 8px;
+    }
+}
+
+mat-dialog-actions {
+    gap: 8px;
+    padding: 16px 24px;
+}
+

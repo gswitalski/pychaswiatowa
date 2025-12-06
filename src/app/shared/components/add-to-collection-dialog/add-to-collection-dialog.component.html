@@ -1,0 +1,66 @@
+<h2 mat-dialog-title>Dodaj do kolekcji</h2>
+
+<mat-dialog-content>
+    <p class="dialog-description">
+        Dodaj przepis "{{ data.recipeName }}" do kolekcji
+    </p>
+
+    @if (isLoading()) {
+        <div class="loading-state">
+            <mat-spinner diameter="32"></mat-spinner>
+        </div>
+    } @else {
+        @if (collections().length > 0 && !isCreatingNew()) {
+            <mat-selection-list [multiple]="false" class="collections-list">
+                @for (collection of collections(); track collection.id) {
+                    <mat-list-option
+                        [value]="collection.id"
+                        [selected]="selectedCollectionId() === collection.id"
+                        (click)="selectCollection(collection.id)"
+                    >
+                        <mat-icon matListItemIcon>folder</mat-icon>
+                        <span matListItemTitle>{{ collection.name }}</span>
+                        @if (collection.description) {
+                            <span matListItemLine>{{ collection.description }}</span>
+                        }
+                    </mat-list-option>
+                }
+            </mat-selection-list>
+        }
+
+        @if (isCreatingNew()) {
+            <mat-form-field appearance="outline" class="new-collection-field">
+                <mat-label>Nazwa nowej kolekcji</mat-label>
+                <input
+                    matInput
+                    [ngModel]="newCollectionName()"
+                    (ngModelChange)="newCollectionName.set($event)"
+                    placeholder="Np. Ulubione desery"
+                />
+            </mat-form-field>
+        }
+
+        <button
+            mat-stroked-button
+            type="button"
+            class="toggle-create-btn"
+            (click)="toggleCreateNew()"
+        >
+            <mat-icon>{{ isCreatingNew() ? 'list' : 'add' }}</mat-icon>
+            {{ isCreatingNew() ? 'Wybierz istniejącą' : 'Utwórz nową kolekcję' }}
+        </button>
+    }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-stroked-button (click)="onCancel()">Anuluj</button>
+    <button
+        mat-raised-button
+        color="primary"
+        [disabled]="!canConfirm"
+        (click)="onConfirm()"
+    >
+        {{ isCreatingNew() ? 'Utwórz i dodaj' : 'Dodaj' }}
+    </button>
+</mat-dialog-actions>
+

@@ -1,0 +1,25 @@
+.recipe-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    button {
+        mat-icon {
+            margin-right: 8px;
+        }
+    }
+}
+
+@media (max-width: 600px) {
+    .recipe-actions {
+        flex-direction: column;
+
+        button {
+            width: 100%;
+        }
+    }
+}
+
