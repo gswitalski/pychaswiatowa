@@ -11,10 +11,12 @@ import {
     getRecipes,
     getRecipeById,
     createRecipe,
+    updateRecipe,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
     CreateRecipeInput,
+    UpdateRecipeInput,
 } from './recipes.service.ts';
 
 /** Maximum allowed limit for pagination. */
@@ -76,6 +78,66 @@ const createRecipeSchema = z.object({
         .optional()
         .default([]),
 });
+
+/**
+ * Schema for validating PUT /recipes/{id} request body.
+ * All fields are optional, but at least one field must be provided.
+ * Validates the UpdateRecipeCommand model.
+ */
+const updateRecipeSchema = z
+    .object({
+        name: z
+            .string({
+                invalid_type_error: 'Recipe name must be a string',
+            })
+            .min(1, 'Recipe name cannot be empty')
+            .max(150, 'Recipe name cannot exceed 150 characters')
+            .transform((val) => val.trim())
+            .optional(),
+        description: z
+            .string()
+            .nullable()
+            .transform((val) => val?.trim() || null)
+            .optional(),
+        category_id: z
+            .number({
+                invalid_type_error: 'Category ID must be a number',
+            })
+            .int('Category ID must be an integer')
+            .positive('Category ID must be a positive integer')
+            .nullable()
+            .optional(),
+        ingredients_raw: z
+            .string({
+                invalid_type_error: 'Ingredients must be a string',
+            })
+            .min(1, 'Ingredients cannot be empty')
+            .optional(),
+        steps_raw: z
+            .string({
+                invalid_type_error: 'Steps must be a string',
+            })
+            .min(1, 'Steps cannot be empty')
+            .optional(),
+        tags: z
+            .array(
+                z
+                    .string()
+                    .min(1, 'Tag name cannot be empty')
+                    .max(50, 'Tag name cannot exceed 50 characters')
+                    .transform((val) => val.trim())
+            )
+            .optional(),
+    })
+    .refine(
+        (data) => {
+            // At least one field must be provided
+            return Object.values(data).some((value) => value !== undefined);
+        },
+        {
+            message: 'At least one field must be provided for update',
+        }
+    );
 
 /**
  * Schema for validating GET /recipes query parameters.
@@ -356,6 +418,91 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
 }
 
 /**
+ * Handles PUT /recipes/{id} request.
+ * Updates an existing recipe for the authenticated user.
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - The recipe ID extracted from the URL path
+ * @returns Response with RecipeDetailDto on success (200), or error response
+ */
+export async function handleUpdateRecipe(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling PUT /recipes/{id} request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Parse and validate request body
+        let requestBody: unknown;
+        try {
+            requestBody = await req.json();
+        } catch {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'Invalid JSON in request body'
+            );
+        }
+
+        const validationResult = updateRecipeSchema.safeParse(requestBody);
+
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+
+            logger.warn('Invalid request body for PUT /recipes/{id}', {
+                recipeId,
+                errors: errorDetails,
+            });
+
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `Invalid input: ${errorDetails}`
+            );
+        }
+
+        const validatedData = validationResult.data;
+
+        // Prepare input for the service
+        const updateRecipeInput: UpdateRecipeInput = {
+            name: validatedData.name,
+            description: validatedData.description,
+            category_id: validatedData.category_id,
+            ingredients_raw: validatedData.ingredients_raw,
+            steps_raw: validatedData.steps_raw,
+            tags: validatedData.tags,
+        };
+
+        // Call the service to update the recipe
+        const result: RecipeDetailDto = await updateRecipe(
+            client,
+            recipeId,
+            user.id,
+            updateRecipeInput
+        );
+
+        logger.info('PUT /recipes/{id} completed successfully', {
+            userId: user.id,
+            recipeId: result.id,
+            recipeName: result.name,
+            tagsCount: result.tags.length,
+        });
+
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Extracts the recipe ID from a URL path if it matches /recipes/{id} pattern.
  * Returns null if the path doesn't match the pattern or is the base /recipes path.
  *
@@ -383,6 +530,8 @@ function extractRecipeIdFromPath(url: URL): string | null {
  * Supports:
  * - GET /recipes - List all recipes (paginated)
  * - GET /recipes/{id} - Get single recipe by ID
+ * - POST /recipes - Create a new recipe
+ * - PUT /recipes/{id} - Update an existing recipe
  *
  * @param req - The incoming HTTP request
  * @returns Response from the appropriate handler, or 405 Method Not Allowed
@@ -400,7 +549,7 @@ export async function recipesRouter(req: Request): Promise<Response> {
             status: 204,
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Authorization, Content-Type',
             },
         });
@@ -441,8 +590,36 @@ export async function recipesRouter(req: Request): Promise<Response> {
         return handleCreateRecipe(req);
     }
 
-    // Method not allowed
+    // Route PUT requests (only for /recipes/{id} path)
+    if (method === 'PUT') {
+        // PUT without recipe ID is not allowed
+        if (!recipeId) {
+            logger.warn('PUT without recipe ID not allowed');
+            return new Response(
+                JSON.stringify({
+                    code: 'METHOD_NOT_ALLOWED',
+                    message: 'PUT requires a recipe ID. Use POST to create a new recipe.',
+                }),
+                {
+                    status: 405,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Allow': 'GET, POST, OPTIONS',
+                    },
+                }
+            );
+        }
+
+        // Update existing recipe
+        return handleUpdateRecipe(req, recipeId);
+    }
+
+    // Method not allowed - determine allowed methods based on path
     logger.warn('Method not allowed', { method, path: url.pathname });
+    const allowedMethods = recipeId
+        ? 'GET, PUT, DELETE, OPTIONS'
+        : 'GET, POST, OPTIONS';
+
     return new Response(
         JSON.stringify({
             code: 'METHOD_NOT_ALLOWED',
@@ -452,7 +629,7 @@ export async function recipesRouter(req: Request): Promise<Response> {
             status: 405,
             headers: {
                 'Content-Type': 'application/json',
-                'Allow': 'GET, POST, OPTIONS',
+                'Allow': allowedMethods,
             },
         }
     );

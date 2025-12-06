@@ -26,6 +26,16 @@
  * - ingredients_raw (string, required) - Raw ingredients text
  * - steps_raw (string, required) - Raw steps text
  * - tags (string[], optional) - Array of tag names
+ *
+ * PUT /functions/v1/recipes/{id}
+ * Updates an existing recipe for the authenticated user.
+ * Request Body (JSON) - all fields optional, at least one required:
+ * - name (string, 1-150 chars) - Recipe name
+ * - description (string, nullable) - Recipe description
+ * - category_id (number, nullable) - Category ID
+ * - ingredients_raw (string) - Raw ingredients text
+ * - steps_raw (string) - Raw steps text
+ * - tags (string[]) - Array of tag names (replaces all existing tags)
  */
 
 import { recipesRouter } from './recipes.handlers.ts';

@@ -414,6 +414,19 @@ export interface CreateRecipeInput {
 }
 
 /**
+ * Input data for updating an existing recipe.
+ * All fields are optional - only provided fields will be updated.
+ */
+export interface UpdateRecipeInput {
+    name?: string;
+    description?: string | null;
+    category_id?: number | null;
+    ingredients_raw?: string;
+    steps_raw?: string;
+    tags?: string[];
+}
+
+/**
  * Creates a new recipe with associated tags for the authenticated user.
  * Uses the `create_recipe_with_tags` RPC function to ensure atomicity.
  *
@@ -492,6 +505,112 @@ export async function createRecipe(
     const recipeDetail = await getRecipeById(client, recipeId);
 
     logger.info('Recipe creation completed', {
+        recipeId: recipeDetail.id,
+        recipeName: recipeDetail.name,
+        tagsCount: recipeDetail.tags.length,
+    });
+
+    return recipeDetail;
+}
+
+/**
+ * Updates an existing recipe with associated tags for the authenticated user.
+ * Uses the `update_recipe_with_tags` RPC function to ensure atomicity.
+ *
+ * @param client - The authenticated Supabase client
+ * @param recipeId - The ID of the recipe to update
+ * @param userId - The ID of the authenticated user (must be the owner)
+ * @param input - The recipe data to update (only provided fields will be updated)
+ * @returns RecipeDetailDto with full details of the updated recipe
+ * @throws ApplicationError with NOT_FOUND if recipe doesn't exist or user has no access
+ * @throws ApplicationError with NOT_FOUND if category doesn't exist
+ * @throws ApplicationError with VALIDATION_ERROR if ingredients or steps are empty after parsing
+ * @throws ApplicationError with INTERNAL_ERROR for database errors
+ */
+export async function updateRecipe(
+    client: TypedSupabaseClient,
+    recipeId: number,
+    userId: string,
+    input: UpdateRecipeInput
+): Promise<RecipeDetailDto> {
+    logger.info('Updating recipe', {
+        recipeId,
+        userId,
+        updatingName: input.name !== undefined,
+        updatingDescription: input.description !== undefined,
+        updatingCategory: input.category_id !== undefined,
+        updatingIngredients: input.ingredients_raw !== undefined,
+        updatingSteps: input.steps_raw !== undefined,
+        updatingTags: input.tags !== undefined,
+    });
+
+    // Determine if tags should be updated
+    const updateTags = input.tags !== undefined;
+
+    // Call the RPC function to update the recipe with tags atomically
+    const { data: updatedRecipeId, error: rpcError } = await client.rpc(
+        'update_recipe_with_tags',
+        {
+            p_recipe_id: recipeId,
+            p_user_id: userId,
+            p_name: input.name ?? null,
+            p_description: input.description ?? null,
+            p_category_id: input.category_id ?? null,
+            p_ingredients_raw: input.ingredients_raw ?? null,
+            p_steps_raw: input.steps_raw ?? null,
+            p_tag_names: input.tags ?? null,
+            p_update_tags: updateTags,
+        }
+    );
+
+    if (rpcError) {
+        logger.error('RPC error while updating recipe', {
+            recipeId,
+            errorCode: rpcError.code,
+            errorMessage: rpcError.message,
+            errorDetails: rpcError.details,
+        });
+
+        // Handle specific error cases based on PostgreSQL error codes/messages
+        // P0002 = no_data_found (recipe not found, access denied, or category not found)
+        if (rpcError.code === 'P0002') {
+            // Distinguish between recipe not found and category not found
+            if (rpcError.message?.includes('Category')) {
+                throw new ApplicationError(
+                    'NOT_FOUND',
+                    'The specified category does not exist'
+                );
+            }
+            throw new ApplicationError(
+                'NOT_FOUND',
+                `Recipe with ID ${recipeId} not found`
+            );
+        }
+
+        // P0001 = raise_exception (validation error from RPC)
+        if (rpcError.code === 'P0001') {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                rpcError.message || 'Validation error occurred'
+            );
+        }
+
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to update recipe');
+    }
+
+    if (!updatedRecipeId) {
+        logger.error('RPC returned null recipe ID', { recipeId });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to update recipe');
+    }
+
+    logger.info('Recipe updated successfully, fetching details', {
+        recipeId: updatedRecipeId,
+    });
+
+    // Fetch the complete recipe details using the existing function
+    const recipeDetail = await getRecipeById(client, updatedRecipeId);
+
+    logger.info('Recipe update completed', {
         recipeId: recipeDetail.id,
         recipeName: recipeDetail.name,
         tagsCount: recipeDetail.tags.length,
