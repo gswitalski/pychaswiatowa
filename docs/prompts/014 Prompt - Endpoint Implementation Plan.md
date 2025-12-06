@@ -4,16 +4,50 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
-#### `GET /recipes/{id}`
+#### `POST /recipes`
 
--   **Description**: Retrieve a single recipe by its ID.
+-   **Description**: Create a new recipe. The raw text for ingredients and steps will be parsed server-side into JSONB format.
+-   **Request Payload**:
+    ```json
+    {
+      "name": "New Awesome Recipe",
+      "description": "A short description.",
+      "category_id": 2,
+      "ingredients_raw": "# Dough\n- 500g flour\n- 250ml water",
+      "steps_raw": "# Preparation\n1. Mix flour and water.\n2. Knead the dough.",
+      "tags": ["vegan", "quick"]
+    }
+    ```
 -   **Success Response**:
-    -   **Code**: `200 OK`
-    -   **Payload**: (Similar to the `POST /recipes` success response)
+    -   **Code**: `201 Created`
+    -   **Payload**:
+        ```json
+        {
+          "id": 101,
+          "name": "New Awesome Recipe",
+          "description": "A short description.",
+          "category_id": 2,
+          "ingredients": [
+            {"type": "header", "content": "Dough"},
+            {"type": "item", "content": "500g flour"},
+            {"type": "item", "content": "250ml water"}
+          ],
+          "steps": [
+            {"type": "header", "content": "Preparation"},
+            {"type": "item", "content": "1. Mix flour and water."},
+            {"type": "item", "content": "2. Knead the dough."}
+          ],
+          "tags": [
+            {"id": 5, "name": "vegan"},
+            {"id": 12, "name": "quick"}
+          ],
+          "created_at": "2023-10-27T12:00:00Z"
+        }
+        ```
 -   **Error Response**:
+    -   **Code**: `400 Bad Request`
+    -   **Payload**: `{ "message": "Validation failed", "errors": { "name": "Name is required." } }`
     -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden` - If the user does not own the recipe.
-    -   **Code**: `404 Not Found` - If the recipe does not exist.
 
 </route_api_specification>
 
