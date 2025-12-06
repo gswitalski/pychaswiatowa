@@ -4,30 +4,26 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
-#### `PUT /recipes/{id}`
+#### `GET /tags`
 
--   **Description**: Update an existing recipe.
--   **Request Payload**: (Same as `POST /recipes`, with all fields being optional)
-    ```json
-    {
-      "name": "Updated Awesome Recipe",
-      "description": "An updated description."
-    }
-    ```
+-   **Description**: Retrieve all tags created by the authenticated user.
 -   **Success Response**:
     -   **Code**: `200 OK`
-    -   **Payload**: (The full updated recipe object)
+    -   **Payload**:
+        ```json
+        [
+          { "id": 1, "name": "vegetarian" },
+          { "id": 2, "name": "spicy" }
+        ]
+        ```
 -   **Error Response**:
-    -   **Code**: `400 Bad Request`
     -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden`
-    -   **Code**: `404 Not Found`
 
 </route_api_specification>
 
 aktualna implementacja:
 <current_implementation>
-brak
+
 
 
 </current_implementation>
