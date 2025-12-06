@@ -4,46 +4,22 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
-#### `GET /recipes`
+#### `GET /recipes/{id}`
 
--   **Description**: Retrieve a list of recipes for the authenticated user.
--   **Query Parameters**:
-    -   `page` (optional, integer, default: 1): The page number for pagination.
-    -   `limit` (optional, integer, default: 20): The number of items per page.
-    -   `sort` (optional, string): Sort order. e.g., `name.asc`, `created_at.desc`.
-    -   `filter[category_id]` (optional, integer): Filter by category ID.
-    -   `filter[tags]` (optional, string): Comma-separated list of tag names to filter by.
-    -   `search` (optional, string): Full-text search across name, ingredients, and tags.
+-   **Description**: Retrieve a single recipe by its ID.
 -   **Success Response**:
     -   **Code**: `200 OK`
-    -   **Payload**:
-        ```json
-        {
-          "data": [
-            {
-              "id": 1,
-              "name": "Apple Pie",
-              "image_path": "path/to/image.jpg",
-              "created_at": "2023-10-27T10:00:00Z"
-            }
-          ],
-          "pagination": {
-            "currentPage": 1,
-            "totalPages": 5,
-            "totalItems": 100
-          }
-        }
-        ```
+    -   **Payload**: (Similar to the `POST /recipes` success response)
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
-    -   **Payload**: `{ "message": "Authentication required" }`
-
+    -   **Code**: `403 Forbidden` - If the user does not own the recipe.
+    -   **Code**: `404 Not Found` - If the recipe does not exist.
 
 </route_api_specification>
 
 aktualna implementacja:
 <current_implementation>
-
+brak
 
 
 </current_implementation>
