@@ -18,13 +18,12 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-
-**2. Logowanie**
-- **Ścieżka:** `/login`
-- **Główny cel:** Uwierzytelnienie istniejącego użytkownika.
-- **Kluczowe informacje do wyświetlenia:** Formularz z polami na e-mail i hasło, komunikat o błędach, link do strony rejestracji.
-- **Kluczowe komponenty widoku:** `mat-card`, `mat-form-field`, `mat-input`, `mat-button`.
-- **Względy UX, dostępności i bezpieczeństwa:** Jasna komunikacja błędów walidacji. Pola formularza poprawnie oetykietowane.
+**4. Dashboard**
+- **Ścieżka:** `/dashboard`
+- **Główny cel:** Strona startowa po zalogowaniu, zapewniająca szybki dostęp do głównych funkcji.
+- **Kluczowe informacje do wyświetlenia:** Powitanie, kafelki nawigacyjne ("Moje przepisy", "Moje kolekcje"), ewentualnie lista ostatnio dodanych przepisów.
+- **Kluczowe komponenty widoku:** `mat-card` jako kafelki nawigacyjne.
+- **Względy UX, dostępności i bezpieczeństwa:** Dostęp chroniony przez `AuthGuard`.
 
 
 </view>
@@ -46,7 +45,9 @@ Najpierw przejrzyj następujące informacje:
 
 5. Endpoint Description:
 <endpoint_description>
-standardowy endpoint supabase do logowania
+
+
+
 </endpoint_description>
 
 
