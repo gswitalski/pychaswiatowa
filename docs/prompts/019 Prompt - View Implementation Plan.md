@@ -18,12 +18,12 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-**4. Dashboard**
-- **Ścieżka:** `/dashboard`
-- **Główny cel:** Strona startowa po zalogowaniu, zapewniająca szybki dostęp do głównych funkcji.
-- **Kluczowe informacje do wyświetlenia:** Powitanie, kafelki nawigacyjne ("Moje przepisy", "Moje kolekcje"), ewentualnie lista ostatnio dodanych przepisów.
-- **Kluczowe komponenty widoku:** `mat-card` jako kafelki nawigacyjne.
-- **Względy UX, dostępności i bezpieczeństwa:** Dostęp chroniony przez `AuthGuard`.
+**7. Formularz Przepisu (Dodaj/Edytuj)**
+- **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
+- **Główny cel:** Tworzenie i modyfikacja przepisu.
+- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje (dane podstawowe, składniki, kroki), pola do edycji nazwy, opisu, zdjęcia, kategorii, tagów.
+- **Kluczowe komponenty widoku:** `mat-stepper` (opcjonalnie), `mat-form-field`, `mat-select`, `mat-chip-list` z inputem, komponent do przesyłania plików, interaktywna lista z funkcją "przeciągnij i upuść" (Angular CDK).
+- **Względy UX, dostępności i bezpieczeństwa:** Przejrzysty podział formularza. Funkcja "przeciągnij i upuść" ułatwia reorganizację. Jasne komunikaty walidacji.
 
 
 </view>
@@ -31,15 +31,16 @@ Najpierw przejrzyj następujące informacje:
 
 4. User Stories:
 <user_stories>
--   *ID:* US-002
--   *Tytuł:* Logowanie i wylogowywanie użytkownika
--   *Opis:* Jako zarejestrowany użytkownik, chcę móc zalogować się na swoje konto za pomocą e-maila i hasła, aby uzyskać dostęp do moich przepisów. Chcę również mieć możliwość wylogowania się.
+-   *ID:* US-003
+-   *Tytuł:* Dodawanie nowego przepisu
+-   *Opis:* Jako użytkownik, chcę dodać nowy przepis do mojej cyfrowej książki kucharskiej, wypełniając prosty formularz, abym mógł zdigitalizować moje receptury.
 -   *Kryteria akceptacji:*
-    1.  Formularz logowania zawiera pola na adres e-mail i hasło.
-    2.  Po poprawnym wprowadzeniu danych, użytkownik jest zalogowany i ma dostęp do swoich zasobów.
-    3.  W przypadku podania błędnych danych, wyświetlany jest komunikat o nieprawidłowym loginie lub haśle.
-    4.  Zalogowany użytkownik widzi w interfejsie opcję "Wyloguj".
-    5.  Kliknięcie "Wyloguj" kończy sesję użytkownika i przekierowuje go na stronę główną dla niezalogowanych.
+    1.  Formularz dodawania przepisu zawiera pola na: nazwę (tekst), opis (tekst), zdjęcie (przesyłanie pliku), składniki (`textarea`), kroki (`textarea`).
+    2.  Pola nazwa, składniki i kroki są wymagane.
+    3.  Tekst wklejony w pole "składniki" jest dzielony na poszczególne pozycje według znaków nowej linii.
+    4.  Tekst wklejony w pole "kroki" jest dzielony na poszczególne pozycje według znaków nowej linii.
+    5.  Linie w polach "składniki" i "kroki", które zaczynają się od `#`, są traktowane jako nagłówki sekcji.
+    6.  Po pomyślnym zapisaniu formularza, jestem przekierowany na stronę nowo utworzonego przepisu.
 
 </user_stories>
 
