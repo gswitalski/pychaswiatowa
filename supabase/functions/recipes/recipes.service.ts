@@ -220,15 +220,27 @@ export async function getRecipes(
         query = query.contains('tag_ids', tagIds);
     }
 
-    // Apply full-text search
-    // We use OR condition to search in name (ilike) and description
-    // For more advanced search with search_vector, use getRecipesWithFullTextSearch
+    // Apply full-text search using PostgreSQL tsvector
+    // Uses the search_vector column which combines name (weight A), description (weight B),
+    // and ingredients (weight C) for relevance-based searching
     if (search && search.trim().length > 0) {
         const searchTerm = search.trim();
-        // Escape special characters for LIKE pattern
-        const escapedTerm = searchTerm.replace(/[%_]/g, '\\$&');
-        // Search in name OR description using or() filter
-        query = query.or(`name.ilike.%${escapedTerm}%,description.ilike.%${escapedTerm}%`);
+        // Convert search term to tsquery format
+        // Split by whitespace and join with & for AND search
+        const tsqueryTerm = searchTerm
+            .split(/\s+/)
+            .filter((word) => word.length > 0)
+            .map((word) => word.replace(/[&|!():*'"\\]/g, ''))
+            .filter((word) => word.length > 0)
+            .join(' & ');
+
+        if (tsqueryTerm.length > 0) {
+            // Use textSearch with 'simple' config to match the search_vector configuration
+            query = query.textSearch('search_vector', tsqueryTerm, {
+                type: 'plain',
+                config: 'simple',
+            });
+        }
     }
 
     // Apply sorting

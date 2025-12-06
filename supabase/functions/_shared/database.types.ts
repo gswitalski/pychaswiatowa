@@ -194,6 +194,7 @@ export type Database = {
                     image_path: string | null;
                     ingredients: Json | null;
                     name: string | null;
+                    search_vector: unknown;
                     steps: Json | null;
                     tag_ids: number[] | null;
                     tags: Json | null;
