@@ -4,50 +4,24 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
-#### `POST /recipes`
+#### `PUT /recipes/{id}`
 
--   **Description**: Create a new recipe. The raw text for ingredients and steps will be parsed server-side into JSONB format.
--   **Request Payload**:
+-   **Description**: Update an existing recipe.
+-   **Request Payload**: (Same as `POST /recipes`, with all fields being optional)
     ```json
     {
-      "name": "New Awesome Recipe",
-      "description": "A short description.",
-      "category_id": 2,
-      "ingredients_raw": "# Dough\n- 500g flour\n- 250ml water",
-      "steps_raw": "# Preparation\n1. Mix flour and water.\n2. Knead the dough.",
-      "tags": ["vegan", "quick"]
+      "name": "Updated Awesome Recipe",
+      "description": "An updated description."
     }
     ```
 -   **Success Response**:
-    -   **Code**: `201 Created`
-    -   **Payload**:
-        ```json
-        {
-          "id": 101,
-          "name": "New Awesome Recipe",
-          "description": "A short description.",
-          "category_id": 2,
-          "ingredients": [
-            {"type": "header", "content": "Dough"},
-            {"type": "item", "content": "500g flour"},
-            {"type": "item", "content": "250ml water"}
-          ],
-          "steps": [
-            {"type": "header", "content": "Preparation"},
-            {"type": "item", "content": "1. Mix flour and water."},
-            {"type": "item", "content": "2. Knead the dough."}
-          ],
-          "tags": [
-            {"id": 5, "name": "vegan"},
-            {"id": 12, "name": "quick"}
-          ],
-          "created_at": "2023-10-27T12:00:00Z"
-        }
-        ```
+    -   **Code**: `200 OK`
+    -   **Payload**: (The full updated recipe object)
 -   **Error Response**:
     -   **Code**: `400 Bad Request`
-    -   **Payload**: `{ "message": "Validation failed", "errors": { "name": "Name is required." } }`
     -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
 
 </route_api_specification>
 
