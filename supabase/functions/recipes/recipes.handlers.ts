@@ -10,9 +10,11 @@ import { logger } from '../_shared/logger.ts';
 import {
     getRecipes,
     getRecipeById,
+    createRecipe,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
+    CreateRecipeInput,
 } from './recipes.service.ts';
 
 /** Maximum allowed limit for pagination. */
@@ -23,6 +25,57 @@ const DEFAULT_LIMIT = 20;
 
 /** Default page number. */
 const DEFAULT_PAGE = 1;
+
+/**
+ * Schema for validating POST /recipes request body.
+ * Validates the CreateRecipeCommand model.
+ */
+const createRecipeSchema = z.object({
+    name: z
+        .string({
+            required_error: 'Recipe name is required',
+            invalid_type_error: 'Recipe name must be a string',
+        })
+        .min(1, 'Recipe name cannot be empty')
+        .max(150, 'Recipe name cannot exceed 150 characters')
+        .transform((val) => val.trim()),
+    description: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((val) => val?.trim() || null),
+    category_id: z
+        .number({
+            invalid_type_error: 'Category ID must be a number',
+        })
+        .int('Category ID must be an integer')
+        .positive('Category ID must be a positive integer')
+        .nullable()
+        .optional()
+        .transform((val) => val ?? null),
+    ingredients_raw: z
+        .string({
+            required_error: 'Ingredients are required',
+            invalid_type_error: 'Ingredients must be a string',
+        })
+        .min(1, 'Ingredients cannot be empty'),
+    steps_raw: z
+        .string({
+            required_error: 'Steps are required',
+            invalid_type_error: 'Steps must be a string',
+        })
+        .min(1, 'Steps cannot be empty'),
+    tags: z
+        .array(
+            z
+                .string()
+                .min(1, 'Tag name cannot be empty')
+                .max(50, 'Tag name cannot exceed 50 characters')
+                .transform((val) => val.trim())
+        )
+        .optional()
+        .default([]),
+});
 
 /**
  * Schema for validating GET /recipes query parameters.
@@ -219,6 +272,90 @@ export async function handleGetRecipeById(
 }
 
 /**
+ * Creates a successful JSON response with 201 Created status.
+ */
+function createCreatedResponse<T>(data: T): Response {
+    return new Response(JSON.stringify(data), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}
+
+/**
+ * Handles POST /recipes request.
+ * Creates a new recipe for the authenticated user.
+ *
+ * @param req - The incoming HTTP request
+ * @returns Response with RecipeDetailDto on success (201), or error response
+ */
+export async function handleCreateRecipe(req: Request): Promise<Response> {
+    try {
+        logger.info('Handling POST /recipes request');
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Parse and validate request body
+        let requestBody: unknown;
+        try {
+            requestBody = await req.json();
+        } catch {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'Invalid JSON in request body'
+            );
+        }
+
+        const validationResult = createRecipeSchema.safeParse(requestBody);
+
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+
+            logger.warn('Invalid request body for POST /recipes', {
+                errors: errorDetails,
+            });
+
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `Invalid input: ${errorDetails}`
+            );
+        }
+
+        const validatedData = validationResult.data;
+
+        // Prepare input for the service
+        const createRecipeInput: CreateRecipeInput = {
+            name: validatedData.name,
+            description: validatedData.description,
+            category_id: validatedData.category_id,
+            ingredients_raw: validatedData.ingredients_raw,
+            steps_raw: validatedData.steps_raw,
+            tags: validatedData.tags,
+        };
+
+        // Call the service to create the recipe
+        const result: RecipeDetailDto = await createRecipe(
+            client,
+            user.id,
+            createRecipeInput
+        );
+
+        logger.info('POST /recipes completed successfully', {
+            userId: user.id,
+            recipeId: result.id,
+            recipeName: result.name,
+            tagsCount: result.tags.length,
+        });
+
+        return createCreatedResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Extracts the recipe ID from a URL path if it matches /recipes/{id} pattern.
  * Returns null if the path doesn't match the pattern or is the base /recipes path.
  *
@@ -263,7 +400,7 @@ export async function recipesRouter(req: Request): Promise<Response> {
             status: 204,
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Authorization, Content-Type',
             },
         });
@@ -280,6 +417,30 @@ export async function recipesRouter(req: Request): Promise<Response> {
         return handleGetRecipes(req);
     }
 
+    // Route POST requests (only for base /recipes path)
+    if (method === 'POST') {
+        // POST with recipe ID is not allowed (use PUT for updates)
+        if (recipeId) {
+            logger.warn('POST with recipe ID not allowed', { recipeId });
+            return new Response(
+                JSON.stringify({
+                    code: 'METHOD_NOT_ALLOWED',
+                    message: 'POST with recipe ID is not allowed. Use PUT to update a recipe.',
+                }),
+                {
+                    status: 405,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Allow': 'GET, PUT, DELETE, OPTIONS',
+                    },
+                }
+            );
+        }
+
+        // Create new recipe
+        return handleCreateRecipe(req);
+    }
+
     // Method not allowed
     logger.warn('Method not allowed', { method, path: url.pathname });
     return new Response(
@@ -291,7 +452,7 @@ export async function recipesRouter(req: Request): Promise<Response> {
             status: 405,
             headers: {
                 'Content-Type': 'application/json',
-                'Allow': 'GET, OPTIONS',
+                'Allow': 'GET, POST, OPTIONS',
             },
         }
     );

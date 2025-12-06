@@ -401,3 +401,102 @@ export async function getRecipeById(
     return recipeDetail;
 }
 
+/**
+ * Input data for creating a new recipe.
+ */
+export interface CreateRecipeInput {
+    name: string;
+    description: string | null;
+    category_id: number | null;
+    ingredients_raw: string;
+    steps_raw: string;
+    tags: string[];
+}
+
+/**
+ * Creates a new recipe with associated tags for the authenticated user.
+ * Uses the `create_recipe_with_tags` RPC function to ensure atomicity.
+ *
+ * @param client - The authenticated Supabase client
+ * @param userId - The ID of the authenticated user
+ * @param input - The recipe data to create
+ * @returns RecipeDetailDto with full details of the newly created recipe
+ * @throws ApplicationError with NOT_FOUND if category doesn't exist
+ * @throws ApplicationError with VALIDATION_ERROR if ingredients or steps are empty after parsing
+ * @throws ApplicationError with INTERNAL_ERROR for database errors
+ */
+export async function createRecipe(
+    client: TypedSupabaseClient,
+    userId: string,
+    input: CreateRecipeInput
+): Promise<RecipeDetailDto> {
+    logger.info('Creating new recipe', {
+        userId,
+        name: input.name,
+        hasDescription: !!input.description,
+        categoryId: input.category_id,
+        tagsCount: input.tags.length,
+    });
+
+    // Call the RPC function to create the recipe with tags atomically
+    const { data: recipeId, error: rpcError } = await client.rpc(
+        'create_recipe_with_tags',
+        {
+            p_user_id: userId,
+            p_name: input.name,
+            p_description: input.description,
+            p_category_id: input.category_id,
+            p_ingredients_raw: input.ingredients_raw,
+            p_steps_raw: input.steps_raw,
+            p_tag_names: input.tags,
+        }
+    );
+
+    if (rpcError) {
+        logger.error('RPC error while creating recipe', {
+            errorCode: rpcError.code,
+            errorMessage: rpcError.message,
+            errorDetails: rpcError.details,
+        });
+
+        // Handle specific error cases based on PostgreSQL error codes/messages
+        // P0002 = no_data_found (category not found)
+        if (rpcError.code === 'P0002' || rpcError.message?.includes('does not exist')) {
+            throw new ApplicationError(
+                'NOT_FOUND',
+                'The specified category does not exist'
+            );
+        }
+
+        // P0001 = raise_exception (validation error from RPC)
+        if (rpcError.code === 'P0001') {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                rpcError.message || 'Validation error occurred'
+            );
+        }
+
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to create recipe');
+    }
+
+    if (!recipeId) {
+        logger.error('RPC returned null recipe ID');
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to create recipe');
+    }
+
+    logger.info('Recipe created successfully, fetching details', {
+        recipeId,
+    });
+
+    // Fetch the complete recipe details using the existing function
+    const recipeDetail = await getRecipeById(client, recipeId);
+
+    logger.info('Recipe creation completed', {
+        recipeId: recipeDetail.id,
+        recipeName: recipeDetail.name,
+        tagsCount: recipeDetail.tags.length,
+    });
+
+    return recipeDetail;
+}
+

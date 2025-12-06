@@ -2,9 +2,10 @@
  * Recipes Edge Function
  * Main entry point for the /recipes endpoint.
  *
- * Endpoint: GET /functions/v1/recipes
- * Returns a paginated list of recipes for the authenticated user.
+ * Endpoints:
  *
+ * GET /functions/v1/recipes
+ * Returns a paginated list of recipes for the authenticated user.
  * Query Parameters:
  * - page (integer, default: 1) - Page number
  * - limit (integer, default: 20, max: 100) - Items per page
@@ -12,6 +13,19 @@
  * - filter[category_id] (integer) - Filter by category ID
  * - filter[tags] (string) - Comma-separated list of tag names
  * - search (string) - Full-text search query
+ *
+ * GET /functions/v1/recipes/{id}
+ * Returns detailed information about a single recipe.
+ *
+ * POST /functions/v1/recipes
+ * Creates a new recipe for the authenticated user.
+ * Request Body (JSON):
+ * - name (string, required, 1-150 chars) - Recipe name
+ * - description (string, optional) - Recipe description
+ * - category_id (number, optional) - Category ID
+ * - ingredients_raw (string, required) - Raw ingredients text
+ * - steps_raw (string, required) - Raw steps text
+ * - tags (string[], optional) - Array of tag names
  */
 
 import { recipesRouter } from './recipes.handlers.ts';
