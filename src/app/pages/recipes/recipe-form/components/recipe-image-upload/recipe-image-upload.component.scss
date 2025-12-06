@@ -1,0 +1,129 @@
+.image-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-area {
+    border: 2px dashed var(--mat-sys-outline-variant);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+
+    &:hover {
+        border-color: var(--mat-sys-primary);
+        background-color: var(--mat-sys-surface-container-low);
+    }
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.upload-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--mat-sys-primary);
+    margin-bottom: 16px;
+}
+
+.upload-text {
+    font-size: 1rem;
+    color: var(--mat-sys-on-surface);
+    margin: 0 0 8px;
+}
+
+.upload-hint {
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0;
+}
+
+.image-preview {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 400px;
+
+    img {
+        width: 100%;
+        height: auto;
+        display: block;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+    }
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.4) 0%,
+        transparent 40%
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px;
+
+    .image-preview:hover & {
+        opacity: 1;
+    }
+}
+
+.remove-btn {
+    background-color: var(--mat-sys-error);
+    color: var(--mat-sys-on-error);
+
+    &:hover {
+        background-color: var(--mat-sys-error);
+        opacity: 0.9;
+    }
+}
+
+.file-name {
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0;
+}
+
+.upload-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+    border-radius: 4px;
+    font-size: 0.875rem;
+
+    mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+    }
+}
+
+.change-image-btn {
+    align-self: flex-start;
+
+    mat-icon {
+        margin-right: 8px;
+    }
+}
+

@@ -1,0 +1,16 @@
+.categorization-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+mat-chip-row {
+    mat-icon {
+        font-size: 18px;
+    }
+}
+

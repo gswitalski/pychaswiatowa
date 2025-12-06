@@ -35,6 +35,21 @@
             }
         }
     }
+
+    .add-recipe-btn {
+        margin-right: 1rem;
+        background-color: var(--mat-sys-tertiary);
+        color: var(--mat-sys-on-tertiary);
+
+        mat-icon {
+            margin-right: 0.25rem;
+        }
+
+        &:hover {
+            background-color: var(--mat-sys-tertiary-container);
+            color: var(--mat-sys-on-tertiary-container);
+        }
+    }
 }
 
 .dashboard-content {

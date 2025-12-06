@@ -1,0 +1,120 @@
+<div class="recipe-form-page">
+    <header class="page-header">
+        <h1>{{ pageTitle() }}</h1>
+    </header>
+
+    @if (loading()) {
+        <div class="loading-container">
+            <mat-spinner diameter="48"></mat-spinner>
+            <p>Ładowanie przepisu...</p>
+        </div>
+    } @else {
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="recipe-form">
+            @if (error()) {
+                <div class="error-banner">
+                    <mat-icon>error</mat-icon>
+                    <span>{{ error() }}</span>
+                </div>
+            }
+
+            <mat-card class="form-section">
+                <mat-card-header>
+                    <mat-card-title>Podstawowe informacje</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <pych-recipe-basic-info-form
+                        [nameControl]="form.controls.name"
+                        [descriptionControl]="form.controls.description"
+                    />
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="form-section">
+                <mat-card-header>
+                    <mat-card-title>Zdjęcie</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <pych-recipe-image-upload
+                        [currentImageUrl]="currentImageUrl()"
+                        (imageChange)="onImageChange($event)"
+                    />
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="form-section">
+                <mat-card-header>
+                    <mat-card-title>Kategoria i tagi</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <pych-recipe-categorization-form
+                        [categoryControl]="form.controls.categoryId"
+                        [tagsArray]="tagsArray"
+                        [categories]="categories()"
+                    />
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="form-section">
+                <mat-card-header>
+                    <mat-card-title>Składniki</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <pych-editable-list
+                        [formArray]="ingredientsArray"
+                        label="Składnik"
+                        placeholder="Dodaj składnik (użyj # na początku dla nagłówka)"
+                    />
+                    @if (ingredientsArray.hasError('minArrayLength') && ingredientsArray.touched) {
+                        <div class="field-error">
+                            <mat-icon>warning</mat-icon>
+                            <span>Dodaj co najmniej jeden składnik</span>
+                        </div>
+                    }
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="form-section">
+                <mat-card-header>
+                    <mat-card-title>Kroki przygotowania</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <pych-editable-list
+                        [formArray]="stepsArray"
+                        label="Krok"
+                        placeholder="Dodaj krok (użyj # na początku dla nagłówka)"
+                    />
+                    @if (stepsArray.hasError('minArrayLength') && stepsArray.touched) {
+                        <div class="field-error">
+                            <mat-icon>warning</mat-icon>
+                            <span>Dodaj co najmniej jeden krok</span>
+                        </div>
+                    }
+                </mat-card-content>
+            </mat-card>
+
+            <div class="form-actions">
+                <button
+                    mat-stroked-button
+                    type="button"
+                    (click)="onCancel()"
+                    [disabled]="saving()"
+                >
+                    Anuluj
+                </button>
+                <button
+                    mat-flat-button
+                    color="primary"
+                    type="submit"
+                    [disabled]="saving() || form.invalid"
+                >
+                    @if (saving()) {
+                        <mat-spinner diameter="20"></mat-spinner>
+                    } @else {
+                        {{ isEditMode() ? 'Zapisz zmiany' : 'Dodaj przepis' }}
+                    }
+                </button>
+            </div>
+        </form>
+    }
+</div>
+

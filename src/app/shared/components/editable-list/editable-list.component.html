@@ -1,0 +1,112 @@
+<div class="editable-list">
+    <div
+        cdkDropList
+        class="list-container"
+        (cdkDropListDropped)="drop($event)"
+    >
+        @for (control of formArray.controls; track control; let i = $index) {
+            <div
+                cdkDrag
+                class="list-item"
+                [class.is-header]="isHeader(control.value)"
+                [class.is-editing]="editingIndex() === i"
+            >
+                <div class="drag-handle" cdkDragHandle>
+                    <mat-icon>drag_indicator</mat-icon>
+                </div>
+
+                @if (editingIndex() === i) {
+                    <div class="edit-container">
+                        <input
+                            type="text"
+                            class="edit-input"
+                            [value]="editValue()"
+                            (input)="onEditValueChange($event)"
+                            (keydown)="onEditKeydown($event, i)"
+                            autofocus
+                        />
+                        <div class="edit-actions">
+                            <button
+                                mat-icon-button
+                                type="button"
+                                (click)="saveEdit(i)"
+                                aria-label="Zapisz"
+                                class="save-btn"
+                            >
+                                <mat-icon>check</mat-icon>
+                            </button>
+                            <button
+                                mat-icon-button
+                                type="button"
+                                (click)="cancelEdit()"
+                                aria-label="Anuluj"
+                            >
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                } @else {
+                    <div class="item-content">
+                        <span class="item-index">{{ i + 1 }}.</span>
+                        <span class="item-text" [class.header-text]="isHeader(control.value)">
+                            {{ getDisplayValue(control.value) }}
+                        </span>
+                    </div>
+                    <div class="item-actions">
+                        <button
+                            mat-icon-button
+                            type="button"
+                            (click)="startEdit(i)"
+                            aria-label="Edytuj {{ label }}"
+                        >
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                        <button
+                            mat-icon-button
+                            type="button"
+                            (click)="removeItem(i)"
+                            aria-label="Usuń {{ label }}"
+                            class="delete-btn"
+                        >
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                }
+
+                <div class="drag-placeholder" *cdkDragPlaceholder></div>
+            </div>
+        }
+    </div>
+
+    @if (formArray.length === 0) {
+        <div class="empty-list">
+            <mat-icon>list</mat-icon>
+            <p>Brak elementów. Dodaj pierwszy {{ label.toLowerCase() }}.</p>
+        </div>
+    }
+
+    <div class="add-item-container">
+        <mat-form-field appearance="outline" class="add-item-field">
+            <mat-label>{{ label }}</mat-label>
+            <textarea
+                matInput
+                [formControl]="newItemControl"
+                [placeholder]="placeholder"
+                rows="2"
+                (keydown)="onNewItemKeydown($event)"
+            ></textarea>
+        </mat-form-field>
+        <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            (click)="addItem()"
+            [disabled]="!newItemControl.value.trim()"
+            class="add-btn"
+        >
+            <mat-icon>add</mat-icon>
+            Dodaj
+        </button>
+    </div>
+</div>
+

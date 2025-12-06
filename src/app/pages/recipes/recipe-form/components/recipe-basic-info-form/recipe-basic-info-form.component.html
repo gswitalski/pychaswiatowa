@@ -1,0 +1,30 @@
+<div class="basic-info-form">
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nazwa przepisu</mat-label>
+        <input
+            matInput
+            [formControl]="nameControl"
+            placeholder="np. Sernik na zimno"
+            maxlength="150"
+        />
+        @if (nameControl.hasError('required') && nameControl.touched) {
+            <mat-error>Nazwa przepisu jest wymagana</mat-error>
+        }
+        @if (nameControl.hasError('maxlength')) {
+            <mat-error>Nazwa może mieć maksymalnie 150 znaków</mat-error>
+        }
+        <mat-hint align="end">{{ nameControl.value.length }} / 150</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Opis</mat-label>
+        <textarea
+            matInput
+            [formControl]="descriptionControl"
+            placeholder="Krótki opis przepisu..."
+            rows="4"
+        ></textarea>
+        <mat-hint>Opcjonalny opis przepisu</mat-hint>
+    </mat-form-field>
+</div>
+

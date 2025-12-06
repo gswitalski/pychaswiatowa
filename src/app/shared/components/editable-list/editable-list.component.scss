@@ -1,0 +1,211 @@
+.editable-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background-color: var(--mat-sys-surface-container);
+    border-radius: 8px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+        background-color: var(--mat-sys-surface-container-high);
+    }
+
+    &.is-header {
+        background-color: var(--mat-sys-primary-container);
+        border-color: var(--mat-sys-primary);
+
+        .item-text {
+            font-weight: 600;
+        }
+    }
+
+    &.is-editing {
+        background-color: var(--mat-sys-surface-container-highest);
+        border-color: var(--mat-sys-primary);
+    }
+
+    &.cdk-drag-preview {
+        box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2),
+            0 8px 10px 1px rgba(0, 0, 0, 0.14),
+            0 3px 14px 2px rgba(0, 0, 0, 0.12);
+    }
+
+    &.cdk-drag-animating {
+        transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+.drag-placeholder {
+    background: var(--mat-sys-surface-container-low);
+    border: 2px dashed var(--mat-sys-outline);
+    border-radius: 8px;
+    min-height: 52px;
+}
+
+.cdk-drop-list-dragging .list-item:not(.cdk-drag-placeholder) {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.drag-handle {
+    cursor: grab;
+    color: var(--mat-sys-on-surface-variant);
+    display: flex;
+    align-items: center;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+    }
+}
+
+.item-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.item-index {
+    font-weight: 500;
+    color: var(--mat-sys-on-surface-variant);
+    min-width: 28px;
+}
+
+.item-text {
+    flex: 1;
+    word-break: break-word;
+}
+
+.header-text {
+    color: var(--mat-sys-on-primary-container);
+}
+
+.item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+
+    button {
+        color: var(--mat-sys-on-surface-variant);
+
+        &:hover {
+            color: var(--mat-sys-on-surface);
+        }
+    }
+
+    .delete-btn:hover {
+        color: var(--mat-sys-error);
+    }
+}
+
+.edit-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--mat-sys-outline);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+    background-color: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+
+    &:focus {
+        outline: none;
+        border-color: var(--mat-sys-primary);
+    }
+}
+
+.edit-actions {
+    display: flex;
+    gap: 4px;
+
+    .save-btn {
+        color: var(--mat-sys-primary);
+    }
+}
+
+.empty-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background-color: var(--mat-sys-surface-container-low);
+    border: 2px dashed var(--mat-sys-outline-variant);
+    border-radius: 8px;
+    text-align: center;
+
+    mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: var(--mat-sys-on-surface-variant);
+        margin-bottom: 16px;
+    }
+
+    p {
+        color: var(--mat-sys-on-surface-variant);
+        margin: 0;
+    }
+}
+
+.add-item-container {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.add-item-field {
+    flex: 1;
+}
+
+.add-btn {
+    margin-top: 8px;
+    flex-shrink: 0;
+
+    mat-icon {
+        margin-right: 8px;
+    }
+}
+
+@media (max-width: 600px) {
+    .add-item-container {
+        flex-direction: column;
+    }
+
+    .add-item-field {
+        width: 100%;
+    }
+
+    .add-btn {
+        width: 100%;
+        margin-top: 0;
+    }
+}
+

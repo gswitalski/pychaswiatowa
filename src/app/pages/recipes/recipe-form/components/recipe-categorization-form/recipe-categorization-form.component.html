@@ -1,0 +1,35 @@
+<div class="categorization-form">
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Kategoria</mat-label>
+        <mat-select [formControl]="categoryControl">
+            <mat-option [value]="null">-- Brak kategorii --</mat-option>
+            @for (category of categories; track category.id) {
+                <mat-option [value]="category.id">{{ category.name }}</mat-option>
+            }
+        </mat-select>
+        <mat-hint>Wybierz kategorię dla przepisu</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tagi</mat-label>
+        <mat-chip-grid #chipGrid aria-label="Tagi przepisu">
+            @for (tag of tagsArray.controls; track tag; let i = $index) {
+                <mat-chip-row (removed)="removeTag(i)">
+                    {{ tag.value }}
+                    <button matChipRemove aria-label="Usuń tag {{ tag.value }}">
+                        <mat-icon>cancel</mat-icon>
+                    </button>
+                </mat-chip-row>
+            }
+        </mat-chip-grid>
+        <input
+            placeholder="Dodaj tag..."
+            [matChipInputFor]="chipGrid"
+            [matChipInputSeparatorKeyCodes]="separatorKeyCodes"
+            [matChipInputAddOnBlur]="true"
+            (matChipInputTokenEnd)="addTag($event)"
+        />
+        <mat-hint>Wpisz tag i naciśnij Enter lub przecinek</mat-hint>
+    </mat-form-field>
+</div>
+

@@ -1,0 +1,26 @@
+<div class="recipe-detail-page">
+    <header class="page-header">
+        <a mat-icon-button routerLink="/recipes" aria-label="Wróć do listy">
+            <mat-icon>arrow_back</mat-icon>
+        </a>
+        <h1>Szczegóły przepisu</h1>
+        <span class="spacer"></span>
+        @if (recipeId()) {
+            <a mat-stroked-button [routerLink]="['/recipes', recipeId(), 'edit']">
+                <mat-icon>edit</mat-icon>
+                Edytuj
+            </a>
+        }
+    </header>
+
+    <mat-card class="placeholder-card">
+        <mat-card-content>
+            <mat-icon class="placeholder-icon">restaurant</mat-icon>
+            <p>Szczegóły przepisu #{{ recipeId() }} - w budowie</p>
+            <a mat-stroked-button routerLink="/recipes">
+                Wróć do listy przepisów
+            </a>
+        </mat-card-content>
+    </mat-card>
+</div>
+

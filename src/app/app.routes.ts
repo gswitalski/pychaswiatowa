@@ -43,6 +43,13 @@ export const routes: Routes = [
                         (m) => m.DashboardPageComponent
                     ),
             },
+            {
+                path: 'recipes',
+                loadChildren: () =>
+                    import('./pages/recipes/recipes.routes').then(
+                        (m) => m.recipesRoutes
+                    ),
+            },
         ],
     },
 ];

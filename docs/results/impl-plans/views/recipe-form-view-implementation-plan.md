@@ -167,18 +167,19 @@ Przed wysłaniem, dane z `ingredients` i `steps` (`FormArray<FormControl<string>
 1.  **Aktualizacja `CategoriesService`:** Zaimplementowanie w serwisie `CategoriesService` logiki do jednorazowego pobierania i przechowywania listy kategorii. Serwis powinien udostępniać kategorie (np. jako `Signal<CategoryDto[]>`).
 2.  **Stworzenie plików komponentów:** Wygenerowanie wszystkich pięciu komponentów (`RecipeFormPageComponent`, `RecipeBasicInfoFormComponent`, `RecipeImageUploadComponent`, `RecipeCategorizationFormComponent`, `EditableListComponent`) za pomocą Angular CLI z opcją `--standalone`.
 3.  **Konfiguracja routingu:** Dodanie ścieżek `/new` i `/:id/edit` w pliku `recipes-routes.ts` (lub podobnym), kierujących do `RecipeFormPageComponent`.
-4.  **Implementacja `RecipeFormPageComponent`:**
+4.  **Dodanie globalnego przycisku "Dodaj przepis":** W głównym komponencie layoutu aplikacji (np. w bocznym panelu nawigacyjnym - `SidebarComponent`), dodać przycisk, który będzie zawsze widoczny dla zalogowanego użytkownika i będzie nawigował do ścieżki `/recipes/new`.
+5.  **Implementacja `RecipeFormPageComponent`:**
     -   Zdefiniowanie logiki rozróżniania trybu edycji/tworzenia.
     -   Wstrzyknięcie serwisów (`RecipesService`, `CategoriesService`, `FormBuilder`, `ActivatedRoute`, `Router`).
     -   Stworzenie `FormGroup` na podstawie `RecipeFormViewModel`.
     -   Implementacja metod `ngOnInit` do pobierania danych przepisu (w trybie edycji) oraz metody `onSubmit` do wysyłania formularza.
-5.  **Implementacja komponentów podrzędnych:**
+6.  **Implementacja komponentów podrzędnych:**
     -   Stworzenie szablonów HTML i logiki dla `RecipeBasicInfoFormComponent`, `RecipeImageUploadComponent` i `RecipeCategorizationFormComponent`.
     -   Implementacja `ControlValueAccessor` lub przekazywanie `FormGroup`/`FormControl` jako `@Input`.
-6.  **Implementacja `EditableListComponent`:**
+7.  **Implementacja `EditableListComponent`:**
     -   Zaimplementowanie logiki wyświetlania, dodawania, usuwania i edycji elementów `FormArray`.
     -   Dodanie i skonfigurowanie modułu `DragDropModule` z `@angular/cdk` do obsługi zmiany kolejności.
-7.  **Stworzenie szablonu `RecipeFormPageComponent`:** Złożenie widoku z zaimplementowanych komponentów podrzędnych, przekazując im odpowiednie części głównego `FormGroup` oraz listę kategorii z `CategoriesService`. Dodanie przycisków i obsługi stanu ładowania.
-8.  **Integracja z API:** Implementacja wywołań API w serwisie `RecipesService` i podpięcie ich w `RecipeFormPageComponent`.
-9.  **Stylowanie i finalizacja:** Dopracowanie stylów SCSS dla wszystkich komponentów, zapewnienie responsywności i spójności z resztą aplikacji.
-10. **Testowanie:** Manualne przetestowanie obu ścieżek (tworzenie i edycja), walidacji, obsługi błędów oraz interakcji "przeciągnij i upuść".
+8.  **Stworzenie szablonu `RecipeFormPageComponent`:** Złożenie widoku z zaimplementowanych komponentów podrzędnych, przekazując im odpowiednie części głównego `FormGroup` oraz listę kategorii z `CategoriesService`. Dodanie przycisków i obsługi stanu ładowania.
+9. **Integracja z API:** Implementacja wywołań API w serwisie `RecipesService` i podpięcie ich w `RecipeFormPageComponent`.
+10. **Stylowanie i finalizacja:** Dopracowanie stylów SCSS dla wszystkich komponentów, zapewnienie responsywności i spójności z resztą aplikacji.
+11. **Testowanie:** Manualne przetestowanie obu ścieżek (tworzenie i edycja), walidacji, obsługi błędów oraz interakcji "przeciągnij i upuść".
