@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
-  selector: 'stbo-root',
+  selector: 'pych-root',
   imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss'

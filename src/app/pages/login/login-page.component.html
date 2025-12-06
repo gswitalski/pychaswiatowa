@@ -1,0 +1,8 @@
+<div class="login-page">
+    <pych-login-form
+        [isLoading]="state().isLoading"
+        [apiError]="state().error"
+        (login)="handleLogin($event)"
+    />
+</div>
+

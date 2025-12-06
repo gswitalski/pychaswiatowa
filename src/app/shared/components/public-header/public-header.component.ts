@@ -4,7 +4,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-    selector: 'stbo-public-header',
+    selector: 'pych-public-header',
     standalone: true,
     imports: [RouterLink, MatToolbarModule, MatButtonModule],
     templateUrl: './public-header.component.html',

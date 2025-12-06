@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { HeroComponent } from './components/hero/hero.component';
 
 @Component({
-    selector: 'stbo-landing-page',
+    selector: 'pych-landing-page',
     standalone: true,
     imports: [HeroComponent],
     templateUrl: './landing-page.component.html',

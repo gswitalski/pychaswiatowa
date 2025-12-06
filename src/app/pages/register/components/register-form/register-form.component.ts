@@ -22,7 +22,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RegisterFormViewModel } from '../../../../../../shared/contracts/types';
 
 @Component({
-    selector: 'stbo-register-form',
+    selector: 'pych-register-form',
     standalone: true,
     imports: [
         ReactiveFormsModule,

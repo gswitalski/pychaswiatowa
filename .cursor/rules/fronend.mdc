@@ -17,7 +17,7 @@ alwaysApply: false
 - Use TypeScript decorators with explicit visibility modifiers (public, private)
 - Leverage Angular CLI for schematics and code generation
 - Implement proper lazy loading with loadComponent and loadChildren
-- always use 'stbo' prefix for comoponents selector
+- always use 'pych' prefix for comoponents selector
 
 #### ANGULAR_MATERIAL
 

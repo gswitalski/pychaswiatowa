@@ -14,7 +14,7 @@ Struktura będzie opierać się na podziale na komponent-kontener (logika) i kom
 
 ```
 /login (LoginPageComponent)
-└── stbo-login-form (LoginFormComponent)
+└── pych-login-form (LoginFormComponent)
 ```
 
 -   `LoginPageComponent`: Komponent "smart", odpowiedzialny za logikę, zarządzanie stanem (ładowanie, błędy) oraz komunikację z `AuthService`. Będzie umieszczony na ścieżce `/login`.
@@ -24,7 +24,7 @@ Struktura będzie opierać się na podziale na komponent-kontener (logika) i kom
 
 ### `LoginPageComponent`
 -   **Opis komponentu**: Główny komponent strony logowania. Orkiestruje proces logowania, zarządza stanem i obsługuje skutki uboczne (nawigacja, obsługa błędów API).
--   **Główne elementy**: Komponent będzie zawierał w swoim szablonie jedynie komponent `<stbo-login-form>`.
+-   **Główne elementy**: Komponent będzie zawierał w swoim szablonie jedynie komponent `<pych-login-form>`.
 -   **Obsługiwane zdarzenia**:
     -   `(login)="handleLogin($event)"`: Odbiera dane z formularza i inicjuje proces logowania poprzez `AuthService`.
 -   **Typy**:

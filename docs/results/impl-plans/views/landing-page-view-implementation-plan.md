@@ -39,7 +39,7 @@ Struktura zostanie oparta o reużywalny layout dla części publicznej oraz dedy
 
 ## 4. Szczegóły komponentów
 
-### `stbo-public-header`
+### `pych-public-header`
 
 *   **Opis komponentu:** Nagłówek wyświetlany na wszystkich stronach publicznych (niezalogowany użytkownik). Zawiera logo aplikacji oraz przyciski nawigacyjne do logowania i rejestracji.
 *   **Główne elementy:**
@@ -55,18 +55,18 @@ Struktura zostanie oparta o reużywalny layout dla części publicznej oraz dedy
 *   **Typy:** Brak.
 *   **Propsy (Inputs):** Brak.
 
-### `stbo-landing-page`
+### `pych-landing-page`
 
 *   **Opis komponentu:** Główny komponent-kontener dla widoku Landing Page. Jego zadaniem jest złożenie sekcji składowych strony.
 *   **Główne elementy:**
-    *   Komponent `<stbo-hero>`.
+    *   Komponent `<pych-hero>`.
     *   (Opcjonalnie w przyszłości) Inne sekcje, np. opisujące funkcje aplikacji.
 *   **Obsługiwane zdarzenia:** Brak (propaguje zdarzenia z komponentów podrzędnych do routera).
 *   **Warunki walidacji:** Brak.
 *   **Typy:** Brak.
 *   **Propsy (Inputs):** Brak.
 
-### `stbo-hero`
+### `pych-hero`
 
 *   **Opis komponentu:** Kluczowa sekcja "Hero" na stronie głównej. Ma za zadanie przyciągnąć uwagę użytkownika za pomocą chwytliwego hasła i grafiki.
 *   **Główne elementy:**
@@ -110,20 +110,20 @@ Ze względu na statyczny charakter strony, ryzyko wystąpienia błędów jest mi
 
 1.  **Stworzenie struktury plików:** Utworzenie folderów i plików dla komponentów: `PublicLayoutComponent`, `PublicHeaderComponent`, `LandingPageComponent`, `HeroComponent` zgodnie ze strukturą opisaną w punkcie 3.
 2.  **Implementacja `PublicHeaderComponent`:**
-    *   Dodanie selektora `stbo-public-header`.
+    *   Dodanie selektora `pych-public-header`.
     *   Stworzenie layoutu nagłówka przy użyciu `mat-toolbar` z Flexbox (`space-between`).
     *   Dodanie logo i przycisków "Zaloguj się" i "Zarejestruj się" (`mat-button`).
     *   Dodanie nawigacji za pomocą dyrektywy `routerLink`.
 3.  **Implementacja `HeroComponent`:**
-    *   Dodanie selektora `stbo-hero`.
+    *   Dodanie selektora `pych-hero`.
     *   Zaprojektowanie sekcji w HTML i stylowanie w SCSS, aby była w pełni responsywna (desktop-first).
     *   Dodanie tła, nagłówka `<h1>`, tekstu i przycisku CTA `mat-raised-button` z `routerLink` do `/register`.
 4.  **Implementacja `LandingPageComponent`:**
-    *   Dodanie selektora `stbo-landing-page`.
-    *   Umieszczenie w szablonie komponentu `<stbo-hero>`.
+    *   Dodanie selektora `pych-landing-page`.
+    *   Umieszczenie w szablonie komponentu `<pych-hero>`.
 5.  **Implementacja `PublicLayoutComponent`:**
-    *   Dodanie selektora `stbo-public-layout`.
-    *   Umieszczenie w szablonie komponentu `<stbo-public-header>` oraz `<router-outlet>`.
+    *   Dodanie selektora `pych-public-layout`.
+    *   Umieszczenie w szablonie komponentu `<pych-public-header>` oraz `<router-outlet>`.
 6.  **Konfiguracja routingu:**
     *   W głównym pliku `app.routes.ts` zdefiniowanie ścieżki głównej, która użyje `PublicLayoutComponent` jako komponentu ramowego i `LandingPageComponent` jako domyślnego komponentu dla ścieżki `''`.
 7.  **Stylowanie i dopracowanie:**

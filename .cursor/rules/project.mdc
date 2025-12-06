@@ -2,13 +2,13 @@
 alwaysApply: true
 ---
 
-# AI Rules for StrummerBox
+# AI Rules for PychaŚwiatowa
 
-StrummerBox to aplikacja internetowa zaprojektowana dla gitarzystów-amatorów i organizatorów spotkań towarzyskich. Jej głównym celem jest zastąpienie niewygodnych, papierowych śpiewników prostym i elastycznym narzędziem cyfrowym. Aplikacja umożliwia tworzenie prywatnej biblioteki piosenek z akordami, układanie z nich repertuarów na konkretne okazje oraz błyskawiczne udostępnianie ich uczestnikom wydarzenia za pomocą kodów QR i linków. StrummerBox oferuje dwa główne interfejsy: rozbudowany tryb zarządzania dla przygotowującego (organizatora) oraz uproszczony, czytelny widok z tekstami dla śpiewających (biesiadników), zoptymalizowany pod kątem urządzeń mobilnych.
+PychaŚwiatowa to responsywna aplikacja webowa zaprojektowana dla pasjonatów gotowania, służąca jako centralna, cyfrowa książka kucharska. Jej głównym celem jest umożliwienie użytkownikom łatwego gromadzenia, organizowania i przeszukiwania własnych przepisów kulinarnych w jednym miejscu. Wersja MVP (Minimum Viable Product) skupia się na podstawowych funkcjonalnościach zarządzania przepisami, kategoryzacji, tworzenia kolekcji i wyszukiwania. Aplikacja jest projektowana w podejściu "desktop-first", zapewniając optymalne doświadczenie na większych ekranach, jednocześnie zachowując pełną funkcjonalność na urządzeniach mobilnych.
 
 ## Tech Stack
 
-- Angular 19
+- Angular 21
 - Angular Material
 
 ## Project Structure

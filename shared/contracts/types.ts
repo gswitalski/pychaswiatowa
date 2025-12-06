@@ -201,6 +201,22 @@ export interface RegisterFormViewModel {
 }
 
 /**
+ * Represents the form controls for the login form.
+ */
+export interface LoginFormViewModel {
+    email: FormControl<string>;
+    password: FormControl<string>;
+}
+
+/**
+ * DTO for sending sign-in request to Supabase.
+ */
+export interface SignInRequestDto {
+    email: string;
+    password: string;
+}
+
+/**
  * DTO for sending sign-up request to Supabase.
  */
 export interface SignUpRequestDto {

@@ -4,7 +4,7 @@ globs:
 alwaysApply: false
 ---
 
-## Github Action Rules - StrummerBox (Angular 20 + Supabase)
+## Github Action Rules - PychaŚwiatowa (Angular 21 + Supabase)
 
 ### Sprawdzenia przed tworzeniem workflow
 
@@ -20,7 +20,7 @@ alwaysApply: false
 - Always use `npm ci` for Node-based dependency setup (it's non-interactive by default)
 - Extract common steps into composite actions in separate files
 
-### Specyficzne komendy dla Angular 20
+### Specyficzne komendy dla Angular 21
 
 - Use `npm ci` for installing dependencies (non-interactive)
 - Use `ng build --configuration production` for production builds
@@ -68,7 +68,7 @@ $actionYml = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/{owner}/{
 Write-Output $actionYml
 ```
 
-### Zalecane GitHub Actions dla stosu StrummerBox
+### Zalecane GitHub Actions dla stosu PychaŚwiatowa
 
 - `actions/checkout@v4` - checking out repository
 - `actions/setup-node@v4` - setting up Node.js environment

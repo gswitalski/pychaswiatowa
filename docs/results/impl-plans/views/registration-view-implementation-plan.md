@@ -1,7 +1,7 @@
 # Plan implementacji widoku Rejestracja
 
 ## 1. Przegląd
-Widok Rejestracji umożliwia nowym użytkownikom założenie konta w aplikacji StrummerBox. Składa się z formularza, który zbiera adres e-mail, nazwę wyświetlaną oraz hasło. Po pomyślnej walidacji i wysłaniu danych do API, użytkownik jest automatycznie logowany i przekierowywany do panelu głównego aplikacji. Widok ten jest kluczowym elementem pozwalającym na personalizację i zapisywanie prywatnych danych użytkownika.
+Widok Rejestracji umożliwia nowym użytkownikom założenie konta w aplikacji PychaŚwiatowa. Składa się z formularza, który zbiera adres e-mail, nazwę wyświetlaną oraz hasło. Po pomyślnej walidacji i wysłaniu danych do API, użytkownik jest automatycznie logowany i przekierowywany do panelu głównego aplikacji. Widok ten jest kluczowym elementem pozwalającym na personalizację i zapisywanie prywatnych danych użytkownika.
 
 ## 2. Routing widoku
 Widok będzie dostępny pod następującą ścieżką:
@@ -21,10 +21,10 @@ RegisterPageComponent (Komponent-strona, "smart")
 -   **`RegisterFormComponent`**: Odpowiada za budowę formularza `ReactiveForm`, walidację pól oraz emisję danych po submicie.
 
 ## 4. Szczegóły komponentów
-### `stbo-register-page`
+### `pych-register-page`
 -   **Opis komponentu:** Główny kontener strony `/register`. Renderuje komponent formularza i zarządza logiką biznesową związaną z procesem rejestracji. Wyświetla globalne komunikaty o błędach (np. zwrócone z API).
 -   **Główne elementy:**
-    -   `<stbo-register-form>`: Komponent podrzędny z formularzem.
+    -   `<pych-register-form>`: Komponent podrzędny z formularzem.
     -   Element do wyświetlania błędu API (np. `mat-error` wewnątrz `@if`).
 -   **Obsługiwane interakcje:**
     -   `onRegisterSubmit(formData)`: Odbiera dane z `RegisterFormComponent` i inicjuje proces rejestracji poprzez wywołanie `AuthService`.
@@ -32,7 +32,7 @@ RegisterPageComponent (Komponent-strona, "smart")
 -   **Typy:** `RegisterFormViewModel`, `ApiError`.
 -   **Propsy:** Brak.
 
-### `stbo-register-form`
+### `pych-register-form`
 -   **Opis komponentu:** Komponent prezentacyjny zawierający formularz rejestracji zbudowany przy użyciu `ReactiveFormsModule`. Jest w pełni reużywalny i nie posiada wiedzy o logice biznesowej.
 -   **Główne elementy:**
     -   `<form [formGroup]="form">`
@@ -146,7 +146,7 @@ Integracja z API Supabase będzie realizowana poprzez dedykowany serwis `AuthSer
     -   Dodanie `@Input()` `isLoading` i `@Output()` `registerSubmit`.
 4.  **Implementacja `RegisterPageComponent`:**
     -   Stworzenie sygnału `state` do zarządzania stanem.
-    -   Implementacja szablonu HTML, który renderuje `<stbo-register-form>`.
+    -   Implementacja szablonu HTML, który renderuje `<pych-register-form>`.
     -   Bindowanie propsów `isLoading` i nasłuchiwanie na `registerSubmit`.
     -   Wstrzyknięcie `AuthService` i `Router`.
     -   Implementacja metody `onRegisterSubmit`, która komunikuje się z serwisem i obsługuje sukces/błąd.

@@ -263,13 +263,13 @@ Utwórz plik `.prettierrc` w katalogu głównym:
 
 ## Krok 12: Utworzenie pierwszego komponentu zgodnego z konwencjami projektu
 
-Przykład utworzenia komponentu z prefiksem `stbo`:
+Przykład utworzenia komponentu z prefiksem `pych`:
 
 ```bash
-ng generate component shared/components/example --standalone --prefix stbo
+ng generate component shared/components/example --standalone --prefix pych
 ```
 
-**Uwaga:** Zgodnie z zasadami projektu, wszystkie selektory komponentów powinny mieć prefiks `stbo`.
+**Uwaga:** Zgodnie z zasadami projektu, wszystkie selektory komponentów powinny mieć prefiks `pych`.
 
 ## Podsumowanie
 

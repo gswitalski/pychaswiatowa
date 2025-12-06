@@ -10,7 +10,7 @@ interface RegisterState {
 }
 
 @Component({
-    selector: 'stbo-register-page',
+    selector: 'pych-register-page',
     standalone: true,
     imports: [RegisterFormComponent],
     templateUrl: './register-page.component.html',
