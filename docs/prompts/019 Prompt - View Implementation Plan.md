@@ -19,12 +19,12 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji
 <view>
 
-**3. Rejestracja**
-- **Ścieżka:** `/register`
-- **Główny cel:** Umożliwienie nowym użytkownikom założenia konta.
-- **Kluczowe informacje do wyświetlenia:** Formularz z polami na e-mail , nazwa wyświetlana  i hasło (wraz z potwierdzeniem), link do strony logowania.
+**2. Logowanie**
+- **Ścieżka:** `/login`
+- **Główny cel:** Uwierzytelnienie istniejącego użytkownika.
+- **Kluczowe informacje do wyświetlenia:** Formularz z polami na e-mail i hasło, komunikat o błędach, link do strony rejestracji.
 - **Kluczowe komponenty widoku:** `mat-card`, `mat-form-field`, `mat-input`, `mat-button`.
-- **Względy UX, dostępności i bezpieczeństwa:** Walidacja hasła po stronie klienta (np. minimalna długość).
+- **Względy UX, dostępności i bezpieczeństwa:** Jasna komunikacja błędów walidacji. Pola formularza poprawnie oetykietowane.
 
 
 </view>
@@ -32,51 +32,21 @@ Najpierw przejrzyj następujące informacje:
 
 4. User Stories:
 <user_stories>
--   *ID:* US-001
--   *Tytuł:* Rejestracja nowego użytkownika
--   *Opis:* Jako nowy użytkownik, chcę móc stworzyć konto w aplikacji, podając swój adres e-mail hasło i pottwierdzenie hasła, abym mógł bezpiecznie przechowywać swoje prywatne przepisy.
+-   *ID:* US-002
+-   *Tytuł:* Logowanie i wylogowywanie użytkownika
+-   *Opis:* Jako zarejestrowany użytkownik, chcę móc zalogować się na swoje konto za pomocą e-maila i hasła, aby uzyskać dostęp do moich przepisów. Chcę również mieć możliwość wylogowania się.
 -   *Kryteria akceptacji:*
-    1.  Formularz rejestracji zawiera pola na adres e-mail, nazwę użytkownika  i hasło oraz potwierdzenie hasła.
-    2.  System waliduje poprawność formatu adresu e-mail.
-    3.  System wymaga, aby hasło miało minimalną, określoną długość.
-    4.  System waliduje czy hasło i potwierdzenie hasła są identyczne.
-    5.  Po pomyślnej rejestracji, użytkownik jest automatycznie zalogowany i przekierowany na stronę główną (dashboard).
-    6.  W przypadku, gdy konto o podanym adresie e-mail już istnieje, wyświetlany jest odpowiedni komunikat błędu.
+    1.  Formularz logowania zawiera pola na adres e-mail i hasło.
+    2.  Po poprawnym wprowadzeniu danych, użytkownik jest zalogowany i ma dostęp do swoich zasobów.
+    3.  W przypadku podania błędnych danych, wyświetlany jest komunikat o nieprawidłowym loginie lub haśle.
+    4.  Zalogowany użytkownik widzi w interfejsie opcję "Wyloguj".
+    5.  Kliknięcie "Wyloguj" kończy sesję użytkownika i przekierowuje go na stronę główną dla niezalogowanych.
 
 </user_stories>
 
 5. Endpoint Description:
 <endpoint_description>
-standardowy endpoint supabase
-
-z planu bazy -db-plan
-
-
-uwzględnij z api plan ten punkt:
-    - **Trigger `handle_new_user`**: Zostanie utworzony trigger, który automatycznie tworzy publiczny profil dla każdego nowo zarejestrowanego użytkownika. Proces ten zapewnia spójność danych między tabelą `auth.users` a `public.profiles`. Funkcja odczytuje dodatkowe metadane (takie jak `username`) przekazane podczas rejestracji z frontendu.
-        ```sql
-        -- Creates a function that will be run by the trigger
-        create function public.handle_new_user()
-        returns trigger as $$
-        begin
-          insert into public.profiles (id, username)
-          values (
-            new.id,
-            -- Reads the 'username' field from the metadata passed from the frontend
-            new.raw_user_meta_data->>'username'
-          );
-          return new;
-        end;
-        $$ language plpgsql security definer;
-
-        -- Creates a trigger that runs the function after each user is added
-        create trigger on_auth_user_created
-          after insert on auth.users
-          for each row execute procedure public.handle_new_user();
-        ```
-zaplanuj dodanie tego triggera
-
-
+standardowy endpoint supabase do logowania
 </endpoint_description>
 
 
