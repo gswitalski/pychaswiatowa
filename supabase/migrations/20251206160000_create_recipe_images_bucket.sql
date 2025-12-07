@@ -46,3 +46,4 @@ ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'recipe-images');
 
+

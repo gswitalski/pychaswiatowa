@@ -16,3 +16,4 @@ export class NavigationTileComponent {
     @Input({ required: true }) tileData!: NavigationTileViewModel;
 }
 
+

@@ -128,3 +128,4 @@ comment on function public.create_recipe_with_tags(uuid, text, text, bigint, tex
 -- grant execute permission to authenticated users
 grant execute on function public.create_recipe_with_tags(uuid, text, text, bigint, text, text, text[]) to authenticated;
 
+

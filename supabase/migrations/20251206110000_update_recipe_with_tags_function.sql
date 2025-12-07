@@ -158,3 +158,4 @@ comment on function public.update_recipe_with_tags(bigint, uuid, text, text, big
 -- grant execute permission to authenticated users
 grant execute on function public.update_recipe_with_tags(bigint, uuid, text, text, bigint, text, text, text[], boolean) to authenticated;
 
+
