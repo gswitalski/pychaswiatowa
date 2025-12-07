@@ -18,27 +18,24 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-**5. Lista Przepisów (Moje przepisy)**
-- **Ścieżka:** `/recipes`
-- **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie wszystkich przepisów użytkownika.
-- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pole wyszukiwania, kontrolki do sortowania i filtrowania (kategorie, tagi), paginacja.
-- **Kluczowe komponenty widoku:** `mat-paginator`, `mat-card`, `mat-form-field`, `mat-select`, `mat-chip-list`, komponent "stanu pustego".
-- **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy przy zmianie filtrów. Wskaźniki ładowania. Obsługa stanu pustego z wezwaniem do akcji.
-
+**8. Lista Kolekcji (Moje kolekcje)**
+- **Ścieżka:** `/collections`
+- **Główny cel:** Zarządzanie kolekcjami przepisów.
+- **Kluczowe informacje do wyświetlenia:** Lista istniejących kolekcji z opcjami edycji i usunięcia.
+- **Kluczowe komponenty widoku:** `mat-list` lub `mat-card` do wyświetlania kolekcji, przycisk do tworzenia nowej, komponent "stanu pustego".
+- **Względy UX, dostępności i bezpieczeństwa:** Potwierdzenie usunięcia kolekcji w oknie modalnym.
 
 </view>
 
 
 4. User Stories:
 <user_stories>
--   *ID:* US-007
--   *Tytuł:* Przeglądanie listy wszystkich przepisów
--   *Opis:* Jako użytkownik, chcę widzieć listę wszystkich moich dodanych przepisów, abym mógł szybko zorientować się w mojej kolekcji i wybrać interesującą mnie pozycję.
--   *Kryteria akceptacji:*
-    1.  Dostępna jest strona "Moje przepisy", która wyświetla wszystkie przepisy użytkownika.
-    2.  Każdy przepis na liście jest reprezentowany przez miniaturkę zdjęcia i nazwę.
-    3.  Kliknięcie na pozycję na liście przenosi mnie do strony szczegółów danego przepisu.
-    4.  Mam możliwość sortowania listy alfabetycznie oraz po dacie dodania (od najnowszych do najstarszych i odwrotnie).
+**8. Lista Kolekcji (Moje kolekcje)**
+- **Ścieżka:** `/collections`
+- **Główny cel:** Zarządzanie kolekcjami przepisów.
+- **Kluczowe informacje do wyświetlenia:** Lista istniejących kolekcji z opcjami edycji i usunięcia.
+- **Kluczowe komponenty widoku:** `mat-list` lub `mat-card` do wyświetlania kolekcji, przycisk do tworzenia nowej, komponent "stanu pustego".
+- **Względy UX, dostępności i bezpieczeństwa:** Potwierdzenie usunięcia kolekcji w oknie modalnym.
 
 </user_stories>
 
