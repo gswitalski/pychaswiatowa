@@ -1,0 +1,11 @@
+import { Routes } from '@angular/router';
+
+export const collectionsRoutes: Routes = [
+    {
+        path: '',
+        loadComponent: () =>
+            import(
+                './collections-list/collections-list-page.component'
+            ).then((m) => m.CollectionsListPageComponent),
+    },
+];

@@ -1,0 +1,48 @@
+<div class="collections-list-page">
+    <header class="page-header">
+        <h1>Moje kolekcje</h1>
+        <button
+            mat-flat-button
+            color="primary"
+            (click)="openCreateDialog()"
+            [disabled]="isLoading()"
+        >
+            <mat-icon>add</mat-icon>
+            Utwórz kolekcję
+        </button>
+    </header>
+
+    @if (isLoading()) {
+        <div class="loading-container">
+            <mat-spinner diameter="48"></mat-spinner>
+            <p>Ładowanie kolekcji...</p>
+        </div>
+    } @else if (error()) {
+        <div class="error-container">
+            <mat-icon class="error-icon">error_outline</mat-icon>
+            <p>{{ error() }}</p>
+            <button mat-stroked-button (click)="loadCollections()">
+                <mat-icon>refresh</mat-icon>
+                Spróbuj ponownie
+            </button>
+        </div>
+    } @else if (isEmpty()) {
+        <div class="empty-state">
+            <mat-icon class="empty-icon">collections_bookmark</mat-icon>
+            <h3>Nie masz jeszcze żadnych kolekcji</h3>
+            <p>Kolekcje pozwalają na grupowanie przepisów według Twoich preferencji.</p>
+            <button mat-flat-button color="primary" (click)="openCreateDialog()">
+                <mat-icon>add</mat-icon>
+                Utwórz pierwszą kolekcję
+            </button>
+        </div>
+    } @else {
+        <div class="collections-content">
+            <pych-collection-list
+                [collections]="collections()"
+                (edit)="openEditDialog($event)"
+                (delete)="openDeleteDialog($event)"
+            />
+        </div>
+    }
+</div>

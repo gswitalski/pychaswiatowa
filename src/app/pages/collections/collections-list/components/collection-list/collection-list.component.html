@@ -1,0 +1,37 @@
+<mat-list class="collection-list">
+    @for (collection of collections(); track collection.id) {
+        <mat-list-item class="collection-item">
+            <a
+                [routerLink]="['/collections', collection.id]"
+                class="collection-link"
+            >
+                <div class="collection-info">
+                    <span class="collection-name">{{ collection.name }}</span>
+                    @if (collection.description) {
+                        <span class="collection-description">
+                            {{ collection.description }}
+                        </span>
+                    }
+                </div>
+            </a>
+
+            <div class="collection-actions">
+                <button
+                    mat-icon-button
+                    matTooltip="Edytuj"
+                    (click)="onEdit(collection, $event)"
+                >
+                    <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                    mat-icon-button
+                    matTooltip="Usuń"
+                    color="warn"
+                    (click)="onDelete(collection, $event)"
+                >
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </div>
+        </mat-list-item>
+    }
+</mat-list>

@@ -50,6 +50,13 @@ export const routes: Routes = [
                         (m) => m.recipesRoutes
                     ),
             },
+            {
+                path: 'collections',
+                loadChildren: () =>
+                    import('./pages/collections/collections.routes').then(
+                        (m) => m.collectionsRoutes
+                    ),
+            },
         ],
     },
 ];

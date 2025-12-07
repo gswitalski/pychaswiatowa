@@ -1,0 +1,35 @@
+mat-dialog-content {
+    min-width: 400px;
+
+    @media (max-width: 500px) {
+        min-width: auto;
+    }
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 8px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.api-error {
+    padding: 12px;
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+    border-radius: 8px;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+mat-dialog-actions {
+    button {
+        mat-spinner {
+            display: inline-block;
+        }
+    }
+}
