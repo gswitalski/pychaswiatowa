@@ -18,8 +18,22 @@
     position: relative;
     width: 100%;
     padding-top: 66.67%; // 3:2 aspect ratio
-    overflow: hidden;
+    overflow: visible;
     background-color: var(--mat-sys-surface-variant);
+}
+
+.card-menu-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    background-color: var(--mat-sys-surface);
+    opacity: 0.9;
+
+    &:hover {
+        opacity: 1;
+        background-color: var(--mat-sys-surface-container-high);
+    }
 }
 
 .card-image {

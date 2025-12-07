@@ -1,0 +1,134 @@
+.collection-details-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.back-button-container {
+    margin-bottom: 16px;
+
+    button {
+        mat-icon {
+            margin-right: 8px;
+        }
+    }
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    gap: 16px;
+
+    p {
+        color: var(--mat-sys-on-surface-variant);
+        margin: 0;
+    }
+}
+
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    gap: 16px;
+    text-align: center;
+
+    .error-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--mat-sys-error);
+    }
+
+    h2 {
+        margin: 0;
+        color: var(--mat-sys-on-surface);
+    }
+
+    p {
+        margin: 0;
+        color: var(--mat-sys-on-surface-variant);
+        max-width: 400px;
+    }
+
+    button {
+        margin-top: 8px;
+    }
+}
+
+.recipes-section {
+    margin-top: 32px;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0 0 24px 0;
+    color: var(--mat-sys-on-surface);
+
+    .recipes-count {
+        font-weight: 400;
+        color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 24px;
+    text-align: center;
+    background-color: var(--mat-sys-surface-container-low);
+    border-radius: 16px;
+
+    mat-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--mat-sys-on-surface-variant);
+        opacity: 0.5;
+        margin-bottom: 16px;
+    }
+
+    h3 {
+        margin: 0 0 8px 0;
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface);
+    }
+
+    p {
+        margin: 0;
+        color: var(--mat-sys-on-surface-variant);
+    }
+
+    .hint {
+        margin-top: 8px;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .collection-details-page {
+        padding: 16px;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+    }
+
+    .empty-state {
+        padding: 48px 16px;
+
+        mat-icon {
+            font-size: 48px;
+            width: 48px;
+            height: 48px;
+        }
+    }
+}

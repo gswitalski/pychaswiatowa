@@ -149,9 +149,10 @@ export type RecipeInCollectionDto = Pick<Recipe, 'id' | 'name'>;
 
 /**
  * DTO for the detailed view of a single collection, including a paginated list of its recipes.
+ * Uses RecipeListItemDto to allow displaying full recipe cards with images.
  */
 export type CollectionDetailDto = CollectionListItemDto & {
-    recipes: PaginatedResponseDto<RecipeInCollectionDto>;
+    recipes: PaginatedResponseDto<RecipeListItemDto>;
 };
 
 /**

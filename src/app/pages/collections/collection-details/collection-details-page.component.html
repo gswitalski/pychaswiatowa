@@ -1,0 +1,62 @@
+<div class="collection-details-page">
+    <!-- Przycisk powrotu -->
+    <div class="back-button-container">
+        <button mat-button (click)="navigateBack()">
+            <mat-icon>arrow_back</mat-icon>
+            Powrót do kolekcji
+        </button>
+    </div>
+
+    <!-- Stan ładowania (początkowy) -->
+    @if (isLoading() && !hasData()) {
+        <div class="loading-container">
+            <mat-spinner diameter="48"></mat-spinner>
+            <p>Ładowanie kolekcji...</p>
+        </div>
+    }
+
+    <!-- Stan błędu -->
+    @if (error(); as errorMessage) {
+        <div class="error-container">
+            <mat-icon class="error-icon">error_outline</mat-icon>
+            <h2>Wystąpił błąd</h2>
+            <p>{{ errorMessage }}</p>
+            <button mat-flat-button color="primary" (click)="navigateBack()">
+                Wróć do listy kolekcji
+            </button>
+        </div>
+    }
+
+    <!-- Zawartość kolekcji -->
+    @if (hasData()) {
+        <pych-collection-header [collectionData]="collectionData()" />
+
+        <section class="recipes-section">
+            <h2 class="section-title">
+                Przepisy w kolekcji
+                @if (pagination().totalItems > 0) {
+                    <span class="recipes-count">({{ pagination().totalItems }})</span>
+                }
+            </h2>
+
+            @if (isEmpty()) {
+                <div class="empty-state">
+                    <mat-icon>restaurant</mat-icon>
+                    <h3>Brak przepisów</h3>
+                    <p>Ta kolekcja nie zawiera jeszcze żadnych przepisów.</p>
+                    <p class="hint">Dodaj przepisy do kolekcji z poziomu strony przepisu.</p>
+                </div>
+            } @else {
+                <pych-recipe-list
+                    [recipes]="recipes()"
+                    [isLoading]="isLoading()"
+                    [showRemoveAction]="true"
+                    [pagination]="pagination()"
+                    [pageSize]="12"
+                    (pageChange)="onPageChange($event)"
+                    (removeRecipe)="onRemoveRecipe($event)"
+                />
+            }
+        </section>
+    }
+</div>

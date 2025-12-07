@@ -8,7 +8,11 @@
     } @else {
         <div class="recipes-grid">
             @for (recipe of recipes(); track recipe.id) {
-                <pych-recipe-card [recipe]="recipe" />
+                <pych-recipe-card
+                    [recipe]="recipe"
+                    [showRemoveAction]="showRemoveAction()"
+                    (remove)="onRemoveRecipe(recipe.id)"
+                />
             }
         </div>
 
@@ -16,6 +20,17 @@
             <div class="loading-indicator">
                 <mat-spinner diameter="32"></mat-spinner>
             </div>
+        }
+
+        @if (pagination(); as pag) {
+            <mat-paginator
+                [length]="pag.totalItems"
+                [pageSize]="pageSize()"
+                [pageIndex]="pag.currentPage - 1"
+                [pageSizeOptions]="[6, 12, 24]"
+                (page)="onPageChange($event)"
+                showFirstLastButtons
+            />
         }
     }
 </div>

@@ -1,13 +1,14 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { RecipeListItemDto } from '../../../../../../../shared/contracts/types';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { PageEvent, MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { RecipeListItemDto, PaginationDetails } from '../../../../../../../shared/contracts/types';
 import { RecipeCardComponent } from '../recipe-card/recipe-card.component';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
     selector: 'pych-recipe-list',
     standalone: true,
-    imports: [RecipeCardComponent, EmptyStateComponent, MatProgressSpinnerModule],
+    imports: [RecipeCardComponent, EmptyStateComponent, MatProgressSpinnerModule, MatPaginatorModule],
     templateUrl: './recipe-list.component.html',
     styleUrl: './recipe-list.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -18,5 +19,34 @@ export class RecipeListComponent {
 
     /** Flaga informująca o stanie ładowania */
     readonly isLoading = input<boolean>(false);
+
+    /** Czy pokazać akcję usuwania na kartach przepisów */
+    readonly showRemoveAction = input<boolean>(false);
+
+    /** Informacje o paginacji (opcjonalne - bez tego brak paginatora) */
+    readonly pagination = input<PaginationDetails | null>(null);
+
+    /** Rozmiar strony dla paginatora */
+    readonly pageSize = input<number>(12);
+
+    /** Event emitowany przy zmianie strony */
+    readonly pageChange = output<PageEvent>();
+
+    /** Event emitowany przy żądaniu usunięcia przepisu z kolekcji */
+    readonly removeRecipe = output<number>();
+
+    /**
+     * Obsługuje zmianę strony w paginatorze
+     */
+    onPageChange(event: PageEvent): void {
+        this.pageChange.emit(event);
+    }
+
+    /**
+     * Obsługuje żądanie usunięcia przepisu z kolekcji
+     */
+    onRemoveRecipe(recipeId: number): void {
+        this.removeRecipe.emit(recipeId);
+    }
 }
 

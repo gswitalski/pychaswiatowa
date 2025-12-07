@@ -18,24 +18,27 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-**8. Lista Kolekcji (Moje kolekcje)**
-- **Ścieżka:** `/collections`
-- **Główny cel:** Zarządzanie kolekcjami przepisów.
-- **Kluczowe informacje do wyświetlenia:** Lista istniejących kolekcji z opcjami edycji i usunięcia.
-- **Kluczowe komponenty widoku:** `mat-list` lub `mat-card` do wyświetlania kolekcji, przycisk do tworzenia nowej, komponent "stanu pustego".
-- **Względy UX, dostępności i bezpieczeństwa:** Potwierdzenie usunięcia kolekcji w oknie modalnym.
+**9. Szczegóły Kolekcji**
+- **Ścieżka:** `/collections/:id`
+- **Główny cel:** Wyświetlanie przepisów przypisanych do konkretnej kolekcji.
+- **Kluczowe informacje do wyświetlenia:** Nazwa i opis kolekcji, lista zawartych w niej przepisów.
+- **Kluczowe komponenty widoku:** Lista przepisów (komponent współdzielony z Listą Przepisów), przycisk "Usuń z kolekcji" przy każdym przepisie.
+- **Względy UX, dostępności i bezpieczeństwa:** Spójna prezentacja przepisów z główną listą.
 
 </view>
 
 
 4. User Stories:
 <user_stories>
-**8. Lista Kolekcji (Moje kolekcje)**
-- **Ścieżka:** `/collections`
-- **Główny cel:** Zarządzanie kolekcjami przepisów.
-- **Kluczowe informacje do wyświetlenia:** Lista istniejących kolekcji z opcjami edycji i usunięcia.
-- **Kluczowe komponenty widoku:** `mat-list` lub `mat-card` do wyświetlania kolekcji, przycisk do tworzenia nowej, komponent "stanu pustego".
-- **Względy UX, dostępności i bezpieczeństwa:** Potwierdzenie usunięcia kolekcji w oknie modalnym.
+-   *ID:* US-011
+-   *Tytuł:* Tworzenie i zarządzanie kolekcjami przepisów
+-   *Opis:* Jako użytkownik, chcę móc tworzyć własne, tematyczne zbiory przepisów (kolekcje), aby grupować receptury według okazji lub przeznaczenia, np. "Ulubione dania świąteczne".
+-   *Kryteria akceptacji:*
+    1.  Istnieje strona "Moje kolekcje", gdzie mogę zobaczyć listę moich kolekcji.
+    2.  Na tej stronie mogę stworzyć nową kolekcję, podając jej nazwę.
+    3.  Mogę edytować nazwę istniejącej kolekcji.
+    4.  Mogę usunąć całą kolekcję (operacja nie usuwa przepisów, tylko zbiór).
+    5.  Kliknięcie na nazwę kolekcji przenosi mnie do widoku przepisów należących do tej kolekcji.
 
 </user_stories>
 

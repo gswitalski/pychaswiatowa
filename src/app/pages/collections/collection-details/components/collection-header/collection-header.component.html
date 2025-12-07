@@ -1,0 +1,11 @@
+<header class="collection-header">
+    <div class="header-icon">
+        <mat-icon>folder_special</mat-icon>
+    </div>
+    <div class="header-content">
+        <h1 class="collection-name">{{ collectionData().name }}</h1>
+        @if (collectionData().description) {
+            <p class="collection-description">{{ collectionData().description }}</p>
+        }
+    </div>
+</header>

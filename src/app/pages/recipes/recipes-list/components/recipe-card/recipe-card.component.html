@@ -12,6 +12,24 @@
                     <mat-icon>restaurant_menu</mat-icon>
                 </div>
             }
+
+            @if (showRemoveAction()) {
+                <button
+                    mat-icon-button
+                    class="card-menu-button"
+                    [matMenuTriggerFor]="cardMenu"
+                    (click)="onMenuClick($event)"
+                    aria-label="Menu akcji"
+                >
+                    <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #cardMenu="matMenu">
+                    <button mat-menu-item (click)="onRemoveClick($event)">
+                        <mat-icon>remove_circle_outline</mat-icon>
+                        <span>Usuń z kolekcji</span>
+                    </button>
+                </mat-menu>
+            }
         </div>
         <mat-card-content>
             <h3 class="recipe-name">{{ recipe().name }}</h3>
