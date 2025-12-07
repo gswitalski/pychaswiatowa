@@ -1,30 +1,154 @@
-Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest stworzenie szczegółowego planu wdrożenia punktu końcowego REST API. Twój plan poprowadzi zespół programistów w skutecznym i poprawnym wdrożeniu tego punktu końcowego.
+Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest stworzenie szczegółowego planu wdrożenia punktó końcowych REST API. Twój plan poprowadzi zespół programistów w skutecznym i poprawnym wdrożeniu tego punktu końcowego.
 
 Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
-#### `GET /tags`
+#### `GET /collections`
 
--   **Description**: Retrieve all tags created by the authenticated user.
+-   **Description**: Retrieve a list of collections for the authenticated user.
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
         ```json
         [
-          { "id": 1, "name": "vegetarian" },
-          { "id": 2, "name": "spicy" }
+          {
+            "id": 1,
+            "name": "Christmas Dishes",
+            "description": "Recipes for the holidays."
+          }
         ]
         ```
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
+
+---
+
+#### `POST /collections`
+
+-   **Description**: Create a new collection.
+-   **Request Payload**:
+    ```json
+    {
+      "name": "Summer BBQ Ideas",
+      "description": "Great for a sunny day."
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `201 Created`
+    -   **Payload**: (The newly created collection object)
+-   **Error Response**:
+    -   **Code**: `400 Bad Request`
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `409 Conflict` (if a collection with the same name already exists for the user)
+
+---
+
+#### `GET /collections/{id}`
+
+-   **Description**: Retrieve a single collection and a paginated list of its recipes.
+-   **Query Parameters**:
+    -   `page` (optional, integer, default: 1): The page number for recipe pagination.
+    -   `limit` (optional, integer, default: 20): The number of recipes per page.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "id": 1,
+          "name": "Christmas Dishes",
+          "description": "Recipes for the holidays.",
+          "recipes": {
+            "data": [
+              { "id": 1, "name": "Apple Pie" }
+            ],
+            "pagination": {
+              "currentPage": 1,
+              "totalPages": 2,
+              "totalItems": 40
+            }
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
+---
+
+#### `PUT /collections/{id}`
+
+-   **Description**: Update a collection's details (name, description).
+-   **Request Payload**:
+    ```json
+    {
+      "name": "New Collection Name",
+      "description": "Updated description."
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**: (The full updated collection object)
+-   **Error Response**:
+    -   **Code**: `400 Bad Request`
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+    -   **Code**: `409 Conflict`
+
+---
+
+#### `DELETE /collections/{id}`
+
+-   **Description**: Delete a collection. This does not delete the recipes within it.
+-   **Success Response**:
+    -   **Code**: `204 No Content`
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
+---
+
+#### `POST /collections/{id}/recipes`
+
+-   **Description**: Add a recipe to a collection.
+-   **Request Payload**:
+    ```json
+    {
+      "recipe_id": 123
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `201 Created`
+    -   **Payload**: `{ "message": "Recipe added to collection successfully." }`
+-   **Error Response**:
+    -   **Code**: `400 Bad Request`
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden` (if user doesn't own the collection or the recipe)
+    -   **Code**: `404 Not Found` (if collection or recipe doesn't exist)
+    -   **Code**: `409 Conflict` (if recipe is already in the collection)
+
+---
+
+#### `DELETE /collections/{collectionId}/recipes/{recipeId}`
+
+-   **Description**: Remove a recipe from a collection.
+-   **Success Response**:
+    -   **Code**: `204 No Content`
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
 
 </route_api_specification>
 
 aktualna implementacja:
 <current_implementation>
 
-
+brak
 
 </current_implementation>
 
@@ -90,10 +214,10 @@ W całym planie upewnij się, że
 - Dostosowanie do dostarczonego stacku technologicznego
 - Postępuj zgodnie z podanymi zasadami implementacji
 
-Końcowym wynikiem powinien być dobrze zorganizowany plan wdrożenia w formacie markdown. Oto przykład tego, jak powinny wyglądać dane wyjściowe:
+Końcowym wynikiem powinien być dobrze zorganizowany plan wdrożenia wszystkich endpowinew formacie markdown. Oto przykład tego, jak powinny wyglądać dane wyjściowe:
 
 ``markdown
-# API Endpoint Implementation Plan: [Nazwa punktu końcowego]
+# API Endpoints Implementation Plan: [Nazwa punktu końcowego]
 
 ## 1. Przegląd punktu końcowego
 [Krótki opis celu i funkcjonalności punktu końcowego]
@@ -133,4 +257,4 @@ Końcowym wynikiem powinien być dobrze zorganizowany plan wdrożenia w formacie
 
 Końcowe wyniki powinny składać się wyłącznie z planu wdrożenia w formacie markdown i nie powinny powielać ani powtarzać żadnej pracy wykonanej w sekcji analizy.
 
-Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/{endpoint-name}-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.
+Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/collections-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.
