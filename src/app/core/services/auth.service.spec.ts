@@ -8,12 +8,21 @@ import {
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
-import { AuthResponse } from '@supabase/supabase-js';
+import { AuthResponse, User, Session } from '@supabase/supabase-js';
 import { SignUpRequestDto } from '../../../../shared/contracts/types';
+
+interface MockSupabaseService {
+    auth: {
+        signUp: ReturnType<typeof vi.fn>;
+        signInWithPassword: ReturnType<typeof vi.fn>;
+        signOut: ReturnType<typeof vi.fn>;
+        getSession: ReturnType<typeof vi.fn>;
+    };
+}
 
 describe('AuthService', () => {
     let service: AuthService;
-    let mockSupabaseService: any;
+    let mockSupabaseService: MockSupabaseService;
 
     // Inicjalizacja środowiska testowego Angular
     beforeAll(() => {
@@ -62,8 +71,8 @@ describe('AuthService', () => {
 
             const mockAuthResponse: AuthResponse = {
                 data: {
-                    user: { id: '123', email: 'test@example.com' } as any,
-                    session: { access_token: 'token' } as any,
+                    user: { id: '123', email: 'test@example.com' } as User,
+                    session: { access_token: 'token' } as Session,
                 },
                 error: null,
             };
@@ -109,8 +118,8 @@ describe('AuthService', () => {
 
             const mockAuthResponse: AuthResponse = {
                 data: {
-                    user: { id: '123', email } as any,
-                    session: { access_token: 'token' } as any,
+                    user: { id: '123', email } as User,
+                    session: { access_token: 'token' } as Session,
                 },
                 error: null,
             };
@@ -171,7 +180,7 @@ describe('AuthService', () => {
             // Arrange
             const mockSession = {
                 data: {
-                    session: { access_token: 'token' } as any,
+                    session: { access_token: 'token' } as Session,
                 },
                 error: null,
             };
