@@ -55,4 +55,4 @@ Pamiętaj, że:
 - Testy mają być zgodne z podanymi regułami vitest_rules
 - Plan ma pokrywać wszystkie aspekty z test_plan
 
-Twoja finalna odpowiedź powinna zawierać tylko zawartość pliku plan.md w formacie Markdown, bez dodatkowych komentarzy czy tagów XML.
+Twoja finalna odpowiedź powinna zawierać tylko zawartość pliku docs/results/test-plans/{nazwa-komponentu}-test-plan.md w formacie Markdown, bez dodatkowych komentarzy czy tagów XML.
