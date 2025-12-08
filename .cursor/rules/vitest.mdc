@@ -21,13 +21,33 @@
 - **Resetuj TestBed tylko gdy potrzebne** - Unikaj nadużywania `TestBed.resetTestingModule()` w `afterEach()`, ponieważ może to powodować problemy z inicjalizacją w kolejnych testach. Pozwól globalnej konfiguracji zarządzać cyklem życia.
 
 **Testowanie komponentów z Angular Material:**
-- **Zawsze importuj NoopAnimationsModule** - Dla komponentów wykorzystujących Angular Material dodaj `NoopAnimationsModule` do importów w `TestBed.configureTestingModule()`. Zapobiega to błędom związanym z animacjami w środowisku testowym.
+- **Zawsze importuj NoopAnimationsModule** - Dla komponentów wykorzystujących Angular Material dodaj `NoopAnimationsModule` do importów w `TestBed.configureTestingModule()` lub w funkcji `render()` z `@testing-library/angular`. Zapobiega to błędom związanym z animacjami w środowisku testowym.
 - **Mockuj MatDialogRef i MAT_DIALOG_DATA dla dialogów** - Używaj `{ provide: MatDialogRef, useValue: { close: vi.fn() } }` i `{ provide: MAT_DIALOG_DATA, useValue: testData }` jako providerów. Pamiętaj o typowaniu mocków dla lepszej kontroli typu.
 
 **Struktura testów Angular:**
 - **Utwórz funkcję pomocniczą dla setupu komponentu** - Zamiast powielać konfigurację TestBed w każdym teście, stwórz funkcję pomocniczą `setupComponent()` lub `setupComponentWithData()`, która zwraca fixture, compiled HTML i mocki. Zwiększa to czytelność i redukuje duplikację kodu.
 - **Używaj ComponentFixture.detectChanges() po interakcjach** - Po symulacji interakcji użytkownika (np. kliknięcia przycisku) zawsze wywołuj `fixture.detectChanges()` przed asercjami, aby zapewnić aktualizację widoku.
 - **Preferuj selektory oparte na rolach i atrybutach Material** - Używaj selektorów takich jak `[mat-dialog-title]`, `mat-dialog-content` zamiast ogólnych selektorów CSS. Są bardziej odporne na zmiany struktury.
+
+**Testowanie z @testing-library/angular:**
+- **Używaj natywnych asercji Vitest zamiast custom matchers** - Matchery z `@testing-library/jest-dom` (jak `toBeInTheDocument()`, `toBeDisabled()`, `toHaveClass()`) mogą nie działać poprawnie z Vitest mimo instalacji pakietu. Zamiast tego używaj:
+  - `expect(element).toBeTruthy()` zamiast `toBeInTheDocument()` (jeśli `getBy*` znajdzie element, jest w dokumencie)
+  - `expect(element.hasAttribute('disabled')).toBe(true)` zamiast `toBeDisabled()`
+  - `expect(element?.classList.contains('class-name')).toBe(true)` zamiast `toHaveClass()`
+  - `expect(queryBy*(...)).toBeNull()` zamiast `not.toBeInTheDocument()`
+- **Explicite określaj typy w FormBuilder** - Dla pustych tablic formularzy Angular używaj `fb.array<FormControl<string>>([])` zamiast `fb.array([])`. TypeScript nie potrafi wywnioskować typu pustej tablicy.
+- **Używaj type assertions dla złożonych typów CDK** - Dla obiektów Drag & Drop z `@angular/cdk/drag-drop` używaj `as CdkDragDrop<T>` zamiast wielokrotnego `as any`. Importuj typy: `import type { CdkDragDrop } from '@angular/cdk/drag-drop'`.
+- **Setup funkcja z @testing-library/angular** - Używaj funkcji `render()` z `@testing-library/angular` która zwraca `fixture`, `container`, `debug` i inne narzędzia:
+```typescript
+async function setupComponent(componentProperties = {}) {
+    const user = userEvent.setup();
+    const rendered = await render(MyComponent, {
+        imports: [NoopAnimationsModule, /* other modules */],
+        componentProperties: { /* props */ },
+    });
+    return { ...rendered, user };
+}
+```
 
 **Testowanie standalone komponentów:**
 - **Importuj komponenty bezpośrednio w imports** - Dla standalone komponentów Angular 14+ używaj `imports: [MyStandaloneComponent]` zamiast `declarations`. Vitest i TestBed obsługują to natywnie.
@@ -60,6 +80,14 @@ try {
 - **Użyj verbose logging** - Przy trudnych do zdiagnozowania błędach uruchom testy z `--reporter=verbose` aby zobaczyć pełny stack trace i kolejność wykonywania hooków.
 - **Jeśli testy przechodzą ale asercje się nie wykonują** - To oznaka asynchroniczności. Testy kończą się przed wykonaniem callbacków. Rozwiązanie: użyj `async/await` z `firstValueFrom()` zamiast `subscribe()`.
 - **Sprawdź pokrycie kodu aby znaleźć niepokryte ścieżki** - Uruchom `npm run test:coverage -- nazwa-serwisu` aby zobaczyć które linie nie są pokryte testami. Dodaj testy dla alternatywnych ścieżek (np. odpowiedź bez zagnieżdżenia w pole `data`).
+
+**Częste problemy i rozwiązania:**
+- **Błąd "Cannot find package '@angular/animations'"** - Angular Material wymaga pakietu `@angular/animations`. Zainstaluj go: `npm install @angular/animations`.
+- **Custom matchers nie działają** - Matchery z `@testing-library/jest-dom` mogą nie działać z Vitest. Używaj natywnych asercji Vitest (patrz sekcja "Testowanie z @testing-library/angular").
+- **Błąd "Unable to perform pointer interaction as the element has 'pointer-events: none'"** - Element jest wyłączony (disabled). Nie próbuj klikać wyłączonych elementów. Sprawdź stan przed interakcją: `expect(button.hasAttribute('disabled')).toBe(true)`.
+- **TypeScript błąd "Type 'FormArray<FormControl<unknown>>'"** - Explicite określ typ dla pustych tablic: `fb.array<FormControl<string>>([])`.
+- **Linter warning "Unexpected any"** - W testach drag & drop użyj type assertions: `as CdkDragDrop<string[]>` zamiast `item: undefined as any`.
+- **Błąd z tracking expression (NG0956)** - To ostrzeżenie Angular podczas testów drag & drop. Nie wpływa na testy, można je zignorować w kontekście testów jednostkowych.
 
 **Przykład kompletnego testu serwisu:**
 ```typescript
@@ -138,6 +166,99 @@ describe('MyService', () => {
                 expect(mockHttpClient.get).not.toHaveBeenCalled();
             }
         });
+    });
+});
+```
+
+**Przykład kompletnego testu komponentu z @testing-library/angular:**
+```typescript
+import 'zone.js';
+import 'zone.js/testing';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
+import { render, screen } from '@testing-library/angular';
+import userEvent from '@testing-library/user-event';
+import { FormArray, FormBuilder, FormControl } from '@angular/forms';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import type { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { MyComponent } from './my.component';
+
+describe('MyComponent', () => {
+    let fb: FormBuilder;
+
+    beforeAll(() => {
+        TestBed.resetTestEnvironment();
+        TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
+    });
+
+    beforeEach(() => {
+        fb = new FormBuilder();
+    });
+
+    async function setupComponent(componentProperties = {}) {
+        const user = userEvent.setup();
+        const rendered = await render(MyComponent, {
+            imports: [NoopAnimationsModule],
+            componentProperties: {
+                formArray: fb.array<FormControl<string>>([
+                    fb.control('Item 1', { nonNullable: true })
+                ]),
+                ...componentProperties,
+            },
+        });
+        return { ...rendered, user };
+    }
+
+    it('powinien wyrenderować element', async () => {
+        // Arrange & Act
+        await setupComponent();
+
+        // Assert
+        expect(screen.getByText('Item 1')).toBeTruthy();
+    });
+
+    it('powinien dodać element po kliknięciu', async () => {
+        // Arrange
+        const formArray = fb.array<FormControl<string>>([]);
+        const { user } = await setupComponent({ formArray });
+
+        // Act
+        const input = screen.getByPlaceholderText('Add item');
+        await user.type(input, 'New item');
+
+        const addButton = screen.getByRole('button', { name: /Add/i });
+        await user.click(addButton);
+
+        // Assert
+        expect(formArray.length).toBe(1);
+        expect(formArray.at(0).value).toBe('New item');
+        expect(screen.getByText('New item')).toBeTruthy();
+    });
+
+    it('powinien obsłużyć drag & drop', async () => {
+        // Arrange
+        const formArray = fb.array([
+            fb.control('A', { nonNullable: true }),
+            fb.control('B', { nonNullable: true }),
+        ]);
+        const { fixture } = await setupComponent({ formArray });
+
+        // Act
+        const component = fixture.componentInstance;
+        component.drop({
+            previousIndex: 0,
+            currentIndex: 1,
+            isPointerOverContainer: true,
+            distance: { x: 0, y: 0 },
+            dropPoint: { x: 0, y: 0 },
+            event: new MouseEvent('mouseup'),
+        } as CdkDragDrop<string[]>);
+        fixture.detectChanges();
+
+        // Assert
+        expect(formArray.at(0).value).toBe('B');
+        expect(formArray.at(1).value).toBe('A');
     });
 });
 ```
