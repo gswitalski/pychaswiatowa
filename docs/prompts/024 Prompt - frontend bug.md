@@ -41,18 +41,12 @@ Zapoznaj się z następującymi materiałami:
 
 <aktualne_zachowanie>
 
-Sczegóły przepisu podzielone są na dwie kolumny
-Lewa: zdjęcie -> pod spodem tytuł, opis, przyciski
-Prawa: Składnikei -> pod spodem kroki przygotowania
-
+oknodialogowe dodania przepisu do kolekcji na lemencie mat-dialog-content wyświetla scroller pionowe
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-Sczegóły przepisu podzielone są dwa wiersze
-wiersz 1 (header) -  kolumna lewa: tytuł, opis, przyciski, kolumna prawa: zdjęcie
-wiersz 2 (składniki i kroki) - kolumnna lewa: składniki. kolumna prawa : kroki przygotowania
-
+sroller jest niepotrzebny bo okno potrafi samo się powiekszać
 
 </oczekiwane_zachowanie>
 

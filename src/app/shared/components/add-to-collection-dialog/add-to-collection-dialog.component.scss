@@ -1,3 +1,9 @@
+// Usunięcie domyślnego scrollbara z mat-dialog-content
+// Lista kolekcji ma własny scrolling, więc dialog nie potrzebuje dodatkowego
+mat-dialog-content {
+    overflow: visible;
+}
+
 .dialog-description {
     color: var(--mat-sys-on-surface-variant);
     margin: 0 0 16px;
