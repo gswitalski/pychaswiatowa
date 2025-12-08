@@ -49,3 +49,11 @@ Thumbs.db
 
 # Angular production environment (zawiera wrażliwe klucze produkcyjne)
 src/environments/environment.production.ts
+
+# Test results
+/test-results
+/playwright-report
+/blob-report
+/.nyc_output
+/coverage
+*.lcov

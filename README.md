@@ -36,7 +36,9 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
-## Running unit tests
+## Testing
+
+### Unit tests (Vitest)
 
 To execute unit tests with [Vitest](https://vitest.dev/), use the following command:
 
@@ -46,7 +48,7 @@ npm run test
 
 Vitest provides fast and modern unit testing capabilities for the application, allowing you to test components, services, and other Angular modules in isolation.
 
-## Running end-to-end tests
+### End-to-end tests (Playwright)
 
 For end-to-end (e2e) testing with [Playwright](https://playwright.dev/), run:
 
@@ -55,6 +57,18 @@ npm run test:e2e
 ```
 
 Playwright enables automated browser testing, simulating real user interactions to verify critical user flows across the application.
+
+### More testing commands
+
+```bash
+npm run test:watch        # Watch mode for unit tests
+npm run test:ui           # Visual UI for unit tests
+npm run test:coverage     # Generate coverage report
+npm run test:e2e:ui       # Interactive mode for E2E tests
+npm run test:e2e:debug    # Debug mode for E2E tests
+```
+
+📖 **For detailed testing documentation, see [TESTING.md](TESTING.md)**
 
 ## Additional Resources
 
