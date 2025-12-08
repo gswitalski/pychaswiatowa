@@ -38,21 +38,23 @@ This will compile your project and store the build artifacts in the `dist/` dire
 
 ## Running unit tests
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+To execute unit tests with [Vitest](https://vitest.dev/), use the following command:
 
 ```bash
-ng test
+npm run test
 ```
+
+Vitest provides fast and modern unit testing capabilities for the application, allowing you to test components, services, and other Angular modules in isolation.
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+For end-to-end (e2e) testing with [Playwright](https://playwright.dev/), run:
 
 ```bash
-ng e2e
+npm run test:e2e
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Playwright enables automated browser testing, simulating real user interactions to verify critical user flows across the application.
 
 ## Additional Resources
 

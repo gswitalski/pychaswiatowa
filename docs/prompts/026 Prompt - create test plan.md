@@ -50,4 +50,4 @@ Upewnij się, że plan jest:
 - Zawiera konkretne przykłady bazujące na rzeczywistym kodzie
 - Uwzględnia najlepsze praktyki dla danej technologii
 
-Cała odpowiedź musi być napisana w języku polskim. Twoja finalna odpowiedź powinna zawierać tylko kompletny plan testów bez powtarzania sekcji scratchpad.
+Cała odpowiedź musi być napisana w języku polskim. Twoja finalna odpowiedź powinna zawierać tylko kompletny plan testów bez powtarzania sekcji scratchpad zapisana w formacie markdown w pliku 'docs/results/test_plan.md'

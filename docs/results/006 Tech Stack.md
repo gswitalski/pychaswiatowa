@@ -20,11 +20,28 @@ W celu maksymalnego przyspieszenia prac nad wersją MVP i zminimalizowania koszt
     *   **Authentication:** Gotowy do użycia, bezpieczny system uwierzytelniania użytkowników, który obsłuży rejestrację, logowanie i zarządzanie sesjami za pomocą adresu e-mail i hasła. Mechanizmy Row Level Security (RLS) zapewnią, że każdy użytkownik będzie miał dostęp wyłącznie do swoich danych.
     *   **Storage:** Usługa do przechowywania i serwowania plików, która zostanie wykorzystana do obsługi przesyłania i wyświetlania zdjęć przepisów.
 
+## Testowanie
+
+Jakość aplikacji jest zapewniana przez wielopoziomową strategię testowania, opartą na Piramidzie Testów, która obejmuje testy jednostkowe, integracyjne oraz end-to-end.
+
+*   **Vitest:** Nowoczesny i wydajny framework do testów jednostkowych i integracyjnych. Vitest został wybrany ze względu na:
+    *   Bardzo szybkie wykonywanie testów dzięki natywnej obsłudze ES modules.
+    *   Pełną kompatybilność z TypeScript bez dodatkowej konfiguracji.
+    *   Intuitive API kompatybilne z Jest, co ułatwia migrację i naukę.
+    *   Możliwość izolowania i mockowania komponentów oraz serwisów Angular.
+    
+*   **Playwright:** Framework do automatyzacji testów end-to-end (E2E), który umożliwia symulację rzeczywistych interakcji użytkownika w przeglądarce. Playwright wyróżnia się:
+    *   Wsparciem dla wielu przeglądarek (Chromium, Firefox, WebKit) z jednym API.
+    *   Możliwością testowania aplikacji w różnych rozdzielczościach i na różnych urządzeniach.
+    *   Zaawansowanymi możliwościami debugowania i nagrywania testów.
+    *   Stabilnymi selektorami i automatycznym oczekiwaniem na elementy.
+
 ## CI/CD (Ciągła Integracja i Ciągłe Dostarczanie)
 
 Procesy budowania, testowania i wdrażania aplikacji zostaną zautomatyzowane, aby zapewnić wysoką jakość kodu i szybkość dostarczania nowych funkcjonalności.
 
 *   **GitHub & GitHub Actions:** Repozytorium kodu będzie hostowane na platformie GitHub. Zintegrowany z nim system GitHub Actions posłuży jako narzędzie CI/CD. Zostaną skonfigurowane automatyczne procesy (workflows), które po każdym `push` do głównej gałęzi będą:
     1.  Instalować zależności projektu.
-    2.  Uruchamiać testy (jednostkowe i e2e).
-    3.  Budować produkcyjną wersję aplikacji frontendowej.
+    2.  Uruchamiać testy jednostkowe i integracyjne (Vitest).
+    3.  Uruchamiać testy end-to-end (Playwright) na środowisku deweloperskim.
+    4.  Budować produkcyjną wersję aplikacji frontendowej.
