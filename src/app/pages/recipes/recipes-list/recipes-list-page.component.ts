@@ -22,7 +22,6 @@ import { CategoriesService } from '../../../core/services/categories.service';
 import { TagsService } from '../../../core/services/tags.service';
 import {
     CategoryDto,
-    PaginatedResponseDto,
     RecipeListItemDto,
     TagDto,
 } from '../../../../../shared/contracts/types';
@@ -141,7 +140,7 @@ export class RecipesListPageComponent implements OnInit {
                 // Teraz załaduj przepisy
                 this.loadRecipes(this.filters(), this.paginationState());
             },
-            error: (err) => {
+            error: () => {
                 this.state.update((s) => ({
                     ...s,
                     isInitialLoading: false,
@@ -179,7 +178,7 @@ export class RecipesListPageComponent implements OnInit {
                     isLoading: false,
                 }));
             },
-            error: (err) => {
+            error: () => {
                 this.state.update((s) => ({
                     ...s,
                     isLoading: false,

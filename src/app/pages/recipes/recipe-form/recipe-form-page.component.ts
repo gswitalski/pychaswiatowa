@@ -29,7 +29,6 @@ import { EditableListComponent } from '../../../shared/components/editable-list/
 import { CategoriesService } from '../../../core/services/categories.service';
 import { RecipesService } from '../services/recipes.service';
 import {
-    CategoryDto,
     RecipeDetailDto,
     CreateRecipeCommand,
     UpdateRecipeCommand,
@@ -299,7 +298,7 @@ export class RecipeFormPageComponent implements OnInit {
 
     /** Custom validator to check minimum array length */
     private minArrayLength(min: number) {
-        return (control: FormArray): { [key: string]: boolean } | null => {
+        return (control: FormArray): Record<string, boolean> | null => {
             if (control.length < min) {
                 return { minArrayLength: true };
             }

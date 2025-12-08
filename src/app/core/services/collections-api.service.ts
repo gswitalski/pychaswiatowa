@@ -5,7 +5,6 @@ import {
     CollectionListItemDto,
     CollectionDetailDto,
     RecipeListItemDto,
-    PaginatedResponseDto,
     CreateCollectionCommand,
     UpdateCollectionCommand,
 } from '../../../../shared/contracts/types';
@@ -92,8 +91,8 @@ export class CollectionsApiService {
      */
     getCollectionDetails(
         id: number,
-        page: number = 1,
-        limit: number = 12
+        page = 1,
+        limit = 12
     ): Observable<CollectionDetailDto> {
         return from(this.fetchCollectionDetails(id, page, limit)).pipe(
             map((result) => {

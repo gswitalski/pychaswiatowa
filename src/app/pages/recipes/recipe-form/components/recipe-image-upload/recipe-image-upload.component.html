@@ -26,11 +26,16 @@
                 (change)="onFileSelected($event)"
                 class="file-input"
             />
-            <div class="upload-content" (click)="fileInput.click()">
+            <button
+                type="button"
+                class="upload-content"
+                (click)="fileInput.click()"
+                aria-label="Wybierz zdjęcie do przesłania"
+            >
                 <mat-icon class="upload-icon">add_photo_alternate</mat-icon>
                 <p class="upload-text">Kliknij, aby dodać zdjęcie</p>
                 <p class="upload-hint">JPG, PNG lub WebP (max. 5MB)</p>
-            </div>
+            </button>
         </div>
     }
 

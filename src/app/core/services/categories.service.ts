@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Observable, from, map, tap, of } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { CategoryDto } from '../../../../shared/contracts/types';
