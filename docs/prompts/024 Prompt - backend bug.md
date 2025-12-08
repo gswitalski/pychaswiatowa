@@ -34,13 +34,13 @@ Zapoznaj się z następującymi materiałami:
 </aktualna_implementacja>
 
 <aktualne_zachowanie>
-na produkcji Błąd konfiguracji serwera - brak APP_PUBLIC_URL
+rejestracja nowego uzytkownika nie tworzy rekordu w tabeli profiles
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-poprawna konfiguracja środowiska produkcyjnego
+rejestracja nowego uzytkownika tworzy odpowiednie rekord w tabeli profiles
 
 </oczekiwane_zachowanie>
 
