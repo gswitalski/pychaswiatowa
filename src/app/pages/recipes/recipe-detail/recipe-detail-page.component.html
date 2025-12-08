@@ -31,21 +31,25 @@
         </mat-card>
     } @else if (hasRecipe()) {
         <div class="recipe-content">
-            <div class="recipe-main">
+            <!-- Wiersz 1: Header - tytuł, opis, przyciski (lewa) + zdjęcie (prawa) -->
+            <div class="recipe-header-section">
+                <div class="recipe-info">
+                    <pych-recipe-header [recipe]="recipe()!" />
+
+                    <pych-recipe-actions
+                        (editClicked)="onEdit()"
+                        (deleteClicked)="onDelete()"
+                        (addToCollectionClicked)="onAddToCollection()"
+                    />
+                </div>
+
                 <pych-recipe-image
                     [imageUrl]="recipe()!.image_path"
                     [recipeName]="recipe()!.name ?? ''"
                 />
-
-                <pych-recipe-header [recipe]="recipe()!" />
-
-                <pych-recipe-actions
-                    (editClicked)="onEdit()"
-                    (deleteClicked)="onDelete()"
-                    (addToCollectionClicked)="onAddToCollection()"
-                />
             </div>
 
+            <!-- Wiersz 2: Składniki (lewa) + kroki przygotowania (prawa) -->
             <div class="recipe-details">
                 <pych-recipe-content-list
                     title="Składniki"

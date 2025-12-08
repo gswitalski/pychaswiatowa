@@ -39,3 +39,4 @@ export const initialCollectionDetailsState: CollectionDetailsViewModel = {
     isLoading: true,
     error: null,
 };
+

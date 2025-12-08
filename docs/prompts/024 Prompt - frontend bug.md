@@ -37,22 +37,22 @@ Zapoznaj się z następującymi materiałami:
 <aktualna_implementacja>
 
 
-
 </aktualna_implementacja>
 
 <aktualne_zachowanie>
 
-Widok Potwierdzenia E-mail (Email Confirmation View)** Ścieżka:`/auth/confirm-email`
-czeka na potwierdzenie maila po czym pisze, że linkt aktywacyjny wygasł, choć taknaprawde link został aktywowanyproawidłowo i możmna się logować
-
+Sczegóły przepisu podzielone są na dwie kolumny
+Lewa: zdjęcie -> pod spodem tytuł, opis, przyciski
+Prawa: Składnikei -> pod spodem kroki przygotowania
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-Na widok  
-Widok Potwierdzenia E-mail (Email Confirmation View)** Ścieżka:`/auth/confirm-email`
-Wyświela informację o poprawnym aktywowaniu maila
+Sczegóły przepisu podzielone są dwa wiersze
+wiersz 1 (header) -  kolumna lewa: tytuł, opis, przyciski, kolumna prawa: zdjęcie
+wiersz 2 (składniki i kroki) - kolumnna lewa: składniki. kolumna prawa : kroki przygotowania
+
 
 </oczekiwane_zachowanie>
 

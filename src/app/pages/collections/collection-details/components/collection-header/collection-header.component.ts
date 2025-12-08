@@ -21,3 +21,4 @@ export class CollectionHeaderComponent {
     /** Dane kolekcji do wyświetlenia */
     readonly collectionData = input.required<CollectionHeaderData>();
 }
+
