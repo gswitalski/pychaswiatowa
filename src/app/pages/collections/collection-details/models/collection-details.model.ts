@@ -40,3 +40,4 @@ export const initialCollectionDetailsState: CollectionDetailsViewModel = {
     error: null,
 };
 
+

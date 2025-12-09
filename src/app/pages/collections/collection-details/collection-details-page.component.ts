@@ -253,3 +253,4 @@ export class CollectionDetailsPageComponent implements OnDestroy {
     }
 }
 
+

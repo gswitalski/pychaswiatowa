@@ -22,3 +22,4 @@ export class CollectionHeaderComponent {
     readonly collectionData = input.required<CollectionHeaderData>();
 }
 
+

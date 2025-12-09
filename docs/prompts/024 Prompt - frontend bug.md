@@ -41,12 +41,12 @@ Zapoznaj się z następującymi materiałami:
 
 <aktualne_zachowanie>
 
-oknodialogowe dodania przepisu do kolekcji na lemencie mat-dialog-content wyświetla scroller pionowe
+okno dialogowe dodania przepisu do kolekcji wyświetla kolekcje do których już ten przepis nalezy
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-sroller jest niepotrzebny bo okno potrafi samo się powiekszać
+okno dialogowe dodania przepisu do kolekcji nie wyświetla kolekcji do których już ten przepis nalezy
 
 </oczekiwane_zachowanie>
 
