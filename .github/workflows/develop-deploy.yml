@@ -1,0 +1,107 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  # Job 1: Testy jednostkowe
+  test:
+    name: 🧪 Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:run
+
+  # Job 2: Wdrożenie backendu (Supabase)
+  deploy-backend:
+    name: 🚀 Deploy Backend (Supabase)
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase project
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Push database migrations
+        run: |
+          supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Set Edge Function secrets
+        run: |
+          supabase secrets set APP_PUBLIC_URL=${{ secrets.APP_PUBLIC_URL }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  # Job 3: Wdrożenie frontendu (Firebase)
+  deploy-frontend:
+    name: 🌐 Deploy Frontend (Firebase)
+    runs-on: ubuntu-latest
+    needs: [deploy-backend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure production environment
+        run: |
+          cat > src/environments/environment.production.ts << EOF
+          export const environment = {
+              production: true,
+              supabase: {
+                  url: '${{ secrets.SUPABASE_URL }}',
+                  anonKey: '${{ secrets.SUPABASE_ANON_KEY }}'
+              }
+          };
+          EOF
+
+      - name: Build Angular app
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PYCHASWIATOWA_PROD }}'
+          channelId: live
+          projectId: pychaswiatowa-prod
