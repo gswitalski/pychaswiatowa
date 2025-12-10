@@ -41,12 +41,13 @@ Zapoznaj się z następującymi materiałami:
 
 <aktualne_zachowanie>
 
-okno dialogowe dodania przepisu do kolekcji wyświetla kolekcje do których już ten przepis nalezy
+Widok szczegółow przepisu prezentuje kategorię i tagi. Po kliknięciu na kategorię lub taga system przehodzi do listy wsztystkich przepisów bez filtrowania
+
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-okno dialogowe dodania przepisu do kolekcji nie wyświetla kolekcji do których już ten przepis nalezy
+ Po kliknięciu na kategorię lub taga system przehodzi do listy wsztystkich przepisów i fitruje je po wybranej kategorii lub tagu
 
 </oczekiwane_zachowanie>
 

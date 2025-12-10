@@ -8,7 +8,7 @@ import {
     signal,
     untracked,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -61,6 +61,7 @@ interface RecipesPageState {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipesListPageComponent implements OnInit {
+    private readonly route = inject(ActivatedRoute);
     private readonly recipesService = inject(RecipesService);
     private readonly categoriesService = inject(CategoriesService);
     private readonly tagsService = inject(TagsService);
@@ -116,6 +117,28 @@ export class RecipesListPageComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        // Odczytaj query parameters z URL i ustaw początkowe filtry
+        const categoryParam = this.route.snapshot.queryParamMap.get('category');
+        const tagParam = this.route.snapshot.queryParamMap.get('tag');
+
+        const initialFilters: RecipesFiltersViewModel = { ...DEFAULT_FILTERS };
+
+        // Ustaw filtr kategorii jeśli jest w URL
+        if (categoryParam) {
+            const categoryId = parseInt(categoryParam, 10);
+            if (!isNaN(categoryId)) {
+                initialFilters.categoryId = categoryId;
+            }
+        }
+
+        // Ustaw filtr tagu jeśli jest w URL
+        if (tagParam) {
+            initialFilters.tags = [tagParam];
+        }
+
+        // Zaktualizuj stan filtrów przed załadowaniem danych
+        this.filters.set(initialFilters);
+
         this.loadInitialData();
     }
 

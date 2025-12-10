@@ -21,7 +21,7 @@
                 @for (tag of recipe().tags; track tag.id) {
                     <mat-chip
                         [routerLink]="['/recipes']"
-                        [queryParams]="{ tag: tag.id }"
+                        [queryParams]="{ tag: tag.name }"
                     >
                         {{ tag.name }}
                     </mat-chip>
