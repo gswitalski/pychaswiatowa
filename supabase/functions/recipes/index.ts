@@ -27,6 +27,17 @@
  * - steps_raw (string, required) - Raw steps text
  * - tags (string[], optional) - Array of tag names
  *
+ * POST /functions/v1/recipes/import
+ * Creates a new recipe from a raw text block for the authenticated user.
+ * The server parses the text to extract the recipe name, ingredients, and steps.
+ * Expected format:
+ * - Title: Line starting with `#` (required)
+ * - Main sections: Lines starting with `##` (e.g., "## Składniki", "## Kroki")
+ * - Subsections: Lines starting with `###` (headers within sections)
+ * - Items: Lines starting with `-` (ingredients or steps)
+ * Request Body (JSON):
+ * - raw_text (string, required) - Raw text block containing the recipe
+ *
  * PUT /functions/v1/recipes/{id}
  * Updates an existing recipe for the authenticated user.
  * Request Body (JSON) - all fields optional, at least one required:

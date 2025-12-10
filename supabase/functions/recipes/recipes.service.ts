@@ -631,3 +631,157 @@ export async function updateRecipe(
     return recipeDetail;
 }
 
+/**
+ * Parses raw text to extract recipe name, ingredients, and steps.
+ * Expected format:
+ * - Title: Line starting with `#` (required)
+ * - Main sections: Lines starting with `##` (e.g., "## Składniki", "## Kroki")
+ * - Subsections: Lines starting with `###` (headers within sections)
+ * - Items: Lines starting with `-` (ingredients or steps)
+ *
+ * @param rawText - The raw text block containing the recipe
+ * @returns Parsed recipe components
+ * @throws ApplicationError with VALIDATION_ERROR if title is missing
+ */
+function parseRecipeText(rawText: string): {
+    name: string;
+    ingredientsRaw: string;
+    stepsRaw: string;
+} {
+    logger.info('Parsing recipe text', { textLength: rawText.length });
+
+    const lines = rawText.split('\n').map((line) => line.trim());
+
+    let name = '';
+    let ingredientsRaw = '';
+    let stepsRaw = '';
+    let currentSection: 'none' | 'ingredients' | 'steps' = 'none';
+
+    for (const line of lines) {
+        // Skip empty lines
+        if (line.length === 0) {
+            continue;
+        }
+
+        // Extract title (# Title)
+        if (line.startsWith('# ')) {
+            name = line.substring(2).trim();
+            logger.debug('Found recipe title', { name });
+            continue;
+        }
+
+        // Detect main sections (## Section Name)
+        if (line.startsWith('## ')) {
+            const sectionName = line.substring(3).trim().toLowerCase();
+            
+            // Detect "Składniki" section (ingredients)
+            if (sectionName.includes('składnik') || sectionName.includes('ingredient')) {
+                currentSection = 'ingredients';
+                logger.debug('Entering ingredients section');
+            }
+            // Detect "Kroki" or "Przygotowanie" section (steps)
+            else if (
+                sectionName.includes('krok') ||
+                sectionName.includes('przygotowanie') ||
+                sectionName.includes('step') ||
+                sectionName.includes('instruction')
+            ) {
+                currentSection = 'steps';
+                logger.debug('Entering steps section');
+            } else {
+                // Unknown section, skip
+                currentSection = 'none';
+            }
+            continue;
+        }
+
+        // Add content to the appropriate section
+        if (currentSection === 'ingredients') {
+            ingredientsRaw += line + '\n';
+        } else if (currentSection === 'steps') {
+            stepsRaw += line + '\n';
+        }
+    }
+
+    // Validate that we have a title
+    if (!name || name.length === 0) {
+        logger.warn('Recipe import failed: missing title');
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'Invalid recipe format. A title (#) is required.'
+        );
+    }
+
+    // Trim the collected raw text
+    ingredientsRaw = ingredientsRaw.trim();
+    stepsRaw = stepsRaw.trim();
+
+    logger.info('Recipe text parsed successfully', {
+        name,
+        ingredientsLength: ingredientsRaw.length,
+        stepsLength: stepsRaw.length,
+    });
+
+    return {
+        name,
+        ingredientsRaw,
+        stepsRaw,
+    };
+}
+
+/**
+ * Creates a new recipe from a raw text block for the authenticated user.
+ * Parses the text to extract the recipe name, ingredients, and steps,
+ * then delegates to the createRecipe function.
+ *
+ * @param client - The authenticated Supabase client
+ * @param userId - The ID of the authenticated user
+ * @param rawText - The raw text block containing the recipe
+ * @returns RecipeDetailDto with full details of the newly created recipe
+ * @throws ApplicationError with VALIDATION_ERROR if text is empty or missing required fields
+ * @throws ApplicationError with INTERNAL_ERROR for database errors
+ */
+export async function importRecipeFromText(
+    client: TypedSupabaseClient,
+    userId: string,
+    rawText: string
+): Promise<RecipeDetailDto> {
+    logger.info('Importing recipe from text', {
+        userId,
+        textLength: rawText.length,
+    });
+
+    // Validate that raw text is not empty
+    if (!rawText || rawText.trim().length === 0) {
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'Raw text cannot be empty'
+        );
+    }
+
+    // Parse the raw text to extract recipe components
+    const { name, ingredientsRaw, stepsRaw } = parseRecipeText(rawText);
+
+    // Prepare input for createRecipe
+    const createRecipeInput: CreateRecipeInput = {
+        name,
+        description: null,
+        category_id: null,
+        ingredients_raw: ingredientsRaw || '- (empty)', // Provide fallback if empty
+        steps_raw: stepsRaw || '- (empty)', // Provide fallback if empty
+        tags: [],
+    };
+
+    logger.info('Creating recipe from parsed text', { name });
+
+    // Delegate to the existing createRecipe function
+    const recipeDetail = await createRecipe(client, userId, createRecipeInput);
+
+    logger.info('Recipe imported successfully', {
+        recipeId: recipeDetail.id,
+        recipeName: recipeDetail.name,
+    });
+
+    return recipeDetail;
+}
+

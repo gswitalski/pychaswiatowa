@@ -12,6 +12,7 @@ import {
     getRecipeById,
     createRecipe,
     updateRecipe,
+    importRecipeFromText,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
@@ -138,6 +139,20 @@ const updateRecipeSchema = z
             message: 'At least one field must be provided for update',
         }
     );
+
+/**
+ * Schema for validating POST /recipes/import request body.
+ * Validates the ImportRecipeCommand model.
+ */
+const importRecipeSchema = z.object({
+    raw_text: z
+        .string({
+            required_error: 'Raw text is required',
+            invalid_type_error: 'Raw text must be a string',
+        })
+        .min(1, 'Raw text cannot be empty')
+        .transform((val) => val.trim()),
+});
 
 /**
  * Schema for validating GET /recipes query parameters.
@@ -503,6 +518,81 @@ export async function handleUpdateRecipe(
 }
 
 /**
+ * Handles POST /recipes/import request.
+ * Creates a new recipe from a raw text block for the authenticated user.
+ * The server parses the text to extract the recipe name, ingredients, and steps.
+ *
+ * @param req - The incoming HTTP request
+ * @returns Response with RecipeDetailDto on success (201), or error response
+ */
+export async function handleImportRecipe(req: Request): Promise<Response> {
+    try {
+        logger.info('Handling POST /recipes/import request');
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Parse and validate request body
+        let requestBody: unknown;
+        try {
+            requestBody = await req.json();
+        } catch {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'Invalid JSON in request body'
+            );
+        }
+
+        const validationResult = importRecipeSchema.safeParse(requestBody);
+
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+
+            logger.warn('Invalid request body for POST /recipes/import', {
+                errors: errorDetails,
+            });
+
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `Invalid input: ${errorDetails}`
+            );
+        }
+
+        const validatedData = validationResult.data;
+
+        // Call the service to import the recipe
+        const result: RecipeDetailDto = await importRecipeFromText(
+            client,
+            user.id,
+            validatedData.raw_text
+        );
+
+        logger.info('POST /recipes/import completed successfully', {
+            userId: user.id,
+            recipeId: result.id,
+            recipeName: result.name,
+        });
+
+        return createCreatedResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
+ * Checks if the URL path matches /recipes/import.
+ *
+ * @param url - The URL object to check
+ * @returns True if the path is /recipes/import, false otherwise
+ */
+function isImportPath(url: URL): boolean {
+    const pathname = url.pathname;
+    return /\/recipes\/import\/?$/.test(pathname);
+}
+
+/**
  * Extracts the recipe ID from a URL path if it matches /recipes/{id} pattern.
  * Returns null if the path doesn't match the pattern or is the base /recipes path.
  *
@@ -531,6 +621,7 @@ function extractRecipeIdFromPath(url: URL): string | null {
  * - GET /recipes - List all recipes (paginated)
  * - GET /recipes/{id} - Get single recipe by ID
  * - POST /recipes - Create a new recipe
+ * - POST /recipes/import - Import a recipe from raw text
  * - PUT /recipes/{id} - Update an existing recipe
  *
  * @param req - The incoming HTTP request
@@ -540,8 +631,11 @@ export async function recipesRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
     const url = new URL(req.url);
 
-    // Extract recipe ID from path (if present)
-    const recipeId = extractRecipeIdFromPath(url);
+    // Check for /recipes/import path first (before checking for recipe ID)
+    const isImport = isImportPath(url);
+
+    // Extract recipe ID from path (if present and not import path)
+    const recipeId = isImport ? null : extractRecipeIdFromPath(url);
 
     // Handle CORS preflight request
     if (method === 'OPTIONS') {
@@ -557,6 +651,24 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Route GET requests
     if (method === 'GET') {
+        // GET /recipes/import is not allowed
+        if (isImport) {
+            logger.warn('GET /recipes/import not allowed');
+            return new Response(
+                JSON.stringify({
+                    code: 'METHOD_NOT_ALLOWED',
+                    message: 'GET method is not allowed for /recipes/import. Use POST.',
+                }),
+                {
+                    status: 405,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Allow': 'POST, OPTIONS',
+                    },
+                }
+            );
+        }
+
         // If recipe ID is present, get single recipe
         if (recipeId) {
             return handleGetRecipeById(req, recipeId);
@@ -566,8 +678,13 @@ export async function recipesRouter(req: Request): Promise<Response> {
         return handleGetRecipes(req);
     }
 
-    // Route POST requests (only for base /recipes path)
+    // Route POST requests
     if (method === 'POST') {
+        // Handle POST /recipes/import
+        if (isImport) {
+            return handleImportRecipe(req);
+        }
+
         // POST with recipe ID is not allowed (use PUT for updates)
         if (recipeId) {
             logger.warn('POST with recipe ID not allowed', { recipeId });
@@ -592,6 +709,24 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Route PUT requests (only for /recipes/{id} path)
     if (method === 'PUT') {
+        // PUT /recipes/import is not allowed
+        if (isImport) {
+            logger.warn('PUT /recipes/import not allowed');
+            return new Response(
+                JSON.stringify({
+                    code: 'METHOD_NOT_ALLOWED',
+                    message: 'PUT method is not allowed for /recipes/import. Use POST.',
+                }),
+                {
+                    status: 405,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Allow': 'POST, OPTIONS',
+                    },
+                }
+            );
+        }
+
         // PUT without recipe ID is not allowed
         if (!recipeId) {
             logger.warn('PUT without recipe ID not allowed');
@@ -616,9 +751,13 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Method not allowed - determine allowed methods based on path
     logger.warn('Method not allowed', { method, path: url.pathname });
-    const allowedMethods = recipeId
-        ? 'GET, PUT, DELETE, OPTIONS'
-        : 'GET, POST, OPTIONS';
+    let allowedMethods = 'GET, POST, OPTIONS';
+    
+    if (isImport) {
+        allowedMethods = 'POST, OPTIONS';
+    } else if (recipeId) {
+        allowedMethods = 'GET, PUT, DELETE, OPTIONS';
+    }
 
     return new Response(
         JSON.stringify({
