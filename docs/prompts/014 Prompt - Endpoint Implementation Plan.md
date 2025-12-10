@@ -4,41 +4,29 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
-### Nowy Endpoint
+### Search
 
-#### `POST /recipes/import`
+#### `GET /search/global`
 
--   **Description**: Create a new recipe from a raw text block. The server is responsible for parsing the text and structuring it into the required JSONB format.
--   **Request Payload**:
-    ```json
-    {
-      "raw_text": "# Pizza\n## Składniki\n### Ciasto\n - mąka\n - drożdże\n## Kroki\n - krok 1"
-    }
-    ```
+-   **Description**: Global search endpoint ("Omnibox"). Searches across user's recipes and collections simultaneously. Used for quick navigation from the Topbar.
+-   **Query Parameters**:
+    -   `q` (required, string): Search query (min 2 characters).
 -   **Success Response**:
-    -   **Code**: `201 Created`
-    -   **Payload**: Zwraca pełny obiekt nowo utworzonego przepisu (analogicznie do `POST /recipes`), aby klient mógł uzyskać jego ID i przejść do edycji.
+    -   **Code**: `200 OK`
+    -   **Payload**:
         ```json
         {
-          "id": 102,
-          "name": "Pizza",
-          "description": null,
-          "category_id": null,
-          "ingredients": [
-            {"type": "header", "content": "Ciasto"},
-            {"type": "item", "content": "mąka"},
-            {"type": "item", "content": "drożdże"}
+          "recipes": [
+            { "id": 1, "name": "Apple Pie", "category": "Dessert" },
+            { "id": 15, "name": "Spaghetti", "category": "Dinner" }
           ],
-          "steps": [
-            {"type": "item", "content": "krok 1"}
-          ],
-          "tags": [],
-          "created_at": "2023-10-28T10:00:00Z"
+          "collections": [
+            { "id": 3, "name": "Quick Dinners" }
+          ]
         }
         ```
 -   **Error Response**:
-    -   **Code**: `400 Bad Request` - Jeśli tekst jest pusty lub ma nieprawidłowy format, który uniemożliwia parsowanie.
-    -   **Payload**: `{ "message": "Invalid recipe format. A title (#) is required." }`
+    -   **Code**: `400 Bad Request` (if `q` is missing or too short)
     -   **Code**: `401 Unauthorized`
 
 
