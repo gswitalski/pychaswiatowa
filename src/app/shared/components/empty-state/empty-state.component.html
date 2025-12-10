@@ -1,0 +1,13 @@
+<div class="empty-state">
+    <div class="empty-state__icon-wrapper">
+        <mat-icon class="empty-state__icon">{{ icon() }}</mat-icon>
+    </div>
+    <h3 class="empty-state__title">{{ title() }}</h3>
+    @if (description()) {
+        <p class="empty-state__description">{{ description() }}</p>
+    }
+    <div class="empty-state__action">
+        <ng-content />
+    </div>
+</div>
+

@@ -14,5 +14,6 @@ export const collectionsRoutes: Routes = [
             import(
                 './collection-details/collection-details-page.component'
             ).then((m) => m.CollectionDetailsPageComponent),
+        data: { breadcrumb: 'Szczegóły' },
     },
 ];

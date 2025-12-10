@@ -28,6 +28,8 @@ import {
 } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { CollectionListComponent } from './components/collection-list/collection-list.component';
 import { CollectionFormComponent } from './components/collection-form/collection-form.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 
 @Component({
     selector: 'pych-collections-list-page',
@@ -39,6 +41,8 @@ import { CollectionFormComponent } from './components/collection-form/collection
         MatDialogModule,
         MatSnackBarModule,
         CollectionListComponent,
+        PageHeaderComponent,
+        EmptyStateComponent,
     ],
     templateUrl: './collections-list-page.component.html',
     styleUrl: './collections-list-page.component.scss',

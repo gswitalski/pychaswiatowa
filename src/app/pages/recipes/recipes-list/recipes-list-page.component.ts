@@ -17,6 +17,8 @@ import { forkJoin } from 'rxjs';
 
 import { RecipesFiltersComponent } from './components/recipes-filters/recipes-filters.component';
 import { RecipeListComponent } from './components/recipe-list/recipe-list.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { RecipesService, GetRecipesParams } from '../services/recipes.service';
 import { CategoriesService } from '../../../core/services/categories.service';
 import { TagsService } from '../../../core/services/tags.service';
@@ -55,6 +57,8 @@ interface RecipesPageState {
         MatSnackBarModule,
         RecipesFiltersComponent,
         RecipeListComponent,
+        PageHeaderComponent,
+        EmptyStateComponent,
     ],
     templateUrl: './recipes-list-page.component.html',
     styleUrl: './recipes-list-page.component.scss',

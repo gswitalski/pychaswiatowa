@@ -1,17 +1,14 @@
 <div class="recipes-list-page">
-    <header class="page-header">
-        <h1>Moje przepisy</h1>
-        <div class="header-actions">
-            <a mat-stroked-button routerLink="/recipes/import">
-                <mat-icon>upload_file</mat-icon>
-                Importuj przepis
-            </a>
-            <a mat-flat-button color="primary" routerLink="/recipes/new">
-                <mat-icon>add</mat-icon>
-                Dodaj przepis
-            </a>
-        </div>
-    </header>
+    <pych-page-header title="Moje przepisy">
+        <a mat-stroked-button routerLink="/recipes/import">
+            <mat-icon>upload_file</mat-icon>
+            Importuj przepis
+        </a>
+        <a mat-flat-button color="primary" routerLink="/recipes/new">
+            <mat-icon>add</mat-icon>
+            Dodaj przepis
+        </a>
+    </pych-page-header>
 
     @if (isInitialLoading()) {
         <div class="initial-loading">
@@ -19,28 +16,43 @@
             <p>Ładowanie...</p>
         </div>
     } @else {
-        <pych-recipes-filters
-            [initialFilters]="filters()"
-            [categories]="categories()"
-            [tags]="tags()"
-            (filtersChange)="onFiltersChange($event)"
-        />
-
-        <pych-recipe-list
-            [recipes]="recipes()"
-            [isLoading]="isLoading()"
-        />
-
-        @if (pagination().totalItems > 0) {
-            <mat-paginator
-                [length]="pagination().totalItems"
-                [pageSize]="paginationState().limit"
-                [pageIndex]="paginationState().page - 1"
-                [pageSizeOptions]="pageSizeOptions"
-                (page)="onPageChange($event)"
-                showFirstLastButtons
-                aria-label="Wybierz stronę"
+        <div class="recipes-list-page__content">
+            <pych-recipes-filters
+                [initialFilters]="filters()"
+                [categories]="categories()"
+                [tags]="tags()"
+                (filtersChange)="onFiltersChange($event)"
             />
-        }
+
+            @if (recipes().length === 0 && !isLoading()) {
+                <pych-empty-state
+                    icon="menu_book"
+                    title="Brak przepisów"
+                    description="Nie masz jeszcze żadnych przepisów. Dodaj swój pierwszy przepis lub zaimportuj go z tekstu."
+                >
+                    <a mat-flat-button color="primary" routerLink="/recipes/new">
+                        <mat-icon>add</mat-icon>
+                        Dodaj przepis
+                    </a>
+                </pych-empty-state>
+            } @else {
+                <pych-recipe-list
+                    [recipes]="recipes()"
+                    [isLoading]="isLoading()"
+                />
+
+                @if (pagination().totalItems > 0) {
+                    <mat-paginator
+                        [length]="pagination().totalItems"
+                        [pageSize]="paginationState().limit"
+                        [pageIndex]="paginationState().page - 1"
+                        [pageSizeOptions]="pageSizeOptions"
+                        (page)="onPageChange($event)"
+                        showFirstLastButtons
+                        aria-label="Wybierz stronę"
+                    />
+                }
+            }
+        </div>
     }
 </div>

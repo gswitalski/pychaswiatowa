@@ -1,0 +1,76 @@
+<div class="omnibox">
+    <mat-form-field appearance="outline" class="omnibox__field">
+        <mat-icon matPrefix class="omnibox__search-icon">search</mat-icon>
+        <input
+            matInput
+            type="text"
+            placeholder="Szukaj przepisów i kolekcji..."
+            [formControl]="searchControl"
+            [matAutocomplete]="auto"
+            autocomplete="off"
+        />
+        @if (searchControl.value) {
+            <button
+                matSuffix
+                mat-icon-button
+                aria-label="Wyczyść"
+                (click)="clearSearch()"
+                type="button"
+            >
+                <mat-icon>close</mat-icon>
+            </button>
+        }
+    </mat-form-field>
+
+    <mat-autocomplete
+        #auto="matAutocomplete"
+        class="omnibox__autocomplete"
+        [autoActiveFirstOption]="false"
+    >
+        @if (isLoading()) {
+            <mat-option disabled class="omnibox__loading">
+                <span>Wyszukiwanie...</span>
+            </mat-option>
+        } @else if (hasError()) {
+            <mat-option disabled class="omnibox__error">
+                <mat-icon>error_outline</mat-icon>
+                <span>Błąd wyszukiwania</span>
+            </mat-option>
+        } @else if (searchControl.value && searchControl.value.length >= 2) {
+            @if (searchResults().recipes.length > 0) {
+                <div class="omnibox__group-label">Przepisy</div>
+                @for (recipe of searchResults().recipes; track recipe.id) {
+                    <mat-option (click)="selectRecipe(recipe)" class="omnibox__option">
+                        <mat-icon class="omnibox__option-icon">menu_book</mat-icon>
+                        <div class="omnibox__option-content">
+                            <span class="omnibox__option-name">{{ recipe.name }}</span>
+                            @if (recipe.category) {
+                                <span class="omnibox__option-meta">{{ recipe.category }}</span>
+                            }
+                        </div>
+                    </mat-option>
+                }
+            }
+
+            @if (searchResults().collections.length > 0) {
+                <div class="omnibox__group-label">Kolekcje</div>
+                @for (collection of searchResults().collections; track collection.id) {
+                    <mat-option (click)="selectCollection(collection)" class="omnibox__option">
+                        <mat-icon class="omnibox__option-icon">collections_bookmark</mat-icon>
+                        <div class="omnibox__option-content">
+                            <span class="omnibox__option-name">{{ collection.name }}</span>
+                        </div>
+                    </mat-option>
+                }
+            }
+
+            @if (!hasResults && !isLoading()) {
+                <mat-option disabled class="omnibox__no-results">
+                    <mat-icon>search_off</mat-icon>
+                    <span>Brak wyników</span>
+                </mat-option>
+            }
+        }
+    </mat-autocomplete>
+</div>
+

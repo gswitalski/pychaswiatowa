@@ -1,0 +1,88 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--mat-sys-surface-container);
+    width: 260px;
+
+    &__header {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    &__logo {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: var(--mat-sys-on-surface);
+
+        &:hover {
+            color: var(--mat-sys-primary);
+        }
+    }
+
+    &__logo-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+    }
+
+    &__nav {
+        flex: 1;
+        padding: 8px 0;
+        overflow-y: auto;
+    }
+
+    &__nav-item {
+        margin: 4px 8px;
+        border-radius: 8px !important;
+
+        &.active {
+            background-color: var(--mat-sys-secondary-container) !important;
+
+            mat-icon {
+                color: var(--mat-sys-on-secondary-container);
+            }
+
+            span {
+                color: var(--mat-sys-on-secondary-container);
+                font-weight: 500;
+            }
+        }
+
+        mat-icon {
+            color: var(--mat-sys-on-surface-variant);
+        }
+    }
+
+    &__footer {
+        border-top: 1px solid var(--mat-sys-outline-variant);
+        padding: 8px 0;
+    }
+
+    &__add-recipe {
+        margin: 4px 8px;
+        border-radius: 8px !important;
+
+        mat-icon {
+            color: var(--mat-sys-primary);
+        }
+
+        span {
+            color: var(--mat-sys-primary);
+            font-weight: 500;
+        }
+    }
+}
+
+// Ensure list items have proper styling
+::ng-deep {
+    .sidebar mat-nav-list {
+        padding: 0;
+
+        .mat-mdc-list-item {
+            --mdc-list-list-item-container-shape: 8px;
+        }
+    }
+}
+

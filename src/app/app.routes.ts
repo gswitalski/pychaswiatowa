@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { PublicLayoutComponent } from './layout/public-layout/public-layout.component';
-import { DashboardLayoutComponent } from './layout/dashboard-layout/dashboard-layout.component';
+import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -33,7 +33,7 @@ export const routes: Routes = [
     },
     {
         path: '',
-        component: DashboardLayoutComponent,
+        component: MainLayoutComponent,
         canActivate: [authGuard],
         children: [
             {
@@ -42,6 +42,7 @@ export const routes: Routes = [
                     import('./pages/dashboard/dashboard-page.component').then(
                         (m) => m.DashboardPageComponent
                     ),
+                data: { breadcrumb: 'Dashboard' },
             },
             {
                 path: 'recipes',
@@ -49,6 +50,7 @@ export const routes: Routes = [
                     import('./pages/recipes/recipes.routes').then(
                         (m) => m.recipesRoutes
                     ),
+                data: { breadcrumb: 'Przepisy' },
             },
             {
                 path: 'collections',
@@ -56,6 +58,15 @@ export const routes: Routes = [
                     import('./pages/collections/collections.routes').then(
                         (m) => m.collectionsRoutes
                     ),
+                data: { breadcrumb: 'Kolekcje' },
+            },
+            {
+                path: 'settings',
+                loadComponent: () =>
+                    import('./pages/dashboard/dashboard-page.component').then(
+                        (m) => m.DashboardPageComponent
+                    ),
+                data: { breadcrumb: 'Ustawienia' },
             },
         ],
     },

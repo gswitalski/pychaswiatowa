@@ -14,6 +14,7 @@ export const recipesRoutes: Routes = [
             import('./recipe-form/recipe-form-page.component').then(
                 (m) => m.RecipeFormPageComponent
             ),
+        data: { breadcrumb: 'Nowy przepis' },
     },
     {
         path: 'import',
@@ -21,6 +22,7 @@ export const recipesRoutes: Routes = [
             import('./recipe-import/recipe-import-page.component').then(
                 (m) => m.RecipeImportPageComponent
             ),
+        data: { breadcrumb: 'Import przepisu' },
     },
     {
         path: ':id',
@@ -28,6 +30,7 @@ export const recipesRoutes: Routes = [
             import('./recipe-detail/recipe-detail-page.component').then(
                 (m) => m.RecipeDetailPageComponent
             ),
+        data: { breadcrumb: 'Szczegóły' },
     },
     {
         path: ':id/edit',
@@ -35,6 +38,6 @@ export const recipesRoutes: Routes = [
             import('./recipe-form/recipe-form-page.component').then(
                 (m) => m.RecipeFormPageComponent
             ),
+        data: { breadcrumb: 'Edycja' },
     },
 ];
-

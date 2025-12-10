@@ -1,0 +1,43 @@
+<mat-toolbar class="topbar">
+    <div class="topbar__left">
+        @if (isMobile()) {
+            <button
+                mat-icon-button
+                aria-label="Toggle menu"
+                (click)="toggleSidebar()"
+                class="topbar__menu-btn"
+            >
+                <mat-icon>menu</mat-icon>
+            </button>
+        }
+
+        <pych-breadcrumbs class="topbar__breadcrumbs" />
+    </div>
+
+    <div class="topbar__center">
+        <pych-omnibox class="topbar__search" />
+    </div>
+
+    <div class="topbar__right">
+        <button
+            mat-icon-button
+            [matMenuTriggerFor]="userMenu"
+            aria-label="Menu użytkownika"
+            class="topbar__avatar"
+        >
+            <mat-icon>account_circle</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu" xPosition="before">
+            <a mat-menu-item routerLink="/settings">
+                <mat-icon>settings</mat-icon>
+                <span>Ustawienia</span>
+            </a>
+            <button mat-menu-item (click)="logout()">
+                <mat-icon>logout</mat-icon>
+                <span>Wyloguj się</span>
+            </button>
+        </mat-menu>
+    </div>
+</mat-toolbar>
+
