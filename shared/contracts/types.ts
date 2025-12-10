@@ -196,6 +196,38 @@ export type UpdateProfileCommand = Partial<Pick<Profile, 'username'>>;
 
 // #endregion
 
+// #region --- Search ---
+
+/**
+ * DTO for a single recipe search result.
+ * Contains minimal fields for display in search dropdown.
+ */
+export interface SearchRecipeDto {
+    id: number;
+    name: string;
+    category: string | null;
+}
+
+/**
+ * DTO for a single collection search result.
+ * Contains minimal fields for display in search dropdown.
+ */
+export interface SearchCollectionDto {
+    id: number;
+    name: string;
+}
+
+/**
+ * Main response DTO for global search endpoint.
+ * Aggregates search results from recipes and collections.
+ */
+export interface GlobalSearchResponseDto {
+    recipes: SearchRecipeDto[];
+    collections: SearchCollectionDto[];
+}
+
+// #endregion
+
 // #region --- Auth ---
 
 /**
