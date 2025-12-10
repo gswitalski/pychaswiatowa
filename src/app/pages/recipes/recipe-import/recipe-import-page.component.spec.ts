@@ -1,5 +1,11 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
+import 'zone.js';
+import 'zone.js/testing';
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import {
+    BrowserDynamicTestingModule,
+    platformBrowserDynamicTesting,
+} from '@angular/platform-browser-dynamic/testing';
 import { Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
@@ -8,49 +14,64 @@ import { RecipesService } from '../services/recipes.service';
 import { RecipeDetailDto } from '../../../../../shared/contracts/types';
 
 describe('RecipeImportPageComponent', () => {
-    let component: RecipeImportPageComponent;
-    let fixture: ComponentFixture<RecipeImportPageComponent>;
-    let mockRecipesService: jasmine.SpyObj<RecipesService>;
-    let mockRouter: jasmine.SpyObj<Router>;
+    let mockRecipesService: {
+        importRecipe: ReturnType<typeof vi.fn>;
+    };
+    let mockRouter: {
+        navigate: ReturnType<typeof vi.fn>;
+    };
 
-    beforeEach(async () => {
-        mockRecipesService = jasmine.createSpyObj('RecipesService', [
-            'importRecipe',
-        ]);
-        mockRouter = jasmine.createSpyObj('Router', ['navigate']);
+    beforeAll(() => {
+        TestBed.resetTestEnvironment();
+        TestBed.initTestEnvironment(
+            BrowserDynamicTestingModule,
+            platformBrowserDynamicTesting()
+        );
+    });
 
-        await TestBed.configureTestingModule({
-            imports: [
-                RecipeImportPageComponent,
-                ReactiveFormsModule,
-                NoopAnimationsModule,
-            ],
+    beforeEach(() => {
+        mockRecipesService = {
+            importRecipe: vi.fn(),
+        };
+        mockRouter = {
+            navigate: vi.fn(),
+        };
+
+        TestBed.configureTestingModule({
+            imports: [RecipeImportPageComponent, NoopAnimationsModule],
             providers: [
                 { provide: RecipesService, useValue: mockRecipesService },
                 { provide: Router, useValue: mockRouter },
             ],
-        }).compileComponents();
-
-        fixture = TestBed.createComponent(RecipeImportPageComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
+        });
     });
 
+    function createComponent() {
+        const fixture = TestBed.createComponent(RecipeImportPageComponent);
+        const component = fixture.componentInstance;
+        fixture.detectChanges();
+        return { fixture, component };
+    }
+
     it('should create', () => {
+        const { component } = createComponent();
         expect(component).toBeTruthy();
     });
 
     describe('Form initialization', () => {
         it('should initialize form with empty rawText field', () => {
+            const { component } = createComponent();
             expect(component.form.value.rawText).toBe('');
         });
 
         it('should have rawText field as required', () => {
+            const { component } = createComponent();
             const rawTextControl = component.form.controls.rawText;
             expect(rawTextControl.hasError('required')).toBe(true);
         });
 
         it('should make form valid when rawText is provided', () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('# Test Recipe');
             expect(component.form.valid).toBe(true);
         });
@@ -58,6 +79,7 @@ describe('RecipeImportPageComponent', () => {
 
     describe('State management', () => {
         it('should initialize state with pending: false and error: null', () => {
+            const { component } = createComponent();
             const state = component.state();
             expect(state.pending).toBe(false);
             expect(state.error).toBe(null);
@@ -66,12 +88,14 @@ describe('RecipeImportPageComponent', () => {
 
     describe('submit()', () => {
         it('should not call service when form is invalid', () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('');
             component.submit();
             expect(mockRecipesService.importRecipe).not.toHaveBeenCalled();
         });
 
         it('should set pending to true and clear error on submit', () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('# Test Recipe');
             const mockRecipe: RecipeDetailDto = {
                 id: 1,
@@ -88,7 +112,7 @@ describe('RecipeImportPageComponent', () => {
                 user_id: 'test-user-id',
             };
 
-            mockRecipesService.importRecipe.and.returnValue(of(mockRecipe));
+            mockRecipesService.importRecipe.mockReturnValue(of(mockRecipe));
 
             component.submit();
 
@@ -97,6 +121,7 @@ describe('RecipeImportPageComponent', () => {
         });
 
         it('should call importRecipe service with correct command', () => {
+            const { component } = createComponent();
             const rawText = '# Test Recipe\n\n## Składniki\n- test';
             component.form.controls.rawText.setValue(rawText);
 
@@ -115,7 +140,7 @@ describe('RecipeImportPageComponent', () => {
                 user_id: 'test-user-id',
             };
 
-            mockRecipesService.importRecipe.and.returnValue(of(mockRecipe));
+            mockRecipesService.importRecipe.mockReturnValue(of(mockRecipe));
 
             component.submit();
 
@@ -125,6 +150,7 @@ describe('RecipeImportPageComponent', () => {
         });
 
         it('should navigate to edit page on successful import', () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('# Test Recipe');
 
             const mockRecipe: RecipeDetailDto = {
@@ -142,7 +168,7 @@ describe('RecipeImportPageComponent', () => {
                 user_id: 'test-user-id',
             };
 
-            mockRecipesService.importRecipe.and.returnValue(of(mockRecipe));
+            mockRecipesService.importRecipe.mockReturnValue(of(mockRecipe));
 
             component.submit();
 
@@ -153,7 +179,8 @@ describe('RecipeImportPageComponent', () => {
             ]);
         });
 
-        it('should set pending to false after successful import', (done) => {
+        it('should set pending to false after successful import', async () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('# Test Recipe');
 
             const mockRecipe: RecipeDetailDto = {
@@ -171,17 +198,16 @@ describe('RecipeImportPageComponent', () => {
                 user_id: 'test-user-id',
             };
 
-            mockRecipesService.importRecipe.and.returnValue(of(mockRecipe));
+            mockRecipesService.importRecipe.mockReturnValue(of(mockRecipe));
 
             component.submit();
 
-            setTimeout(() => {
-                expect(component.state().pending).toBe(false);
-                done();
-            }, 0);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(component.state().pending).toBe(false);
         });
 
-        it('should handle error and update state', (done) => {
+        it('should handle error and update state', async () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('# Test Recipe');
 
             const mockError = {
@@ -189,41 +215,39 @@ describe('RecipeImportPageComponent', () => {
                 status: 400,
             };
 
-            mockRecipesService.importRecipe.and.returnValue(
+            mockRecipesService.importRecipe.mockReturnValue(
                 throwError(() => mockError)
             );
 
             component.submit();
 
-            setTimeout(() => {
-                expect(component.state().pending).toBe(false);
-                expect(component.state().error).toEqual({
-                    message: 'Invalid format',
-                    status: 400,
-                });
-                done();
-            }, 0);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(component.state().pending).toBe(false);
+            expect(component.state().error).toEqual({
+                message: 'Invalid format',
+                status: 400,
+            });
         });
 
-        it('should handle error without message and use default message', (done) => {
+        it('should handle error without message and use default message', async () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('# Test Recipe');
 
-            mockRecipesService.importRecipe.and.returnValue(
+            mockRecipesService.importRecipe.mockReturnValue(
                 throwError(() => ({}))
             );
 
             component.submit();
 
-            setTimeout(() => {
-                expect(component.state().error?.message).toBe(
-                    'Wystąpił błąd podczas importu przepisu'
-                );
-                expect(component.state().error?.status).toBe(500);
-                done();
-            }, 0);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(component.state().error?.message).toBe(
+                'Wystąpił błąd podczas importu przepisu'
+            );
+            expect(component.state().error?.status).toBe(500);
         });
 
         it('should trim whitespace from rawText before sending', () => {
+            const { component } = createComponent();
             component.form.controls.rawText.setValue('  # Test Recipe  \n\n  ');
 
             const mockRecipe: RecipeDetailDto = {
@@ -241,7 +265,7 @@ describe('RecipeImportPageComponent', () => {
                 user_id: 'test-user-id',
             };
 
-            mockRecipesService.importRecipe.and.returnValue(of(mockRecipe));
+            mockRecipesService.importRecipe.mockReturnValue(of(mockRecipe));
 
             component.submit();
 
