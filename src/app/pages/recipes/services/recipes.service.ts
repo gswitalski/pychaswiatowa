@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, map } from 'rxjs';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import { environment } from '../../../../environments/environment';
 import {
     RecipeDetailDto,
     CreateRecipeCommand,
@@ -9,6 +10,7 @@ import {
     TagDto,
     PaginatedResponseDto,
     RecipeListItemDto,
+    ImportRecipeCommand,
 } from '../../../../../shared/contracts/types';
 
 /**
@@ -111,6 +113,20 @@ export class RecipesService {
                 if (result.error) {
                     throw result.error;
                 }
+            })
+        );
+    }
+
+    /**
+     * Imports a recipe from raw text in Markdown format
+     */
+    importRecipe(command: ImportRecipeCommand): Observable<RecipeDetailDto> {
+        return from(this.performImportRecipe(command)).pipe(
+            map((result) => {
+                if (result.error) {
+                    throw result.error;
+                }
+                return result.data!;
             })
         );
     }
@@ -558,6 +574,66 @@ export class RecipesService {
         }
 
         return value as T;
+    }
+
+    private async performImportRecipe(
+        command: ImportRecipeCommand
+    ): Promise<{ data: RecipeDetailDto | null; error: Error | null }> {
+        const {
+            data: { user },
+            error: authError,
+        } = await this.supabase.auth.getUser();
+
+        if (authError || !user) {
+            return { data: null, error: new Error('Użytkownik niezalogowany') };
+        }
+
+        // Get the session to obtain the access token
+        const {
+            data: { session },
+        } = await this.supabase.auth.getSession();
+
+        if (!session) {
+            return { data: null, error: new Error('Brak sesji użytkownika') };
+        }
+
+        // Make direct HTTP call to the edge function with sub-path
+        const functionUrl = `${environment.supabase.url}/functions/v1/recipes/import`;
+
+        try {
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify(command),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({
+                    message: 'Wystąpił błąd podczas importu przepisu',
+                }));
+                return {
+                    data: null,
+                    error: new Error(
+                        errorData.message || 'Wystąpił błąd podczas importu przepisu'
+                    ),
+                };
+            }
+
+            const data = await response.json();
+            return { data, error: null };
+        } catch (error) {
+            return {
+                data: null,
+                error: new Error(
+                    error instanceof Error
+                        ? error.message
+                        : 'Wystąpił błąd podczas importu przepisu'
+                ),
+            };
+        }
     }
 }
 

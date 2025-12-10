@@ -1,0 +1,56 @@
+<div class="recipe-import-container">
+    <mat-card class="import-card">
+        <mat-card-header>
+            <h2>Importuj przepis z tekstu</h2>
+        </mat-card-header>
+
+        <mat-card-content>
+            <p class="instruction-text">
+                Wklej tekst przepisu w formacie Markdown. Format powinien zawierać:
+            </p>
+            <ul class="instruction-list">
+                <li><strong># Nazwa przepisu</strong> - tytuł przepisu</li>
+                <li><strong>## Opis</strong> - krótki opis (opcjonalnie)</li>
+                <li><strong>## Składniki</strong> - lista składników</li>
+                <li><strong>## Kroki</strong> - kroki przygotowania</li>
+            </ul>
+
+            <form [formGroup]="form" (ngSubmit)="submit()">
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Tekst przepisu</mat-label>
+                    <textarea
+                        matInput
+                        formControlName="rawText"
+                        rows="15"
+                        placeholder="# Nazwa przepisu&#10;&#10;## Opis&#10;Krótki opis przepisu...&#10;&#10;## Składniki&#10;- składnik 1&#10;- składnik 2&#10;&#10;## Kroki&#10;1. Krok pierwszy&#10;2. Krok drugi"
+                    ></textarea>
+                    @if (form.controls.rawText.hasError('required') && form.controls.rawText.touched) {
+                        <mat-error>Pole tekstowe jest wymagane</mat-error>
+                    }
+                </mat-form-field>
+
+                @if (state().error) {
+                    <div class="error-message">
+                        <mat-error>{{ state().error!.message }}</mat-error>
+                    </div>
+                }
+
+                <div class="actions">
+                    <button
+                        mat-raised-button
+                        color="primary"
+                        type="submit"
+                        [disabled]="form.invalid || state().pending"
+                    >
+                        @if (state().pending) {
+                            Importowanie...
+                        } @else {
+                            Importuj i edytuj
+                        }
+                    </button>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>
+

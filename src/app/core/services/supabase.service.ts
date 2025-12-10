@@ -31,5 +31,9 @@ export class SupabaseService {
     get storage() {
         return this.supabase.storage;
     }
+
+    get functions() {
+        return this.supabase.functions;
+    }
 }
 

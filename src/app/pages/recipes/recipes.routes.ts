@@ -16,6 +16,13 @@ export const recipesRoutes: Routes = [
             ),
     },
     {
+        path: 'import',
+        loadComponent: () =>
+            import('./recipe-import/recipe-import-page.component').then(
+                (m) => m.RecipeImportPageComponent
+            ),
+    },
+    {
         path: ':id',
         loadComponent: () =>
             import('./recipe-detail/recipe-detail-page.component').then(

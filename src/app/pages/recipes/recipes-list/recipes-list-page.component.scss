@@ -17,9 +17,15 @@
         margin: 0;
     }
 
-    a {
-        mat-icon {
-            margin-right: 8px;
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+
+        a {
+            mat-icon {
+                margin-right: 8px;
+            }
         }
     }
 }
@@ -74,8 +80,13 @@ mat-paginator {
             text-align: center;
         }
 
-        a {
-            align-self: stretch;
+        .header-actions {
+            flex-direction: column;
+            gap: 12px;
+
+            a {
+                width: 100%;
+            }
         }
     }
 }

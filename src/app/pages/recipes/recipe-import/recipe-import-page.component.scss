@@ -1,0 +1,59 @@
+.recipe-import-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.import-card {
+    mat-card-header {
+        margin-bottom: 1rem;
+
+        h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+    }
+
+    mat-card-content {
+        padding: 1.5rem;
+    }
+}
+
+.instruction-text {
+    margin-bottom: 0.5rem;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.instruction-list {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+    color: var(--mat-sys-on-surface-variant);
+
+    li {
+        margin-bottom: 0.5rem;
+    }
+
+    strong {
+        color: var(--mat-sys-on-surface);
+    }
+}
+
+.full-width {
+    width: 100%;
+}
+
+.error-message {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: rgba(var(--mat-sys-error), 0.1);
+    border-radius: 4px;
+    color: var(--mat-sys-error);
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
