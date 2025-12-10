@@ -4,143 +4,42 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Route API specification:
 <route_api_specification>
-#### `GET /collections`
+### Nowy Endpoint
 
--   **Description**: Retrieve a list of collections for the authenticated user.
--   **Success Response**:
-    -   **Code**: `200 OK`
-    -   **Payload**:
-        ```json
-        [
-          {
-            "id": 1,
-            "name": "Christmas Dishes",
-            "description": "Recipes for the holidays."
-          }
-        ]
-        ```
--   **Error Response**:
-    -   **Code**: `401 Unauthorized`
+#### `POST /recipes/import`
 
----
-
-#### `POST /collections`
-
--   **Description**: Create a new collection.
+-   **Description**: Create a new recipe from a raw text block. The server is responsible for parsing the text and structuring it into the required JSONB format.
 -   **Request Payload**:
     ```json
     {
-      "name": "Summer BBQ Ideas",
-      "description": "Great for a sunny day."
+      "raw_text": "# Pizza\n## Składniki\n### Ciasto\n - mąka\n - drożdże\n## Kroki\n - krok 1"
     }
     ```
 -   **Success Response**:
     -   **Code**: `201 Created`
-    -   **Payload**: (The newly created collection object)
--   **Error Response**:
-    -   **Code**: `400 Bad Request`
-    -   **Code**: `401 Unauthorized`
-    -   **Code**: `409 Conflict` (if a collection with the same name already exists for the user)
-
----
-
-#### `GET /collections/{id}`
-
--   **Description**: Retrieve a single collection and a paginated list of its recipes.
--   **Query Parameters**:
-    -   `page` (optional, integer, default: 1): The page number for recipe pagination.
-    -   `limit` (optional, integer, default: 20): The number of recipes per page.
--   **Success Response**:
-    -   **Code**: `200 OK`
-    -   **Payload**:
+    -   **Payload**: Zwraca pełny obiekt nowo utworzonego przepisu (analogicznie do `POST /recipes`), aby klient mógł uzyskać jego ID i przejść do edycji.
         ```json
         {
-          "id": 1,
-          "name": "Christmas Dishes",
-          "description": "Recipes for the holidays.",
-          "recipes": {
-            "data": [
-              { "id": 1, "name": "Apple Pie" }
-            ],
-            "pagination": {
-              "currentPage": 1,
-              "totalPages": 2,
-              "totalItems": 40
-            }
-          }
+          "id": 102,
+          "name": "Pizza",
+          "description": null,
+          "category_id": null,
+          "ingredients": [
+            {"type": "header", "content": "Ciasto"},
+            {"type": "item", "content": "mąka"},
+            {"type": "item", "content": "drożdże"}
+          ],
+          "steps": [
+            {"type": "item", "content": "krok 1"}
+          ],
+          "tags": [],
+          "created_at": "2023-10-28T10:00:00Z"
         }
         ```
 -   **Error Response**:
+    -   **Code**: `400 Bad Request` - Jeśli tekst jest pusty lub ma nieprawidłowy format, który uniemożliwia parsowanie.
+    -   **Payload**: `{ "message": "Invalid recipe format. A title (#) is required." }`
     -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden`
-    -   **Code**: `404 Not Found`
-
----
-
-#### `PUT /collections/{id}`
-
--   **Description**: Update a collection's details (name, description).
--   **Request Payload**:
-    ```json
-    {
-      "name": "New Collection Name",
-      "description": "Updated description."
-    }
-    ```
--   **Success Response**:
-    -   **Code**: `200 OK`
-    -   **Payload**: (The full updated collection object)
--   **Error Response**:
-    -   **Code**: `400 Bad Request`
-    -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden`
-    -   **Code**: `404 Not Found`
-    -   **Code**: `409 Conflict`
-
----
-
-#### `DELETE /collections/{id}`
-
--   **Description**: Delete a collection. This does not delete the recipes within it.
--   **Success Response**:
-    -   **Code**: `204 No Content`
--   **Error Response**:
-    -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden`
-    -   **Code**: `404 Not Found`
-
----
-
-#### `POST /collections/{id}/recipes`
-
--   **Description**: Add a recipe to a collection.
--   **Request Payload**:
-    ```json
-    {
-      "recipe_id": 123
-    }
-    ```
--   **Success Response**:
-    -   **Code**: `201 Created`
-    -   **Payload**: `{ "message": "Recipe added to collection successfully." }`
--   **Error Response**:
-    -   **Code**: `400 Bad Request`
-    -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden` (if user doesn't own the collection or the recipe)
-    -   **Code**: `404 Not Found` (if collection or recipe doesn't exist)
-    -   **Code**: `409 Conflict` (if recipe is already in the collection)
-
----
-
-#### `DELETE /collections/{collectionId}/recipes/{recipeId}`
-
--   **Description**: Remove a recipe from a collection.
--   **Success Response**:
-    -   **Code**: `204 No Content`
--   **Error Response**:
-    -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden`
-    -   **Code**: `404 Not Found`
 
 
 </route_api_specification>
