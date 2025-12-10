@@ -66,7 +66,7 @@ firebase --version
 
 Po utworzeniu projektu:
 
-1. Przejdź do **Settings** → **API**
+1. Przejdź do **Settings** → **Data API**
 2. Zapisz następujące wartości:
    - **Project URL**: np. `https://xxxxxxxxxxxxxxxx.supabase.co`
    - **anon/public key**: klucz publiczny API
@@ -96,6 +96,8 @@ supabase link --project-ref <PROJECT_REFERENCE_ID>
 ```bash
 # Wypchnij migracje do produkcyjnej bazy danych
 supabase db push
+# lub
+supabase db push  --include-seed
 
 # Potwierdź operację gdy zostaniesz zapytany
 ```
