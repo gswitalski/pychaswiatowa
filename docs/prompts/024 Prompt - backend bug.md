@@ -34,13 +34,14 @@ Zapoznaj się z następującymi materiałami:
 </aktualna_implementacja>
 
 <aktualne_zachowanie>
-rejestracja nowego uzytkownika nie tworzy rekordu w tabeli profiles
+funkcjaimportujące zamienie nagłowek w przepisach lub krokach zapisany jako
+'### Ciasto' na '# # Ciasto'
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-rejestracja nowego uzytkownika tworzy odpowiednie rekord w tabeli profiles
+zamiana '### Ciasto' na '# Ciasto'
 
 </oczekiwane_zachowanie>
 

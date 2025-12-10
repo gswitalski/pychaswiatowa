@@ -673,7 +673,7 @@ function parseRecipeText(rawText: string): {
         // Detect main sections (## Section Name)
         if (line.startsWith('## ')) {
             const sectionName = line.substring(3).trim().toLowerCase();
-            
+
             // Detect "Składniki" section (ingredients)
             if (sectionName.includes('składnik') || sectionName.includes('ingredient')) {
                 currentSection = 'ingredients';
@@ -696,10 +696,20 @@ function parseRecipeText(rawText: string): {
         }
 
         // Add content to the appropriate section
-        if (currentSection === 'ingredients') {
-            ingredientsRaw += line + '\n';
-        } else if (currentSection === 'steps') {
-            stepsRaw += line + '\n';
+        // Transform ### to # for subsection headers (as per ingredients_raw/steps_raw format)
+        if (currentSection === 'ingredients' || currentSection === 'steps') {
+            let transformedLine = line;
+
+            // Convert ### subsection headers to # format expected by parse_text_to_jsonb
+            if (line.startsWith('###')) {
+                transformedLine = line.replace(/^###\s*/, '# ');
+            }
+
+            if (currentSection === 'ingredients') {
+                ingredientsRaw += transformedLine + '\n';
+            } else {
+                stepsRaw += transformedLine + '\n';
+            }
         }
     }
 
