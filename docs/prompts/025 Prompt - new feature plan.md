@@ -12,15 +12,32 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-widok piosenki dla organizatora w trybie biesiada wyświetla test wraz z akordami.
-publiczny widok piosenki dla anonimowego użytkownika zawiera tylko tekst (bez akordów)
+Chcę móc dodawać nowe przepisy importując je za pomocą wklejenia do textareaa tekstu w ustalonym formacie
 
-Cchę aby publiczny użytkownik mógł również przełczyć sie na tryb z akordami. 
-Publiczny użytkownk powinien meć na górze pol lewej stronie przycisk do właczenia wersji z akordami
-Najlepiej jakby widok piosenki zalogownego organizatora  oraz widok publiczny widok piosenki korzsytał ze wspólnego komponentu do wyświrtlania piosenki (sam tekst z akordmi).
-Dla użytkownkia publicznego domyslnym trybem jest tryb bez akordów, dla zalogowanego tryb z akordami. zewnętrzny przycisk na widopku publicznym steruje przełączaniem trybu.
-Endpoint adla użytkownika nie trzeba zmieniać bo zawiera on już akordy
+np
 
+<przykład_formatu_przepisu>
+# Pizza
+## Składniki
+### Ciasto
+ - mąka
+ - drożże
+ - sól
+### Sos
+ - pomidory
+ - oregano
+## Kroki
+### Ciasto
+ - krok 1
+ - krok 2
+ - krok 3
+ - krok 4
+### Pieczenie
+- krok 5
+- krok 6
+</przykład_formatu_przepisu>
+
+po zapisie takiego przepisu w bazie przechodze do jego edycji aby uzupełnić inne pola (tagi, zdjęcie)
 
 </nowa_funkcjonalnosc>
 

@@ -112,6 +112,13 @@ export type CreateRecipeCommand = Pick<
  */
 export type UpdateRecipeCommand = Partial<CreateRecipeCommand>;
 
+/**
+ * Command model for importing a new recipe from a raw text block.
+ */
+export type ImportRecipeCommand = {
+    raw_text: string;
+};
+
 // #endregion
 
 // #region --- Categories ---

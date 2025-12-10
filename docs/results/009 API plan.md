@@ -102,6 +102,43 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
 
 ---
 
+#### `POST /recipes/import`
+
+-   **Description**: Create a new recipe from a raw text block. The server is responsible for parsing the text and structuring it into the required JSONB format.
+-   **Request Payload**:
+    ```json
+    {
+      "raw_text": "# Pizza\n## Składniki\n### Ciasto\n - mąka\n - drożdże\n## Kroki\n - krok 1"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `201 Created`
+    -   **Payload**: Returns the full object of the newly created recipe (similar to `POST /recipes`) so the client can get its ID and proceed to edit.
+        ```json
+        {
+          "id": 102,
+          "name": "Pizza",
+          "description": null,
+          "category_id": null,
+          "ingredients": [
+            {"type": "header", "content": "Ciasto"},
+            {"type": "item", "content": "mąka"},
+            {"type": "item", "content": "drożdże"}
+          ],
+          "steps": [
+            {"type": "item", "content": "krok 1"}
+          ],
+          "tags": [],
+          "created_at": "2023-10-28T10:00:00Z"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` - If the text is empty or has an invalid format that prevents parsing.
+    -   **Payload**: `{ "message": "Invalid recipe format. A title (#) is required." }`
+    -   **Code**: `401 Unauthorized`
+
+---
+
 #### `GET /recipes/{id}`
 
 -   **Description**: Retrieve a single recipe by its ID.

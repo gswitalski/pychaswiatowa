@@ -61,21 +61,28 @@ Centralnym elementem dla zalogowanego użytkownika jest główny układ aplikacj
 - **Kluczowe komponenty widoku:** `mat-stepper` (opcjonalnie), `mat-form-field`, `mat-select`, `mat-chip-list` z inputem, komponent do przesyłania plików, interaktywna lista z funkcją "przeciągnij i upuść" (Angular CDK).
 - **Względy UX, dostępności i bezpieczeństwa:** Przejrzysty podział formularza. Funkcja "przeciągnij i upuść" ułatwia reorganizację. Jasne komunikaty walidacji.
 
-**8. Lista Kolekcji (Moje kolekcje)**
+**8. Import Przepisu**
+- **Ścieżka:** `/recipes/import`
+- **Główny cel:** Umożliwienie szybkiego tworzenia przepisu poprzez wklejenie gotowego tekstu.
+- **Kluczowe informacje do wyświetlenia:** Duże pole tekstowe (`textarea`) z instrukcją lub przykładem formatowania, przycisk "Importuj i edytuj".
+- **Kluczowe komponenty widoku:** `mat-card`, `mat-form-field` (textarea), `mat-button`.
+- **Względy UX, dostępności i bezpieczeństwa:** Jasna instrukcja dotycząca oczekiwanego formatu tekstu. Po udanym imporcie użytkownik jest od razu przenoszony do trybu edycji, co stanowi płynny i logiczny przepływ pracy. Dostęp chroniony przez `AuthGuard`.
+
+**9. Lista Kolekcji (Moje kolekcje)**
 - **Ścieżka:** `/collections`
 - **Główny cel:** Zarządzanie kolekcjami przepisów.
 - **Kluczowe informacje do wyświetlenia:** Lista istniejących kolekcji z opcjami edycji i usunięcia.
 - **Kluczowe komponenty widoku:** `mat-list` lub `mat-card` do wyświetlania kolekcji, przycisk do tworzenia nowej, komponent "stanu pustego".
 - **Względy UX, dostępności i bezpieczeństwa:** Potwierdzenie usunięcia kolekcji w oknie modalnym.
 
-**9. Szczegóły Kolekcji**
+**10. Szczegóły Kolekcji**
 - **Ścieżka:** `/collections/:id`
 - **Główny cel:** Wyświetlanie przepisów przypisanych do konkretnej kolekcji.
 - **Kluczowe informacje do wyświetlenia:** Nazwa i opis kolekcji, lista zawartych w niej przepisów.
 - **Kluczowe komponenty widoku:** Lista przepisów (komponent współdzielony z Listą Przepisów), przycisk "Usuń z kolekcji" przy każdym przepisie.
 - **Względy UX, dostępności i bezpieczeństwa:** Spójna prezentacja przepisów z główną listą.
 
-**10. Ustawienia Konta**
+**11. Ustawienia Konta**
 - **Ścieżka:** `/settings`
 - **Główny cel:** Umożliwienie użytkownikowi zarządzania swoim profilem.
 - **Kluczowe informacje do wyświetlenia:** Formularz zmiany nazwy użytkownika, formularz zmiany hasła.
