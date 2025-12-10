@@ -365,6 +365,33 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
 
 ---
 
+### Search
+
+#### `GET /search/global`
+
+-   **Description**: Global search endpoint ("Omnibox"). Searches across user's recipes and collections simultaneously. Used for quick navigation from the Topbar.
+-   **Query Parameters**:
+    -   `q` (required, string): Search query (min 2 characters).
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "recipes": [
+            { "id": 1, "name": "Apple Pie", "category": "Dessert" },
+            { "id": 15, "name": "Spaghetti", "category": "Dinner" }
+          ],
+          "collections": [
+            { "id": 3, "name": "Quick Dinners" }
+          ]
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (if `q` is missing or too short)
+    -   **Code**: `401 Unauthorized`
+
+---
+
 ### Profiles
 
 #### `GET /profile`

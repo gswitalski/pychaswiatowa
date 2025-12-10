@@ -2,9 +2,12 @@
 
 ## 1. Przegląd struktury UI
 
-Architektura interfejsu użytkownika aplikacji PychaŚwiatowa zostanie zbudowana w oparciu o framework Angular i bibliotekę komponentów Angular Material, zgodnie z podejściem "desktop-first" zapewniającym pełną responsywność. Aplikacja będzie składać się z dwóch głównych obszarów: publicznego (dla niezalogowanych użytkowników), obejmującego stronę powitalną, logowanie i rejestrację, oraz prywatnego (dla zalogowanych), chronionego mechanizmem autoryzacji.
+Architektura interfejsu użytkownika aplikacji PychaŚwiatowa zostanie zbudowana w oparciu o framework Angular i bibliotekę komponentów Angular Material, zgodnie z podejściem "desktop-first" zapewniającym pełną responsywność. Wdrożona zostanie architektura **"App Shell"** separująca nawigację od akcji kontekstowych. Aplikacja będzie składać się z dwóch głównych obszarów: publicznego (dla niezalogowanych użytkowników) oraz prywatnego (dla zalogowanych).
 
-Centralnym elementem dla zalogowanego użytkownika jest główny układ aplikacji (layout) zawierający stały, boczny panel nawigacyjny (sidebar) oraz górny pasek z informacjami o profilu. Nawigacja ta zapewnia spójny dostęp do kluczowych sekcji: Dashboardu, listy przepisów i listy kolekcji. Zarządzanie stanem aplikacji będzie opierać się na serwisach Angulara, a komunikacja z API będzie scentralizowana i zabezpieczona za pomocą `HttpInterceptor`, który obsłuży globalnie błędy oraz autoryzację.
+Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grail"**:
+1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Dashboard, Przepisy, Kolekcje). Nie zawiera przycisków akcji.
+2.  **Globalny Topbar (Góra):** Zawiera kontekst orientacyjny (Breadcrumbs), globalną wyszukiwarkę (Omnibox) oraz profil użytkownika.
+3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
 
 ## 2. Lista widoków
 
@@ -36,37 +39,42 @@ Centralnym elementem dla zalogowanego użytkownika jest główny układ aplikacj
 **4. Dashboard**
 - **Ścieżka:** `/dashboard`
 - **Główny cel:** Strona startowa po zalogowaniu, zapewniająca szybki dostęp do głównych funkcji.
-- **Kluczowe informacje do wyświetlenia:** Powitanie, kafelki nawigacyjne ("Moje przepisy", "Moje kolekcje"), ewentualnie lista ostatnio dodanych przepisów.
+- **Header:** Tytuł "Witaj, [Imię]". Brak przycisków akcji.
+- **Kluczowe informacje do wyświetlenia:** Kafelki nawigacyjne ("Moje przepisy", "Moje kolekcje"), lista ostatnio dodanych przepisów.
 - **Kluczowe komponenty widoku:** `mat-card` jako kafelki nawigacyjne.
 - **Względy UX, dostępności i bezpieczeństwa:** Dostęp chroniony przez `AuthGuard`.
 
 **5. Lista Przepisów (Moje przepisy)**
 - **Ścieżka:** `/recipes`
 - **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie wszystkich przepisów użytkownika.
-- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pole wyszukiwania, kontrolki do sortowania i filtrowania (kategorie, tagi), paginacja.
-- **Kluczowe komponenty widoku:** `mat-paginator`, `mat-card`, `mat-form-field`, `mat-select`, `mat-chip-list`, komponent "stanu pustego".
-- **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy przy zmianie filtrów. Wskaźniki ładowania. Obsługa stanu pustego z wezwaniem do akcji.
+- **Header:** Tytuł "Twoje Przepisy", Przycisk "Dodaj Przepis" (Split Button: "Ręcznie" | "Import").
+- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem, paginacja.
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-paginator`, `mat-card`, `mat-chip-list`, komponent "stanu pustego" z akcją.
+- **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy. Wskaźniki ładowania (Skeletons). Obsługa stanu pustego z wezwaniem do akcji "Utwórz pierwszy przepis".
 
 **6. Szczegóły Przepisu**
 - **Ścieżka:** `/recipes/:id`
 - **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji.
-- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (z podziałem na sekcje), przypisane kategorie i tagi.
-- **Kluczowe komponenty widoku:** `mat-list`, `mat-chip-list`, przyciski akcji ("Edytuj", "Usuń", "Dodaj do kolekcji").
-- **Względy UX, dostępności i bezpieczeństwa:** Responsywny układ dwukolumnowy przechodzący w jednokolumnowy. Modal potwierdzający usunięcie.
+- **Header:** Tytuł przepisu. Akcje: Ikony (Ulubione, Edytuj, Usuń).
+- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków.
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-list`, `mat-chip-list`, Sticky Navigation (spis treści) na desktopie.
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 3-kolumnowy (Info / Treść / Spis) na desktopie. Feedback "Toast" po usunięciu z opcją "Cofnij".
 
 **7. Formularz Przepisu (Dodaj/Edytuj)**
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
 - **Główny cel:** Tworzenie i modyfikacja przepisu.
-- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje (dane podstawowe, składniki, kroki), pola do edycji nazwy, opisu, zdjęcia, kategorii, tagów.
-- **Kluczowe komponenty widoku:** `mat-stepper` (opcjonalnie), `mat-form-field`, `mat-select`, `mat-chip-list` z inputem, komponent do przesyłania plików, interaktywna lista z funkcją "przeciągnij i upuść" (Angular CDK).
-- **Względy UX, dostępności i bezpieczeństwa:** Przejrzysty podział formularza. Funkcja "przeciągnij i upuść" ułatwia reorganizację. Jasne komunikaty walidacji.
+- **Header:** Tytuł "Nowy przepis" / "Edycja". Akcje: "Anuluj", "Zapisz" (Sticky - zawsze widoczny).
+- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje.
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, komponent do przesyłania plików, interaktywna lista "przeciągnij i upuść".
+- **Względy UX, dostępności i bezpieczeństwa:** Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy.
 
 **8. Import Przepisu**
 - **Ścieżka:** `/recipes/import`
-- **Główny cel:** Umożliwienie szybkiego tworzenia przepisu poprzez wklejenie gotowego tekstu.
-- **Kluczowe informacje do wyświetlenia:** Duże pole tekstowe (`textarea`) z instrukcją lub przykładem formatowania, przycisk "Importuj i edytuj".
-- **Kluczowe komponenty widoku:** `mat-card`, `mat-form-field` (textarea), `mat-button`.
-- **Względy UX, dostępności i bezpieczeństwa:** Jasna instrukcja dotycząca oczekiwanego formatu tekstu. Po udanym imporcie użytkownik jest od razu przenoszony do trybu edycji, co stanowi płynny i logiczny przepływ pracy. Dostęp chroniony przez `AuthGuard`.
+- **Główny cel:** Szybkie tworzenie przepisu z tekstu w trybie "Focus".
+- **Header:** Tytuł "Importuj Przepis". Akcje: "Anuluj", "Importuj".
+- **Kluczowe informacje do wyświetlenia:** Dwa panele: Pole tekstowe (Paste area) i Podgląd na żywo (Live Preview).
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field` (textarea), Podgląd przepisu.
+- **Względy UX, dostępności i bezpieczeństwa:** Minimalizm interfejsu (ukrycie zbędnych elementów). Podgląd na żywo daje pewność co do formatowania przed importem.
 
 **9. Lista Kolekcji (Moje kolekcje)**
 - **Ścieżka:** `/collections`
@@ -102,12 +110,15 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 ## 4. Układ i struktura nawigacji
 
 - **Nawigacja dla gości:** Ogranicza się do prostego nagłówka z linkami do logowania i rejestracji.
-- **Nawigacja dla zalogowanych:**
-    - **Boczny panel nawigacyjny (Sidebar):** Jest to główny element nawigacyjny. Pozostaje widoczny na większych ekranach i zwija się do ikony "hamburgera" na urządzeniach mobilnych. Zawiera linki do: `Dashboard`, `Moje przepisy`, `Moje kolekcje`.
-    - **Nagłówek (Header):** W górnej części aplikacji, zawiera logo (lub ikonę menu na mobile) oraz menu użytkownika po prawej stronie.
-    - **Menu użytkownika:** Dostępne pod ikoną awatara w nagłówku. Rozwija się, oferując opcje: `Ustawienia` i `Wyloguj`.
+- **Nawigacja dla zalogowanych (App Shell):**
+    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Dashboard`, `Moje przepisy`, `Moje kolekcje`, `Ustawienia`, `Wyloguj`. Nie zawiera akcji operacyjnych. Na mobile zwijany (Hamburger) lub Bottom Bar.
+    - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
+        - **Breadcrumbs:** Ścieżka powrotu (np. `Kolekcje > Święta`).
+        - **Omnibox:** Globalne wyszukiwanie dostępne zawsze.
+        - **Profil:** Avatar i menu użytkownika.
+    - **Page Header:** Nagłówek widoku pod Topbarem. Zawiera tytuł i przyciski akcji.
 
-Taka struktura zapewnia stały i przewidywalny dostęp do wszystkich kluczowych sekcji aplikacji z dowolnego miejsca.
+Taka struktura zapewnia jasny podział na to "gdzie jestem" (Topbar/Sidebar) i "co mogę zrobić" (Page Header).
 
 ## 5. Kluczowe komponenty
 
