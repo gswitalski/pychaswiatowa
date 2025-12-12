@@ -78,23 +78,25 @@ export class CategoriesService {
     }
 
     /**
-     * Fetches categories from Supabase.
+     * Fetches categories from backend API.
      */
     private async fetchCategories(): Promise<{
         data: CategoryDto[];
         error: Error | null;
     }> {
-        const { data, error } = await this.supabase
-            .from('categories')
-            .select('id, name')
-            .order('name', { ascending: true });
+        const response = await this.supabase.functions.invoke<CategoryDto[]>(
+            'categories',
+            {
+                method: 'GET',
+            }
+        );
 
-        if (error) {
-            return { data: [], error };
+        if (response.error) {
+            return { data: [], error: new Error(response.error.message) };
         }
 
         return {
-            data: data ?? [],
+            data: response.data ?? [],
             error: null,
         };
     }

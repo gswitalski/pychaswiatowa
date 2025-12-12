@@ -10,33 +10,21 @@ export class ProfileService {
     private readonly supabase = inject(SupabaseService);
 
     getProfile(): Observable<ProfileDto> {
-        return from(this.fetchProfile()).pipe(
-            map((result) => {
-                if (result.error) {
-                    throw result.error;
+        return from(
+            this.supabase.functions.invoke<ProfileDto>('profile', {
+                method: 'GET',
+            })
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw new Error(response.error.message);
                 }
-                if (!result.data) {
+                if (!response.data) {
                     throw new Error('Profile not found');
                 }
-                return result.data;
+                return response.data;
             })
         );
-    }
-
-    private async fetchProfile() {
-        const { data: { user } } = await this.supabase.auth.getUser();
-
-        if (!user) {
-            throw new Error('User not authenticated');
-        }
-
-        const { data, error } = await this.supabase
-            .from('profiles')
-            .select('id, username')
-            .eq('id', user.id)
-            .single();
-
-        return { data, error };
     }
 }
 

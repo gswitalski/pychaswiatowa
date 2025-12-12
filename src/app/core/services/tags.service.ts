@@ -76,32 +76,25 @@ export class TagsService {
     }
 
     /**
-     * Pobiera tagi z Supabase.
+     * Pobiera tagi z backend API.
      */
     private async fetchTags(): Promise<{
         data: TagDto[];
         error: Error | null;
     }> {
-        const {
-            data: { user },
-        } = await this.supabase.auth.getUser();
+        const response = await this.supabase.functions.invoke<TagDto[]>(
+            'tags',
+            {
+                method: 'GET',
+            }
+        );
 
-        if (!user) {
-            return { data: [], error: new Error('Użytkownik niezalogowany') };
-        }
-
-        const { data, error } = await this.supabase
-            .from('tags')
-            .select('id, name')
-            .eq('user_id', user.id)
-            .order('name', { ascending: true });
-
-        if (error) {
-            return { data: [], error };
+        if (response.error) {
+            return { data: [], error: new Error(response.error.message) };
         }
 
         return {
-            data: data ?? [],
+            data: response.data ?? [],
             error: null,
         };
     }
