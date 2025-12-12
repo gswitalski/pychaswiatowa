@@ -4,10 +4,12 @@
     height: 100%;
     background-color: var(--mat-sys-surface-container);
     width: 260px;
+    overflow: hidden; // Prevent any overflow
 
     &__header {
         padding: 16px 24px;
         border-bottom: 1px solid var(--mat-sys-outline-variant);
+        flex-shrink: 0;
     }
 
     &__logo {
@@ -31,6 +33,15 @@
         flex: 1;
         padding: 8px 0;
         overflow-y: auto;
+        overflow-x: hidden;
+
+        // Hide scrollbar but keep scrolling
+        scrollbar-width: none; // Firefox
+        -ms-overflow-style: none; // IE/Edge
+
+        &::-webkit-scrollbar {
+            display: none; // Chrome/Safari
+        }
     }
 
     &__nav-item {
@@ -58,6 +69,7 @@
     &__footer {
         border-top: 1px solid var(--mat-sys-outline-variant);
         padding: 8px 0;
+        flex-shrink: 0;
     }
 
     &__add-recipe {

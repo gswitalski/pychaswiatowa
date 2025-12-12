@@ -1,6 +1,6 @@
 .page-header {
     position: sticky;
-    top: 64px; // Height of topbar
+    top: 0; // Sticky relative to scrollable main container
     z-index: 10;
     background-color: var(--mat-sys-background);
     border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -15,10 +15,27 @@
         margin: 0 auto;
     }
 
+    &__left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0; // Allow text truncation
+    }
+
+    &__back-btn {
+        flex-shrink: 0;
+        color: var(--mat-sys-on-surface);
+
+        &:hover {
+            color: var(--mat-sys-primary);
+        }
+    }
+
     &__titles {
         display: flex;
         flex-direction: column;
         gap: 4px;
+        min-width: 0; // Allow text truncation
     }
 
     &__title {
@@ -27,6 +44,9 @@
         font-weight: 500;
         color: var(--mat-sys-on-background);
         line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &__subtitle {
@@ -46,12 +66,16 @@
 // Mobile responsiveness
 @media (max-width: 960px) {
     .page-header {
-        top: 56px; // Smaller topbar on mobile
         padding: 16px;
 
         &__content {
             flex-direction: column;
             align-items: flex-start;
+            gap: 12px;
+        }
+
+        &__left {
+            width: 100%;
         }
 
         &__title {

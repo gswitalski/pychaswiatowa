@@ -4,24 +4,6 @@
     padding: 24px;
 }
 
-.page-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-
-    h1 {
-        font-size: 1.5rem;
-        font-weight: 500;
-        color: var(--mat-sys-on-background);
-        margin: 0;
-    }
-
-    .spacer {
-        flex: 1;
-    }
-}
-
 .loading-state {
     display: flex;
     flex-direction: column;
@@ -117,11 +99,5 @@
 @media (max-width: 600px) {
     .recipe-detail-page {
         padding: 16px;
-    }
-
-    .page-header {
-        h1 {
-            font-size: 1.25rem;
-        }
     }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { RecipesService } from '../services/recipes.service';
 import { ApiError, ImportRecipeCommand } from '../../../../../shared/contracts/types';
 
@@ -34,9 +35,11 @@ export interface RecipeImportState {
         MatFormFieldModule,
         MatInputModule,
         MatButtonModule,
+        PageHeaderComponent,
     ],
     templateUrl: './recipe-import-page.component.html',
     styleUrl: './recipe-import-page.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeImportPageComponent {
     private readonly recipesService = inject(RecipesService);

@@ -1,9 +1,24 @@
+<pych-page-header
+    title="Import przepisu"
+    [showBackButton]="true"
+>
+    <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        [disabled]="form.invalid || state().pending"
+        (click)="submit()"
+    >
+        @if (state().pending) {
+            Importowanie...
+        } @else {
+            Importuj i edytuj
+        }
+    </button>
+</pych-page-header>
+
 <div class="recipe-import-container">
     <mat-card class="import-card">
-        <mat-card-header>
-            <h2>Importuj przepis z tekstu</h2>
-        </mat-card-header>
-
         <mat-card-content>
             <p class="instruction-text">
                 Wklej tekst przepisu w formacie Markdown. Format powinien zawierać:
@@ -34,21 +49,6 @@
                         <mat-error>{{ state().error!.message }}</mat-error>
                     </div>
                 }
-
-                <div class="actions">
-                    <button
-                        mat-raised-button
-                        color="primary"
-                        type="submit"
-                        [disabled]="form.invalid || state().pending"
-                    >
-                        @if (state().pending) {
-                            Importowanie...
-                        } @else {
-                            Importuj i edytuj
-                        }
-                    </button>
-                </div>
             </form>
         </mat-card-content>
     </mat-card>

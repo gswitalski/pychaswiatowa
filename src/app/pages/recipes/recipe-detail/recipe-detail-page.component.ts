@@ -6,21 +6,22 @@ import {
     signal,
     computed,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { RecipesService } from '../services/recipes.service';
 import { RecipeDetailDto, ApiError } from '../../../../../shared/contracts/types';
 
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { RecipeHeaderComponent } from './components/recipe-header/recipe-header.component';
 import { RecipeImageComponent } from './components/recipe-image/recipe-image.component';
 import { RecipeContentListComponent } from './components/recipe-content-list/recipe-content-list.component';
-import { RecipeActionsComponent } from './components/recipe-actions/recipe-actions.component';
 import {
     ConfirmDialogComponent,
     ConfirmDialogData,
@@ -41,15 +42,15 @@ interface RecipeDetailsState {
     selector: 'pych-recipe-detail-page',
     standalone: true,
     imports: [
-        RouterLink,
         MatCardModule,
         MatButtonModule,
         MatIconModule,
         MatProgressSpinnerModule,
+        MatTooltipModule,
+        PageHeaderComponent,
         RecipeHeaderComponent,
         RecipeImageComponent,
         RecipeContentListComponent,
-        RecipeActionsComponent,
     ],
     templateUrl: './recipe-detail-page.component.html',
     styleUrl: './recipe-detail-page.component.scss',
@@ -72,6 +73,9 @@ export class RecipeDetailPageComponent implements OnInit {
     readonly isLoading = computed(() => this.state().isLoading);
     readonly error = computed(() => this.state().error);
     readonly hasRecipe = computed(() => this.state().recipe !== null);
+
+    /** Page title - recipe name or fallback */
+    readonly pageTitle = computed(() => this.state().recipe?.name ?? 'Szczegóły przepisu');
 
     ngOnInit(): void {
         const idParam = this.route.snapshot.paramMap.get('id');

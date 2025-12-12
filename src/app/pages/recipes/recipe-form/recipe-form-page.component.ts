@@ -21,6 +21,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { RecipeBasicInfoFormComponent } from './components/recipe-basic-info-form/recipe-basic-info-form.component';
 import { RecipeImageUploadComponent } from './components/recipe-image-upload/recipe-image-upload.component';
 import { RecipeCategorizationFormComponent } from './components/recipe-categorization-form/recipe-categorization-form.component';
@@ -53,6 +54,7 @@ export interface RecipeFormViewModel {
         MatButtonModule,
         MatProgressSpinnerModule,
         MatIconModule,
+        PageHeaderComponent,
         RecipeBasicInfoFormComponent,
         RecipeImageUploadComponent,
         RecipeCategorizationFormComponent,

@@ -17,6 +17,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { Subject, takeUntil, filter, switchMap } from 'rxjs';
 
 import { CollectionsApiService } from '../../../core/services/collections-api.service';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import {
     ConfirmDialogComponent,
     ConfirmDialogData,
@@ -37,6 +38,7 @@ import {
         MatProgressSpinnerModule,
         MatSnackBarModule,
         MatDialogModule,
+        PageHeaderComponent,
         RecipeListComponent,
         CollectionHeaderComponent,
     ],
@@ -79,6 +81,9 @@ export class CollectionDetailsPageComponent implements OnDestroy {
     readonly hasData = computed(
         () => !this.state().isLoading && !this.state().error && this.state().id > 0
     );
+
+    /** Page title - collection name or fallback */
+    readonly pageTitle = computed(() => this.state().name || 'Szczegóły kolekcji');
 
     constructor() {
         // Efekt nasłuchujący na zmiany parametru ID w URL

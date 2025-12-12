@@ -4,17 +4,6 @@
     padding: 24px;
 }
 
-.page-header {
-    margin-bottom: 24px;
-
-    h1 {
-        font-size: 2rem;
-        font-weight: 500;
-        color: var(--mat-sys-on-background);
-        margin: 0;
-    }
-}
-
 .loading-container {
     display: flex;
     flex-direction: column;
@@ -85,36 +74,9 @@
     }
 }
 
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 16px;
-    padding-top: 16px;
-
-    button {
-        min-width: 140px;
-
-        mat-spinner {
-            margin: 0 auto;
-        }
-    }
-}
-
 @media (max-width: 600px) {
     .recipe-form-page {
         padding: 16px;
-    }
-
-    .page-header h1 {
-        font-size: 1.5rem;
-    }
-
-    .form-actions {
-        flex-direction: column;
-
-        button {
-            width: 100%;
-        }
     }
 }
 

@@ -1,12 +1,9 @@
-<div class="collection-details-page">
-    <!-- Przycisk powrotu -->
-    <div class="back-button-container">
-        <button mat-button (click)="navigateBack()">
-            <mat-icon>arrow_back</mat-icon>
-            Powrót do kolekcji
-        </button>
-    </div>
+<pych-page-header
+    [title]="pageTitle()"
+    [showBackButton]="true"
+/>
 
+<div class="collection-details-page">
     <!-- Stan ładowania (początkowy) -->
     @if (isLoading() && !hasData()) {
         <div class="loading-container">

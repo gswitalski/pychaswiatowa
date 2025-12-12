@@ -1,12 +1,37 @@
-<div class="recipe-detail-page">
-    <header class="page-header">
-        <a mat-icon-button routerLink="/recipes" aria-label="Wróć do listy">
-            <mat-icon>arrow_back</mat-icon>
-        </a>
-        <h1>Szczegóły przepisu</h1>
-        <span class="spacer"></span>
-    </header>
+<pych-page-header
+    [title]="pageTitle()"
+    [showBackButton]="true"
+>
+    @if (hasRecipe()) {
+        <button
+            mat-icon-button
+            matTooltip="Dodaj do kolekcji"
+            aria-label="Dodaj do kolekcji"
+            (click)="onAddToCollection()"
+        >
+            <mat-icon>bookmark_add</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            matTooltip="Edytuj przepis"
+            aria-label="Edytuj przepis"
+            (click)="onEdit()"
+        >
+            <mat-icon>edit</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            matTooltip="Usuń przepis"
+            aria-label="Usuń przepis"
+            color="warn"
+            (click)="onDelete()"
+        >
+            <mat-icon>delete</mat-icon>
+        </button>
+    }
+</pych-page-header>
 
+<div class="recipe-detail-page">
     @if (isLoading()) {
         <div class="loading-state">
             <mat-spinner diameter="48"></mat-spinner>
@@ -31,16 +56,10 @@
         </mat-card>
     } @else if (hasRecipe()) {
         <div class="recipe-content">
-            <!-- Wiersz 1: Header - tytuł, opis, przyciski (lewa) + zdjęcie (prawa) -->
+            <!-- Wiersz 1: Header - tytuł, opis (lewa) + zdjęcie (prawa) -->
             <div class="recipe-header-section">
                 <div class="recipe-info">
                     <pych-recipe-header [recipe]="recipe()!" />
-
-                    <pych-recipe-actions
-                        (editClicked)="onEdit()"
-                        (deleteClicked)="onDelete()"
-                        (addToCollectionClicked)="onAddToCollection()"
-                    />
                 </div>
 
                 <pych-recipe-image
