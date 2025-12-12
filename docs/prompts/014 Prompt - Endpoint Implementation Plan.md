@@ -10,17 +10,36 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 </api_plan>
 
-2. Route API specification:
-<route_api_specification>
+2. List zmian i nowych funkcjonalności w API
+<api_changes_description>
+
+### Zmienione Endpointy
+
+**Model Danych (Recipe)**
+- Dodano pole: `visibility` (Enum: `PRIVATE`, `SHARED`, `PUBLIC`).
+
+**POST /recipes**
+- **Request Payload:** Dodano pole `visibility`.
+- **Przykład:** `"visibility": "PRIVATE"`
+- **Walidacja:** Pole wymagane, musi należeć do dozwolonych wartości Enum.
+
+**PUT /recipes/{id}**
+- **Request Payload:** Dodano opcjonalne pole `visibility` do aktualizacji.
+
+**GET /recipes/{id}** oraz **GET /recipes**
+- **Response Payload:** Obiekt przepisu zawiera teraz pole `visibility`.
+
+**POST /recipes/import**
+- **Zachowanie:** Domyślnie importowane przepisy otrzymują widoczność `PRIVATE`. Edycja widoczności możliwa w kroku następnym (edycja formularza).
 
 
 
-</route_api_specification>
+</api_changes_description>
 
 aktualna implementacja:
 <current_implementation>
 
-brak
+
 
 </current_implementation>
 
