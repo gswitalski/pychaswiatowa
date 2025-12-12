@@ -1,185 +1,262 @@
-# Plan implementacji widoku: Formularz Przepisu (Dodaj/Edytuj)
+# Plan implementacji widoku: Formularz Przepisu (Dodaj/Edytuj) — sekcja „Widoczność”
 
 ## 1. Przegląd
 
-Celem tego widoku jest umożliwienie użytkownikom tworzenia nowych przepisów oraz edytowania już istniejących. Widok będzie zawierał rozbudowany formularz, podzielony na logiczne sekcje: podstawowe informacje (nazwa, opis), zdjęcie, kategoryzację (kategoria, tagi) oraz dynamiczne listy składników i kroków. Formularz będzie dostępny w dwóch trybach: "tworzenia" (`/recipes/new`) i "edycji" (`/recipes/:id/edit`), automatycznie dostosowując swoje działanie w zależności od kontekstu. Zapewni on walidację danych wejściowych i płynną interakcję, w tym możliwość reorganizacji list za pomocą mechanizmu "przeciągnij i upuść".
+Celem aktualizacji widoku „Formularz Przepisu (Dodaj/Edytuj)” jest dodanie do istniejącego formularza sekcji **„Widoczność”** zgodnie z US‑016 oraz PRD: użytkownik ma zawsze wybrać jedną z wartości `PRIVATE | SHARED | PUBLIC`, z domyślną wartością `PRIVATE`. Zmiana dotyczy zarówno trybu tworzenia, jak i edycji oraz mapowania danych na `CreateRecipeCommand` / `UpdateRecipeCommand`.
+
+Plan jest dopasowany do aktualnie istniejącej implementacji w `src/app/pages/recipes/recipe-form/…` (standalone, signals, `@if/@for`, OnPush, Reactive Forms).
+
+> Uwaga: w repo nie znaleziono „formularza do tworzenia piosenki” (brak plików/komponentów powiązanych z `song` / `piosenk*`). W planie opisano reużycie istniejących komponentów formularza przepisu (`RecipeCategorizationFormComponent`, `EditableListComponent`, `PageHeaderComponent`) i wzorca „smart page + dumb components”.
 
 ## 2. Routing widoku
 
-Widok będzie dostępny pod następującymi ścieżkami w module `recipes`:
+Routing pozostaje bez zmian (już istnieje w module `recipes`):
 
--   **Tworzenie nowego przepisu:** `/recipes/new`
--   **Edycja istniejącego przepisu:** `/recipes/:id/edit`
+- **Tworzenie**: `/recipes/new`
+- **Edycja**: `/recipes/:id/edit`
 
-Widok będzie chroniony przez `AuthGuard`, zapewniając dostęp tylko zalogowanym użytkownikom.
+Widok jest chroniony mechanizmem autoryzacji aplikacji (np. guard dla zalogowanych).
 
 ## 3. Struktura komponentów
 
-Struktura będzie opierać się na podejściu "smart component" (strona) i "dumb components" (komponenty UI), co zapewni reużywalność i przejrzystość.
+Drzewo komponentów (stan obecny + miejsce na widoczność):
 
 ```
-RecipeFormPageComponent (Smart Component)
+RecipeFormPageComponent
 │
-├── RecipeBasicInfoFormComponent (Dumb Component)
+├── PageHeaderComponent
 │
-├── RecipeImageUploadComponent (Dumb Component)
+├── RecipeBasicInfoFormComponent
 │
-├── RecipeCategorizationFormComponent (Dumb Component)
+├── RecipeImageUploadComponent
 │
-└── EditableListComponent (Dumb, Reusable Component)
-    - Użyty dwukrotnie: dla składników i kroków
+├── RecipeCategorizationFormComponent   (TU: Kategoria + Tagi + Widoczność)
+│
+├── EditableListComponent               (Składniki)
+│
+└── EditableListComponent               (Kroki)
 ```
 
 ## 4. Szczegóły komponentów
 
-### `RecipeFormPageComponent`
+### `RecipeFormPageComponent` (`src/app/pages/recipes/recipe-form/recipe-form-page.component.ts`)
 
--   **Opis komponentu:** Główny komponent strony, orkiestrujący cały formularz. Odpowiada za:
-    -   Rozróżnienie trybu "tworzenia" i "edycji" na podstawie URL.
-    -   Pobranie danych przepisu i kategorii z API w trybie edycji.
-    -   Inicjalizację głównego `FormGroup` (`RecipeFormViewModel`).
-    -   Obsługę zdarzenia wysłania formularza, agregację danych, komunikację z API (`POST/PUT /recipes`).
-    -   Nawigację po pomyślnym zapisie lub anulowaniu.
-    -   Zarządzanie stanem ładowania i błędów.
--   **Główne elementy HTML:** Komponent będzie używał `mat-card` lub podobnego kontenera do grupowania sekcji. Będzie zawierał przyciski "Zapisz" i "Anuluj" oraz spinner (`mat-progress-spinner`) do sygnalizacji stanu ładowania. Osadzi w sobie pozostałe komponenty formularza.
--   **Obsługiwane zdarzenia:** `ngSubmit` na formularzu, `(click)` na przyciskach.
--   **Warunki walidacji:** Deleguje walidację do `FormGroup`. Sprawdza ogólną ważność formularza (`form.valid`) przed wysłaniem.
--   **Typy:** `RecipeFormViewModel`, `RecipeDetailDto`, `CategoryDto`, `CreateRecipeCommand`, `UpdateRecipeCommand`.
--   **Propsy:** Brak, komponent jest zarządzany przez router.
+- **Opis komponentu**: Smart‑page odpowiedzialny za inicjalizację formularza, wypełnianie danych w trybie edycji, submit/cancel, stany `loading/saving/error`, pobranie kategorii z `CategoriesService`.
+- **Główne elementy**:
+    - `pych-page-header` z akcjami: „Anuluj”, „Dodaj przepis” / „Zapisz zmiany”.
+    - Sekcje w `mat-card` (podstawowe info, zdjęcie, kategoryzacja, składniki, kroki).
+    - Control-flow `@if` na stan ładowania i błąd.
+- **Obsługiwane zdarzenia**:
+    - `(click)` na „Anuluj” → `onCancel()`
+    - `(click)` na „Zapisz…” → `onSubmit()`
+    - `(imageChange)` z `RecipeImageUploadComponent` → `onImageChange(file)`
+- **Walidacja (frontend, zgodnie z API/PRD)**:
+    - `name`: required, maxLength 150
+    - `ingredients`: min 1 element (walidator na `FormArray`)
+    - `steps`: min 1 element (walidator na `FormArray`)
+    - **`visibility`: required** i zawsze ustawione (domyślnie `PRIVATE`)
+    - Przycisk zapisu `disabled` gdy `form.invalid` lub `saving()`.
+- **Typy**:
+    - `RecipeDetailDto`, `CreateRecipeCommand`, `UpdateRecipeCommand`
+    - `RecipeVisibility` (z `shared/contracts/types.ts`)
+    - `CategoryDto`
+    - Lokalny `RecipeFormViewModel` (patrz sekcja 5)
+- **Propsy**: brak (komponent routowany).
 
 ### `RecipeBasicInfoFormComponent`
 
--   **Opis komponentu:** Odpowiada za pola tekstowe: nazwa i opis przepisu.
--   **Główne elementy HTML:** `mat-form-field` z `mat-label` i `mat-input` dla nazwy (`<input>`) i opisu (`<textarea>`). Wyświetla błędy walidacji za pomocą `mat-error`.
--   **Obsługiwane zdarzenia:** `(input)` - aktualizuje `FormControl`.
--   **Warunki walidacji:**
-    -   `name`: `Validators.required`, `Validators.maxLength(150)`.
--   **Typy:** `FormGroup` (fragment `RecipeFormViewModel`).
--   **Propsy:** `[formGroup]: FormGroup` - przyjmuje część głównego formularza.
+- **Opis komponentu**: Sekcja danych podstawowych: nazwa i opis.
+- **Główne elementy**:
+    - `mat-form-field` + `input matInput` (name)
+    - `mat-form-field` + `textarea matInput` (description)
+    - `mat-error` dla błędów required/maxLength
+- **Obsługiwane zdarzenia**: standardowo Reactive Forms (`FormControl`).
+- **Walidacja**:
+    - `name`: required, maxLength 150
+    - `description`: opcjonalne
+- **Typy**:
+    - `FormControl<string>` (name, description)
+- **Propsy**:
+    - `[nameControl]: FormControl<string>`
+    - `[descriptionControl]: FormControl<string>`
 
 ### `RecipeImageUploadComponent`
 
--   **Opis komponentu:** Umożliwia użytkownikowi przesłanie, podgląd i usunięcie zdjęcia przepisu.
--   **Główne elementy HTML:** Przycisk (`mat-button`) do otwarcia okna wyboru pliku (`<input type="file">`), kontener na podgląd obrazu (`<img>`), przycisk do usunięcia wybranego zdjęcia.
--   **Obsługiwane zdarzenia:** `(change)` na `input file`, `(click)` na przycisku usuwania. Emituje zdarzenie `(imageChange)` z obiektem `File` lub `null`.
--   **Warunki walidacji:** Opcjonalna walidacja typu pliku (np. `image/jpeg`, `image/png`) i rozmiaru.
--   **Typy:** `File`.
--   **Propsy:** `[currentImageUrl]: string | null` - do wyświetlenia istniejącego obrazu w trybie edycji.
+- **Opis komponentu**: Upload zdjęcia przepisu (wybór pliku + podgląd); plik jest przechowywany w stanie strony (nie w `FormGroup`), a zapis idzie przez `RecipesService` (storage upload + `image_path` w komendzie).
+- **Główne elementy**:
+    - `input[type="file"]` (ograniczenie do obrazów)
+    - podgląd aktualnego obrazu (`currentImageUrl`)
+    - przycisk usunięcia/zmiany
+- **Obsługiwane zdarzenia**:
+    - `(change)` na file input → emit `(imageChange)` z `File | null`
+- **Walidacja**:
+    - rekomendowane: typ pliku (jpg/png/webp), rozmiar (np. limit MB), komunikat błędu UI
+- **Typy**: `File`
+- **Propsy**:
+    - `[currentImageUrl]: string | null`
+    - `(imageChange): EventEmitter<File | null>`
 
-### `RecipeCategorizationFormComponent`
+### `RecipeCategorizationFormComponent` (do rozszerzenia o widoczność)
 
--   **Opis komponentu:** Odpowiada za przypisanie kategorii i tagów.
--   **Główne elementy HTML:**
-    -   `mat-form-field` z `mat-select` do wyboru kategorii.
-    -   `mat-form-field` z `mat-chip-grid` i `<input>` do dynamicznego dodawania i usuwania tagów.
--   **Obsługiwane zdarzenia:** `(selectionChange)` na `mat-select`, `(matChipInputTokenEnd)` na inpucie tagów, `(removed)` na `mat-chip`.
--   **Warunki walidacji:** Brak (pola opcjonalne).
--   **Typy:** `FormGroup` (fragment `RecipeFormViewModel`), `CategoryDto[]`.
--   **Propsy:** `[formGroup]: FormGroup`, `[categories]: CategoryDto[]`.
+- **Opis komponentu**: Sekcja „Kategoria i tagi” oraz **nowa sekcja „Widoczność”** (zgodnie z wymaganiem: obok kategorii, w danych podstawowych formularza).
+- **Główne elementy**:
+    - `mat-select` dla kategorii
+    - `mat-chip-grid` + input dla tagów
+    - **Widoczność** (rekomendacja UX):
+        - `mat-radio-group` z trzema opcjami:
+            - `PRIVATE` → „Prywatny”
+            - `SHARED` → „Współdzielony”
+            - `PUBLIC` → „Publiczny”
+        - `mat-hint` opisujący konsekwencje wyboru
+        - `aria-label` dla grupy radiowej
+- **Obsługiwane zdarzenia**:
+    - Dodawanie tagu: `(matChipInputTokenEnd)`
+    - Usuwanie tagu: `(removed)`
+    - Wybór kategorii: binding do `categoryControl`
+    - **Zmiana widoczności**: binding do `visibilityControl`
+- **Walidacja**:
+    - `visibility`: required (w praktyce pole zawsze ustawione — domyślnie `PRIVATE`)
+    - `category`/`tags`: opcjonalne
+- **Typy**:
+    - `FormControl<number | null>` (category)
+    - `FormArray<FormControl<string>>` (tags)
+    - `FormControl<RecipeVisibility>` (visibility)
+    - `CategoryDto[]`
+    - `RecipeVisibility`
+- **Propsy (interfejs komponentu)**:
+    - `[categoryControl]: FormControl<number | null>`
+    - `[tagsArray]: FormArray<FormControl<string>>`
+    - `[categories]: CategoryDto[]`
+    - **`[visibilityControl]: FormControl<RecipeVisibility>`** (NOWE)
 
-### `EditableListComponent`
+### `EditableListComponent` (komponent współdzielony)
 
--   **Opis komponentu:** Reużywalny komponent do zarządzania listą edytowalnych tekstów (składników lub kroków). Wspiera dodawanie, usuwanie, edycję "in-line" oraz zmianę kolejności metodą "przeciągnij i upuść" (CDK Drag and Drop).
--   **Główne elementy HTML:** Kontener `cdkDropList`, pętla `@for` po elementach listy, gdzie każdy element to `cdkDrag`. Każdy element zawiera tekst i przyciski akcji (edytuj, usuń). Posiada również pole `textarea` na dole do dodawania nowych pozycji.
--   **Obsługiwane zdarzenia:** `(cdkDropListDropped)` do zmiany kolejności. `(click)` na przyciskach. `(input)` w polach edycji.
--   **Warunki walidacji:** `Validators.required` na `FormArray` (musi zawierać co najmniej jeden element).
--   **Typy:** `FormArray<FormControl<string>>`.
--   **Propsy:** `[formArray]: FormArray`, `[label]: string`, `[placeholder]: string`.
+- **Opis komponentu**: Reużywalna lista edytowalna dla składników/kroków. Wspiera dodawanie, usuwanie, edycję, drag&drop (CDK) oraz skróty klawiaturowe (Enter/Escape).
+- **Główne elementy**:
+    - `cdkDropList` + `cdkDrag`
+    - `mat-form-field` dla nowej pozycji i edycji
+    - przyciski z ikonami Material
+- **Obsługiwane zdarzenia**:
+    - `(cdkDropListDropped)` → reorder
+    - Enter w polu dodawania → `addItem()`
+    - Enter/Escape w edycji → `saveEdit()/cancelEdit()`
+- **Walidacja**:
+    - walidacja minimalnej liczby elementów pozostaje na poziomie strony (`FormArray`).
+- **Typy**:
+    - `FormArray<FormControl<string>>`
+- **Propsy**:
+    - `[formArray]`, `[label]`, `[placeholder]`
 
 ## 5. Typy
 
-### `RecipeFormViewModel`
+### `RecipeVisibility`
 
-Główny model formularza, który będzie używany w `ReactiveFormsModule`.
+Używany typ kontraktowy (już istnieje):
+
+- `RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC'`
+
+### `RecipeFormViewModel` (do aktualizacji)
+
+Model formularza w `RecipeFormPageComponent` powinien zawierać pole `visibility`:
 
 ```typescript
-import { FormArray, FormControl, FormGroup } from '@angular/forms';
+import { FormArray, FormControl } from '@angular/forms';
+import { RecipeVisibility } from '../../../../../shared/contracts/types';
 
 export interface RecipeFormViewModel {
-    name: FormControl<string | null>;
-    description: FormControl<string | null>;
-    image: FormControl<File | null>;
+    name: FormControl<string>;
+    description: FormControl<string>;
     categoryId: FormControl<number | null>;
+    visibility: FormControl<RecipeVisibility>;
     tags: FormArray<FormControl<string>>;
     ingredients: FormArray<FormControl<string>>;
     steps: FormArray<FormControl<string>>;
 }
 ```
 
--   `name`: Nazwa przepisu.
--   `description`: Opis przepisu.
--   `image`: Plik z obrazem (w trybie edycji początkowo `null`).
--   `categoryId`: ID wybranej kategorii.
--   `tags`: Dynamiczna lista tagów.
--   `ingredients`: Dynamiczna lista składników.
--   `steps`: Dynamiczna lista kroków.
+- **Domyślna wartość**: `visibility = 'PRIVATE'`
+- **Walidator**: `Validators.required` (oraz sanity-check przy mapowaniu na komendę)
 
 ## 6. Zarządzanie stanem
 
--   **Stan formularza:** Zarządzany lokalnie w `RecipeFormPageComponent` za pomocą `FormGroup` i `FormBuilder` z `@angular/forms`.
--   **Stan globalny (Kategorie):** Kategorie będą pobierane jednorazowo przez `CategoriesService` i przechowywane w nim (np. w `signal`), działając jako cache dla całej aplikacji. Komponent `RecipeFormPageComponent` będzie wstrzykiwał ten serwis i pobierał z niego listę kategorii, bez potrzeby bezpośredniego wywoływania API.
--   **Stan asynchroniczny (API):** Komponent `RecipeFormPageComponent` będzie zarządzał stanami `loading` i `error` (np. za pomocą `signal` lub prostej właściwości `boolean`) podczas komunikacji z API w celu pobrania/zapisu *przepisu*.
--   **Serwisy:** Zostaną wykorzystane serwisy `RecipesService` do operacji na przepisach oraz `CategoriesService` do zarządzania stanem kategorii.
+- **Stan formularza**: Reactive Forms (`FormGroup<RecipeFormViewModel>`) w `RecipeFormPageComponent`.
+- **Stan UI**: `signal<boolean>` dla `loading/saving`, `signal<string | null>` dla błędu.
+- **Kategorie**: `CategoriesService` jako cache oparty o signals (już istnieje).
+- **Zdjęcie**: wybrany plik trzymany poza `FormGroup` (lokalne pole + event z upload komponentu).
+- **Wymóg dotyczący loadingów**: utrzymywać poprzednie dane podczas odświeżania; unikać białych overlay (zgodnie z regułami repo).
 
 ## 7. Integracja API
 
--   **Pobieranie danych:**
-    -   `GET /categories`: Wywoływane jednorazowo przez `CategoriesService`, np. przy pierwszym żądaniu. Komponent `RecipeFormPageComponent` pobiera te dane bezpośrednio z serwisu, a nie z API.
-    -   `GET /recipes/:id`: Wywoływane tylko w trybie edycji. Zwraca `RecipeDetailDto`, które posłuży do wypełnienia `RecipeFormViewModel`.
--   **Wysyłanie danych:**
-    -   `POST /recipes`: Wywoływane w trybie tworzenia. Dane z `RecipeFormViewModel` zostaną zmapowane na `CreateRecipeCommand`.
-    -   `PUT /recipes/:id`: Wywoływane w trybie edycji. Dane z `RecipeFormViewModel` zostaną zmapowane na `UpdateRecipeCommand`.
+Zgodnie z kontraktami w `shared/contracts/types.ts`:
 
-**Mapowanie danych (`ViewModel` -> `Command`):**
-Przed wysłaniem, dane z `ingredients` i `steps` (`FormArray<FormControl<string>>`) zostaną przekonwertowane na pojedyncze stringi (`ingredients_raw`, `steps_raw`) poprzez złączenie wartości `FormControl` znakiem nowej linii (`\n`).
+- **Create**: `POST /recipes` (Edge Function) z payloadem `CreateRecipeCommand`:
+    - wymagane: `name`, `ingredients_raw`, `steps_raw`, `tags`, **`visibility`**
+    - opcjonalne: `description`, `category_id`
+    - `image_path` jest ustawiane przez `RecipesService` po uploadzie do storage
+- **Update**: `PUT /recipes/:id` (Edge Function) z payloadem `UpdateRecipeCommand` (częściowy):
+    - może zawierać **`visibility`** i inne edytowane pola
+- **Read**: `GET /recipes/:id` zwraca `RecipeDetailDto`, zawiera `visibility`
+
+Mapowanie formularza → komenda:
+
+- `ingredients_raw = ingredients.join('\n')`
+- `steps_raw = steps.join('\n')`
+- `tags = tags[]`
+- **`visibility = formValue.visibility`**
+- `description`: mapować pusty string na `null`
 
 ## 8. Interakcje użytkownika
 
--   **Wprowadzanie tekstu:** Użytkownik wpisuje dane w pola `name`, `description`.
--   **Wybór kategorii:** Użytkownik wybiera kategorię z listy `mat-select`.
--   **Zarządzanie tagami:** Użytkownik wpisuje tag i zatwierdza go (np. Enter), co dodaje go do `mat-chip-grid`. Może usunąć tag, klikając ikonę na "pigułce".
--   **Przesyłanie zdjęcia:** Kliknięcie przycisku "Dodaj zdjęcie" otwiera natywne okno wyboru pliku. Wybrany obraz jest wyświetlany jako podgląd.
--   **Zarządzanie listami:**
-    -   Dodawanie: Użytkownik wpisuje tekst w dedykowanym `textarea` i klika "Dodaj", co dodaje nowy element na koniec listy.
-    -   Edycja: Kliknięcie ikony "edytuj" przy elemencie zamienia tekst w pole edytowalne.
-    -   Usuwanie: Kliknięcie ikony "usuń" usuwa element z listy.
-    -   Zmiana kolejności: Użytkownik przeciąga i upuszcza elementy na listach, aby zmienić ich kolejność.
--   **Zapis:** Kliknięcie "Zapisz" uruchamia walidację i proces wysyłania danych do API.
--   **Anulowanie:** Kliknięcie "Anuluj" powoduje powrót do poprzedniej strony bez zapisywania zmian.
+- Użytkownik wypełnia nazwę/ opis.
+- Użytkownik wybiera kategorię i dodaje tagi (chips).
+- **Użytkownik wybiera widoczność**:
+    - Domyślnie widzi ustawione „Prywatny”.
+    - Może przełączyć na „Współdzielony” lub „Publiczny”.
+    - UI pokazuje krótki opis skutków (hint).
+- Użytkownik zarządza listą składników i kroków (`EditableListComponent`).
+- Użytkownik dodaje/zmienia zdjęcie.
+- Kliknięcie „Zapisz…”:
+    - waliduje formularz
+    - wysyła komendę do API
+    - po sukcesie nawigacja do `/recipes/:id`
+- Kliknięcie „Anuluj” wraca do listy lub szczegółów (zależnie od trybu).
 
 ## 9. Warunki i walidacja
 
--   **`name`:** Wymagane (`Validators.required`), maksymalna długość 150 znaków (`Validators.maxLength(150)`). Błąd wyświetlany pod polem input.
--   **`ingredients`:** Wymagane, aby lista zawierała co najmniej jeden element (`Validators.required` lub niestandardowy walidator na `FormArray`). Komunikat o błędzie wyświetlany pod listą.
--   **`steps`:** Wymagane, aby lista zawierała co najmniej jeden element. Komunikat o błędzie wyświetlany pod listą.
--   **Przycisk "Zapisz":** Jest nieaktywny (`disabled`), dopóki cały formularz (`RecipeFormViewModel`) nie przejdzie walidacji.
+- **`name`**:
+    - required
+    - maxLength 150
+    - UI: `mat-error` po `touched`
+- **`ingredients` i `steps`**:
+    - min 1 element (walidator na `FormArray`)
+    - UI: błąd sekcji po `touched`
+- **`visibility`**:
+    - required
+    - domyślne `PRIVATE` (formularz nie powinien startować z `null`)
+    - UI: radio-group bez możliwości odznaczenia; dodatkowo `mat-error` jeśli jednak pole jest niepoprawne (edge case).
+- **Zapis**:
+    - disabled gdy `saving()` lub `form.invalid`
 
 ## 10. Obsługa błędów
 
--   **Błędy walidacji:** Komunikaty o błędach będą wyświetlane w czasie rzeczywistym pod odpowiednimi polami formularza, gdy tylko staną się "touched" lub "dirty".
--   **Błędy API:**
-    -   W przypadku błędu serwera (np. 500) lub braku połączenia, pod formularzem zostanie wyświetlony ogólny komunikat o błędzie (np. przy użyciu `mat-error` lub dedykowanego komponentu `AlertComponent`).
-    -   W przypadku błędu walidacji po stronie serwera (400), błędy zostaną (jeśli to możliwe) zmapowane na odpowiednie pola formularza (`form.get('fieldName')?.setErrors(...)`).
-    -   W przypadku braku uprawnień (403) lub nieznalezienia zasobu (404) w trybie edycji, użytkownik zostanie przekierowany na stronę błędu lub listę przepisów z odpowiednim komunikatem.
+- **Walidacja lokalna**: `markAllAsTouched()` na submit gdy invalid.
+- **Błędy API**:
+    - `GET /recipes/:id` (404/403): komunikat + nawigacja do listy przepisów
+    - `POST/PUT` (400): pokazać komunikat i (jeśli API zwraca szczegóły) mapować na pola
+    - pozostałe: banner błędu w formularzu (jak obecnie `error-banner`)
+- **Błędy uploadu**:
+    - komunikat w sekcji zdjęcia (np. typ/rozmiar lub błąd storage)
 
 ## 11. Kroki implementacji
 
-1.  **Aktualizacja `CategoriesService`:** Zaimplementowanie w serwisie `CategoriesService` logiki do jednorazowego pobierania i przechowywania listy kategorii. Serwis powinien udostępniać kategorie (np. jako `Signal<CategoryDto[]>`).
-2.  **Stworzenie plików komponentów:** Wygenerowanie wszystkich pięciu komponentów (`RecipeFormPageComponent`, `RecipeBasicInfoFormComponent`, `RecipeImageUploadComponent`, `RecipeCategorizationFormComponent`, `EditableListComponent`) za pomocą Angular CLI z opcją `--standalone`.
-3.  **Konfiguracja routingu:** Dodanie ścieżek `/new` i `/:id/edit` w pliku `recipes-routes.ts` (lub podobnym), kierujących do `RecipeFormPageComponent`.
-4.  **Dodanie globalnego przycisku "Dodaj przepis":** W głównym komponencie layoutu aplikacji (np. w bocznym panelu nawigacyjnym - `SidebarComponent`), dodać przycisk, który będzie zawsze widoczny dla zalogowanego użytkownika i będzie nawigował do ścieżki `/recipes/new`.
-5.  **Implementacja `RecipeFormPageComponent`:**
-    -   Zdefiniowanie logiki rozróżniania trybu edycji/tworzenia.
-    -   Wstrzyknięcie serwisów (`RecipesService`, `CategoriesService`, `FormBuilder`, `ActivatedRoute`, `Router`).
-    -   Stworzenie `FormGroup` na podstawie `RecipeFormViewModel`.
-    -   Implementacja metod `ngOnInit` do pobierania danych przepisu (w trybie edycji) oraz metody `onSubmit` do wysyłania formularza.
-6.  **Implementacja komponentów podrzędnych:**
-    -   Stworzenie szablonów HTML i logiki dla `RecipeBasicInfoFormComponent`, `RecipeImageUploadComponent` i `RecipeCategorizationFormComponent`.
-    -   Implementacja `ControlValueAccessor` lub przekazywanie `FormGroup`/`FormControl` jako `@Input`.
-7.  **Implementacja `EditableListComponent`:**
-    -   Zaimplementowanie logiki wyświetlania, dodawania, usuwania i edycji elementów `FormArray`.
-    -   Dodanie i skonfigurowanie modułu `DragDropModule` z `@angular/cdk` do obsługi zmiany kolejności.
-8.  **Stworzenie szablonu `RecipeFormPageComponent`:** Złożenie widoku z zaimplementowanych komponentów podrzędnych, przekazując im odpowiednie części głównego `FormGroup` oraz listę kategorii z `CategoriesService`. Dodanie przycisków i obsługi stanu ładowania.
-9. **Integracja z API:** Implementacja wywołań API w serwisie `RecipesService` i podpięcie ich w `RecipeFormPageComponent`.
-10. **Stylowanie i finalizacja:** Dopracowanie stylów SCSS dla wszystkich komponentów, zapewnienie responsywności i spójności z resztą aplikacji.
-11. **Testowanie:** Manualne przetestowanie obu ścieżek (tworzenie i edycja), walidacji, obsługi błędów oraz interakcji "przeciągnij i upuść".
+1. **Aktualizacja ViewModel**: dodać `visibility: FormControl<RecipeVisibility>` do `RecipeFormViewModel`, domyślnie `'PRIVATE'`, z `Validators.required`.
+2. **Aktualizacja UI „Kategoria i tagi”**: rozszerzyć `RecipeCategorizationFormComponent` o `visibilityControl` i dodać `mat-radio-group` (lub `mat-select` jeśli UX wymaga).
+3. **Podpięcie kontrolki w stronie**: przekazać `form.controls.visibility` do `pych-recipe-categorization-form` oraz zdefiniować layout „obok kategorii”.
+4. **Tryb edycji**: w `populateForm(recipe)` ustawić `visibility` z `recipe.visibility` (z fallbackiem na `'PRIVATE'`).
+5. **Mapowanie do komend API**: w `mapFormToCommand()` uwzględnić `visibility` (dla create; dla update analogicznie, jeśli wysyłamy cały model).
+6. **Walidacja i komunikaty**: dodać `mat-hint`/`mat-error` dla widoczności i przetestować edge case `null`.
+7. **Testy manualne**:
+    - tworzenie: domyślna `PRIVATE`, zmiana na `PUBLIC`, zapis
+    - edycja: odczyt istniejącej widoczności, zmiana, zapis
+    - walidacja: wymuszenie błędów (pusta nazwa, puste listy)
+    - odporność: zachowanie danych przy `saving/loading`

@@ -19,13 +19,14 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji
 <view>
 
+**7. Formularz Przepisu (Dodaj/Edytuj)**
+- **Zmiana:** Dodano sekcję wyboru widoczności.
+- **Szczegóły:**
+    - Nowy komponent UI: `mat-radio-group` lub `mat-select` z opcjami: `PRIVATE`, `SHARED`, `PUBLIC`.
+    - Domyślna wartość: `PRIVATE`.
+    - Lokalizacja: W sekcji "Dane podstawowe", obok kategorii.
+    - Walidacja: Pole wymagane (zawsze musi mieć wartość).
 
-### Zmienione widoki:
-
-#### Szczegóły Przepisu (`/recipes/:id`)
-**Zmiana:** Zaktualizowano opis kluczowych informacji i wymagań UX.
-- **Opis:** Lista kroków musi być renderowana w sposób zapewniający ciągłość numeracji.
-- **Implementacja:** Należy wykorzystać CSS Counters (`counter-reset` na kontenerze głównym, `counter-increment` na elementach listy), aby ignorować nagłówki sekcji w procesie liczenia. Standardowy tag `<ol>` resetowałby numerację po każdym przerwaniu listy nagłówkiem, dlatego wymagane jest niestandardowe podejście stylowania lub płaska struktura HTML z odpowiednimi klasami.
 
 
 </view>
@@ -34,19 +35,19 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-### Zmienione historyjki:
 
-#### US-003: Dodawanie nowego przepisu
-**Zmiana:** Dodano wymaganie dotyczące automatycznego oczyszczania tekstu kroków z ręcznej numeracji.
-- **Nowe kryterium:** Tekst wklejony w pole "kroki" jest dzielony na poszczególne pozycje według znaków nowej linii. System automatycznie usuwa istniejącą ręczną numerację (np. "1.", "2) ") z początku linii, aby zapewnić spójne wyświetlanie w widoku szczegółów.
+### Nowe historyjki
+**US-016: Zarządzanie widocznością przepisu**
+- **Opis:** Jako autor przepisu, chcę móc określić, kto może zobaczyć mój przepis, aby zachować prywatność moich notatek lub podzielić się nimi ze światem.
+- **Kryteria akceptacji:**
+    1. W formularzu tworzenia i edycji przepisu dostępna jest sekcja "Widoczność".
+    2. Dostępne są trzy opcje wyboru: "Prywatny", "Współdzielony", "Publiczny".
+    3. Domyślnie zaznaczona jest opcja "Prywatny".
+    4. Użytkownik może zmienić widoczność w dowolnym momencie edycji przepisu.
+    5. Wybrana opcja jest zapisywana wraz z przepisem w bazie danych.
 
-#### US-004: Przeglądanie szczegółów przepisu
-**Zmiana:** Dodano wymaganie dotyczące sposobu wyświetlania listy kroków.
-- **Nowe kryterium:** Lista kroków jest wyświetlana jako numerowana lista. Numeracja jest ciągła dla całego przepisu i nie resetuje się po nagłówkach sekcji (np. jeśli sekcja "Ciasto" kończy się na kroku 5, sekcja "Krem" zaczyna się od kroku 6).
-
-#### US-013: Importowanie nowego przepisu z tekstu
-**Zmiana:** Doprecyzowano logikę parsowania linii kroków.
-- **Nowe kryterium:** System identyfikuje poszczególne składniki i kroki (linie zaczynające się od `-` lub numeracji typu `1.`). System usuwa te znaczniki podczas importu, pozostawiając samą treść, co zapobiega dublowaniu numeracji w interfejsie.
+### Zmienione historyjki
+Brak bezpośrednich modyfikacji w treści istniejących historyjek, jednak US-003 (Dodawanie nowego przepisu) i US-005 (Edycja istniejącego przepisu) zostały w PRD rozszerzone o funkcjonalną możliwość edycji pola widoczności (zaktualizowano listę pól w opisie wymagań funkcjonalnych).
 
 
 </user_stories>
@@ -119,8 +120,6 @@ Po przeprowadzeniu analizy dostarcz plan wdrożenia w formacie Markdown z nastę
 11. Kroki implementacji: Przewodnik krok po kroku dotyczący implementacji widoku.
 
 Upewnij się, że Twój plan jest zgodny z PRD, historyjkami użytkownika i uwzględnia dostarczony stack technologiczny.
-
-uwzględnij juz zaiplementowany formularz do tworzenia piosenki aby optymalnie uzywać reużywalnych komponentów
 
 Ostateczne wyniki powinny być w języku polskim i zapisane w pliku o nazwie docs/results/impl-plans/views/{view-name}-view-implementation-plan.md. Nie uwzględniaj żadnej analizy i planowania w końcowym wyniku.
 
