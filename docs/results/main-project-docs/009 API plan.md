@@ -39,6 +39,7 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
               "id": 1,
               "name": "Apple Pie",
               "image_path": "path/to/image.jpg",
+              "visibility": "PUBLIC",
               "created_at": "2023-10-27T10:00:00Z"
             }
           ],
@@ -64,6 +65,7 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
       "name": "New Awesome Recipe",
       "description": "A short description.",
       "category_id": 2,
+      "visibility": "PRIVATE",
       "ingredients_raw": "# Dough\n- 500g flour\n- 250ml water",
       "steps_raw": "# Preparation\n1. Mix flour and water.\n2. Knead the dough.",
       "tags": ["vegan", "quick"]
@@ -78,6 +80,7 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
           "name": "New Awesome Recipe",
           "description": "A short description.",
           "category_id": 2,
+          "visibility": "PRIVATE",
           "ingredients": [
             {"type": "header", "content": "Dough"},
             {"type": "item", "content": "500g flour"},
@@ -120,6 +123,7 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
           "name": "Pizza",
           "description": null,
           "category_id": null,
+          "visibility": "PRIVATE",
           "ingredients": [
             {"type": "header", "content": "Ciasto"},
             {"type": "item", "content": "mąka"},
@@ -159,7 +163,8 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
     ```json
     {
       "name": "Updated Awesome Recipe",
-      "description": "An updated description."
+      "description": "An updated description.",
+      "visibility": "PUBLIC"
     }
     ```
 -   **Success Response**:
@@ -440,6 +445,7 @@ All endpoints are protected and require a valid JWT from Supabase Auth.
 
 -   **Validation**: Input validation will be performed at the API level before data is sent to the database. This includes checking for required fields, data types, and length constraints as defined in the database schema.
     -   `recipes.name`: required, 1-150 characters.
+    -   `recipes.visibility`: required, enum: 'PRIVATE', 'SHARED', 'PUBLIC'. Default: 'PRIVATE'.
     -   `recipes.ingredients_raw`, `recipes.steps_raw`: required.
     -   `tags.name`: required, 1-50 characters.
     -   `collections.name`: required, 1-100 characters.

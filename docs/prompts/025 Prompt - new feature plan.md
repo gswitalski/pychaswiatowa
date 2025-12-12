@@ -11,14 +11,20 @@ Oto dokumenty projektu, które musisz przeanalizować:
 Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
-widok szczegółow przepisu: kroki poiwnny być ponumerowane 
+
+Jako autor przepisu chcę dodac dodatkowe informacje o moim przepisie
+
+1. chce określić podczs tworzenia lub edycji jaki jest zasięg widoczności mojego przepisu. przepis może mieć jeden z trzech zakrsów widoczniści
+ - prywatny - widoczny tylko dla mnie
+ - współdzielony - widoczny dla mnie i dla innych użytkowników kórzy są ze mną połączeni  (funkcjonlanośc łaczenia użytkowników będzie realizowana w przyszłości)
+ - publiczny - widoczny dla wszystkich użytkowników nawet dla niezalogowanych
 
 </nowa_funkcjonalnosc>
 
 Twoim zadaniem jest:
 
 1. Dokładnie przeanalizować wszystkie dostarczone dokumenty projektu, aby zrozumieć obecną architekturę, funkcjonalności i strukturę aplikacji
-2. Na podstawie opisu nowej funkcjonalności, dodać odpowiednie elementy do:
+2. Na podstawie opisu nowej funkcjonalności, dodać odpowiednie elementy do (zmodyfikuj bezpośrednio dokumenty):
    - PRD (Product Requirements Document) - dodaj nowe funkcje i historyjki użytkownika
    - Planu UI - dodaj nowy widok/widoki
    - Planu API - dodaj nowe endpointy API

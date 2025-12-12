@@ -64,9 +64,9 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
 - **Główny cel:** Tworzenie i modyfikacja przepisu.
 - **Header:** Tytuł "Nowy przepis" / "Edycja". Akcje: "Anuluj", "Zapisz" (Sticky - zawsze widoczny).
-- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje.
-- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, komponent do przesyłania plików, interaktywna lista "przeciągnij i upuść".
-- **Względy UX, dostępności i bezpieczeństwa:** Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy.
+- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, kategoria, widoczność), Składniki, Kroki, Zdjęcie.
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), komponent do przesyłania plików, interaktywna lista "przeciągnij i upuść".
+- **Względy UX, dostępności i bezpieczeństwa:** Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
 
 **8. Import Przepisu**
 - **Ścieżka:** `/recipes/import`
