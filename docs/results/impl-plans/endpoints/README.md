@@ -33,7 +33,45 @@ Ten katalog zawiera dokumentację implementacji endpointów REST API dla aplikac
 
 ---
 
-### 2. Recipes Import ✅
+### 2. Recipes List - Lista Przepisów ✅
+
+**Endpoint:** `GET /functions/v1/recipes?[queryParams]`
+
+**Status:** Ukończone (Backend + Frontend)
+
+**Pliki:**
+- Backend: `supabase/functions/recipes/*`
+- Frontend: `src/app/pages/recipes/services/recipes.service.ts`
+- Komponent: `src/app/pages/recipes/recipes-list/`
+
+**Dokumentacja:**
+- [Szczegóły Implementacji](./recipes-list-implementation-summary.md)
+
+**Funkcjonalność:**
+- Pobieranie listy przepisów z paginacją
+- Sortowanie (po nazwie, dacie utworzenia)
+- Wyszukiwanie pełnotekstowe w nazwie
+- Filtrowanie po kategorii
+- Filtrowanie po tagach (AND logic)
+- Limit: 100 wyników max, domyślnie 20
+
+**Query Parameters:**
+- `page` - numer strony (domyślnie 1)
+- `limit` - liczba elementów (domyślnie 20, max 100)
+- `sort` - sortowanie (format: `field.direction`)
+- `search` - wyszukiwanie w nazwie
+- `filter[category_id]` - filtr po kategorii
+- `filter[tags]` - filtr po tagach (comma-separated)
+
+**Użycie w aplikacji:**
+- Strona "Moje przepisy" (`/recipes`)
+- Komponent RecipesList z filtrami i paginacją
+
+**Oszczędność kodu:** -43% (z ~290 do ~165 linii w serwisie)
+
+---
+
+### 3. Recipes Import ✅
 
 **Endpoint:** `POST /functions/v1/recipes/import`
 
@@ -128,7 +166,7 @@ curl -X GET "http://localhost:54321/functions/v1/search/global?q=test" \
 
 Zgodnie z [API Plan](../../009%20API%20plan.md):
 
-- [ ] `GET /recipes` - Lista przepisów z paginacją i filtrowaniem
+- [x] `GET /recipes` - Lista przepisów z paginacją i filtrowaniem ✅
 - [ ] `GET /recipes/{id}` - Szczegóły przepisu
 - [ ] `POST /recipes` - Tworzenie przepisu
 - [ ] `PUT /recipes/{id}` - Aktualizacja przepisu

@@ -220,27 +220,13 @@ export async function getRecipes(
         query = query.contains('tag_ids', tagIds);
     }
 
-    // Apply full-text search using PostgreSQL tsvector
-    // Uses the search_vector column which combines name (weight A), description (weight B),
-    // and ingredients (weight C) for relevance-based searching
+    // Apply case-insensitive pattern matching search on name field
+    // Uses ILIKE for better UX - supports prefix and substring matching
+    // Example: "kar" will match "Karp w galarecie" and "Karmelizowane jabłka"
     if (search && search.trim().length > 0) {
         const searchTerm = search.trim();
-        // Convert search term to tsquery format
-        // Split by whitespace and join with & for AND search
-        const tsqueryTerm = searchTerm
-            .split(/\s+/)
-            .filter((word) => word.length > 0)
-            .map((word) => word.replace(/[&|!():*'"\\]/g, ''))
-            .filter((word) => word.length > 0)
-            .join(' & ');
-
-        if (tsqueryTerm.length > 0) {
-            // Use textSearch with 'simple' config to match the search_vector configuration
-            query = query.textSearch('search_vector', tsqueryTerm, {
-                type: 'plain',
-                config: 'simple',
-            });
-        }
+        // Use ILIKE with wildcards for flexible matching
+        query = query.ilike('name', `%${searchTerm}%`);
     }
 
     // Apply sorting
