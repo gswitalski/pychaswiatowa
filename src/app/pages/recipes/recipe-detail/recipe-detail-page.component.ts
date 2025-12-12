@@ -5,8 +5,11 @@ import {
     inject,
     signal,
     computed,
+    DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -62,6 +65,7 @@ export class RecipeDetailPageComponent implements OnInit {
     private readonly recipesService = inject(RecipesService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
+    private readonly destroyRef = inject(DestroyRef);
 
     readonly state = signal<RecipeDetailsState>({
         recipe: null,
@@ -78,21 +82,28 @@ export class RecipeDetailPageComponent implements OnInit {
     readonly pageTitle = computed(() => this.state().recipe?.name ?? 'Szczegóły przepisu');
 
     ngOnInit(): void {
-        const idParam = this.route.snapshot.paramMap.get('id');
+        // Subskrybuj się na zmiany parametru 'id' w URL
+        // Dzięki temu komponent będzie reagował na nawigację do innego przepisu
+        this.route.paramMap
+            .pipe(
+                map((params) => params.get('id')),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe((idParam) => {
+                if (!idParam) {
+                    this.handleInvalidId();
+                    return;
+                }
 
-        if (!idParam) {
-            this.handleInvalidId();
-            return;
-        }
+                const id = parseInt(idParam, 10);
 
-        const id = parseInt(idParam, 10);
+                if (isNaN(id)) {
+                    this.handleInvalidId();
+                    return;
+                }
 
-        if (isNaN(id)) {
-            this.handleInvalidId();
-            return;
-        }
-
-        this.loadRecipe(id);
+                this.loadRecipe(id);
+            });
     }
 
     private loadRecipe(id: number): void {

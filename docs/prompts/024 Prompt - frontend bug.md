@@ -41,13 +41,17 @@ Zapoznaj się z następującymi materiałami:
 
 <aktualne_zachowanie>
 
-Widok szczegółow przepisu prezentuje kategorię i tagi. Po kliknięciu na kategorię lub taga system przehodzi do listy wsztystkich przepisów bez filtrowania
+1. Owórz widok szczegółow przepisów
+2. Wyszukaj inny przepis w wyzukiwarce omnibox i kliknij w niego
+3. Cały czas wyświetla się sotychczasowy przepis
+
+(tak działa tylko na widoku szczegółow przepisu)
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
- Po kliknięciu na kategorię lub taga system przehodzi do listy wsztystkich przepisów i fitruje je po wybranej kategorii lub tagu
+ Po kliknięciu wyszukanego przepisu jego szczegóły sa pokazywane (ekran ma byc przeładowany z nowym przepisem)
 
 </oczekiwane_zachowanie>
 
