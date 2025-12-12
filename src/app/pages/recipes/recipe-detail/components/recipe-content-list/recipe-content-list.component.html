@@ -2,7 +2,7 @@
     <h2 class="section-title">{{ title() }}</h2>
 
     @if (content().length > 0) {
-        <ul class="content-list">
+        <ul class="content-list" [class.numbered-list]="isNumbered()">
             @for (item of content(); track $index) {
                 @if (item.type === 'header') {
                     <li class="content-header">{{ item.content }}</li>

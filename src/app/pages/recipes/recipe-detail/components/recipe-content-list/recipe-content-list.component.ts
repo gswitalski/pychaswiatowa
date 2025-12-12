@@ -12,5 +12,6 @@ import { RecipeContent } from '../../../../../../../shared/contracts/types';
 export class RecipeContentListComponent {
     readonly title = input.required<string>();
     readonly content = input.required<RecipeContent>();
+    readonly isNumbered = input<boolean>(true);
 }
 

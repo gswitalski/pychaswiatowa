@@ -55,3 +55,24 @@
     margin: 0;
 }
 
+.content-list.numbered-list {
+    counter-reset: step-counter;
+
+    .content-item {
+        padding-left: 32px;
+
+        &::before {
+            content: counter(step-counter) ".";
+            counter-increment: step-counter;
+            background-color: transparent;
+            width: auto;
+            height: auto;
+            border-radius: 0;
+            font-weight: 600;
+            color: var(--mat-sys-primary);
+            top: 8px;
+            transform: none;
+        }
+    }
+}
+
