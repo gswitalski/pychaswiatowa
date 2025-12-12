@@ -41,17 +41,13 @@ Zapoznaj się z następującymi materiałami:
 
 <aktualne_zachowanie>
 
-1. Owórz widok szczegółow przepisów
-2. Wyszukaj inny przepis w wyzukiwarce omnibox i kliknij w niego
-3. Cały czas wyświetla się sotychczasowy przepis
-
-(tak działa tylko na widoku szczegółow przepisu)
+1. wyszukiwarka omnibox znajdujee się w toobarze ale nie jest w piie wycentrowana. input jest lekko przesunięty do gury
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
- Po kliknięciu wyszukanego przepisu jego szczegóły sa pokazywane (ekran ma byc przeładowany z nowym przepisem)
+Wyszukiwarka omnibox wycentrowana w pionie względem toolbara
 
 </oczekiwane_zachowanie>
 
