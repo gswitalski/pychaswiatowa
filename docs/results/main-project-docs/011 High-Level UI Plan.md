@@ -56,9 +56,9 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/recipes/:id`
 - **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji.
 - **Header:** Tytuł przepisu. Akcje: Ikony (Ulubione, Edytuj, Usuń).
-- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków.
+- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły).
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-list`, `mat-chip-list`, Sticky Navigation (spis treści) na desktopie.
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 3-kolumnowy (Info / Treść / Spis) na desktopie. Feedback "Toast" po usunięciu z opcją "Cofnij".
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 3-kolumnowy (Info / Treść / Spis) na desktopie. Feedback "Toast" po usunięciu z opcją "Cofnij". Numeracja kroków nie resetuje się po nagłówkach sekcji (wymaga zastosowania CSS Counters lub odpowiedniej struktury HTML).
 
 **7. Formularz Przepisu (Dodaj/Edytuj)**
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
