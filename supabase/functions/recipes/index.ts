@@ -64,7 +64,7 @@ import { logger } from '../_shared/logger.ts';
  */
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type, Apikey',
 };
 
 /**

@@ -70,7 +70,7 @@ export async function tagsRouter(req: Request): Promise<Response> {
                 headers: {
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                    'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type, Apikey',
                 },
             });
 
