@@ -32,37 +32,29 @@
         <mat-hint>Wpisz tag i naciśnij Enter lub przecinek</mat-hint>
     </mat-form-field>
 
-    <div class="visibility-section">
-        <label class="visibility-label">Widoczność *</label>
-        <mat-radio-group
-            [formControl]="visibilityControl"
-            aria-label="Wybierz widoczność przepisu"
-            aria-required="true"
-            class="visibility-radio-group"
-        >
-            <mat-radio-button value="PRIVATE">
-                <span class="radio-label">Prywatny</span>
-                <span class="radio-description">Tylko Ty widzisz ten przepis</span>
-            </mat-radio-button>
-            <mat-radio-button value="SHARED">
-                <span class="radio-label">Współdzielony</span>
-                <span class="radio-description">Widoczny dla osób z linkiem do współdzielenia</span>
-            </mat-radio-button>
-            <mat-radio-button value="PUBLIC">
-                <span class="radio-label">Publiczny</span>
-                <span class="radio-description">Widoczny dla wszystkich użytkowników</span>
-            </mat-radio-button>
-        </mat-radio-group>
-        <div class="visibility-hint">
-            <mat-icon class="hint-icon">info</mat-icon>
-            <span>Ustawienie widoczności określa, kto może zobaczyć Twój przepis</span>
-        </div>
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Widoczność</mat-label>
+        <mat-select [formControl]="visibilityControl" required panelClass="visibility-select-panel">
+            <mat-select-trigger>
+                {{ getVisibilityLabel(visibilityControl.value) }}
+            </mat-select-trigger>
+            <mat-option value="PRIVATE">
+                <span class="option-label">Prywatny</span>
+                <span class="option-description">— Tylko Ty widzisz ten przepis</span>
+            </mat-option>
+            <mat-option value="SHARED">
+                <span class="option-label">Współdzielony</span>
+                <span class="option-description">— Widoczny dla osób z linkiem</span>
+            </mat-option>
+            <mat-option value="PUBLIC">
+                <span class="option-label">Publiczny</span>
+                <span class="option-description">— Widoczny dla wszystkich</span>
+            </mat-option>
+        </mat-select>
+        <mat-hint>Określa, kto może zobaczyć Twój przepis</mat-hint>
         @if (visibilityControl.hasError('required') && visibilityControl.touched) {
-            <div class="visibility-error">
-                <mat-icon>warning</mat-icon>
-                <span>Musisz wybrać widoczność przepisu</span>
-            </div>
+            <mat-error>Musisz wybrać widoczność przepisu</mat-error>
         }
-    </div>
+    </mat-form-field>
 </div>
 

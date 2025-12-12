@@ -11,7 +11,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule, MatChipInputEvent } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatRadioModule } from '@angular/material/radio';
 import { CategoryDto, RecipeVisibility } from '../../../../../../../shared/contracts/types';
 
 @Component({
@@ -24,7 +23,6 @@ import { CategoryDto, RecipeVisibility } from '../../../../../../../shared/contr
         MatChipsModule,
         MatIconModule,
         MatInputModule,
-        MatRadioModule,
     ],
     templateUrl: './recipe-categorization-form.component.html',
     styleUrl: './recipe-categorization-form.component.scss',
@@ -39,6 +37,19 @@ export class RecipeCategorizationFormComponent {
     @Input() categories: CategoryDto[] = [];
 
     readonly separatorKeyCodes = [ENTER, COMMA] as const;
+
+    /** Mapa etykiet dla wartości widoczności */
+    private readonly visibilityLabels: Record<RecipeVisibility, string> = {
+        PRIVATE: 'Prywatny',
+        SHARED: 'Współdzielony',
+        PUBLIC: 'Publiczny',
+    };
+
+    /** Zwraca czytelną etykietę dla wartości widoczności */
+    getVisibilityLabel(value: RecipeVisibility | null): string {
+        if (!value) return '';
+        return this.visibilityLabels[value] ?? value;
+    }
 
     addTag(event: MatChipInputEvent): void {
         const value = (event.value || '').trim();

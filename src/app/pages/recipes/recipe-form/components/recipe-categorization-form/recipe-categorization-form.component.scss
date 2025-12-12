@@ -14,73 +14,22 @@ mat-chip-row {
     }
 }
 
-.visibility-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.visibility-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--mat-sys-on-surface);
-}
-
-.visibility-radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-left: 8px;
-
-    mat-radio-button {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-
-        .radio-label {
-            font-size: 16px;
-            font-weight: 500;
+// Style dla opcji widoczności w dropdownie
+// Używamy ::ng-deep z panelClass aby dotrzeć do overlay
+::ng-deep .visibility-select-panel {
+    .mat-mdc-option {
+        .option-label {
+            font-weight: 600;
             color: var(--mat-sys-on-surface);
         }
 
-        .radio-description {
-            font-size: 12px;
+        .option-description {
+            font-weight: 400;
+            font-size: 0.85em;
             color: var(--mat-sys-on-surface-variant);
-            margin-top: 4px;
-            margin-left: 32px;
+            opacity: 0.8;
+            margin-left: 4px;
         }
-    }
-}
-
-.visibility-hint {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--mat-sys-on-surface-variant);
-    font-size: 12px;
-    padding-left: 8px;
-
-    .hint-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-        color: var(--mat-sys-on-surface-variant);
-    }
-}
-
-.visibility-error {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--mat-sys-error);
-    font-size: 12px;
-    margin-top: 4px;
-    padding-left: 8px;
-
-    mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
     }
 }
 
