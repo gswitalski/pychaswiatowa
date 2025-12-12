@@ -31,5 +31,38 @@
         />
         <mat-hint>Wpisz tag i naciśnij Enter lub przecinek</mat-hint>
     </mat-form-field>
+
+    <div class="visibility-section">
+        <label class="visibility-label">Widoczność *</label>
+        <mat-radio-group
+            [formControl]="visibilityControl"
+            aria-label="Wybierz widoczność przepisu"
+            aria-required="true"
+            class="visibility-radio-group"
+        >
+            <mat-radio-button value="PRIVATE">
+                <span class="radio-label">Prywatny</span>
+                <span class="radio-description">Tylko Ty widzisz ten przepis</span>
+            </mat-radio-button>
+            <mat-radio-button value="SHARED">
+                <span class="radio-label">Współdzielony</span>
+                <span class="radio-description">Widoczny dla osób z linkiem do współdzielenia</span>
+            </mat-radio-button>
+            <mat-radio-button value="PUBLIC">
+                <span class="radio-label">Publiczny</span>
+                <span class="radio-description">Widoczny dla wszystkich użytkowników</span>
+            </mat-radio-button>
+        </mat-radio-group>
+        <div class="visibility-hint">
+            <mat-icon class="hint-icon">info</mat-icon>
+            <span>Ustawienie widoczności określa, kto może zobaczyć Twój przepis</span>
+        </div>
+        @if (visibilityControl.hasError('required') && visibilityControl.touched) {
+            <div class="visibility-error">
+                <mat-icon>warning</mat-icon>
+                <span>Musisz wybrać widoczność przepisu</span>
+            </div>
+        }
+    </div>
 </div>
 

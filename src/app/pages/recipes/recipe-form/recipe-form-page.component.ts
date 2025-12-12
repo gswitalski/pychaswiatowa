@@ -33,12 +33,14 @@ import {
     RecipeDetailDto,
     CreateRecipeCommand,
     UpdateRecipeCommand,
+    RecipeVisibility,
 } from '../../../../../shared/contracts/types';
 
 export interface RecipeFormViewModel {
     name: FormControl<string>;
     description: FormControl<string>;
     categoryId: FormControl<number | null>;
+    visibility: FormControl<RecipeVisibility>;
     tags: FormArray<FormControl<string>>;
     ingredients: FormArray<FormControl<string>>;
     steps: FormArray<FormControl<string>>;
@@ -132,6 +134,10 @@ export class RecipeFormPageComponent implements OnInit {
             }),
             description: this.fb.control('', { nonNullable: true }),
             categoryId: this.fb.control<number | null>(null),
+            visibility: this.fb.control<RecipeVisibility>('PRIVATE', {
+                nonNullable: true,
+                validators: [Validators.required],
+            }),
             tags: this.fb.array<FormControl<string>>([]),
             ingredients: this.fb.array<FormControl<string>>([], {
                 validators: [Validators.required, this.minArrayLength(1)],
@@ -180,6 +186,7 @@ export class RecipeFormPageComponent implements OnInit {
             name: recipe.name ?? '',
             description: recipe.description ?? '',
             categoryId: recipe.category_id,
+            visibility: recipe.visibility ?? 'PRIVATE',
         });
 
         // Set current image URL
@@ -258,6 +265,7 @@ export class RecipeFormPageComponent implements OnInit {
             name: formValue.name,
             description: formValue.description || null,
             category_id: formValue.categoryId,
+            visibility: formValue.visibility,
             ingredients_raw: formValue.ingredients.join('\n'),
             steps_raw: formValue.steps.join('\n'),
             tags: formValue.tags,

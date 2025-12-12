@@ -66,8 +66,10 @@ export type RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
  */
 export type RecipeListItemDto = Pick<
     Recipe,
-    'id' | 'name' | 'image_path' | 'created_at' | 'visibility'
->;
+    'id' | 'name' | 'image_path' | 'created_at'
+> & {
+    visibility: RecipeVisibility;
+};
 
 /**
  * Represents a single content item within a recipe's ingredients or steps.

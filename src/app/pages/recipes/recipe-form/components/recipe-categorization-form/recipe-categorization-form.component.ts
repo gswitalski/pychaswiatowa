@@ -11,7 +11,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule, MatChipInputEvent } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { CategoryDto } from '../../../../../../../shared/contracts/types';
+import { MatRadioModule } from '@angular/material/radio';
+import { CategoryDto, RecipeVisibility } from '../../../../../../../shared/contracts/types';
 
 @Component({
     selector: 'pych-recipe-categorization-form',
@@ -23,6 +24,7 @@ import { CategoryDto } from '../../../../../../../shared/contracts/types';
         MatChipsModule,
         MatIconModule,
         MatInputModule,
+        MatRadioModule,
     ],
     templateUrl: './recipe-categorization-form.component.html',
     styleUrl: './recipe-categorization-form.component.scss',
@@ -33,6 +35,7 @@ export class RecipeCategorizationFormComponent {
 
     @Input({ required: true }) categoryControl!: FormControl<number | null>;
     @Input({ required: true }) tagsArray!: FormArray<FormControl<string>>;
+    @Input({ required: true }) visibilityControl!: FormControl<RecipeVisibility>;
     @Input() categories: CategoryDto[] = [];
 
     readonly separatorKeyCodes = [ENTER, COMMA] as const;
