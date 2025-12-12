@@ -247,6 +247,46 @@ Przy tworzeniu schematów Zod uwzględnij następujące limity:
 5. **Loguj operacje na zasobach** dla łatwiejszego debugowania
 6. **Zwracaj szczegółowe błędy walidacji** (np. "Przepis musi mieć przynajmniej jeden składnik")
 
+## Odpowiedzialność Backendu vs Frontendu
+
+**KRYTYCZNE: Backend jest JEDYNYM miejscem dostępu do danych i logiki biznesowej**
+
+### Odpowiedzialność Backendu (Edge Functions)
+
+Backend jest odpowiedzialny za **WSZYSTKIE** operacje związane z danymi:
+
+✅ **Backend MUSI obsługiwać:**
+
+1. **Dostęp do Danych**
+   - Wszystkie operacje CRUD (Create, Read, Update, Delete)
+   - Zapytania SELECT z filtrami, sortowaniem, paginacją
+   - JOIN-y między tabelami
+   - Agregacje i grupowania
+
+2. **Logika Biznesowa**
+   - Walidacja danych biznesowych (np. długość nazwy, format, relacje)
+   - Złożone operacje (np. soft delete, kasowanie kaskadowe)
+   - Transformacje danych (np. parsowanie tekstu na JSONB)
+   - Obliczenia (np. sumowanie, średnie)
+
+3. **Bezpieczeństwo**
+   - Weryfikacja JWT token
+   - Sprawdzanie własności zasobów
+   - Walidacja uprawnień (oprócz RLS)
+   - Sanityzacja danych wejściowych
+
+4. **Wyszukiwanie**
+   - Full-text search
+   - Filtrowanie po wielu polach
+   - Pattern matching (ILIKE, regex)
+   - Zaawansowane zapytania
+
+5. **Transakcje**
+   - Operacje wymagające atomowości
+   - Rollback przy błędach
+   - Konsystencja danych
+
+
 ## Struktura Projektu i Nazewnictwo
 
 -   Organizuj funkcje Supabase (Edge Functions) według logiki domenowej lub funkcji biznesowej.

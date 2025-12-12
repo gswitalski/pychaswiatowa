@@ -53,3 +53,68 @@ alwaysApply: false
 - Use `opacity: 0.5` on data containers during loading, not white overlay backgrounds
 - Avoid `::after` pseudo-elements with white backgrounds on loading containers
 - Keep previous data visible while loading new data to ensure smooth transitions
+
+#### API_COMMUNICATION_AND_DATA_ACCESS
+
+**KRYTYCZNE: Frontend NIGDY nie powinien bezpośrednio operować na danych w Supabase**
+
+##### Dozwolone Użycie SupabaseService w Frontendzie:
+
+✅ **TYLKO te operacje są dozwolone:**
+1. **Autentykacja** - `supabase.auth.signIn()`, `supabase.auth.signUp()`, `supabase.auth.signOut()`, `supabase.auth.getUser()`, `supabase.auth.getSession()`
+2. **Wywołania Edge Functions** - `supabase.functions.invoke('function-name', { method: 'GET/POST/PUT/DELETE' })`
+3. **Storage (upload/download)** - `supabase.storage.from('bucket').upload()`, `supabase.storage.from('bucket').download()`
+
+##### ❌ ZABRONIONE Operacje w Frontendzie:
+
+**NIGDY nie używaj w serwisach frontendowych:**
+- ❌ `supabase.from('table_name')` - bezpośrednie zapytania do tabel
+- ❌ `supabase.from('table_name').select()` - SELECT bezpośrednio z frontendu
+- ❌ `supabase.from('table_name').insert()` - INSERT bezpośrednio z frontendu
+- ❌ `supabase.from('table_name').update()` - UPDATE bezpośrednio z frontendu
+- ❌ `supabase.from('table_name').delete()` - DELETE bezpośrednio z frontendu
+- ❌ `supabase.from('table_name').upsert()` - UPSERT bezpośrednio z frontendu
+- ❌ `supabase.rpc()` - wywołania funkcji RPC z frontendu (użyj Edge Functions zamiast tego)
+
+##### ✅ Prawidłowy Wzorzec Komunikacji:
+
+**Frontend Service powinien:**
+```typescript
+@Injectable({ providedIn: 'root' })
+export class RecipesService {
+    private readonly supabase = inject(SupabaseService);
+
+    // ✅ POPRAWNIE - wywołanie REST API
+    getRecipes(params: GetRecipesParams): Observable<PaginatedResponseDto<RecipeListItemDto>> {
+        const queryParams = new URLSearchParams();
+        // ... budowanie query params
+
+        return from(
+            this.supabase.functions.invoke<ResponseType>(
+                `recipes?${queryParams.toString()}`,
+                { method: 'GET' }
+            )
+        ).pipe(
+            map(response => {
+                if (response.error) throw new Error(response.error.message);
+                return response.data ?? defaultValue;
+            })
+        );
+    }
+
+    // ❌ NIEPOPRAWNIE - bezpośrednie zapytanie do bazy
+    // getRecipes(): Observable<Recipe[]> {
+    //     return from(
+    //         this.supabase.from('recipes').select('*')
+    //     );
+    // }
+}
+```
+
+##### Wyjątki (Bardzo Rzadkie):
+
+Jeśli absolutnie konieczne (np. prototypowanie, one-off scripts), **ZAWSZE**:
+1. Dodaj komentarz `// TEMPORARY: Will be migrated to API`
+2. Utwórz task/issue do migracji na API
+3. Skonsultuj z zespołem przed merge
+
