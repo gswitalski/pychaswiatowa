@@ -2,32 +2,17 @@ Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest stworz
 
 Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
-1. Route API specification:
+
+1. API plan
+<api_plan>
+
+
+
+</api_plan>
+
+2. Route API specification:
 <route_api_specification>
-### Search
 
-#### `GET /search/global`
-
--   **Description**: Global search endpoint ("Omnibox"). Searches across user's recipes and collections simultaneously. Used for quick navigation from the Topbar.
--   **Query Parameters**:
-    -   `q` (required, string): Search query (min 2 characters).
--   **Success Response**:
-    -   **Code**: `200 OK`
-    -   **Payload**:
-        ```json
-        {
-          "recipes": [
-            { "id": 1, "name": "Apple Pie", "category": "Dessert" },
-            { "id": 15, "name": "Spaghetti", "category": "Dinner" }
-          ],
-          "collections": [
-            { "id": 3, "name": "Quick Dinners" }
-          ]
-        }
-        ```
--   **Error Response**:
-    -   **Code**: `400 Bad Request` (if `q` is missing or too short)
-    -   **Code**: `401 Unauthorized`
 
 
 </route_api_specification>
@@ -40,28 +25,28 @@ brak
 </current_implementation>
 
 
-2. Related database resources:
+3. Related database resources:
 <related_db_resources>
 
 
 
 </related_db_resources>
 
-3. Definicje typów:
+4. Definicje typów:
 <type_definitions>
 
 
 
 </type_definitions>
 
-3. Tech stack:
+5. Tech stack:
 <tech_stack>
 
 
 
 </tech_stack>
 
-4. Implementation rules:
+6. Implementation rules:
 <implementation_rules>
 
 
@@ -144,4 +129,4 @@ Końcowym wynikiem powinien być dobrze zorganizowany plan wdrożenia wszystkich
 
 Końcowe wyniki powinny składać się wyłącznie z planu wdrożenia w formacie markdown i nie powinny powielać ani powtarzać żadnej pracy wykonanej w sekcji analizy.
 
-Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/collections-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.
+Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/{endpoint-name}-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.
