@@ -9,6 +9,11 @@ import { logger } from '../_shared/logger.ts';
 import { Json } from '../_shared/database.types.ts';
 
 /**
+ * Recipe visibility enum type.
+ */
+export type RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
+
+/**
  * DTO for an item on the recipe list.
  * Contains a minimal set of fields for display.
  */
@@ -17,6 +22,7 @@ export interface RecipeListItemDto {
     name: string;
     image_path: string | null;
     created_at: string;
+    visibility: RecipeVisibility;
 }
 
 /**
@@ -71,6 +77,7 @@ export interface RecipeDetailDto {
     created_at: string;
     updated_at: string;
     category_name: string | null;
+    visibility: RecipeVisibility;
     ingredients: RecipeContent;
     steps: RecipeContent;
     tags: TagDto[];
@@ -90,11 +97,11 @@ export interface GetRecipesOptions {
 }
 
 /** Columns to select for recipe list queries. */
-const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at';
+const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility';
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, ingredients, steps, tags';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -262,6 +269,7 @@ export async function getRecipes(
         name: recipe.name!,
         image_path: recipe.image_path,
         created_at: recipe.created_at!,
+        visibility: recipe.visibility as RecipeVisibility,
     }));
 
     return {
@@ -385,6 +393,7 @@ export async function getRecipeById(
         created_at: data.created_at!,
         updated_at: data.updated_at!,
         category_name: data.category_name,
+        visibility: data.visibility as RecipeVisibility,
         ingredients: parseRecipeContent(data.ingredients),
         steps: parseRecipeContent(data.steps),
         tags: parseTagsContent(data.tags),
@@ -409,6 +418,7 @@ export interface CreateRecipeInput {
     ingredients_raw: string;
     steps_raw: string;
     tags: string[];
+    visibility: RecipeVisibility;
 }
 
 /**
@@ -422,6 +432,7 @@ export interface UpdateRecipeInput {
     ingredients_raw?: string;
     steps_raw?: string;
     tags?: string[];
+    visibility?: RecipeVisibility;
 }
 
 /**
@@ -460,6 +471,7 @@ export async function createRecipe(
             p_ingredients_raw: input.ingredients_raw,
             p_steps_raw: input.steps_raw,
             p_tag_names: input.tags,
+            p_visibility: input.visibility,
         }
     );
 
@@ -558,6 +570,7 @@ export async function updateRecipe(
             p_steps_raw: input.steps_raw ?? null,
             p_tag_names: input.tags ?? null,
             p_update_tags: updateTags,
+            p_visibility: input.visibility ?? null,
         }
     );
 
@@ -766,6 +779,7 @@ export async function importRecipeFromText(
         ingredients_raw: ingredientsRaw || '- (empty)', // Provide fallback if empty
         steps_raw: stepsRaw || '- (empty)', // Provide fallback if empty
         tags: [],
+        visibility: 'PRIVATE', // Import always creates private recipes
     };
 
     logger.info('Creating recipe from parsed text', { name });
@@ -779,5 +793,62 @@ export async function importRecipeFromText(
     });
 
     return recipeDetail;
+}
+
+/**
+ * Soft-deletes a recipe by setting its deleted_at timestamp.
+ * Uses the recipes table directly with RLS ensuring user ownership.
+ *
+ * @param client - The authenticated Supabase client
+ * @param recipeId - The ID of the recipe to delete
+ * @param userId - The ID of the authenticated user (must be the owner)
+ * @throws ApplicationError with NOT_FOUND if recipe doesn't exist, is already deleted, or user has no access
+ * @throws ApplicationError with INTERNAL_ERROR for database errors
+ */
+export async function deleteRecipe(
+    client: TypedSupabaseClient,
+    recipeId: number,
+    userId: string
+): Promise<void> {
+    logger.info('Soft-deleting recipe', {
+        recipeId,
+        userId,
+    });
+
+    // Perform soft delete by setting deleted_at timestamp
+    // RLS policies ensure user can only delete their own recipes
+    // WHERE clause ensures recipe exists, belongs to user, and isn't already deleted
+    const { error, count } = await client
+        .from('recipes')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', recipeId)
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .select('id', { count: 'exact', head: true });
+
+    if (error) {
+        logger.error('Database error while deleting recipe', {
+            recipeId,
+            errorCode: error.code,
+            errorMessage: error.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to delete recipe');
+    }
+
+    // If no rows were updated, recipe doesn't exist or user has no access
+    if (count === 0) {
+        logger.warn('Recipe not found for deletion', {
+            recipeId,
+            userId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            `Recipe with ID ${recipeId} not found`
+        );
+    }
+
+    logger.info('Recipe soft-deleted successfully', {
+        recipeId,
+    });
 }
 

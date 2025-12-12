@@ -55,12 +55,18 @@ export interface PaginatedResponseDto<T> {
 // #region --- Recipes ---
 
 /**
+ * Recipe visibility enum.
+ * Defines who can see a recipe.
+ */
+export type RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
+
+/**
  * DTO for an item on the recipe list.
  * Contains a minimal set of fields for display.
  */
 export type RecipeListItemDto = Pick<
     Recipe,
-    'id' | 'name' | 'image_path' | 'created_at'
+    'id' | 'name' | 'image_path' | 'created_at' | 'visibility'
 >;
 
 /**
@@ -90,6 +96,8 @@ export type RecipeDetailDto = Omit<
     steps: RecipeContent;
     /** Array of tags associated with the recipe. */
     tags: TagDto[];
+    /** Recipe visibility setting. */
+    visibility: RecipeVisibility;
 };
 
 /**
@@ -104,6 +112,8 @@ export type CreateRecipeCommand = Pick<
     steps_raw: string;
     /** A list of tag names to associate with the recipe. */
     tags: string[];
+    /** Recipe visibility setting (required). */
+    visibility: RecipeVisibility;
 };
 
 /**

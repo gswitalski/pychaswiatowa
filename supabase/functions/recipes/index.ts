@@ -26,10 +26,12 @@
  * - ingredients_raw (string, required) - Raw ingredients text
  * - steps_raw (string, required) - Raw steps text
  * - tags (string[], optional) - Array of tag names
+ * - visibility (string, required) - Recipe visibility: PRIVATE, SHARED, or PUBLIC
  *
  * POST /functions/v1/recipes/import
  * Creates a new recipe from a raw text block for the authenticated user.
  * The server parses the text to extract the recipe name, ingredients, and steps.
+ * Imported recipes are always set to PRIVATE visibility.
  * Expected format:
  * - Title: Line starting with `#` (required)
  * - Main sections: Lines starting with `##` (e.g., "## Składniki", "## Kroki")
@@ -47,6 +49,11 @@
  * - ingredients_raw (string) - Raw ingredients text
  * - steps_raw (string) - Raw steps text
  * - tags (string[]) - Array of tag names (replaces all existing tags)
+ * - visibility (string) - Recipe visibility: PRIVATE, SHARED, or PUBLIC
+ *
+ * DELETE /functions/v1/recipes/{id}
+ * Soft-deletes an existing recipe for the authenticated user.
+ * Sets the deleted_at timestamp; the recipe remains in the database but is no longer accessible.
  */
 
 import { recipesRouter } from './recipes.handlers.ts';

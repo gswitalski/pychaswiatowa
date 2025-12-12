@@ -13,6 +13,7 @@ import {
     createRecipe,
     updateRecipe,
     importRecipeFromText,
+    deleteRecipe,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
@@ -78,6 +79,10 @@ const createRecipeSchema = z.object({
         )
         .optional()
         .default([]),
+    visibility: z.enum(['PRIVATE', 'SHARED', 'PUBLIC'], {
+        required_error: 'Visibility is required',
+        invalid_type_error: 'Visibility must be one of: PRIVATE, SHARED, PUBLIC',
+    }),
 });
 
 /**
@@ -128,6 +133,11 @@ const updateRecipeSchema = z
                     .max(50, 'Tag name cannot exceed 50 characters')
                     .transform((val) => val.trim())
             )
+            .optional(),
+        visibility: z
+            .enum(['PRIVATE', 'SHARED', 'PUBLIC'], {
+                invalid_type_error: 'Visibility must be one of: PRIVATE, SHARED, PUBLIC',
+            })
             .optional(),
     })
     .refine(
@@ -410,6 +420,7 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
             ingredients_raw: validatedData.ingredients_raw,
             steps_raw: validatedData.steps_raw,
             tags: validatedData.tags,
+            visibility: validatedData.visibility,
         };
 
         // Call the service to create the recipe
@@ -494,6 +505,7 @@ export async function handleUpdateRecipe(
             ingredients_raw: validatedData.ingredients_raw,
             steps_raw: validatedData.steps_raw,
             tags: validatedData.tags,
+            visibility: validatedData.visibility,
         };
 
         // Call the service to update the recipe
@@ -576,6 +588,46 @@ export async function handleImportRecipe(req: Request): Promise<Response> {
         });
 
         return createCreatedResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
+ * Handles DELETE /recipes/{id} request.
+ * Soft-deletes an existing recipe for the authenticated user.
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - The recipe ID extracted from the URL path
+ * @returns Response with 204 No Content on success, or error response
+ */
+export async function handleDeleteRecipe(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling DELETE /recipes/{id} request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Call the service to delete the recipe (soft delete)
+        await deleteRecipe(client, recipeId, user.id);
+
+        logger.info('DELETE /recipes/{id} completed successfully', {
+            userId: user.id,
+            recipeId,
+        });
+
+        // Return 204 No Content for successful deletion
+        return new Response(null, {
+            status: 204,
+        });
     } catch (error) {
         return handleError(error);
     }
@@ -749,10 +801,52 @@ export async function recipesRouter(req: Request): Promise<Response> {
         return handleUpdateRecipe(req, recipeId);
     }
 
+    // Route DELETE requests (only for /recipes/{id} path)
+    if (method === 'DELETE') {
+        // DELETE /recipes/import is not allowed
+        if (isImport) {
+            logger.warn('DELETE /recipes/import not allowed');
+            return new Response(
+                JSON.stringify({
+                    code: 'METHOD_NOT_ALLOWED',
+                    message: 'DELETE method is not allowed for /recipes/import. Use POST.',
+                }),
+                {
+                    status: 405,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Allow': 'POST, OPTIONS',
+                    },
+                }
+            );
+        }
+
+        // DELETE without recipe ID is not allowed
+        if (!recipeId) {
+            logger.warn('DELETE without recipe ID not allowed');
+            return new Response(
+                JSON.stringify({
+                    code: 'METHOD_NOT_ALLOWED',
+                    message: 'DELETE requires a recipe ID.',
+                }),
+                {
+                    status: 405,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Allow': 'GET, POST, OPTIONS',
+                    },
+                }
+            );
+        }
+
+        // Delete existing recipe (soft delete)
+        return handleDeleteRecipe(req, recipeId);
+    }
+
     // Method not allowed - determine allowed methods based on path
     logger.warn('Method not allowed', { method, path: url.pathname });
     let allowedMethods = 'GET, POST, OPTIONS';
-    
+
     if (isImport) {
         allowedMethods = 'POST, OPTIONS';
     } else if (recipeId) {
