@@ -12,7 +12,7 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-GET /public/recipes
+GET /public/recipes/{id}
 
 </api_changes_description>
 
