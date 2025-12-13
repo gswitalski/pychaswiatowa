@@ -46,7 +46,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -77,7 +78,8 @@ begin
 - Gotuj na małym ogniu przez 2-3 godziny, często mieszając.
 - Pod koniec dodaj pokrojoną kiełbasę i boczek.
 - Dopraw do smaku solą, pieprzem i majerankiem.'
-            )
+            ),
+            'PUBLIC'
         );
     end if;
 
@@ -89,7 +91,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_deser_id,
@@ -121,7 +124,8 @@ begin
 - Posyp bułką tartą, ułóż jabłka.
 - Rozwałkuj mniejszą część ciasta i przykryj jabłka.
 - Piecz w temperaturze 180°C przez około 45 minut.'
-            )
+            ),
+            'SHARED'
         );
     end if;
 
@@ -133,7 +137,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_zupa_id,
@@ -166,7 +171,8 @@ begin
 - Pod koniec dodaj sól i pieprz do smaku.
 - Przecedź przez sito, mięso pokrój i dodaj z powrotem.
 - Podawaj z makaronem i posiekaną natką pietruszki.'
-            )
+            ),
+            'PRIVATE'
         );
     end if;
 
@@ -178,7 +184,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_sniadanie_id,
@@ -199,7 +206,8 @@ begin
 - Gotuj przez 2-3 minuty, aż jajka będą lekko ścięte, ale jeszcze wilgotne.
 - Jeśli używasz, dodaj śmietanę i szczypiorek na końcu.
 - Podawaj od razu z pieczywem.'
-            )
+            ),
+            'PUBLIC'
         );
     end if;
 
@@ -211,7 +219,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -250,7 +259,8 @@ begin
 - Boczek pokrój w kostkę i usmaż na patelni.
 - Dodaj pokrojoną cebulę i smaż razem.
 - Polej pierogi skwarkami i cebulą.'
-            )
+            ),
+            'SHARED'
         );
     end if;
 
@@ -262,7 +272,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_zupa_id,
@@ -295,7 +306,8 @@ begin
 - Jajka ugotuj na twardo, obierz i pokrój na połówki.
 - Pod koniec dodaj śmietanę, dopraw solą i pieprzem.
 - Podawaj z kiełbasą, jajkiem i posiekanym koperkiem.'
-            )
+            ),
+            'PUBLIC'
         );
     end if;
 
@@ -307,7 +319,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_deser_id,
@@ -342,7 +355,8 @@ begin
 - Dodaj żółtka, cukier i cukier waniliowy, wymieszaj.
 - Każdy naleśnik nadziaj farszem i zwiń w rulony.
 - Podawaj na ciepło, posypane cukrem pudrem.'
-            )
+            ),
+            'PRIVATE'
         );
     end if;
 
@@ -354,7 +368,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -377,7 +392,8 @@ begin
 - Smaż na złocisty kolor na gorącym oleju, ok. 4-5 minut z każdej strony.
 - Odsącz na papierowym ręczniku.
 - Podawaj z ziemniakami, surówką i cytryną.'
-            )
+            ),
+            'SHARED'
         );
     end if;
 
@@ -389,7 +405,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -426,7 +443,8 @@ begin
 - Zalej bulionem z koncentratem pomidorowym.
 - Duś na małym ogniu przez 1,5 godziny.
 - Pod koniec zagęść zasmażką z mąki i cebuli.'
-            )
+            ),
+            'PUBLIC'
         );
     end if;
 
@@ -438,7 +456,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_deser_id,
@@ -474,7 +493,8 @@ begin
 - Wstaw do lodówki na 3 godziny.
 - Owoce ułóż na wierzchu, zalej galaretką.
 - Schładzaj kolejne 2 godziny.'
-            )
+            ),
+            'PRIVATE'
         );
     end if;
 
@@ -486,7 +506,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -520,7 +541,8 @@ begin
 - Dodaj szpinak i garam masala, gotuj 2 minuty.
 - Skrop sokiem z limonki.
 - Podawaj z ryżem basmati.'
-            )
+            ),
+            'SHARED'
         );
     end if;
 
@@ -532,7 +554,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -556,7 +579,8 @@ begin
 - Gotuj w osolonym wrzątku około 3-4 minuty od wypłynięcia.
 - Odsącz, polej roztopionym masłem.
 - Posyp cukrem lub bułką tartą z cukrem.'
-            )
+            ),
+            'PUBLIC'
         );
     end if;
 
@@ -568,7 +592,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_zupa_id,
@@ -597,7 +622,8 @@ begin
 - Dopraw solą, pieprzem i sokiem z cytryny.
 - Schłódź w lodówce minimum 2 godziny.
 - Podawaj z jajkiem, śmietaną i koperkiem.'
-            )
+            ),
+            'PRIVATE'
         );
     end if;
 
@@ -609,7 +635,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -635,7 +662,8 @@ begin
 - Smaż na złocisty kolor z obu stron, ok. 3-4 minuty.
 - Odsącz na papierowym ręczniku.
 - Podawaj ze śmietaną lub gulaszem.'
-            )
+            ),
+            'SHARED'
         );
     end if;
 
@@ -647,7 +675,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_deser_id,
@@ -673,7 +702,8 @@ begin
 - Piecz w 180°C przez 25-30 minut.
 - Środek powinien być lekko wilgotny.
 - Pozostaw do wystygnięcia, pokrój w kwadraty.'
-            )
+            ),
+            'PUBLIC'
         );
     end if;
 
@@ -685,7 +715,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -710,7 +741,8 @@ begin
 - Zdejmij patelnię z ognia, dodaj masę jajeczną.
 - Szybko mieszaj, dolewając wodę z makaronu do uzyskania kremowej konsystencji.
 - Podawaj natychmiast, posypaną serem i pieprzem.'
-            )
+            ),
+            'PRIVATE'
         );
     end if;
 
@@ -722,7 +754,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_deser_id,
@@ -759,7 +792,8 @@ begin
 - Ubijaj do uzyskania gładkiego kremu.
 - Wystudzony biszkopt przekrój wzdłuż.
 - Posmaruj kremem, złóż i obsmaruj wierzch i boki.'
-            )
+            ),
+            'SHARED'
         );
     end if;
 
@@ -771,7 +805,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_sniadanie_id,
@@ -802,7 +837,8 @@ begin
 - Przykryj i gotuj 8-10 minut, aż białka się zetną.
 - Posyp pokruszoną fetą i kolendrą.
 - Podawaj z chlebem pita.'
-            )
+            ),
+            'PUBLIC'
         );
     end if;
 
@@ -814,7 +850,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_sniadanie_id,
@@ -841,7 +878,8 @@ begin
 - Przelej do miski.
 - Ułóż toppings w estetyczny sposób.
 - Podawaj natychmiast, zanim się nie roztopiło.'
-            )
+            ),
+            'PRIVATE'
         );
     end if;
 
@@ -853,7 +891,8 @@ begin
             name,
             description,
             ingredients,
-            steps
+            steps,
+            visibility
         ) values (
             target_user_id,
             category_obiad_id,
@@ -887,7 +926,951 @@ begin
 - Gdy ryż jest al dente, zdejmij z ognia.
 - Wmieszaj masło i parmezan.
 - Posyp natką pietruszki.'
-            )
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 21: Zupa pomidorowa
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Zupa pomidorowa') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_zupa_id,
+            'Zupa pomidorowa',
+            'Klasyczna polska zupa pomidorowa z makaronem lub ryżem, ulubione danie dzieci.',
+            public.parse_text_to_jsonb(
+                '## Baza
+- 1 litr bulionu drobiowego
+- 500g pomidorów w puszce
+- 2 łyżki koncentratu pomidorowego
+- 1 cebula
+- 2 ząbki czosnku
+## Dodatki
+- 200g makaronu lub ryżu
+- 100ml śmietany 18%
+- 1 łyżka masła
+- 1 łyżeczka cukru
+- sól, pieprz
+- świeża bazylia'
+            ),
+            public.parse_text_to_jsonb(
+                '- Cebulę pokrój i zeszklij na maśle.
+- Dodaj czosnek, smaż minutę.
+- Wlej pomidory i bulion.
+- Dodaj koncentrat, cukier, sól i pieprz.
+- Gotuj 20 minut na małym ogniu.
+- Zblenduj na gładką masę.
+- Dodaj śmietanę, wymieszaj.
+- Makaron lub ryż ugotuj osobno.
+- Podawaj zupę z makaronem i bazylią.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 22: Pierogi z mięsem
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Pierogi z mięsem') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Pierogi z mięsem',
+            'Klasyczne pierogi z farszem mięsnym, podawane ze skwarkami i cebulką.',
+            public.parse_text_to_jsonb(
+                '## Ciasto
+- 500g mąki pszennej
+- 1 szklanka ciepłej wody
+- 1 jajko
+- 1 łyżka oleju
+- szczypta soli
+## Farsz
+- 400g mięsa wieprzowego gotowanego
+- 200g mięsa drobiowego gotowanego
+- 1 cebula
+- 2 łyżki masła
+- sól, pieprz, majeranek
+## Do podania
+- 100g boczku
+- 1 cebula'
+            ),
+            public.parse_text_to_jsonb(
+                '## Przygotowanie ciasta
+- Z mąki, wody, jajka, oleju i soli zagnieć elastyczne ciasto.
+- Zawiń w folię i odstaw na 30 minut.
+## Przygotowanie farszu
+- Mięso zmiel lub drobno posiekaj.
+- Cebulę podsmaż na maśle.
+- Wymieszaj mięso z cebulą, dopraw przyprawami.
+## Formowanie pierogów
+- Ciasto rozwałkuj cienko i wykrawaj kółka.
+- Na każde kółko nałóż farsz i zlep brzegi.
+- Gotuj w osolonym wrzątku około 3-4 minuty od wypłynięcia.
+## Podanie
+- Boczek pokrój w kostkę i usmaż na patelni.
+- Dodaj pokrojoną cebulę i smaż razem.
+- Polej pierogi skwarkami.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 23: Sałatka grecka
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Sałatka grecka') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_dodatek_id,
+            'Sałatka grecka',
+            'Orzeźwiająca sałatka śródziemnomorska z fetą i oliwkami, idealna na lato.',
+            public.parse_text_to_jsonb(
+                '- 4 pomidory
+- 1 ogórek
+- 1 czerwona cebula
+- 200g sera feta
+- 100g oliwek kalamata
+- 1 zielona papryka
+- 4 łyżki oliwy z oliwek
+- 2 łyżki soku z cytryny
+- 1 łyżeczka oregano
+- sól, pieprz'
+            ),
+            public.parse_text_to_jsonb(
+                '- Pomidory pokrój w ósemki.
+- Ogórek przekrój wzdłuż i pokrój w półplasterki.
+- Cebulę pokrój w cienkie piórka.
+- Paprykę pokrój w paski.
+- Wszystkie warzywa połącz w misce.
+- Dodaj oliwki.
+- Fetę pokrój w kostkę lub pokrusz ręką.
+- Przygotuj dressing z oliwy, cytryny, oregano, soli i pieprzu.
+- Polej sałatkę dressingiem, ułóż fetę na wierzchu.
+- Podawaj natychmiast.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 24: Tiramisu
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Tiramisu') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_deser_id,
+            'Tiramisu',
+            'Klasyczny włoski deser z mascarpone i kawą, bez pieczenia.',
+            public.parse_text_to_jsonb(
+                '## Krem
+- 500g mascarpone
+- 4 żółtka
+- 100g cukru
+- 200ml śmietany kremówki 36%
+## Pozostałe
+- 300g biszkopty podłużne (savoiardi)
+- 300ml mocnej kawy (espresso)
+- 3 łyżki amaretto lub rumu (opcjonalnie)
+- kakao do posypania
+- gorzka czekolada do dekoracji'
+            ),
+            public.parse_text_to_jsonb(
+                '## Krem
+- Żółtka ubij z cukrem na puszystą, jasną masę.
+- Dodaj mascarpone, delikatnie wymieszaj.
+- Śmietanę ubij na sztywno.
+- Połącz obie masy, mieszając ruchami od dołu do góry.
+## Składanie
+- Kawę wystudź, dodaj alkohol (opcjonalnie).
+- Biszkopty maczaj w kawie (krótko!) i układaj na dnie naczynia.
+- Nałóż połowę kremu.
+- Ułóż drugą warstwę biszkoptów.
+- Nałóż resztę kremu, wyrównaj.
+- Wstaw do lodówki na minimum 4 godziny.
+- Przed podaniem posyp kakao i zetrzij czekoladę.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 25: Omlet francuski
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Omlet francuski') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_sniadanie_id,
+            'Omlet francuski',
+            'Delikatny, kremowy omlet w stylu francuskim - mistrzostwo prostoty.',
+            public.parse_text_to_jsonb(
+                '- 3 jajka
+- 1 łyżka masła
+- 1 łyżka szczypiorku
+- sól, pieprz
+- 1 łyżka sera (opcjonalnie)'
+            ),
+            public.parse_text_to_jsonb(
+                '- Jajka rozbij do miski, dopraw solą i pieprzem.
+- Delikatnie roztrzep widelcem (nie za mocno!).
+- Rozgrzej patelnię na średnim ogniu, rozpuść masło.
+- Wlej jajka, poczekaj kilka sekund.
+- Drewnianą szpatułką ściągaj ścięte jajko od brzegów do środka.
+- Pochyl patelnię, by surowe jajko spłynęło na brzeg.
+- Gdy wierzch jest jeszcze kremowy, posyp serem.
+- Złóż omlet na pół lub w trójkę.
+- Przesuń na talerz, posyp szczypiorkiem.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 26: Krupnik
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Krupnik') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_zupa_id,
+            'Krupnik',
+            'Tradycyjna polska zupa na bazie kaszy jęczmiennej, sycąca i rozgrzewająca.',
+            public.parse_text_to_jsonb(
+                '## Baza
+- 1,5 litra bulionu mięsnego
+- 150g kaszy jęczmiennej
+- 300g ziemniaków
+## Warzywa
+- 2 marchewki
+- 1 pietruszka
+- 1 kawałek selera
+- 1 cebula
+- 2 ząbki czosnku
+## Przyprawy
+- liść laurowy
+- ziele angielskie
+- sól, pieprz
+- świeży koper'
+            ),
+            public.parse_text_to_jsonb(
+                '- Kaszę opłucz i namocz na 30 minut.
+- Warzywa obierz i pokrój w kostkę.
+- Bulion zagotuj, dodaj kaszę i warzywa.
+- Dodaj przyprawy.
+- Gotuj na małym ogniu około 40 minut.
+- Ziemniaki pokrój w kostkę, dodaj po 20 minutach.
+- Pod koniec dodaj przeciśnięty czosnek.
+- Dopraw solą i pieprzem.
+- Podawaj z posiekanym koperkiem.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 27: Paszteciki z mięsem
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Paszteciki z mięsem') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Paszteciki z mięsem',
+            'Chrupiące paszteciki z ciasta francuskiego z mięsnym nadzieniem.',
+            public.parse_text_to_jsonb(
+                '## Ciasto
+- 500g ciasta francuskiego (gotowego)
+- 1 jajko do smarowania
+## Farsz
+- 300g mięsa mielonego wieprzowo-wołowego
+- 1 cebula
+- 2 ząbki czosnku
+- 1 jajko
+- 2 łyżki bułki tartej
+- sól, pieprz, majeranek
+- 2 łyżki oleju'
+            ),
+            public.parse_text_to_jsonb(
+                '## Przygotowanie farszu
+- Cebulę i czosnek drobno posiekaj, zeszklij na oleju.
+- Mięso wymieszaj z cebulą, jajkiem i bułką tartą.
+- Dopraw solą, pieprzem i majerankiem.
+## Formowanie
+- Ciasto rozwałkuj i pokrój na kwadraty (ok. 10x10 cm).
+- Na środek każdego kwadratu nałóż porcję farszu.
+- Złóż na trójkąty, zagnij brzegi widelcem.
+- Posmaruj roztrzepanym jajkiem.
+## Pieczenie
+- Ułóż na blasze wyłożonej papierem.
+- Piecz w 200°C przez 20-25 minut do złocistości.
+- Podawaj gorące z sosem musztardowym.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 28: Sernik pieczony
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Sernik pieczony') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_deser_id,
+            'Sernik pieczony',
+            'Klasyczny polski sernik na kruchym spodzie, gęsty i kremowy.',
+            public.parse_text_to_jsonb(
+                '## Spód
+- 200g mąki pszennej
+- 100g masła
+- 50g cukru pudru
+- 1 żółtko
+## Masa serowa
+- 1 kg sera białego (twarogu)
+- 200g cukru
+- 5 jajek
+- 100g masła
+- 2 łyżki mąki ziemniaczanej
+- 1 łyżeczka ekstraktu waniliowego
+- skórka z 1 cytryny'
+            ),
+            public.parse_text_to_jsonb(
+                '## Spód
+- Z mąki, masła, cukru i żółtka zagnieć ciasto.
+- Wyłóż dno formy (26cm), nakłuj widelcem.
+- Piecz 15 minut w 180°C.
+## Masa
+- Ser przepuść 2-3 razy przez maszynkę.
+- Żółtka oddziel od białek.
+- Masło utrzyj z cukrem na puszystą masę.
+- Dodawaj żółtka po jednym.
+- Dodaj ser, mąkę ziemniaczaną, wanilię i skórkę.
+- Białka ubij na sztywno, delikatnie wmieszaj.
+## Pieczenie
+- Masę wyłóż na podpieczony spód.
+- Piecz 60 minut w 160°C.
+- Wyłącz piekarnik, zostaw sernik na 30 minut.
+- Wyjmij i całkowicie wystudź.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 29: Racuchy z jabłkami
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Racuchy z jabłkami') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_deser_id,
+            'Racuchy z jabłkami',
+            'Puszyste drożdżowe placuszki z jabłkami, idealne na słodkie śniadanie.',
+            public.parse_text_to_jsonb(
+                '## Ciasto
+- 300g mąki pszennej
+- 200ml mleka
+- 15g świeżych drożdży
+- 2 jajka
+- 2 łyżki cukru
+- szczypta soli
+## Dodatki
+- 2 jabłka
+- olej do smażenia
+- cukier puder do posypania
+- cynamon'
+            ),
+            public.parse_text_to_jsonb(
+                '## Przygotowanie ciasta
+- Drożdże rozkrusz w ciepłym mleku z łyżką cukru.
+- Odstaw na 10 minut aż zaczną pienić.
+- Mąkę wsyp do miski, dodaj jajka, resztę cukru i sól.
+- Wlej mleko z drożdżami, wymieszaj na gładkie ciasto.
+- Przykryj, odstaw w ciepłe miejsce na 45 minut.
+## Jabłka
+- Jabłka obierz i pokrój w plastry lub kostkę.
+- Wmieszaj do wyrośniętego ciasta.
+## Smażenie
+- Na patelni rozgrzej olej.
+- Nakładaj łyżką porcje ciasta.
+- Smaż z obu stron na złocisty kolor.
+- Odsącz na papierowym ręczniku.
+- Posyp cukrem pudrem zmieszanym z cynamonem.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 30: Pasta jajeczna
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Pasta jajeczna') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_sniadanie_id,
+            'Pasta jajeczna',
+            'Prosta i pyszna pasta kanapkowa z jajek i majonezu.',
+            public.parse_text_to_jsonb(
+                '- 6 jajek
+- 3 łyżki majonezu
+- 1 łyżka musztardy
+- 2 łyżki szczypiorku
+- sól, pieprz
+- 1 łyżka ogórka konserwowego (opcjonalnie)'
+            ),
+            public.parse_text_to_jsonb(
+                '- Jajka ugotuj na twardo (10 minut).
+- Ostudź w zimnej wodzie, obierz.
+- Rozgnieć widelcem lub przetrzyj przez sitkę.
+- Dodaj majonez i musztardę, wymieszaj.
+- Posiekaj szczypiorek, dodaj do jajek.
+- Jeśli używasz, dodaj pokrojony ogorek.
+- Dopraw solą i pieprzem.
+- Podawaj na pieczywie lub krakerach.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 31: Gulasz węgierski
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Gulasz węgierski') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Gulasz węgierski',
+            'Aromatyczny gulasz wołowy z papryką, sycące danie jednogarnkowe.',
+            public.parse_text_to_jsonb(
+                '## Mięso
+- 800g wołowiny (łopatka lub antrykot)
+- 2 łyżki smalcu lub oleju
+## Warzywa
+- 3 cebule
+- 2 papryki czerwone
+- 2 pomidory
+- 3 ząbki czosnku
+- 500ml bulionu wołowego
+## Przyprawy
+- 3 łyżki papryki słodkiej
+- 1 łyżeczka papryki ostrej
+- 1 łyżeczka kminku
+- liść laurowy
+- sól, pieprz'
+            ),
+            public.parse_text_to_jsonb(
+                '- Mięso pokrój w kostkę, osusz.
+- Na smalcu podsmaż na silnym ogniu do zbrązowienia.
+- Wyjmij mięso, dodaj pokrojoną cebulę.
+- Smaż aż będzie złocista.
+- Dodaj czosnek i paprykę, smaż 2 minuty.
+- Dodaj pomidory pokrojone w kostkę.
+- Wsyp przyprawy, wymieszaj.
+- Wrzuć mięso z powrotem, zalej bulionem.
+- Duś pod przykryciem 1,5-2 godziny.
+- Dopraw solą i pieprzem.
+- Podawaj z kluskami lub chlebem.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 32: Kapuśniak
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Kapuśniak') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_zupa_id,
+            'Kapuśniak',
+            'Tradycyjna polska zupa z kapusty kiszonej, idealna na zimowe dni.',
+            public.parse_text_to_jsonb(
+                '## Baza
+- 500g kapusty kiszonej
+- 300g żeberek wieprzowych
+- 1,5 litra wody
+## Warzywa
+- 3 ziemniaki
+- 1 marchewka
+- 1 pietruszka
+- 1 cebula
+## Przyprawy
+- 2 liście laurowe
+- 4 ziarna ziela angielskiego
+- sól, pieprz
+- 1 łyżeczka majeranku'
+            ),
+            public.parse_text_to_jsonb(
+                '- Żeberka zalej zimną wodą, zagotuj.
+- Zbieraj szumowiny, gotuj 45 minut.
+- Kapustę przepłucz, jeśli jest za kwaśna.
+- Posiekaj kapustę i warzywa.
+- Do bulionu dodaj kapustę i marchewkę.
+- Gotuj 20 minut.
+- Dodaj ziemniaki pokrojone w kostkę.
+- Dodaj pietruszką i przyprawy.
+- Gotuj kolejne 20 minut.
+- Dopraw solą i pieprzem.
+- Posyp majerankiem przed podaniem.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 33: Knedle ze śliwkami
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Knedle ze śliwkami') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_deser_id,
+            'Knedle ze śliwkami',
+            'Klasyczne polskie knedle z nadzieniem ze śliwek, posypane bułką tartą.',
+            public.parse_text_to_jsonb(
+                '## Ciasto
+- 500g ziemniaków
+- 150g mąki pszennej
+- 1 jajko
+- szczypta soli
+## Nadzienie
+- 15 śliwek (węgierek)
+- 15 kostek cukru
+## Do podania
+- 100g masła
+- 100g bułki tartej
+- 3 łyżki cukru
+- cynamon'
+            ),
+            public.parse_text_to_jsonb(
+                '## Przygotowanie ciasta
+- Ziemniaki ugotuj w mundurkach, ostudź, obierz.
+- Przepuść przez praskę, dodaj mąkę, jajko i sól.
+- Zagnieć elastyczne ciasto.
+## Śliwki
+- Ze śliwek wyjmij pestki.
+- W miejsce pestki włóż kostkę cukru.
+## Formowanie
+- Ciasto podziel na porcje.
+- Każdą rozgnij na placek, w środek włóż śliwkę.
+- Zamknij ciasto, formuj kulę.
+- Gotuj we wrzątku 5 minut od wypłynięcia.
+## Podanie
+- Masło rozpuść, dodaj bułkę tartą.
+- Smaż aż będzie złocista.
+- Dodaj cukier i cynamon.
+- Knedle polej prażoną bułką.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 34: Tatar wołowy
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Tatar wołowy') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Tatar wołowy',
+            'Elegancka przystawka z surowego mięsa wołowego z klasycznymi dodatkami.',
+            public.parse_text_to_jsonb(
+                '## Mięso
+- 400g polędwicy wołowej
+## Dodatki
+- 4 żółtka
+- 4 łyżki drobno posiekanej cebuli
+- 4 łyżki ogórków konserwowych
+- 4 łyżki marynowanych grzybków
+- 4 łyżki kaparów
+## Przyprawy
+- 2 łyżki musztardy Dijon
+- 2 łyżki oliwy
+- sól, pieprz
+- kilka kropli Worcestershire'
+            ),
+            public.parse_text_to_jsonb(
+                '- Mięso oczyść z błon i tłuszczu.
+- Posiekaj bardzo drobno ostrym nożem (nie miel!).
+- Mięso dopraw solą, pieprzem i sosem Worcestershire.
+- Wymieszaj z musztardą i oliwą.
+- Uformuj porcje na talerzach.
+- W środku zrób zagłębienie na żółtko.
+- Wokół ułóż osobno wszystkie dodatki.
+- Surowe żółtko wbij na wierzch.
+- Podawaj z grzankami lub pieczywem.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 35: Kopytka
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Kopytka') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_dodatek_id,
+            'Kopytka',
+            'Polskie kluseczki ziemniaczane, idealne do mięs z sosem lub jako samodzielne danie.',
+            public.parse_text_to_jsonb(
+                '- 1 kg ziemniaków
+- 200g mąki pszennej
+- 1 jajko
+- szczypta soli
+- masło do podania
+- opcjonalnie: bułka tarta'
+            ),
+            public.parse_text_to_jsonb(
+                '- Ziemniaki ugotuj w mundurkach.
+- Ostudź, obierz i przepuść przez praskę.
+- Dodaj mąkę, jajko i sól.
+- Zagnieć jednolite ciasto.
+- Z ciasta formuj wałki grubości 2 cm.
+- Pokrój na ukos, tworząc „kopytka".
+- Gotuj we wrzątku około 3-4 minuty od wypłynięcia.
+- Wyjmij łyżką cedzakową.
+- Polej roztopionym masłem lub oprósz bułką tartą.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 36: Tort czekoladowy
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Tort czekoladowy') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_deser_id,
+            'Tort czekoladowy',
+            'Dekadencki, wilgotny tort czekoladowy z ganache, na każdą okazję.',
+            public.parse_text_to_jsonb(
+                '## Biszkopt
+- 200g mąki pszennej
+- 200g cukru
+- 50g kakao
+- 2 łyżeczki proszku do pieczenia
+- 3 jajka
+- 200ml mleka
+- 100ml oleju
+- 1 łyżeczka ekstraktu waniliowego
+## Ganache
+- 400g gorzkiej czekolady
+- 400ml śmietany 36%
+- 50g masła'
+            ),
+            public.parse_text_to_jsonb(
+                '## Biszkopt
+- Suche składniki przesiej do miski.
+- Dodaj jajka, mleko, olej i wanilię.
+- Miksuj na gładkie ciasto.
+- Przełóż do dwóch form (20cm).
+- Piecz w 180°C przez 30-35 minut.
+- Przestudź i przekrój każdy na pół.
+## Ganache
+- Czekoladę połam, wrzuć do miski.
+- Śmietanę zagotuj, zalej czekoladę.
+- Mieszaj aż czekolada się rozpuści.
+- Dodaj masło, wymieszaj.
+- Schłódź do konsystencji do smarowania.
+## Składanie
+- Każdy blat posmaruj ganache.
+- Ułóż warstwy, obsmaruj wierzch i boki.
+- Schłódź przed podaniem.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 37: Spaghetti bolognese
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Spaghetti bolognese') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Spaghetti bolognese',
+            'Klasyczny włoski makaron z mięsnym sosem pomidorowym, ulubieniec wszystkich.',
+            public.parse_text_to_jsonb(
+                '## Sos
+- 500g mięsa mielonego wołowego
+- 400g pomidorów w puszce
+- 2 łyżki koncentratu pomidorowego
+- 1 cebula
+- 1 marchewka
+- 1 seler naciowy
+- 3 ząbki czosnku
+- 100ml czerwonego wina
+- 2 łyżki oliwy
+## Makaron
+- 400g spaghetti
+- parmezan do podania'
+            ),
+            public.parse_text_to_jsonb(
+                '- Warzywa (cebulę, marchewkę, seler) pokrój w drobną kostkę.
+- Na oliwie zeszklij warzywa przez 10 minut.
+- Dodaj mięso, smaż rozbijając grudki.
+- Gdy mięso się zrumieni, wlej wino.
+- Gotuj aż wino odparuje.
+- Dodaj pomidory, koncentrat i czosnek.
+- Dopraw solą i pieprzem.
+- Duś na małym ogniu minimum 45 minut.
+- Makaron ugotuj al dente.
+- Podawaj sos na makaronie, posyp parmezanem.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 38: Grochówka
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Grochówka') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_zupa_id,
+            'Grochówka',
+            'Tradycyjna polska zupa z grochu, gęsta i sycąca, idealna na zimę.',
+            public.parse_text_to_jsonb(
+                '## Baza
+- 500g grochu łuskanego
+- 500g wędzonek (boczek, żeberka, golonka)
+- 2 litry wody
+## Warzywa
+- 2 marchewki
+- 1 pietruszka
+- 1 seler
+- 2 cebule
+- 3 ząbki czosnku
+## Przyprawy
+- liść laurowy
+- ziele angielskie
+- sól, pieprz
+- majeranek'
+            ),
+            public.parse_text_to_jsonb(
+                '- Groch namocz na noc w zimnej wodzie.
+- Wędzonki zalej wodą, gotuj 1 godzinę.
+- Groch odsącz, dodaj do wywaru.
+- Warzywa pokrój, dodaj do zupy.
+- Gotuj na małym ogniu około 1,5 godziny.
+- Groch powinien być miękki i rozpadać się.
+- Wyjmij wędzonki, mięso pokrój w kostkę.
+- Zupę możesz częściowo zblendować.
+- Wrzuć mięso z powrotem.
+- Dodaj przeciśnięty czosnek i majeranek.
+- Dopraw solą i pieprzem.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 39: Drożdżówki z serem
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Drożdżówki z serem') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_pieczywo_id,
+            'Drożdżówki z serem',
+            'Puszyste bułeczki drożdżowe z kremowym nadzieniem serowym.',
+            public.parse_text_to_jsonb(
+                '## Ciasto
+- 500g mąki pszennej
+- 250ml mleka
+- 50g drożdży świeżych
+- 80g cukru
+- 80g masła
+- 2 żółtka
+- szczypta soli
+## Nadzienie
+- 500g sera białego
+- 2 żółtka
+- 4 łyżki cukru
+- 1 łyżeczka cukru waniliowego
+- 50g rodzynek
+## Do posmarowania
+- 1 jajko'
+            ),
+            public.parse_text_to_jsonb(
+                '## Ciasto
+- Drożdże rozpuść w ciepłym mleku z łyżką cukru.
+- Mąkę wsyp do miski, dodaj resztę cukru i sól.
+- Dodaj roztopione masło i żółtka.
+- Wlej mleko z drożdżami.
+- Zagnieć elastyczne ciasto, wyrabiaj 10 minut.
+- Przykryj, odstaw w ciepłe miejsce na 1 godzinę.
+## Nadzienie
+- Ser przepuść przez praskę.
+- Dodaj żółtka, cukier, wanilię i rodzynki.
+## Formowanie
+- Ciasto podziel na 12-16 części.
+- Każdą rozwałkuj, nałóż nadzienie, zwiń.
+- Układaj na blasze, odstaw na 20 minut.
+- Posmaruj jajkiem.
+- Piecz w 180°C przez 20-25 minut.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 40: Zupa ogórkowa
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Zupa ogórkowa') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_zupa_id,
+            'Zupa ogórkowa',
+            'Tradycyjna polska zupa z kiszonych ogórków, lekko kwaśna i aromatyczna.',
+            public.parse_text_to_jsonb(
+                '## Baza
+- 1,5 litra bulionu mięsnego
+- 500g ogórków kiszonych
+- 300ml soku z ogórków
+## Warzywa
+- 3 ziemniaki
+- 1 marchewka
+- 1 pietruszka
+- 1 cebula
+## Dodatki
+- 200ml śmietany 18%
+- 2 łyżki masła
+- 2 łyżki mąki
+- koper świeży
+- sól, pieprz'
+            ),
+            public.parse_text_to_jsonb(
+                '- Warzywa obierz i pokrój w kostkę.
+- Bulion zagotuj, dodaj marchewkę i pietruszką.
+- Gotuj 15 minut.
+- Dodaj ziemniaki, gotuj kolejne 15 minut.
+- Ogórki zetrzyj na tarce o grubych oczkach.
+- Dodaj ogórki i sok do zupy.
+- Gotuj 10 minut.
+- Zrób zasmażkę z masła i mąki, dodaj do zupy.
+- Wlej śmietanę, wymieszaj.
+- Dopraw solą i pieprzem.
+- Posyp świeżym koperkiem przed podaniem.'
+            ),
+            'PRIVATE'
         );
     end if;
 

@@ -139,6 +139,12 @@ const updateRecipeSchema = z
                 invalid_type_error: 'Visibility must be one of: PRIVATE, SHARED, PUBLIC',
             })
             .optional(),
+        image_path: z
+            .string({
+                invalid_type_error: 'Image path must be a string',
+            })
+            .nullable()
+            .optional(),
     })
     .refine(
         (data) => {
@@ -506,6 +512,7 @@ export async function handleUpdateRecipe(
             steps_raw: validatedData.steps_raw,
             tags: validatedData.tags,
             visibility: validatedData.visibility,
+            image_path: validatedData.image_path,
         };
 
         // Call the service to update the recipe

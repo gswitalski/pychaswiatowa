@@ -122,7 +122,10 @@ export type CreateRecipeCommand = Pick<
  * Command model for updating an existing recipe.
  * All fields are optional.
  */
-export type UpdateRecipeCommand = Partial<CreateRecipeCommand>;
+export type UpdateRecipeCommand = Partial<CreateRecipeCommand> & {
+    /** URL or storage path to recipe image (nullable). */
+    image_path?: string | null;
+};
 
 /**
  * Command model for importing a new recipe from a raw text block.

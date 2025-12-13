@@ -433,6 +433,7 @@ export interface UpdateRecipeInput {
     steps_raw?: string;
     tags?: string[];
     visibility?: RecipeVisibility;
+    image_path?: string | null;
 }
 
 /**
@@ -552,6 +553,7 @@ export async function updateRecipe(
         updatingIngredients: input.ingredients_raw !== undefined,
         updatingSteps: input.steps_raw !== undefined,
         updatingTags: input.tags !== undefined,
+        updatingImagePath: input.image_path !== undefined,
     });
 
     // Determine if tags should be updated
@@ -571,6 +573,7 @@ export async function updateRecipe(
             p_tag_names: input.tags ?? null,
             p_update_tags: updateTags,
             p_visibility: input.visibility ?? null,
+            p_image_path: input.image_path ?? null,
         }
     );
 

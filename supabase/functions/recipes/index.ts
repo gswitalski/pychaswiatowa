@@ -50,6 +50,7 @@
  * - steps_raw (string) - Raw steps text
  * - tags (string[]) - Array of tag names (replaces all existing tags)
  * - visibility (string) - Recipe visibility: PRIVATE, SHARED, or PUBLIC
+ * - image_path (string, nullable) - URL or storage path to recipe image
  *
  * DELETE /functions/v1/recipes/{id}
  * Soft-deletes an existing recipe for the authenticated user.
