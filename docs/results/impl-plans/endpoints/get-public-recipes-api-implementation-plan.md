@@ -5,6 +5,9 @@ Celem endpointu `GET /public/recipes` jest udostępnienie **anonimowym użytkown
 - podstawowe wyszukiwanie tekstowe (MVP)
 - sortowanie
 
+Zmiana względem poprzedniej wersji kontraktu:
+- w odpowiedzi listingu dodano `author` (id + username), aby frontend mógł oznaczyć „Twój przepis” porównując `author.id` z tożsamością użytkownika (np. z `/me`).
+
 Wymagania domenowe wynikające ze schematu:
 - zwracać wyłącznie przepisy **nieusunięte** (soft delete): `deleted_at IS NULL`
 - zwracać wyłącznie przepisy publiczne: `visibility = 'PUBLIC'`
@@ -46,7 +49,15 @@ Zalecane jest dodanie/utrwalenie kontraktów w `shared/contracts/types.ts`, aby 
   - `image_path: string | null`
   - `category: CategoryDto | null` (obiekt `{ id, name }`)
   - `tags: string[]` (nazwy tagów)
+  - `author: ProfileDto` (obiekt `{ id, username }`)
   - `created_at: string`
+
+### Uwaga dot. spójności typów
+W projekcie występują dwa miejsca z definicją `PublicRecipeListItemDto`:
+- `shared/contracts/types.ts` (kontrakt frontend-backend)
+- `supabase/functions/public/public.service.ts` (lokalny DTO serwisu)
+
+Należy je zaktualizować spójnie (dodanie `author`) lub docelowo wyrównać podejście (np. import wspólnych typów do Edge Functions, jeśli to jest przyjęty wzorzec w repo).
 
 ### Modele wejścia
 Endpoint nie ma body. Wejściem są query parametry, dla których zalecane jest wprowadzenie typu (opcjonalnie):
@@ -72,6 +83,7 @@ Endpoint nie ma body. Wejściem są query parametry, dla których zalecane jest 
       "image_path": "path/to/image.jpg",
       "category": { "id": 2, "name": "Dessert" },
       "tags": ["sweet", "baking"],
+      "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
       "created_at": "2023-10-27T10:00:00Z"
     }
   ],
@@ -113,6 +125,10 @@ Uwaga: `401` i `404` nie są typowe dla listy publicznej, ale `404` może być z
    - mapuje rekordy do DTO:
      - `category` budowane z `category_id` + `category_name`
      - `tags` mapowane do `string[]` poprzez ekstrakcję `name` z JSONB `tags`
+     - `author`:
+       - pobrać `user_id` (autor przepisu) z widoku `recipe_details` w pierwszym zapytaniu (projekcja musi zawierać `user_id`)
+       - wykonać **drugie zapytanie** do `profiles` z użyciem `.in('id', uniqueUserIds)` (bulk fetch) i zmapować `user_id -> {id, username}`
+       - złożyć DTO w pamięci bez N+1 zapytań
 
 ### Źródło danych
 Zalecane: korzystać z widoku `public.recipe_details` (agreguje tags/kolekcje i unika N+1).
@@ -162,6 +178,9 @@ Plan poniżej zakłada wariant A (szybszy), z rekomendacją rozważenia wariantu
 
 ## 8. Rozważania dotyczące wydajności
 - **Źródło danych**: widok `recipe_details` (agregacje po stronie DB).
+- **Dodatkowe pobranie autora**:
+  - zalecane są **2 zapytania**: (1) lista przepisów z `user_id`, (2) lista profili dla unikalnych `user_id`
+  - unikać N+1 (pobierania profilu osobno dla każdego przepisu)
 - **Paginacja + count**:
   - `count: 'exact'` jest kosztowny dla dużych tabel; dla MVP OK.
   - w przyszłości rozważyć `estimated count` lub osobny licznik / „seek pagination”.
@@ -177,9 +196,9 @@ Plan poniżej zakłada wariant A (szybszy), z rekomendacją rozważenia wariantu
   - alternatywa (mniej elegancka): filtrować po `tags` JSONB przez cast do tekstu (wymaga weryfikacji możliwości PostgREST i wpływu na wydajność).
 
 ## 9. Kroki implementacji
-1. **Ustalić miejsce routingu**:
-   - utworzyć nową funkcję Edge `supabase/functions/public/`.
-   - dodać pliki: `index.ts`, `public.handlers.ts`, `public.service.ts`, `public.types.ts`.
+1. **Zweryfikować istniejące miejsce routingu**:
+   - endpoint jest już routowany w Edge Function `supabase/functions/public/` pod ścieżką runtime `/functions/v1/public/recipes`.
+   - zmiana dotyczy kontraktu odpowiedzi oraz mapowania danych (dodanie `author` w listingu).
 
 2. **Dodać klienta DB dla endpointów publicznych**:
    - dodać w `supabase/functions/_shared/supabase-client.ts` helper `createServiceRoleClient()` (lub lokalnie w `public.service.ts`).
@@ -200,27 +219,43 @@ Plan poniżej zakłada wariant A (szybszy), z rekomendacją rozważenia wariantu
      - `.eq('visibility', 'PUBLIC')`
      - (opcjonalnie defensywnie) `.is('deleted_at', null)` jeśli wybierane z `recipes`.
    - projekcja pól:
-     - `id, name, description, image_path, category_id, category_name, tags, created_at`.
+     - dodać `user_id` do select, aby zbudować `author` w DTO
+     - docelowo: `id, user_id, name, description, image_path, category_id, category_name, tags, created_at`.
    - paginacja: `.range(offset, offset+limit-1)` + `{ count: 'exact' }`.
    - sort: `.order(field, { ascending })`.
 
-6. **Wyszukiwanie**:
+6. **Pobranie authorów (bulk)**:
+   - z wyników listy zebrać `uniqueUserIds` (np. `new Set(data.map(x => x.user_id))`)
+   - wykonać zapytanie do `profiles`:
+     - select: `id, username`
+     - filter: `.in('id', uniqueUserIds)`
+   - zbudować mapę `profilesById`
+   - podczas mapowania listy do DTO dołączyć `author: profilesById[user_id]`
+   - obsłużyć brak profilu (anomalia): zalecane traktować jako `500`, bo kontrakt wymaga `author`
+
+7. **Wyszukiwanie**:
    - dodać filtr po `q`:
      - wariant MVP szybki: `textSearch` po `search_vector` (name+ingredients)
      - oraz (aby spełnić spec): dodać/wykorzystać RPC wyszukujące także po tagach.
 
-7. **Mapowanie do DTO**:
+8. **Mapowanie do DTO**:
    - `category`: `{ id: category_id, name: category_name }` lub `null`.
    - `tags`: z JSONB `tags` wyciągnąć tylko `name` i zwrócić `string[]`.
+   - `author`: `{ id: user_id, username }` (z tabeli `profiles`)
 
-8. **CORS i response headers**:
+9. **Aktualizacja kontraktów typów**:
+   - zaktualizować `shared/contracts/types.ts` (`PublicRecipeListItemDto`) dodając `author: ProfileDto`
+   - zaktualizować `supabase/functions/public/public.service.ts` lokalny `PublicRecipeListItemDto` analogicznie (jeśli utrzymujemy lokalne DTO)
+   - upewnić się, że payload jest zgodny z API planem i wykorzystywanym frontendem
+
+10. **CORS i response headers**:
    - jak w innych funkcjach: wspólne `corsHeaders` w `index.ts`.
    - rozważyć `Cache-Control: public, max-age=60` (opcjonalnie, zależnie od wymagań świeżości danych).
 
-9. **Aktualizacja typów DB** (ważne dla spójności):
+11. **Aktualizacja typów DB** (ważne dla spójności):
    - `supabase/functions/_shared/database.types.ts` jest kopią i może być niezsynchronizowana; po implementacji public recipes i po migracjach `visibility`/`image_path` należy zaktualizować/generować typy (aby `recipe_details.visibility` i `recipes.visibility` były obecne w typach).
 
-10. **Testy (minimum)**:
+12. **Testy (minimum)**:
    - `GET /public/recipes` bez parametrów => `200`, domyślna paginacja.
    - `GET /public/recipes?q=a` => `400`.
    - `GET /public/recipes?q=ap` => `200`.
@@ -228,3 +263,4 @@ Plan poniżej zakłada wariant A (szybszy), z rekomendacją rozważenia wariantu
      - `PRIVATE/SHARED` nie pojawiają się w wynikach
      - rekordy z `deleted_at != null` nie pojawiają się w wynikach
      - sortowanie działa dla `created_at` i `name`.
+     - **author** jest obecny dla każdego elementu listy (`author.id`, `author.username`)

@@ -42,6 +42,7 @@ Public endpoints are available without authentication and must return **only** r
               "image_path": "path/to/image.jpg",
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
+              "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
               "created_at": "2023-10-27T10:00:00Z"
             }
           ],
@@ -508,6 +509,23 @@ Public endpoints are available without authentication and must return **only** r
     -   **Code**: `404 Not Found`
 
 ---
+
+### Session / Current User
+
+#### `GET /me`
+
+-   **Description**: Retrieve the minimal identity/profile data for the authenticated user. Intended to bootstrap the logged-in UI (App Shell) on any route, including public routes (`/`, `/explore`, `/explore/recipes/:id-:slug`).
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "id": "a1b2c3d4-...",
+          "username": "john.doe"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
 
 ## 3. Authentication and Authorization
 

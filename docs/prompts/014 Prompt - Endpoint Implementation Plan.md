@@ -12,7 +12,10 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-GET /public/recipes/{id}
+### Zmienione endpointy
+
+**GET /public/recipes**
+- **Co się zmieniło:** W odpowiedzi listingu dodano `author` (id + username), aby frontend mógł oznaczyć „Twój przepis” porównując `author.id` z tożsamością użytkownika.
 
 </api_changes_description>
 

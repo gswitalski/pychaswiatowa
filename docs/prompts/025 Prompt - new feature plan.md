@@ -12,10 +12,15 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
+akltualne publiczne widoki:
+ - landig page
+ - explore
+ - publiczny widok szczegółow przepisu
 
-Cche aby portal przyjął formę bardziej publiczną. OStatnio zaimplementowałem funkcjonalnosc któa ustawi widocznosc przepisu - przepisy mogą być publicze , dla użytkowników połaczonych lub prywane.
-chcę mieć więcej funkcji dla użytkonika niezalogowaneo. aby na pierwszej strone miała ciekawy konent, aby mógł wyszukiwac publicnze przepisy i oglądać ich szczegóły/
-Zaproponuj coś sensowngo, zgodnego z trendami oraz bezpiecznego
+ zakładają , że przegląda je użytkownik niezalogowany. jednak te widoki jako publicze są widoczne też dla użytkownika zalogowanego. Powinny wtefy wyglądać nieco inaczej 
+ (powinien być brak przycisków zaloguj i zarejstruj , powinina sie pojaawić sie iknka zludzikiem do profilu i wylogowania , możliwość wejscia na dashboard. 
+ coś trzeba zrobić z sidebarem z nawigacją. opracuj te widoki pod tym kątem zgodnie z najnowszymi trendami i dobrymi praktykami uzyteczności.
+
 
 </nowa_funkcjonalnosc>
 

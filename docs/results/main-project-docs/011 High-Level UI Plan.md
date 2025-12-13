@@ -16,24 +16,28 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 **1. Landing Page**
 - **Ścieżka:** `/`
 - **Główny cel:** Powitanie użytkownika i przedstawienie aplikacji oraz natychmiastowe udostępnienie wartościowego contentu (publiczne przepisy) z możliwością wyszukiwania.
-- **Kluczowe informacje do wyświetlenia:** Nazwa i logo aplikacji, krótkie hasło, pole wyszukiwania publicznych przepisów, sekcje z publicznymi przepisami (np. Najnowsze, Popularne, Sezonowe), przyciski "Zaloguj się" i "Zarejestruj się".
+- **Kluczowe informacje do wyświetlenia (gość):** Nazwa i logo aplikacji, krótkie hasło, pole wyszukiwania publicznych przepisów, sekcje z publicznymi przepisami (np. Najnowsze, Popularne, Sezonowe), przyciski "Zaloguj się" i "Zarejestruj się".
+- **Kluczowe informacje do wyświetlenia (zalogowany):** Te same sekcje contentowe + nawigacja zalogowanego użytkownika (App Shell: Sidebar + Topbar z profilem). Brak przycisków "Zaloguj się" i "Zarejestruj się". Dostępny szybki dostęp do `/dashboard` (w sidebarze).
 - **Kluczowe komponenty widoku:** Główny nagłówek, sekcja "hero", publiczny pasek wyszukiwania, sekcje z `RecipeCardComponent`, CTA do logowania/rejestracji.
-- **Względy UX, dostępności i bezpieczeństwa:** Prosty i czytelny układ, wyraźne wezwania do akcji. Treści wyłącznie dla przepisów publicznych.
+- **Względy UX, dostępności i bezpieczeństwa:** Prosty i czytelny układ, wyraźne wezwania do akcji. Treści wyłącznie dla przepisów publicznych. W trybie zalogowanego zachować spójność z App Shell i nie powielać CTA do logowania.
 
 **2. Publiczny katalog przepisów (Explore)**
 - **Ścieżka:** `/explore`
 - **Główny cel:** Przeglądanie i wyszukiwanie publicznych przepisów (MVP: tylko tekst).
 - **Kluczowe informacje do wyświetlenia:** Lista kart przepisów (zdjęcie, nazwa, kategoria), pole wyszukiwania, stronicowanie.
 - **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-paginator`, wskaźniki ładowania (Skeletons).
-- **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników").
+- **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników"). W trybie zalogowanego: oznaczyć na kartach przepisy użytkownika jako "Twój przepis".
 
 **3. Publiczne szczegóły przepisu**
 - **Ścieżka:** `/explore/recipes/:id-:slug`
 - **Główny cel:** Pełny podgląd publicznego przepisu w czytelnym układzie.
-- **Header:** Tytuł przepisu. Akcje: brak akcji właściciela; zamiast tego CTA "Zaloguj się, aby dodać do kolekcji / edytować".
+- **Header (gość):** Tytuł przepisu. Akcje: brak akcji właściciela; zamiast tego CTA "Zaloguj się, aby dodać do kolekcji / edytować".
+- **Header (zalogowany):** Tytuł przepisu. Akcje:
+    - dla przepisu niebędącego własnością użytkownika: "Dodaj do kolekcji" (otwiera modal wyboru kolekcji),
+    - dla przepisu będącego własnością użytkownika: akcje właściciela ("Edytuj", "Usuń") jak w prywatnym widoku szczegółów.
 - **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
 - **Kluczowe komponenty widoku:** `mat-list`, `mat-chip-list`, Sticky Navigation (spis treści) na desktopie (opcjonalnie).
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (kroki / składniki). Brak przycisków "Edytuj/Usuń". Wczytywanie danych po `id` (część `-:slug` jest SEO-friendly i nie jest wymagana do pobrania danych).
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (kroki / składniki). Dla gościa: brak przycisków "Edytuj/Usuń". Wczytywanie danych po `id` (część `-:slug` jest SEO-friendly i nie jest wymagana do pobrania danych). Dla zalogowanego: akcje zależne od własności przepisu.
 
 **4. Logowanie**
 - **Ścieżka:** `/login`
@@ -125,6 +129,10 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 ## 4. Układ i struktura nawigacji
 
 - **Nawigacja dla gości:** Prosty nagłówek z linkami: `Przeglądaj` (do `/explore`), `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
+- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id-:slug`) korzystają z App Shell (Sidebar + Topbar) identycznego jak w prywatnej części aplikacji:
+    - brak przycisków "Zaloguj" i "Zarejestruj",
+    - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
+    - Sidebar zapewnia szybki dostęp do `/dashboard` i pozostałych modułów prywatnych.
 - **Nawigacja dla zalogowanych (App Shell):**
     - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Dashboard`, `Moje przepisy`, `Moje kolekcje`, `Ustawienia`, `Wyloguj`. Nie zawiera akcji operacyjnych. Na mobile zwijany (Hamburger) lub Bottom Bar.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
