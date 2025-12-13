@@ -7,6 +7,10 @@
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--mat-sys-surface-container);
 
     &:hover {
         transform: translateY(-4px);
@@ -66,7 +70,11 @@
 }
 
 mat-card-content {
-    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem !important;
 }
 
 .recipe-name {
@@ -82,3 +90,9 @@ mat-card-content {
     text-overflow: ellipsis;
 }
 
+.recipe-category {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 400;
+}

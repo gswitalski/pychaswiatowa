@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { PageEvent, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RecipeListItemDto, PaginationDetails } from '../../../../../../../shared/contracts/types';
-import { RecipeCardComponent } from '../recipe-card/recipe-card.component';
+import { RecipeCardComponent, RecipeCardData } from '../../../../../shared/components/recipe-card/recipe-card';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 
 @Component({
@@ -47,6 +47,17 @@ export class RecipeListComponent {
      */
     onRemoveRecipe(recipeId: number): void {
         this.removeRecipe.emit(recipeId);
+    }
+
+    /**
+     * Mapuje RecipeListItemDto na RecipeCardData
+     */
+    mapToCardData(recipe: RecipeListItemDto): RecipeCardData {
+        return {
+            id: recipe.id,
+            name: recipe.name,
+            imageUrl: recipe.image_path,
+        };
     }
 }
 

@@ -1,5 +1,47 @@
 <main class="landing-page">
-    <pych-hero />
+    <!-- Hero Section -->
+    <pych-hero></pych-hero>
+
+    <!-- Search Section -->
+    <section class="search-section">
+        <div class="container">
+            <pych-public-recipes-search
+                placeholder="Czego dzisiaj poszukujesz?"
+                (searchSubmit)="onSearchSubmit($event)"
+            />
+        </div>
+    </section>
+
+    <!-- Recipes Sections -->
+    <div class="container">
+        <!-- Najnowsze -->
+        <pych-public-recipes-section
+            [title]="getSectionTitle('newest')"
+            [recipes]="sectionsState().newest.data"
+            [isLoading]="sectionsState().newest.isLoading"
+            [errorMessage]="sectionsState().newest.errorMessage"
+            (retry)="onSectionRetry('newest')"
+        />
+
+        <!-- Polecane -->
+        <pych-public-recipes-section
+            [title]="getSectionTitle('featured')"
+            [recipes]="sectionsState().featured.data"
+            [isLoading]="sectionsState().featured.isLoading"
+            [errorMessage]="sectionsState().featured.errorMessage"
+            (retry)="onSectionRetry('featured')"
+        />
+
+        <!-- Sezonowe -->
+        <pych-public-recipes-section
+            [title]="getSectionTitle('seasonal')"
+            [recipes]="sectionsState().seasonal.data"
+            [isLoading]="sectionsState().seasonal.isLoading"
+            [errorMessage]="sectionsState().seasonal.errorMessage"
+            (retry)="onSectionRetry('seasonal')"
+        />
+    </div>
 </main>
+
 
 

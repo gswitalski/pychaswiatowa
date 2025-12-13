@@ -1,0 +1,39 @@
+.public-search-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.search-form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.search-field {
+    flex: 1;
+    width: 100%;
+
+    ::ng-deep .mat-mdc-text-field-wrapper {
+        background-color: var(--mat-sys-surface);
+    }
+}
+
+.search-button {
+    margin-top: 4px; // Wyrównanie z polem input
+    min-width: 120px;
+}
+
+// Responsywność - mobile
+@media (max-width: 599px) {
+    .search-form {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .search-button {
+        width: 100%;
+        margin-top: 0;
+    }
+}

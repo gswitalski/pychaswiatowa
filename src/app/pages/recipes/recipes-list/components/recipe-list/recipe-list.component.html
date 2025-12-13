@@ -9,7 +9,7 @@
         <div class="recipes-grid">
             @for (recipe of recipes(); track recipe.id) {
                 <pych-recipe-card
-                    [recipe]="recipe"
+                    [recipe]="mapToCardData(recipe)"
                     [showRemoveAction]="showRemoveAction()"
                     (remove)="onRemoveRecipe(recipe.id)"
                 />

@@ -1,5 +1,38 @@
 .landing-page {
     display: block;
+    min-height: 100vh;
 }
+
+// Kontener dla sekcji z maksymalną szerokością
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+// Sekcja wyszukiwania
+.search-section {
+    background-color: var(--mat-sys-surface-container-low);
+    padding: 3rem 0;
+}
+
+// Responsywność - tablet
+@media (max-width: 1024px) {
+    .container {
+        padding: 0 1.5rem;
+    }
+}
+
+// Responsywność - mobile
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    .search-section {
+        padding: 2rem 0;
+    }
+}
+
 
 

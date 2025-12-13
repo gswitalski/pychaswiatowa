@@ -1,9 +1,9 @@
-<a [routerLink]="['/recipes', recipe().id]" class="recipe-card-link">
+<a [routerLink]="recipeLink()" class="recipe-card-link">
     <mat-card class="recipe-card">
         <div class="card-image-container">
-            @if (recipe().image_path) {
+            @if (recipe().imageUrl) {
                 <img
-                    [src]="recipe().image_path"
+                    [src]="recipe().imageUrl"
                     [alt]="recipe().name"
                     class="card-image"
                 />
@@ -33,7 +33,9 @@
         </div>
         <mat-card-content>
             <h3 class="recipe-name">{{ recipe().name }}</h3>
+            @if (shouldShowCategory() && recipe().categoryName) {
+                <p class="recipe-category">{{ recipe().categoryName }}</p>
+            }
         </mat-card-content>
     </mat-card>
 </a>
-

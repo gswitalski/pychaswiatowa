@@ -1,0 +1,153 @@
+.recipes-section {
+    padding: 3rem 0;
+}
+
+.section-header {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface);
+}
+
+// Siatka przepisów
+.recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    transition: opacity 0.2s ease-in-out;
+
+    &.is-loading {
+        opacity: 0.5;
+    }
+}
+
+// Skeleton loading state
+.loading-state {
+    width: 100%;
+}
+
+.skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+}
+
+.skeleton-card {
+    background-color: var(--mat-sys-surface-container);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.skeleton-image {
+    width: 100%;
+    padding-top: 66.67%; // Aspect ratio 3:2
+    background: linear-gradient(
+        90deg,
+        var(--mat-sys-surface-variant) 25%,
+        var(--mat-sys-surface-container-high) 50%,
+        var(--mat-sys-surface-variant) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeleton-content {
+    padding: 1rem;
+}
+
+.skeleton-line {
+    height: 16px;
+    background: linear-gradient(
+        90deg,
+        var(--mat-sys-surface-variant) 25%,
+        var(--mat-sys-surface-container-high) 50%,
+        var(--mat-sys-surface-variant) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-title {
+    width: 80%;
+    height: 20px;
+}
+
+.skeleton-category {
+    width: 40%;
+    height: 14px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+// Stan błędu
+.error-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.error-message {
+    color: var(--mat-sys-error);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+// Stan pusty
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-message {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 1rem;
+}
+
+// Responsywność - tablet
+@media (max-width: 1024px) {
+    .recipes-grid,
+    .skeleton-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+    }
+}
+
+// Responsywność - mobile
+@media (max-width: 768px) {
+    .recipes-grid,
+    .skeleton-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .recipes-section {
+        padding: 2rem 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .recipes-grid,
+    .skeleton-grid {
+        grid-template-columns: 1fr;
+    }
+}

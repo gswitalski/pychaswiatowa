@@ -1,0 +1,27 @@
+<div class="public-search-container">
+    <form class="search-form" (ngSubmit)="onSearchSubmit()">
+        <mat-form-field appearance="outline" class="search-field">
+            <mat-label>{{ placeholder() }}</mat-label>
+            <input
+                matInput
+                [formControl]="queryControl"
+                (input)="onInputChange()"
+                type="text"
+                autocomplete="off"
+            />
+            <mat-icon matPrefix>search</mat-icon>
+            @if (validationError()) {
+                <mat-error>{{ validationError() }}</mat-error>
+            }
+        </mat-form-field>
+
+        <button
+            mat-raised-button
+            color="primary"
+            type="submit"
+            class="search-button"
+        >
+            Szukaj
+        </button>
+    </form>
+</div>

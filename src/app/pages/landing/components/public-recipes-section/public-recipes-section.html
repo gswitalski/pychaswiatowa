@@ -1,0 +1,51 @@
+<section class="recipes-section">
+    <div class="section-header">
+        <h2 class="section-title">{{ title() }}</h2>
+    </div>
+
+    <!-- Stan: Ładowanie -->
+    @if (isLoading() && recipes().length === 0) {
+        <div class="loading-state">
+            <div class="skeleton-grid">
+                @for (skeleton of [1, 2, 3, 4, 5, 6, 7, 8]; track skeleton) {
+                    <div class="skeleton-card">
+                        <div class="skeleton-image"></div>
+                        <div class="skeleton-content">
+                            <div class="skeleton-line skeleton-title"></div>
+                            <div class="skeleton-line skeleton-category"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Stan: Błąd -->
+    @if (!isLoading() && errorMessage()) {
+        <div class="error-state">
+            <p class="error-message">{{ errorMessage() }}</p>
+            <button mat-raised-button color="primary" (click)="onRetry()">
+                Spróbuj ponownie
+            </button>
+        </div>
+    }
+
+    <!-- Stan: Pusta lista (bez błędu) -->
+    @if (!isLoading() && !errorMessage() && recipes().length === 0) {
+        <div class="empty-state">
+            <p class="empty-message">Brak przepisów do wyświetlenia</p>
+        </div>
+    }
+
+    <!-- Stan: Dane + opcjonalnie ładowanie (przy update) -->
+    @if (!errorMessage() && recipes().length > 0) {
+        <div
+            class="recipes-grid"
+            [class.is-loading]="isLoading()"
+        >
+            @for (recipe of recipes(); track recipe.id) {
+                <pych-recipe-card [recipe]="recipe" routeType="public" />
+            }
+        </div>
+    }
+</section>
