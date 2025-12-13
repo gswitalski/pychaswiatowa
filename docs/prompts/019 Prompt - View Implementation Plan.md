@@ -18,10 +18,10 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-### Zmienione widoki
-
-**1. Landing Page (`/`)**
-- **Co się zmieniło:** Dla zalogowanego widok korzysta z App Shell (Sidebar + Topbar z profilem) i nie pokazuje przycisków „Zaloguj się” / „Zarejestruj się”.
+**3. Publiczne szczegóły przepisu (`/explore/recipes/:id-:slug`)**
+- **Co się zmieniło:**
+    - gość: CTA do logowania/rejestracji,
+    - zalogowany: akcja „Dodaj do kolekcji” (dla cudzych przepisów) lub akcje właściciela (dla własnych).
 
 </view>
 
@@ -29,9 +29,9 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-**US-020: Publiczne widoki w trybie zalogowanego (App Shell)**
-- **Opis:** Jako użytkownik zalogowany, chcę przeglądać publiczne widoki (landing, explore, publiczne szczegóły) bez przycisków logowania/rejestracji i z dostępem do nawigacji zalogowanej, abym mógł płynnie przechodzić między częścią publiczną a moim kontem.
-- **Co się zmieniło:** Nowy wariant tych samych publicznych ścieżek dla użytkownika zalogowanego (bez zmiany zakresu treści).
+**US-021: Dodanie publicznego przepisu do kolekcji z widoku publicznego**
+- **Opis:** Jako użytkownik zalogowany, chcę móc dodać publiczny przepis do jednej z moich kolekcji bez opuszczania widoku publicznego, abym mógł zapisywać inspiracje.
+- **Co się zmieniło:** Na publicznych szczegółach przepisu dla zalogowanego pojawia się akcja „Dodaj do kolekcji” (gość widzi CTA do logowania/rejestracji).
 
 </user_stories>
 

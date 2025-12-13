@@ -15,12 +15,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { catchError, of } from 'rxjs';
 
 import { PublicRecipesService } from '../../core/services/public-recipes.service';
+import { AuthService } from '../../core/services/auth.service';
 import { PublicRecipesSearchComponent } from '../landing/components/public-recipes-search/public-recipes-search';
 import { RecipeCardComponent, RecipeCardData } from '../../shared/components/recipe-card/recipe-card';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import {
     ExplorePageState,
     ExploreQueryState,
+    ExploreRecipeCardVm,
     DEFAULT_PAGE_STATE,
     DEFAULT_QUERY_STATE,
 } from './models/explore.model';
@@ -51,6 +53,7 @@ export class ExplorePageComponent {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly publicRecipesService = inject(PublicRecipesService);
+    private readonly authService = inject(AuthService);
 
     /** Stan zapytania (synchronizowany z URL) */
     readonly queryState = signal<ExploreQueryState>({ ...DEFAULT_QUERY_STATE });
@@ -58,10 +61,27 @@ export class ExplorePageComponent {
     /** Stan strony */
     readonly pageState = signal<ExplorePageState>({ ...DEFAULT_PAGE_STATE });
 
+    /** ID aktualnie zalogowanego użytkownika (null jeśli gość) */
+    readonly currentUserId = signal<string | null>(null);
+
     /** Computed: aktualny query string dla wyszukiwarki */
     readonly currentQuery = computed(() => this.queryState().q);
 
+    /** Computed: lista kart przepisów z informacją o własności */
+    readonly recipeCards = computed<ExploreRecipeCardVm[]>(() => {
+        const items = this.pageState().items;
+        const userId = this.currentUserId();
+
+        return items.map(dto => ({
+            card: this.mapToRecipeCard(dto),
+            isOwnRecipe: userId !== null && dto.author.id === userId,
+        }));
+    });
+
     constructor() {
+        // Pobierz ID zalogowanego użytkownika (jeśli jest)
+        this.initializeCurrentUser();
+
         // Inicjalizacja stanu z URL query params
         this.initializeFromUrl();
 
@@ -70,6 +90,20 @@ export class ExplorePageComponent {
             const query = this.queryState();
             this.loadRecipes(query);
         });
+    }
+
+    /**
+     * Pobiera ID aktualnie zalogowanego użytkownika z sesji.
+     */
+    private async initializeCurrentUser(): Promise<void> {
+        try {
+            const { data } = await this.authService.getSession();
+            const userId = data?.session?.user?.id ?? null;
+            this.currentUserId.set(userId);
+        } catch (error) {
+            console.error('Błąd pobierania sesji użytkownika:', error);
+            this.currentUserId.set(null);
+        }
     }
 
     /**
@@ -163,11 +197,10 @@ export class ExplorePageComponent {
             )
             .subscribe({
                 next: response => {
-                    const recipes = response.data.map(dto => this.mapToRecipeCard(dto));
-
+                    // Zapisz surowe DTO (zawierają dane autora)
                     this.pageState.update(state => ({
                         ...state,
-                        recipes,
+                        items: response.data,
                         pagination: response.pagination,
                         isLoading: false,
                         isInitialLoading: false,

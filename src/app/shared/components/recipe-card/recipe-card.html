@@ -13,6 +13,12 @@
                 </div>
             }
 
+            @if (isOwnRecipe()) {
+                <div class="own-recipe-badge" aria-label="Twój przepis">
+                    <span>Twój przepis</span>
+                </div>
+            }
+
             @if (showRemoveAction()) {
                 <button
                     mat-icon-button

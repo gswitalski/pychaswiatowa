@@ -1,215 +1,226 @@
-# Plan implementacji widoku: Publiczne szczegóły przepisu
+# Plan implementacji widoku: Publiczne szczegóły przepisu (gość + zalogowany)
 
 ## 1. Przegląd
 
-Widok **Publiczne szczegóły przepisu** prezentuje pełną treść **wyłącznie publicznego** przepisu dla gościa (użytkownik niezalogowany): nazwa, opis, zdjęcie, składniki, kroki, kategoria i tagi. Widok nie udostępnia akcji właściciela (brak „Edytuj/Usuń/Dodaj do kolekcji”); zamiast tego eksponuje czytelne CTA do logowania i rejestracji.
+Widok **Publiczne szczegóły przepisu** (`/explore/recipes/:id-:slug`) prezentuje pełną treść **wyłącznie** przepisu o widoczności `PUBLIC` (nazwa, opis, zdjęcie, składniki, kroki, kategoria, tagi, autor, data utworzenia). Ten sam URL jest dostępny zarówno dla gościa, jak i użytkownika zalogowanego, ale interfejs różni się zależnie od kontekstu:
 
-Kluczowe wymagania UX:
+- **Gość**: widzi CTA do logowania/rejestracji (z `returnUrl`), brak akcji na przepisie.
+- **Zalogowany**:
+  - **cudzy przepis**: widzi akcję **„Dodaj do kolekcji”** (modal wyboru/utworzenia kolekcji).
+  - **własny przepis**: widzi akcje właściciela **„Edytuj”** i **„Usuń”** (jak w prywatnym widoku szczegółów).
+
+Wymagania UX z PRD/UI:
 - układ **desktop-first**: na desktopie składniki i kroki w **2 kolumnach**,
 - kroki numerowane **ciągle** (numeracja nie resetuje się po nagłówkach sekcji),
-- adres URL publiczny i udostępnialny (**SEO-friendly**) w formacie `:id-:slug`.
+- URL publiczny i udostępnialny (**SEO-friendly**) w formacie `:id-:slug`.
 
 ## 2. Routing widoku
 
-- **Ścieżka:** `/explore/recipes/:id-:slug`
-- **Layout:** `PublicLayoutComponent`
-- **Komponent routowalny:** `PublicRecipeDetailPageComponent` (nowy)
+- **Ścieżka:** `/explore/recipes/:idslug` (parametr `idslug` ma format `id-slug`)
+- **Komponent routowalny:** `PublicRecipeDetailPageComponent`
+- **Layout zależny od kontekstu (już przyjęty w projekcie):**
+  - gość: `PublicLayoutComponent` (grupa tras z `guestOnlyMatchGuard`),
+  - zalogowany: `MainLayoutComponent` (App Shell, grupa tras z `authenticatedMatchGuard`).
 
 Uwagi do routingu/SEO:
-- API korzysta wyłącznie z `id` (slug jest informacyjny/SEO).
-- `slug` nie jest wymagany do pobrania danych, ale powinien być utrzymywany w URL.
-- (Rekomendowane) jeśli `slug` w URL różni się od sluga wyliczonego z `recipe.name`, wykonać nawigację `replaceUrl: true` do kanonicznego URL.
+- API używa tylko `id` (slug jest informacyjny/SEO).
+- rekomendowane jest utrzymanie URL w wersji kanonicznej: po pobraniu `recipe.name` wygenerować slug i w razie różnicy wykonać `router.navigate([...], { replaceUrl: true })`.
 
 ## 3. Struktura komponentów
 
-Priorytet: **maksymalna reużywalność** z istniejącego widoku `src/app/pages/recipes/recipe-detail/` bez duplikacji.
+Cel: maksymalna reużywalność komponentów z prywatnego widoku szczegółów przepisu.
 
 Proponowane drzewo komponentów:
 
 ```
-PublicLayoutComponent
+(MainLayoutComponent | PublicLayoutComponent)
  └─ RouterOutlet
-     └─ PublicRecipeDetailPageComponent (nowy kontener)
-         ├─ PageHeaderComponent (reuse; bez akcji właściciela)
-         │   └─ CTA: Zaloguj / Zarejestruj
-         ├─ RecipeHeaderComponent (reuse po lekkiej generalizacji) / lub wariant publiczny bez linków
+     └─ PublicRecipeDetailPageComponent
+         ├─ PageHeaderComponent
+         │   ├─ (gość) CTA Login/Register
+         │   └─ (zalogowany) akcje: AddToCollection lub Edit/Delete
+         ├─ RecipeHeaderComponent (reuse; obsługa publicznego kontekstu)
          ├─ RecipeImageComponent (reuse)
-         ├─ RecipeContentListComponent (reuse)  [Składniki]
-         └─ RecipeContentListComponent (reuse)  [Kroki – numerowane]
+         ├─ RecipeContentListComponent (reuse)   [Składniki]
+         ├─ RecipeContentListComponent (reuse)   [Kroki – numerowane]
+         └─ (gość) dolne CTA w treści (opcjonalnie, jako zachęta)
 ```
 
-Docelowa lokalizacja plików:
-- `src/app/pages/explore/public-recipe-detail/public-recipe-detail-page.component.{ts,html,scss}` (nowe)
+Lokalizacja plików (już istnieją):
+- `src/app/pages/explore/public-recipe-detail/public-recipe-detail-page.component.{ts,html,scss}`
 
-Reużywane pliki (bez kopiowania):
+Reużywane komponenty/serwisy:
 - `src/app/core/services/public-recipes.service.ts`
+- `src/app/pages/recipes/recipe-detail/components/recipe-header/*`
 - `src/app/pages/recipes/recipe-detail/components/recipe-image/*`
 - `src/app/pages/recipes/recipe-detail/components/recipe-content-list/*`
-- `src/app/pages/recipes/recipe-detail/components/recipe-header/*` (po dostosowaniu do kontekstu publicznego)
 - `src/app/shared/components/page-header/*`
+- `src/app/shared/components/add-to-collection-dialog/*`
+- `src/app/shared/components/confirm-dialog/*`
+- `src/app/pages/recipes/services/recipes.service.ts` (akcje właściciela)
 
 ## 4. Szczegóły komponentów
 
-### `pych-public-recipe-detail-page` (`PublicRecipeDetailPageComponent`) (nowy)
-- **Opis komponentu:** Komponent-kontener. Odczytuje `id` i `slug` z URL, pobiera szczegóły publicznego przepisu przez `PublicRecipesService`, zarządza stanem (loading/error/data), renderuje układ strony oraz CTA do logowania/rejestracji.
+### `pych-public-recipe-detail-page` (`PublicRecipeDetailPageComponent`)
+- **Opis komponentu:** kontener widoku. Parsuje `idslug`, pobiera szczegóły publicznego przepisu, zarządza stanem (loading/error/data), wylicza kontekst użytkownika (gość/zalogowany + własność) i renderuje właściwe akcje.
+
 - **Główne elementy:**
-  - `PageHeaderComponent` z tytułem `recipe.name` i (opcjonalnie) przyciskiem „Wróć” do `/explore`.
-  - Sekcja header: metadane (nazwa/opis/kategoria/tagi) + zdjęcie.
-  - Sekcja treści: 2 kolumny na desktopie (Składniki + Kroki), 1 kolumna na mobile.
+  - `PageHeaderComponent`:
+    - tytuł: `pageTitle` (nazwa przepisu lub fallback),
+    - przycisk „Wróć do przeglądania” (nawigacja do `/explore`),
+    - sekcja akcji zależna od kontekstu.
+  - sekcja nagłówka przepisu: `RecipeHeaderComponent` + `RecipeImageComponent`.
+  - sekcja treści: 2 kolumny (Składniki/Kroki), na mobile 1 kolumna.
+  - stopka metadanych: autor + data utworzenia.
+
 - **Obsługiwane interakcje:**
-  - Klik „Wróć” → nawigacja do `/explore` (z zachowaniem query params, jeśli są dostępne w historii/router state).
-  - Klik CTA:
-    - „Zaloguj się” → `/login` z `returnUrl` wskazującym bieżący adres (rekomendowane),
-    - „Zarejestruj się” → `/register` z `returnUrl` (rekomendowane).
-  - (Rekomendowane) kanonikalizacja sluga → `router.navigate([...], { replaceUrl: true })`.
+  - **Wróć do przeglądania** → nawigacja do `/explore`.
+  - **Gość – CTA:**
+    - „Zaloguj się” → `/login?returnUrl=<currentUrl>`
+    - „Zarejestruj się” → `/register?returnUrl=<currentUrl>`
+  - **Zalogowany – cudzy przepis:**
+    - „Dodaj do kolekcji” → otwarcie `AddToCollectionDialogComponent`.
+    - po sukcesie → `MatSnackBar` z potwierdzeniem (jak w prywatnym `RecipeDetailPageComponent`).
+  - **Zalogowany – własny przepis:**
+    - „Edytuj” → nawigacja do `/recipes/:id/edit`.
+    - „Usuń” → `ConfirmDialogComponent` + po potwierdzeniu `RecipesService.deleteRecipe(id)` + `MatSnackBar` + nawigacja do `/recipes`.
+  - **Retry** (błędy sieci/5xx) → ponowne pobranie szczegółów.
+  - **Kanonikalizacja sluga** → nawigacja `replaceUrl: true`.
+
 - **Obsługiwana walidacja (guard clauses):**
-  - `id` musi być liczbą dodatnią:
-    - brak `id` lub `NaN` → stan błędu 400 (komunikat „Nieprawidłowy identyfikator przepisu”) + przycisk powrotu do `/explore`.
-  - `slug`:
-    - może być pusty/nieobecny (wtedy generujemy kanoniczny URL po pobraniu danych).
+  - `idslug` musi zawierać poprawne `id`:
+    - brak parametru / `NaN` / `<= 0` → błąd `400` + CTA powrotu do `/explore`.
+  - render akcji:
+    - `Dodaj do kolekcji` wyłącznie gdy `isAuthenticated === true` **i** `isOwner === false`.
+    - `Edytuj/Usuń` wyłącznie gdy `isAuthenticated === true` **i** `isOwner === true`.
+
 - **Typy:**
   - DTO: `PublicRecipeDetailDto`
-  - VM/stany (lokalne): `PublicRecipeDetailState` (opis w sekcji 5)
+  - lokalny stan: `PublicRecipeDetailState` (patrz sekcja 5)
+  - dialog: `AddToCollectionDialogData`, `AddToCollectionDialogResult`, `ConfirmDialogData`
+
 - **Propsy:** brak (komponent routowalny).
 
-### `pych-recipe-header` (`RecipeHeaderComponent`) (reuse – rekomendowana minimalna generalizacja)
-Aktualnie komponent jest związany z `RecipeDetailDto` i linkuje do prywatnego `/recipes` (kategoria/tagi). Dla publicznych szczegółów:
-- **Cel:** użyć tego samego komponentu do renderowania nazwy/opisu/kategorii/tagów bez duplikacji.
-- **Rekomendowana zmiana:**
-  - wprowadzić wspólny VM wejściowy, np. `RecipeHeaderVm` (name, description, category, tags),
-  - dodać `context: 'private' | 'public'` lub `isPublic: boolean` i:
-    - dla `public`: kategoria/tagi jako elementy nieklikalne lub linkujące do `/explore?q=...` (MVP: preferowane nieklikalne),
-    - dla `private`: zachować obecne linki do `/recipes`.
-- **Obsługiwane interakcje:** (opcjonalnie) klik tag/kategoria w publicznym kontekście → przejście do `/explore?q=<tag>`.
-- **Walidacja:** brak.
-- **Typy:** `RecipeHeaderVm`.
-- **Propsy:**
-  - `vm: RecipeHeaderVm` (required)
-  - `context?: 'private' | 'public'` (default: 'private')
+### `pych-recipe-header` (`RecipeHeaderComponent`) – reużycie
+- **Opis:** renderuje nazwę/opis/kategorię/tagi w kontekście prywatnym i publicznym.
+- **Wymagania:**
+  - musi wspierać `PublicRecipeDetailDto` (tagi jako `string[]`, kategoria jako `CategoryDto | null`).
+  - w publicznym kontekście tagi/kategoria mogą być nieklikalne (MVP) lub linkować do `/explore?q=...`.
 
-### `pych-recipe-image` (`RecipeImageComponent`) (reuse)
-- **Opis komponentu:** Wyświetla zdjęcie przepisu lub placeholder.
-- **Główne elementy:** `<img>` lub placeholder.
-- **Walidacja:** brak.
-- **Typy:** brak.
-- **Propsy:**
-  - `imageUrl: string | null`
-  - `recipeName: string`
+### `pych-add-to-collection-dialog` (`AddToCollectionDialogComponent`) – reużycie
+- **Opis:** modal wyboru kolekcji lub utworzenia nowej i dodania przepisu.
+- **Warunek:** dostępny tylko dla użytkownika zalogowanego.
 
-### `pych-recipe-content-list` (`RecipeContentListComponent`) (reuse)
-- **Opis komponentu:** Renderuje listę elementów `RecipeContent` (nagłówki sekcji + elementy). Obsługuje tryb numerowany dla kroków.
-- **Główne elementy:** `<ul>` + `<li>` z CSS counters.
-- **Wymaganie ciągłej numeracji kroków:**
-  - komponent już spełnia to wymaganie: numeracja jest realizowana przez `counter-increment` wyłącznie na `.content-item`, więc nagłówki `.content-header` nie resetują licznika.
-- **Walidacja:** brak.
-- **Typy:** `RecipeContent`.
-- **Propsy:**
-  - `title: string`
-  - `content: RecipeContent`
-  - `isNumbered?: boolean` (default: `true`)
-
-### CTA w nagłówku (`PageHeaderComponent`) (reuse)
-- **Opis:** W publicznym widoku zastępuje akcje właściciela.
-- **Główne elementy:** 2 przyciski (Material):
-  - „Zaloguj się” (primary)
-  - „Zarejestruj się” (stroked/secondary)
-- **Interakcje:** nawigacja do `/login` i `/register`.
-- **Walidacja:** brak.
+### `pych-confirm-dialog` (`ConfirmDialogComponent`) – reużycie
+- **Opis:** modal potwierdzenia usunięcia (własny przepis).
 
 ## 5. Typy
 
-Typy DTO dostępne w `shared/contracts/types.ts`:
+### DTO (istniejące)
+Z `shared/contracts/types.ts`:
 - `PublicRecipeDetailDto`
 - `RecipeContent`, `RecipeContentItem`
 - `CategoryDto`, `ProfileDto`
-- `ApiError` (dla ujednoliconej obsługi błędów w UI)
+- `ApiError`
 
-Rekomendowane typy ViewModel / state (lokalne w pliku komponentu lub w `src/app/pages/explore/models/`):
-
-- `RecipeHeaderVm` (dla reużycia `RecipeHeaderComponent` w trybie publicznym i prywatnym):
-  - `name: string`
-  - `description: string | null`
-  - `category: { id: number; name: string } | null`
-  - `tags: { id: number; name: string }[]` (w publicznym kontekście id może być generowane po indeksie)
-
-- `PublicRecipeDetailState`:
+### Typy komponentowe (zalecane)
+- `PublicRecipeDetailState` (lokalnie w komponencie):
   - `recipe: PublicRecipeDetailDto | null`
   - `isLoading: boolean`
   - `error: ApiError | null`
 
+- Computed/signals (bez nowych typów):
+  - `isAuthenticated: Signal<boolean>`
+  - `currentUserId: Signal<string | null>` (ID z sesji)
+  - `isOwner: Signal<boolean>` (porównanie `recipe.author.id === currentUserId()`)
+
 ## 6. Zarządzanie stanem
 
-Zarządzanie stanem lokalnie w `PublicRecipeDetailPageComponent` z wykorzystaniem **Angular Signals**:
+W `PublicRecipeDetailPageComponent` stosujemy **Angular Signals**:
 - `state = signal<PublicRecipeDetailState>({ recipe: null, isLoading: true, error: null })`
-- `computed()` dla: `recipe`, `isLoading`, `error`, `pageTitle`.
+- `isAuthenticated = signal<boolean>(false)`
+- `currentUserId = signal<string | null>(null)`
+- `recipe = computed(...)`, `isLoading = computed(...)`, `error = computed(...)`
+- `isOwner = computed(() => !!recipe() && !!currentUserId() && recipe()!.author.id === currentUserId())`
+- `headerMode = computed(() => 'guest' | 'addToCollection' | 'ownerActions')` (opcjonalnie dla czytelności template)
 
-Zasady UX:
-- pokazywać spójny stan ładowania (spinner/skeleton) bez „białych overlay”;
-- w przypadku ponownego pobrania danych (np. retry) aktualizować stan przez `state.update()`.
+Zasady UX (zgodne z regułami projektu):
+- podczas retry/ponownych pobrań używać `state.update()` i nie generować „white flash” (bez białych overlay).
 
 ## 7. Integracja API
 
+### Pobranie szczegółów publicznego przepisu
 - **Endpoint:** `GET /public/recipes/{id}`
 - **Serwis:** `PublicRecipesService.getPublicRecipeById(id: number): Observable<PublicRecipeDetailDto>`
-- **Przepływ:**
-  1. Odczytaj `id` z parametru trasy `:id` (część `:id-:slug`).
-  2. Jeśli `id` niepoprawne → ustaw `error` 400 i przerwij.
-  3. Ustaw `isLoading=true` i wywołaj `getPublicRecipeById(id)`.
-  4. Sukces → zapisz `recipe`, `isLoading=false`.
-  5. Błąd → ustaw `error`, `isLoading=false`.
+- **Response:** `PublicRecipeDetailDto`
 
-Rekomendacja jakościowa (dla czytelnych stanów błędu):
-- rozważyć doposażenie `PublicRecipesService` w mapowanie błędów do `ApiError` z `status` (np. 404), aby UI mógł odróżnić „nie znaleziono” od błędów sieci.
+Wymaganie jakościowe (dla poprawnej obsługi błędów w UI):
+- serwis powinien propagować **status** (404/400/500) do UI (np. rzucać `ApiError` zamiast „gołego” `Error`). To jest istotne, aby widok mógł rozróżnić 404 (brak publicznego przepisu) od błędów sieci.
+
+### Dodanie do kolekcji (zalogowany, cudzy przepis)
+- `GET /collections` → `CollectionListItemDto[]` (w dialogu)
+- `POST /collections/{id}/recipes` body: `AddRecipeToCollectionCommand` (`{ recipe_id: number }`)
+- `POST /collections` (tworzenie nowej kolekcji; w dialogu)
+
+Wymaganie z PRD/US-021:
+- obsłużyć `409 Conflict` (przepis już w kolekcji) czytelnym komunikatem i bez duplikatu.
+
+### Akcje właściciela (zalogowany, własny przepis)
+- **Edycja:** nawigacja do `/recipes/:id/edit` (dalsze pobranie danych w widoku edycji po stronie prywatnej).
+- **Usunięcie:** `DELETE /recipes/{id}` (Edge Function przez `RecipesService.deleteRecipe`).
 
 ## 8. Interakcje użytkownika
 
-- **Wejście na URL publiczny:**
-  - użytkownik widzi ładowanie,
-  - po pobraniu danych widzi pełne szczegóły.
-- **CTA do logowania/rejestracji:**
-  - klik „Zaloguj się”/„Zarejestruj się” przenosi do odpowiedniego widoku,
-  - (rekomendowane) po zalogowaniu powrót na bieżący przepis poprzez `returnUrl`.
-- **Brak akcji właściciela:**
-  - na stronie nie ma przycisków „Edytuj”, „Usuń”, „Dodaj do kolekcji”.
+- **Gość otwiera publiczny URL:**
+  - widzi szczegóły przepisu + CTA logowanie/rejestracja.
+
+- **Zalogowany otwiera publiczny URL:**
+  - nie widzi CTA logowanie/rejestracja.
+  - dla cudzych przepisów: widzi „Dodaj do kolekcji”.
+  - dla własnych: widzi „Edytuj” i „Usuń”.
+
+- **Dodaj do kolekcji:**
+  - otwiera modal, wybiera kolekcję lub tworzy nową,
+  - po sukcesie: snackbar z potwierdzeniem,
+  - przy 409: snackbar „Ten przepis jest już w tej kolekcji” (lub analogiczny komunikat).
+
+- **Usuń (własny przepis):**
+  - modal potwierdzenia → po akceptacji usunięcie + snackbar + nawigacja.
 
 ## 9. Warunki i walidacja
 
-Warunki wynikające z wymagań i API:
-- widok musi pokazywać **tylko** przepisy `visibility = 'PUBLIC'` (wymuszane przez endpoint publiczny; UI nie może zakładać, że prywatne ID zadziała),
-- `id` w URL musi być liczbą,
-- numeracja kroków ma być ciągła (zapewnione przez `RecipeContentListComponent` w trybie `isNumbered=true`).
-
-Walidacja i wpływ na UI:
-- **Nieprawidłowy `id`:** stan błędu 400 + przycisk „Wróć do przeglądania” (`/explore`).
-- **Slug niekanoniczny:** (opcjonalnie) automatyczna korekta URL bez zmiany widoku (`replaceUrl`).
+- **Zakres treści:** niezależnie od kontekstu, widok prezentuje wyłącznie przepisy `PUBLIC` (wymusza endpoint publiczny; 404 jeśli przepis nie jest publiczny).
+- **Walidacja parametrów:** `id` z `idslug` musi być dodatnią liczbą.
+- **Warunek dla akcji:**
+  - `isAuthenticated === false` → wyłącznie CTA logowanie/rejestracja.
+  - `isAuthenticated === true && isOwner === false` → „Dodaj do kolekcji”.
+  - `isAuthenticated === true && isOwner === true` → „Edytuj/Usuń”.
 
 ## 10. Obsługa błędów
 
-Scenariusze błędów i oczekiwane zachowanie:
-- **404 Not Found** (przepis nie istnieje lub nie jest publiczny):
-  - komunikat „Nie znaleziono publicznego przepisu”
-  - CTA: „Wróć do przeglądania” (`/explore`).
-- **Błąd sieci / 5xx / błąd Edge Function:**
-  - komunikat generyczny: „Wystąpił błąd podczas pobierania przepisu. Spróbuj ponownie.”
-  - przycisk „Spróbuj ponownie” (retry).
+- **400 (nieprawidłowy URL/ID):** komunikat + przycisk powrotu do `/explore`.
+- **404 (brak publicznego przepisu / nie jest publiczny):** komunikat „Nie znaleziono przepisu” + powrót do `/explore`.
+- **Błędy sieci/5xx:** komunikat ogólny + „Spróbuj ponownie” + „Wróć do przeglądania”.
+- **Błędy akcji (dodanie do kolekcji/usunięcie):** snackbar z czytelnym komunikatem; UI nie powinno „udawać sukcesu”.
 
 ## 11. Kroki implementacji
 
-1. **Routing:** dodać nową trasę w `src/app/app.routes.ts` w sekcji `PublicLayoutComponent`:
-   - `path: 'explore/recipes/:id-:slug'` → `loadComponent` do `PublicRecipeDetailPageComponent`.
-2. **Nowy komponent strony:** utworzyć `PublicRecipeDetailPageComponent` (standalone, OnPush, selektor `pych-*`).
-3. **Reużycie layoutu:** skopiować układ (header+image + 2 kolumny treści) z `RecipeDetailPageComponent`, ale bez akcji właściciela.
-4. **API:** zintegrować `PublicRecipesService.getPublicRecipeById()` i sygnałowy `state`.
-5. **Obsługa parametrów URL:**
-   - walidacja `id`,
-   - (opcjonalnie) kanonikalizacja sluga po pobraniu danych.
-6. **CTA:** dodać w `PageHeaderComponent` przyciski „Zaloguj się” i „Zarejestruj się” (+ `returnUrl`).
-7. **Reużycie `RecipeHeaderComponent`:** wdrożyć minimalną generalizację (VM + context), aby publiczny widok mógł wyświetlać kategorię i tagi bez linkowania do prywatnego `/recipes`.
-8. **Stany UI:** dodać/ustandaryzować: loading, 404, błąd ogólny + retry.
-9. **Responsywność i a11y:** dopracować SCSS (2 kolumny na desktopie, 1 na mobile), dodać `aria-label` dla CTA i elementów stanu błędu.
-10. **Weryfikacja kryteriów akceptacji:**
-   - obecność wszystkich pól (nazwa/opis/zdjęcie/składniki/kroki/kategoria/tagi),
-   - układ 2-kolumnowy na desktopie,
-   - ciągła numeracja kroków,
-   - brak akcji właściciela,
-   - poprawny, shareable URL `:id-:slug`.
+1. **Uzgodnić finalny wariant akcji dla zalogowanego:** w headerze widoku zastosować ten sam układ ikon/przycisków co w `RecipeDetailPageComponent`.
+2. **Rozszerzyć `PublicRecipeDetailPageComponent`:**
+   - dodać `currentUserId` (z sesji Supabase, analogicznie do `ExplorePageComponent`),
+   - dodać computed `isOwner` i logikę wyboru zestawu akcji.
+3. **Dodać akcję „Dodaj do kolekcji”:**
+   - wstrzyknąć `MatDialog` i otwierać `AddToCollectionDialogComponent` z `recipeId` i `recipeName`,
+   - po zamknięciu obsłużyć rezultat (`added/created`) i pokazać `MatSnackBar`.
+4. **Dodać akcje właściciela:**
+   - `onEdit()` → nawigacja do `/recipes/:id/edit`,
+   - `onDelete()` → `ConfirmDialogComponent` → `RecipesService.deleteRecipe()` → snackbar + nawigacja.
+5. **Ukryć CTA dla zalogowanego:**
+   - w template pozostawić CTA tylko dla `!isAuthenticated()`.
+6. **Obsługa błędów statusowych:**
+   - dopasować `PublicRecipesService.getPublicRecipeById` (lub mapowanie błędów w komponencie), aby UI dostawał `ApiError` ze statusem (w szczególności 404).
+7. **Weryfikacja kryteriów akceptacji (US-021 + PRD):**
+   - gość: CTA logowanie/rejestracja,
+   - zalogowany: „Dodaj do kolekcji” dla cudzych, „Edytuj/Usuń” dla własnych,
+   - brak duplikatów przy dodawaniu do kolekcji (obsługa 409),
+   - layout 2-kolumnowy na desktopie i ciągła numeracja kroków.

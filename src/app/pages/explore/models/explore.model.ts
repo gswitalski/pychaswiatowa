@@ -1,5 +1,5 @@
 import { RecipeCardData } from '../../../shared/components/recipe-card/recipe-card';
-import { PaginationDetails } from '../../../../../shared/contracts/types';
+import { PaginationDetails, PublicRecipeListItemDto } from '../../../../../shared/contracts/types';
 
 /**
  * Stan zapytania do API dla widoku Explore.
@@ -18,10 +18,11 @@ export interface ExploreQueryState {
 
 /**
  * Stan strony Explore zawierający dane i stany UI.
+ * Przechowuje surowe DTO aby móc wyliczać isOwnRecipe dynamicznie.
  */
 export interface ExplorePageState {
-    /** Lista przepisów do wyświetlenia */
-    recipes: RecipeCardData[];
+    /** Surowe dane przepisów z API (zawierają informacje o autorze) */
+    items: PublicRecipeListItemDto[];
     /** Informacje o paginacji */
     pagination: PaginationDetails;
     /** Czy trwa ładowanie danych */
@@ -32,6 +33,14 @@ export interface ExplorePageState {
     errorMessage: string | null;
     /** Komunikat walidacji (np. za krótkie q) */
     validationMessage: string | null;
+}
+
+/**
+ * Model widoku dla karty przepisu w widoku Explore (z informacją o własności)
+ */
+export interface ExploreRecipeCardVm {
+    card: RecipeCardData;
+    isOwnRecipe: boolean;
 }
 
 /**
@@ -48,7 +57,7 @@ export const DEFAULT_QUERY_STATE: ExploreQueryState = {
  * Domyślny stan strony
  */
 export const DEFAULT_PAGE_STATE: ExplorePageState = {
-    recipes: [],
+    items: [],
     pagination: {
         currentPage: 1,
         totalPages: 0,

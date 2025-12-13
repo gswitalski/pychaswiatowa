@@ -57,7 +57,7 @@
     @if (!pageState().isInitialLoading && !pageState().errorMessage) {
         <div class="content-wrapper" [class.loading]="pageState().isLoading">
             <!-- Empty state - brak wyników -->
-            @if (pageState().recipes.length === 0 && !pageState().isLoading) {
+            @if (recipeCards().length === 0 && !pageState().isLoading) {
                 <pych-empty-state
                     icon="search_off"
                     title="Nie znaleziono przepisów"
@@ -70,11 +70,12 @@
             }
 
             <!-- Siatka kart przepisów -->
-            @if (pageState().recipes.length > 0) {
+            @if (recipeCards().length > 0) {
                 <div class="recipes-grid" role="list">
-                    @for (recipe of pageState().recipes; track recipe.id) {
+                    @for (recipeVm of recipeCards(); track recipeVm.card.id) {
                         <pych-recipe-card
-                            [recipe]="recipe"
+                            [recipe]="recipeVm.card"
+                            [isOwnRecipe]="recipeVm.isOwnRecipe"
                             routeType="public"
                             role="listitem"
                         />

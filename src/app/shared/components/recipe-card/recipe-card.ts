@@ -61,6 +61,9 @@ export class RecipeCardComponent {
     /** Czy pokazać przycisk akcji usuwania (tylko dla prywatnych widoków z kolekcją) */
     readonly showRemoveAction = input<boolean>(false);
 
+    /** Czy przepis należy do aktualnie zalogowanego użytkownika (dla badge "Twój przepis") */
+    readonly isOwnRecipe = input<boolean>(false);
+
     /** Event emitowany po kliknięciu opcji usunięcia */
     readonly remove = output<void>();
 
