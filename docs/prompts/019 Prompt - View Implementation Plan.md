@@ -18,10 +18,11 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-### Zmienione widoki
+### Nowe widoki
 
-**1. Landing Page**
-- **Zmiana:** Zamiast wyłącznie marketingowego widoku dodano publiczny content: pole wyszukiwania i sekcje z publicznymi przepisami.
+**2. Publiczny katalog przepisów (Explore)**
+- **Ścieżka:** `/explore`
+- **Opis:** Lista publicznych przepisów z wyszukiwaniem tekstowym (MVP) i paginacją.
 
 
 </view>
@@ -31,15 +32,14 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-**US-017: Landing dla gościa z publicznymi przepisami**
-- **Opis:** Jako użytkownik niezalogowany, chcę wejść na stronę główną i od razu zobaczyć ciekawe publiczne przepisy oraz pole wyszukiwania, abym mógł szybko znaleźć inspirację i zrozumieć wartość aplikacji.
+**US-018: Wyszukiwanie publicznych przepisów (MVP: tylko tekst)**
+- **Opis:** Jako użytkownik niezalogowany, chcę wyszukać publiczne przepisy po frazie tekstowej, abym mógł szybko znaleźć interesujące mnie propozycje.
 - **Kryteria akceptacji:**
-    1. Wejście na adres `/` dla gościa wyświetla landing zawierający pole wyszukiwania oraz sekcje z publicznymi przepisami (np. Najnowsze, Popularne, Sezonowe).
-    2. Każda karta przepisu zawiera co najmniej: zdjęcie (jeśli istnieje), nazwę oraz kategorię (jeśli przypisana).
-    3. Kliknięcie w kartę publicznego przepisu przenosi do widoku szczegółów publicznego przepisu.
-    4. Landing zawiera widoczne akcje "Zaloguj się" i "Zarejestruj się".
-    5. Landing nie wyświetla przepisów o widoczności `Prywatny` ani `Współdzielony`.
-
+    1. Gość ma dostęp do pola wyszukiwania publicznych przepisów.
+    2. Wyszukiwanie jest tekstowe i przeszukuje co najmniej: nazwę przepisu, składniki oraz tagi.
+    3. Wyniki zawierają wyłącznie przepisy o widoczności `Publiczny`.
+    4. Wyniki są stronicowane.
+    5. Dla braku wyników wyświetlany jest czytelny komunikat i sugestia zmiany frazy.
 
 </user_stories>
 
