@@ -127,6 +127,7 @@ export type Database = {
                     steps: Json;
                     updated_at: string;
                     user_id: string;
+                    visibility: string;
                 };
                 Insert: {
                     category_id?: number | null;
@@ -141,6 +142,7 @@ export type Database = {
                     steps: Json;
                     updated_at?: string;
                     user_id?: string;
+                    visibility?: string;
                 };
                 Update: {
                     category_id?: number | null;
@@ -155,6 +157,7 @@ export type Database = {
                     steps?: Json;
                     updated_at?: string;
                     user_id?: string;
+                    visibility?: string;
                 };
                 Relationships: [];
             };
@@ -200,6 +203,7 @@ export type Database = {
                     tags: Json | null;
                     updated_at: string | null;
                     user_id: string | null;
+                    visibility: string | null;
                 };
                 Relationships: [];
             };

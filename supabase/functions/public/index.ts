@@ -27,13 +27,20 @@ const corsHeaders = {
  * Adds CORS headers to the response.
  *
  * @param response - The original response
+ * @param addCacheHeaders - Whether to add cache-control headers for public content (default: false)
  * @returns New response with CORS headers added
  */
-function addCorsHeaders(response: Response): Response {
+function addCorsHeaders(response: Response, addCacheHeaders = false): Response {
     const newHeaders = new Headers(response.headers);
     Object.entries(corsHeaders).forEach(([key, value]) => {
         newHeaders.set(key, value);
     });
+
+    // Add cache headers for successful responses on public endpoints
+    if (addCacheHeaders && response.status === 200) {
+        newHeaders.set('Cache-Control', 'public, max-age=60');
+    }
+
     return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
@@ -65,8 +72,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         // Route the request to the public router
         const response = await publicRouter(req);
 
-        // Add CORS headers to the response
-        return addCorsHeaders(response);
+        // Add CORS headers and cache headers to the response
+        return addCorsHeaders(response, true);
     } catch (error) {
         logger.error('Unhandled error in public function', {
             error: error instanceof Error ? error.message : 'Unknown error',

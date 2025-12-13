@@ -46,6 +46,7 @@ export interface PublicRecipeListItemDto {
     image_path: string | null;
     category: CategoryDto | null;
     tags: string[];
+    author: ProfileDto;
     created_at: string;
 }
 
@@ -80,6 +81,7 @@ export interface PaginationDetails {
  */
 interface RecipeDetailsRow {
     id: number;
+    user_id: string;
     name: string;
     description: string | null;
     image_path: string | null;
@@ -117,7 +119,7 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, name, description, image_path, category_id, category_name, tags, created_at';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, category_id, category_name, tags, created_at';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
 const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at';
@@ -198,18 +200,82 @@ export async function getPublicRecipes(
         };
     }
 
+    const recipeRows = data as RecipeDetailsRow[];
+
+    // Extract unique user IDs from recipes
+    const uniqueUserIds = [...new Set(recipeRows.map((recipe) => recipe.user_id))];
+
+    logger.info('Fetching author profiles (bulk)', {
+        uniqueUserIdsCount: uniqueUserIds.length,
+    });
+
+    // Bulk fetch all author profiles
+    const { data: profilesData, error: profilesError } = await client
+        .from('profiles')
+        .select(PROFILE_SELECT_COLUMNS)
+        .in('id', uniqueUserIds);
+
+    if (profilesError) {
+        logger.error('Database error while fetching author profiles', {
+            errorCode: profilesError.code,
+            errorMessage: profilesError.message,
+            userIds: uniqueUserIds,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe authors');
+    }
+
+    if (!profilesData) {
+        logger.error('No profiles data returned for recipe authors', {
+            userIds: uniqueUserIds,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe authors');
+    }
+
+    // Build a map of profiles by user ID for efficient lookup
+    const profilesById = new Map<string, ProfileRow>(
+        (profilesData as ProfileRow[]).map((profile) => [profile.id, profile])
+    );
+
+    logger.info('Author profiles fetched successfully', {
+        profilesCount: profilesById.size,
+        expectedCount: uniqueUserIds.length,
+    });
+
+    // Check if all profiles were found
+    if (profilesById.size !== uniqueUserIds.length) {
+        const missingUserIds = uniqueUserIds.filter((id) => !profilesById.has(id));
+        logger.error('Some author profiles are missing', {
+            missingUserIds,
+            missingCount: missingUserIds.length,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Some recipe authors could not be found');
+    }
+
     // Map database records to DTOs
-    const recipes: PublicRecipeListItemDto[] = (data as RecipeDetailsRow[]).map((recipe) => ({
-        id: recipe.id,
-        name: recipe.name,
-        description: recipe.description,
-        image_path: recipe.image_path,
-        category: recipe.category_id && recipe.category_name
-            ? { id: recipe.category_id, name: recipe.category_name }
-            : null,
-        tags: recipe.tags ? recipe.tags.map((tag) => tag.name) : [],
-        created_at: recipe.created_at,
-    }));
+    const recipes: PublicRecipeListItemDto[] = recipeRows.map((recipe) => {
+        const author = profilesById.get(recipe.user_id);
+
+        // This should never happen due to the check above, but TypeScript needs assurance
+        if (!author) {
+            throw new ApplicationError('INTERNAL_ERROR', `Author profile not found for user_id: ${recipe.user_id}`);
+        }
+
+        return {
+            id: recipe.id,
+            name: recipe.name,
+            description: recipe.description,
+            image_path: recipe.image_path,
+            category: recipe.category_id && recipe.category_name
+                ? { id: recipe.category_id, name: recipe.category_name }
+                : null,
+            tags: recipe.tags ? recipe.tags.map((tag) => tag.name) : [],
+            author: {
+                id: author.id,
+                username: author.username,
+            },
+            created_at: recipe.created_at,
+        };
+    });
 
     // Calculate pagination
     const totalItems = count ?? 0;

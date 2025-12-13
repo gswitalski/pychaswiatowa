@@ -82,6 +82,7 @@ export interface PublicRecipeListItemDto {
     image_path: string | null;
     category: CategoryDto | null;
     tags: string[];
+    author: ProfileDto;
     created_at: string;
 }
 
