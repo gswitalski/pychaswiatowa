@@ -18,9 +18,10 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-**3. Publiczne szczegóły przepisu**
-- **Ścieżka:** `/explore/recipes/:id-:slug`
-- **Opis:** Pełny podgląd publicznego przepisu. Brak akcji właściciela; widoczne CTA do logowania/rejestracji.
+### Zmienione widoki
+
+**1. Landing Page (`/`)**
+- **Co się zmieniło:** Dla zalogowanego widok korzysta z App Shell (Sidebar + Topbar z profilem) i nie pokazuje przycisków „Zaloguj się” / „Zarejestruj się”.
 
 </view>
 
@@ -28,16 +29,9 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-
-**US-019: Przeglądanie szczegółów publicznego przepisu**
-- **Opis:** Jako użytkownik niezalogowany, chcę wyświetlić pełne szczegóły publicznego przepisu w czytelnym układzie, abym mógł z niego korzystać bez konieczności zakładania konta.
-- **Kryteria akceptacji:**
-    1. Strona szczegółów publicznego przepisu wyświetla: nazwę, opis, zdjęcie, listę składników i listę kroków.
-    2. Na widoku desktopowym składniki i kroki są wyświetlane obok siebie w dwóch kolumnach.
-    3. Lista kroków jest numerowana w sposób ciągły i nie resetuje się po nagłówkach sekcji.
-    4. Widoczne są kategoria oraz tagi (jeśli istnieją).
-    5. Gość nie widzi akcji właściciela ("Edytuj", "Usuń"). Zamiast tego widzi zachętę do logowania/rejestracji.
-    6. Strona jest dostępna pod publicznym, udostępnialnym adresem URL (SEO-friendly).
+**US-020: Publiczne widoki w trybie zalogowanego (App Shell)**
+- **Opis:** Jako użytkownik zalogowany, chcę przeglądać publiczne widoki (landing, explore, publiczne szczegóły) bez przycisków logowania/rejestracji i z dostępem do nawigacji zalogowanej, abym mógł płynnie przechodzić między częścią publiczną a moim kontem.
+- **Co się zmieniło:** Nowy wariant tych samych publicznych ścieżek dla użytkownika zalogowanego (bez zmiany zakresu treści).
 
 </user_stories>
 
