@@ -6,28 +6,45 @@
     }
 
     <div class="recipe-meta">
-        @if (recipe().category_name) {
-            <a
-                class="category-link"
-                [routerLink]="['/recipes']"
-                [queryParams]="{ category: recipe().category_id }"
-            >
-                {{ recipe().category_name }}
-            </a>
+        @if (getCategoryName(recipe())) {
+            <!-- Prywatny kontekst: kategoria jako link -->
+            @if (!isPublic()) {
+                <a
+                    class="category-link"
+                    [routerLink]="['/recipes']"
+                    [queryParams]="{ category: getCategoryId(recipe()) }"
+                >
+                    {{ getCategoryName(recipe()) }}
+                </a>
+            }
+            <!-- Publiczny kontekst: kategoria jako badge (nieklikalne) -->
+            @else {
+                <span class="category-badge">
+                    {{ getCategoryName(recipe()) }}
+                </span>
+            }
         }
 
         @if (recipe().tags && recipe().tags.length > 0) {
             <mat-chip-set class="tags-list" aria-label="Tagi przepisu">
-                @for (tag of recipe().tags; track tag.id) {
-                    <mat-chip
-                        [routerLink]="['/recipes']"
-                        [queryParams]="{ tag: tag.name }"
-                    >
-                        {{ tag.name }}
-                    </mat-chip>
+                @for (tag of getTagsForDisplay(recipe()); track tag.id) {
+                    <!-- Prywatny kontekst: tagi jako linki -->
+                    @if (!isPublic()) {
+                        <mat-chip
+                            [routerLink]="['/recipes']"
+                            [queryParams]="{ tag: tag.name }"
+                        >
+                            {{ tag.name }}
+                        </mat-chip>
+                    }
+                    <!-- Publiczny kontekst: tagi jako chipy nieklikalne -->
+                    @else {
+                        <mat-chip class="non-clickable">
+                            {{ tag.name }}
+                        </mat-chip>
+                    }
                 }
             </mat-chip-set>
         }
     </div>
 </header>
-

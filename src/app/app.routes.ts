@@ -23,6 +23,13 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'explore/recipes/:idslug',
+                loadComponent: () =>
+                    import(
+                        './pages/explore/public-recipe-detail/public-recipe-detail-page.component'
+                    ).then((m) => m.PublicRecipeDetailPageComponent),
+            },
+            {
                 path: 'register',
                 loadComponent: () =>
                     import('./pages/register/register-page.component').then(

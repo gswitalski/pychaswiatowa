@@ -42,6 +42,17 @@
     }
 }
 
+.category-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 16px;
+    background-color: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
 .tags-list {
     display: flex;
     flex-wrap: wrap;
@@ -49,6 +60,10 @@
 
     mat-chip {
         cursor: pointer;
+
+        &.non-clickable {
+            cursor: default;
+        }
     }
 }
 

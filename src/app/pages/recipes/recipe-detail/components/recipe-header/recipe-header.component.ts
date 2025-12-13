@@ -1,8 +1,27 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
-import { RecipeDetailDto } from '../../../../../../../shared/contracts/types';
+import { RecipeDetailDto, PublicRecipeDetailDto, TagDto } from '../../../../../../../shared/contracts/types';
 
+/**
+ * Type guard sprawdzający czy przepis to RecipeDetailDto
+ */
+function isRecipeDetailDto(recipe: RecipeDetailDto | PublicRecipeDetailDto): recipe is RecipeDetailDto {
+    return 'category_id' in recipe && 'category_name' in recipe;
+}
+
+/**
+ * Type guard sprawdzający czy tagi to TagDto[]
+ */
+function isTagDtoArray(tags: TagDto[] | string[]): tags is TagDto[] {
+    return tags.length > 0 && typeof tags[0] === 'object' && 'id' in tags[0];
+}
+
+/**
+ * Komponent nagłówka przepisu wyświetlający nazwę, opis, kategorię i tagi.
+ * Obsługuje zarówno kontekst prywatny (dla zalogowanych użytkowników)
+ * jak i publiczny (dla gości).
+ */
 @Component({
     selector: 'pych-recipe-header',
     standalone: true,
@@ -12,6 +31,64 @@ import { RecipeDetailDto } from '../../../../../../../shared/contracts/types';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeHeaderComponent {
-    readonly recipe = input.required<RecipeDetailDto>();
+    /** Dane przepisu (prywatny lub publiczny) */
+    readonly recipe = input.required<RecipeDetailDto | PublicRecipeDetailDto>();
+
+    /**
+     * Czy komponent jest używany w kontekście publicznym.
+     * W kontekście publicznym kategoria i tagi nie są klikalne.
+     */
+    readonly isPublic = input<boolean>(false);
+
+    /**
+     * Helper method do sprawdzania typu przepisu w template
+     */
+    isRecipeDetailDto(recipe: RecipeDetailDto | PublicRecipeDetailDto): recipe is RecipeDetailDto {
+        return isRecipeDetailDto(recipe);
+    }
+
+    /**
+     * Helper method do sprawdzania typu tagów w template
+     */
+    isTagDtoArray(tags: TagDto[] | string[]): tags is TagDto[] {
+        return isTagDtoArray(tags);
+    }
+
+    /**
+     * Pobiera nazwę kategorii (obsługuje oba typy)
+     */
+    getCategoryName(recipe: RecipeDetailDto | PublicRecipeDetailDto): string | null {
+        if (isRecipeDetailDto(recipe)) {
+            return recipe.category_name;
+        }
+        return recipe.category?.name ?? null;
+    }
+
+    /**
+     * Pobiera ID kategorii (obsługuje oba typy)
+     */
+    getCategoryId(recipe: RecipeDetailDto | PublicRecipeDetailDto): number | null {
+        if (isRecipeDetailDto(recipe)) {
+            return recipe.category_id;
+        }
+        return recipe.category?.id ?? null;
+    }
+
+    /**
+     * Zwraca tagi w formacie do wyświetlania
+     */
+    getTagsForDisplay(recipe: RecipeDetailDto | PublicRecipeDetailDto): Array<{ id: number | string; name: string }> {
+        if (!recipe.tags || recipe.tags.length === 0) {
+            return [];
+        }
+
+        if (isTagDtoArray(recipe.tags)) {
+            // TagDto[] - już ma id i name
+            return recipe.tags;
+        } else {
+            // string[] - generujemy prosty format
+            return recipe.tags.map((tag, index) => ({ id: `tag-${index}`, name: tag }));
+        }
+    }
 }
 
