@@ -45,7 +45,8 @@
     <div class="recipe-detail-container">
         <!-- Page header with CTA (only for guests) -->
         <pych-page-header [title]="'Przepis'">
-            @if (!isAuthenticated()) {
+            <!-- Akcje dla gościa (niezalogowanego) -->
+            @if (headerMode() === 'guest') {
                 <div header-actions class="header-cta">
                     <button
                         mat-raised-button
@@ -65,6 +66,46 @@
                     </button>
                 </div>
             }
+
+            <!-- Akcje dla zalogowanego użytkownika - cudzy przepis -->
+            @if (headerMode() === 'addToCollection') {
+                <div header-actions class="header-actions">
+                    <button
+                        mat-raised-button
+                        color="primary"
+                        (click)="onAddToCollection()"
+                        matTooltip="Dodaj ten przepis do swojej kolekcji"
+                        aria-label="Dodaj do kolekcji"
+                    >
+                        <mat-icon>bookmark_add</mat-icon>
+                        Dodaj do kolekcji
+                    </button>
+                </div>
+            }
+
+            <!-- Akcje dla właściciela przepisu -->
+            @if (headerMode() === 'ownerActions') {
+                <div header-actions class="header-actions">
+                    <button
+                        mat-icon-button
+                        (click)="onEdit()"
+                        matTooltip="Edytuj przepis"
+                        aria-label="Edytuj przepis"
+                    >
+                        <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                        mat-icon-button
+                        color="warn"
+                        (click)="onDelete()"
+                        matTooltip="Usuń przepis"
+                        aria-label="Usuń przepis"
+                    >
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </div>
+            }
+
             <button
                 mat-icon-button
                 back-button
@@ -121,7 +162,7 @@
             </div>
 
             <!-- CTA Section at the bottom (only for guests) -->
-            @if (!isAuthenticated()) {
+            @if (headerMode() === 'guest') {
                 <div class="bottom-cta-section">
                     <mat-card class="cta-card">
                         <mat-card-content>

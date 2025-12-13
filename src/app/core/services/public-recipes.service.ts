@@ -94,6 +94,7 @@ export class PublicRecipesService {
      *
      * @param id ID przepisu
      * @returns Observable ze szczegółami publicznego przepisu
+     * @throws ApiError z odpowiednim statusem HTTP (404, 400, 500)
      */
     getPublicRecipeById(id: number): Observable<PublicRecipeDetailDto> {
         return from(
@@ -106,13 +107,44 @@ export class PublicRecipesService {
         ).pipe(
             map((response) => {
                 if (response.error) {
-                    throw new Error(response.error.message);
+                    // Propagacja błędu z odpowiednim statusem HTTP
+                    const error = new Error(response.error.message) as Error & { status: number };
+                    // Supabase Functions zwracają status w error.status lub możemy go wyciągnąć z context
+                    error.status = this.extractStatusFromError(response.error) || 500;
+                    throw error;
                 }
                 if (!response.data) {
-                    throw new Error('Przepis nie został znaleziony');
+                    // Brak danych prawdopodobnie oznacza 404
+                    const error = new Error('Przepis nie został znaleziony') as Error & { status: number };
+                    error.status = 404;
+                    throw error;
                 }
                 return response.data;
             })
         );
+    }
+
+    /**
+     * Wyciąga status HTTP z błędu zwróconego przez Supabase Functions
+     * @private
+     */
+    private extractStatusFromError(error: { message?: string; status?: number; context?: { status?: number } }): number | null {
+        // Supabase może zwracać status w różnych miejscach
+        if (error.status) return error.status;
+        if (error.context?.status) return error.context.status;
+
+        // Analiza komunikatu błędu dla typowych przypadków
+        const message = error.message?.toLowerCase() || '';
+        if (message.includes('not found') || message.includes('nie znaleziono')) {
+            return 404;
+        }
+        if (message.includes('bad request') || message.includes('nieprawidłow')) {
+            return 400;
+        }
+        if (message.includes('unauthorized') || message.includes('forbidden')) {
+            return 403;
+        }
+
+        return null;
     }
 }

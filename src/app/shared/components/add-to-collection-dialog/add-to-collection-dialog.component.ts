@@ -17,6 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { CollectionsService } from './collections.service';
 import { CollectionListItemDto } from '../../../../../shared/contracts/types';
@@ -52,6 +53,7 @@ export class AddToCollectionDialogComponent implements OnInit {
     readonly dialogRef = inject(MatDialogRef<AddToCollectionDialogComponent>);
     readonly data = inject<AddToCollectionDialogData>(MAT_DIALOG_DATA);
     private readonly collectionsService = inject(CollectionsService);
+    private readonly snackBar = inject(MatSnackBar);
 
     readonly collections = signal<CollectionListItemDto[]>([]);
     readonly isLoading = signal(true);
@@ -111,8 +113,21 @@ export class AddToCollectionDialogComponent implements OnInit {
                         collectionName: name,
                     } as AddToCollectionDialogResult);
                 },
-                error: () => {
-                    // Error handled in service
+                error: (err) => {
+                    // Obsługa błędu 409 (przepis już w kolekcji) i innych błędów
+                    if (err.status === 409) {
+                        this.snackBar.open(
+                            'Ten przepis jest już w tej kolekcji',
+                            'OK',
+                            { duration: 4000 }
+                        );
+                    } else {
+                        this.snackBar.open(
+                            err.message || 'Nie udało się dodać przepisu do kolekcji',
+                            'OK',
+                            { duration: 5000 }
+                        );
+                    }
                 },
             });
     }
@@ -132,8 +147,21 @@ export class AddToCollectionDialogComponent implements OnInit {
                         collectionName: collection?.name,
                     } as AddToCollectionDialogResult);
                 },
-                error: () => {
-                    // Error handled in service
+                error: (err) => {
+                    // Obsługa błędu 409 (przepis już w kolekcji) i innych błędów
+                    if (err.status === 409) {
+                        this.snackBar.open(
+                            'Ten przepis jest już w tej kolekcji',
+                            'OK',
+                            { duration: 4000 }
+                        );
+                    } else {
+                        this.snackBar.open(
+                            err.message || 'Nie udało się dodać przepisu do kolekcji',
+                            'OK',
+                            { duration: 5000 }
+                        );
+                    }
                 },
             });
     }

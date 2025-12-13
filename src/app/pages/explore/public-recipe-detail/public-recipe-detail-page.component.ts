@@ -16,9 +16,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 
 import { PublicRecipesService } from '../../../core/services/public-recipes.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import { RecipesService } from '../../recipes/services/recipes.service';
 import {
     PublicRecipeDetailDto,
     ApiError,
@@ -28,6 +31,15 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { RecipeHeaderComponent } from '../../recipes/recipe-detail/components/recipe-header/recipe-header.component';
 import { RecipeImageComponent } from '../../recipes/recipe-detail/components/recipe-image/recipe-image.component';
 import { RecipeContentListComponent } from '../../recipes/recipe-detail/components/recipe-content-list/recipe-content-list.component';
+import {
+    AddToCollectionDialogComponent,
+    AddToCollectionDialogData,
+    AddToCollectionDialogResult,
+} from '../../../shared/components/add-to-collection-dialog/add-to-collection-dialog.component';
+import {
+    ConfirmDialogComponent,
+    ConfirmDialogData,
+} from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Stan lokalny dla widoku szczegółów publicznego przepisu
@@ -66,7 +78,10 @@ export class PublicRecipeDetailPageComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly publicRecipesService = inject(PublicRecipesService);
+    private readonly recipesService = inject(RecipesService);
     private readonly supabase = inject(SupabaseService);
+    private readonly snackBar = inject(MatSnackBar);
+    private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly state = signal<PublicRecipeDetailState>({
@@ -80,6 +95,11 @@ export class PublicRecipeDetailPageComponent implements OnInit {
      */
     readonly isAuthenticated = signal<boolean>(false);
 
+    /**
+     * Signal z ID aktualnie zalogowanego użytkownika (null jeśli gość)
+     */
+    readonly currentUserId = signal<string | null>(null);
+
     readonly recipe = computed(() => this.state().recipe);
     readonly isLoading = computed(() => this.state().isLoading);
     readonly error = computed(() => this.state().error);
@@ -89,6 +109,28 @@ export class PublicRecipeDetailPageComponent implements OnInit {
     readonly pageTitle = computed(
         () => this.state().recipe?.name ?? 'Szczegóły przepisu'
     );
+
+    /**
+     * Computed signal określający czy aktualnie zalogowany użytkownik jest właścicielem przepisu
+     */
+    readonly isOwner = computed(() => {
+        const recipe = this.recipe();
+        const userId = this.currentUserId();
+        return !!recipe && !!userId && recipe.author.id === userId;
+    });
+
+    /**
+     * Computed signal określający tryb nagłówka (akcje dla gościa/zalogowanego/właściciela)
+     * - 'guest': niezalogowany użytkownik
+     * - 'addToCollection': zalogowany, ale nie jest właścicielem
+     * - 'ownerActions': zalogowany i jest właścicielem
+     */
+    readonly headerMode = computed(() => {
+        if (!this.isAuthenticated()) {
+            return 'guest';
+        }
+        return this.isOwner() ? 'ownerActions' : 'addToCollection';
+    });
 
     async ngOnInit(): Promise<void> {
         // Sprawdź stan uwierzytelnienia
@@ -133,17 +175,25 @@ export class PublicRecipeDetailPageComponent implements OnInit {
     }
 
     /**
-     * Sprawdza stan uwierzytelnienia użytkownika
+     * Sprawdza stan uwierzytelnienia użytkownika i pobiera ID użytkownika
      */
     private async checkAuthStatus(): Promise<void> {
         try {
             const {
                 data: { session },
             } = await this.supabase.auth.getSession();
-            this.isAuthenticated.set(session !== null);
+
+            if (session?.user) {
+                this.isAuthenticated.set(true);
+                this.currentUserId.set(session.user.id);
+            } else {
+                this.isAuthenticated.set(false);
+                this.currentUserId.set(null);
+            }
         } catch (error) {
             console.error('Error checking auth status:', error);
             this.isAuthenticated.set(false);
+            this.currentUserId.set(null);
         }
     }
 
@@ -271,6 +321,111 @@ export class PublicRecipeDetailPageComponent implements OnInit {
         const currentUrl = this.router.url;
         this.router.navigate(['/register'], {
             queryParams: { returnUrl: currentUrl },
+        });
+    }
+
+    /**
+     * Obsługuje akcję "Dodaj do kolekcji" (dla zalogowanych, cudzych przepisów)
+     */
+    onAddToCollection(): void {
+        const recipe = this.recipe();
+        if (!recipe || !this.isAuthenticated() || this.isOwner()) {
+            return;
+        }
+
+        const dialogData: AddToCollectionDialogData = {
+            recipeId: recipe.id,
+            recipeName: recipe.name ?? 'Bez nazwy',
+        };
+
+        const dialogRef = this.dialog.open(AddToCollectionDialogComponent, {
+            data: dialogData,
+            width: '450px',
+        });
+
+        dialogRef.afterClosed().subscribe((result: AddToCollectionDialogResult) => {
+            if (!result || result.action === 'cancelled') {
+                return;
+            }
+
+            if (result.action === 'added') {
+                this.snackBar.open(
+                    `Dodano do kolekcji "${result.collectionName}"`,
+                    'OK',
+                    { duration: 3000 }
+                );
+            } else if (result.action === 'created') {
+                this.snackBar.open(
+                    `Utworzono kolekcję "${result.collectionName}" i dodano przepis`,
+                    'OK',
+                    { duration: 3000 }
+                );
+            }
+        });
+    }
+
+    /**
+     * Obsługuje akcję "Edytuj" (dla właściciela przepisu)
+     */
+    onEdit(): void {
+        const recipe = this.recipe();
+        if (!recipe || !this.isOwner()) {
+            return;
+        }
+
+        this.router.navigate(['/recipes', recipe.id, 'edit']);
+    }
+
+    /**
+     * Obsługuje akcję "Usuń" (dla właściciela przepisu)
+     */
+    onDelete(): void {
+        const recipe = this.recipe();
+        if (!recipe || !this.isOwner()) {
+            return;
+        }
+
+        const recipeName = recipe.name ?? 'Bez nazwy';
+        const recipeId = recipe.id;
+
+        const dialogData: ConfirmDialogData = {
+            title: 'Usuń przepis',
+            message: `Czy na pewno chcesz usunąć przepis "${recipeName}"? Ta operacja jest nieodwracalna.`,
+            confirmText: 'Usuń',
+            cancelText: 'Anuluj',
+            confirmColor: 'warn',
+        };
+
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+            data: dialogData,
+            width: '400px',
+        });
+
+        dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+            if (confirmed) {
+                this.deleteRecipe(recipeId);
+            }
+        });
+    }
+
+    /**
+     * Wykonuje usunięcie przepisu przez API
+     */
+    private deleteRecipe(id: number): void {
+        this.recipesService.deleteRecipe(id).subscribe({
+            next: () => {
+                this.snackBar.open('Przepis został usunięty', 'OK', {
+                    duration: 3000,
+                });
+                this.router.navigate(['/recipes']);
+            },
+            error: (err) => {
+                this.snackBar.open(
+                    err.message || 'Nie udało się usunąć przepisu',
+                    'OK',
+                    { duration: 5000 }
+                );
+            },
         });
     }
 }
