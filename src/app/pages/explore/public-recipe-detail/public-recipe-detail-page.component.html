@@ -43,26 +43,28 @@
 <!-- Success state - recipe content -->
 @if (hasRecipe() && !isLoading() && !error()) {
     <div class="recipe-detail-container">
-        <!-- Page header with CTA -->
+        <!-- Page header with CTA (only for guests) -->
         <pych-page-header [title]="'Przepis'">
-            <div header-actions class="header-cta">
-                <button
-                    mat-raised-button
-                    color="primary"
-                    (click)="onLogin()"
-                    aria-label="Zaloguj się, aby zapisać ten przepis"
-                >
-                    Zaloguj się
-                </button>
-                <button
-                    mat-stroked-button
-                    color="primary"
-                    (click)="onRegister()"
-                    aria-label="Zarejestruj się, aby zapisać przepisy"
-                >
-                    Zarejestruj się
-                </button>
-            </div>
+            @if (!isAuthenticated()) {
+                <div header-actions class="header-cta">
+                    <button
+                        mat-raised-button
+                        color="primary"
+                        (click)="onLogin()"
+                        aria-label="Zaloguj się, aby zapisać ten przepis"
+                    >
+                        Zaloguj się
+                    </button>
+                    <button
+                        mat-stroked-button
+                        color="primary"
+                        (click)="onRegister()"
+                        aria-label="Zarejestruj się, aby zapisać przepisy"
+                    >
+                        Zarejestruj się
+                    </button>
+                </div>
+            }
             <button
                 mat-icon-button
                 back-button
@@ -118,24 +120,26 @@
                 </div>
             </div>
 
-            <!-- CTA Section at the bottom -->
-            <div class="bottom-cta-section">
-                <mat-card class="cta-card">
-                    <mat-card-content>
-                        <mat-icon class="cta-icon">bookmark_border</mat-icon>
-                        <h3>Chcesz zapisać ten przepis?</h3>
-                        <p>Zaloguj się lub zarejestruj, aby dodać przepisy do swoich kolekcji!</p>
-                        <div class="cta-buttons">
-                            <button mat-raised-button color="primary" (click)="onLogin()">
-                                Zaloguj się
-                            </button>
-                            <button mat-stroked-button color="primary" (click)="onRegister()">
-                                Zarejestruj się
-                            </button>
-                        </div>
-                    </mat-card-content>
-                </mat-card>
-            </div>
+            <!-- CTA Section at the bottom (only for guests) -->
+            @if (!isAuthenticated()) {
+                <div class="bottom-cta-section">
+                    <mat-card class="cta-card">
+                        <mat-card-content>
+                            <mat-icon class="cta-icon">bookmark_border</mat-icon>
+                            <h3>Chcesz zapisać ten przepis?</h3>
+                            <p>Zaloguj się lub zarejestruj, aby dodać przepisy do swoich kolekcji!</p>
+                            <div class="cta-buttons">
+                                <button mat-raised-button color="primary" (click)="onLogin()">
+                                    Zaloguj się
+                                </button>
+                                <button mat-stroked-button color="primary" (click)="onRegister()">
+                                    Zarejestruj się
+                                </button>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            }
         </div>
     </div>
 }

@@ -18,6 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { PublicRecipesService } from '../../../core/services/public-recipes.service';
+import { SupabaseService } from '../../../core/services/supabase.service';
 import {
     PublicRecipeDetailDto,
     ApiError,
@@ -65,6 +66,7 @@ export class PublicRecipeDetailPageComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly publicRecipesService = inject(PublicRecipesService);
+    private readonly supabase = inject(SupabaseService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly state = signal<PublicRecipeDetailState>({
@@ -72,6 +74,11 @@ export class PublicRecipeDetailPageComponent implements OnInit {
         isLoading: true,
         error: null,
     });
+
+    /**
+     * Signal określający czy użytkownik jest zalogowany
+     */
+    readonly isAuthenticated = signal<boolean>(false);
 
     readonly recipe = computed(() => this.state().recipe);
     readonly isLoading = computed(() => this.state().isLoading);
@@ -83,7 +90,10 @@ export class PublicRecipeDetailPageComponent implements OnInit {
         () => this.state().recipe?.name ?? 'Szczegóły przepisu'
     );
 
-    ngOnInit(): void {
+    async ngOnInit(): Promise<void> {
+        // Sprawdź stan uwierzytelnienia
+        await this.checkAuthStatus();
+
         // Subskrybuj się na zmiany parametru ':idslug' w URL (format: id-slug)
         this.route.paramMap
             .pipe(
@@ -120,6 +130,21 @@ export class PublicRecipeDetailPageComponent implements OnInit {
 
                 this.loadRecipe(numericId, slug);
             });
+    }
+
+    /**
+     * Sprawdza stan uwierzytelnienia użytkownika
+     */
+    private async checkAuthStatus(): Promise<void> {
+        try {
+            const {
+                data: { session },
+            } = await this.supabase.auth.getSession();
+            this.isAuthenticated.set(session !== null);
+        } catch (error) {
+            console.error('Error checking auth status:', error);
+            this.isAuthenticated.set(false);
+        }
     }
 
     /**

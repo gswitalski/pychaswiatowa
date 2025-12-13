@@ -17,6 +17,7 @@ import {
     GetPublicRecipesParams,
 } from '../../core/services/public-recipes.service';
 import { PublicRecipeListItemDto } from '../../../../shared/contracts/types';
+import { SupabaseService } from '../../core/services/supabase.service';
 
 /**
  * Klucze sekcji na landing page
@@ -60,6 +61,12 @@ interface LandingSectionConfig {
 export class LandingPageComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly publicRecipesService = inject(PublicRecipesService);
+    private readonly supabase = inject(SupabaseService);
+
+    /**
+     * Signal określający czy użytkownik jest zalogowany
+     */
+    isAuthenticated = signal<boolean>(false);
 
     /**
      * Konfiguracja sekcji z różnymi sortowaniami
@@ -92,9 +99,27 @@ export class LandingPageComponent implements OnInit {
         seasonal: { data: [], isLoading: true, errorMessage: null },
     });
 
-    ngOnInit(): void {
+    async ngOnInit(): Promise<void> {
+        // Sprawdź stan uwierzytelnienia
+        await this.checkAuthStatus();
+
         // Załaduj dane dla wszystkich sekcji równolegle
         this.loadAllSections();
+    }
+
+    /**
+     * Sprawdza stan uwierzytelnienia użytkownika
+     */
+    private async checkAuthStatus(): Promise<void> {
+        try {
+            const {
+                data: { session },
+            } = await this.supabase.auth.getSession();
+            this.isAuthenticated.set(session !== null);
+        } catch (error) {
+            console.error('Error checking auth status:', error);
+            this.isAuthenticated.set(false);
+        }
     }
 
     /**
