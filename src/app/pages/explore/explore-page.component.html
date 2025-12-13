@@ -1,0 +1,98 @@
+<div class="explore-page">
+    <!-- Nagłówek strony -->
+    <header class="explore-header">
+        <h1>Przeglądaj publiczne przepisy</h1>
+        <p class="explore-description">
+            Odkryj inspirujące przepisy kulinarne udostępnione przez naszą społeczność.
+            Wyszukaj po nazwie, składnikach lub tagach.
+        </p>
+    </header>
+
+    <!-- Wyszukiwarka -->
+    <div class="search-section">
+        <pych-public-recipes-search
+            [initialQuery]="currentQuery()"
+            placeholder="Szukaj przepisów po nazwie, składnikach, tagach..."
+            (searchSubmit)="onSearchSubmit($event)"
+        />
+    </div>
+
+    <!-- Komunikat walidacji -->
+    @if (pageState().validationMessage) {
+        <div class="validation-message" role="alert">
+            <mat-icon>info</mat-icon>
+            <span>{{ pageState().validationMessage }}</span>
+        </div>
+    }
+
+    <!-- Stan błędu -->
+    @if (pageState().errorMessage && !pageState().isLoading) {
+        <div class="error-state" role="alert">
+            <mat-icon class="error-icon">error_outline</mat-icon>
+            <h2>Coś poszło nie tak</h2>
+            <p>{{ pageState().errorMessage }}</p>
+            <button mat-raised-button color="primary" (click)="onRetry()">
+                <mat-icon>refresh</mat-icon>
+                Spróbuj ponownie
+            </button>
+        </div>
+    }
+
+    <!-- Skeleton loader - tylko przy pierwszym ładowaniu -->
+    @if (pageState().isInitialLoading) {
+        <div class="recipes-grid skeleton-grid" aria-busy="true" aria-label="Ładowanie przepisów">
+            @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track item) {
+                <div class="skeleton-card">
+                    <div class="skeleton-image"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-category"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Główna zawartość - siatka przepisów -->
+    @if (!pageState().isInitialLoading && !pageState().errorMessage) {
+        <div class="content-wrapper" [class.loading]="pageState().isLoading">
+            <!-- Empty state - brak wyników -->
+            @if (pageState().recipes.length === 0 && !pageState().isLoading) {
+                <pych-empty-state
+                    icon="search_off"
+                    title="Nie znaleziono przepisów"
+                    [description]="
+                        queryState().q
+                            ? 'Spróbuj zmienić frazę wyszukiwania lub wyszukaj czegoś innego'
+                            : 'Brak publicznych przepisów do wyświetlenia'
+                    "
+                />
+            }
+
+            <!-- Siatka kart przepisów -->
+            @if (pageState().recipes.length > 0) {
+                <div class="recipes-grid" role="list">
+                    @for (recipe of pageState().recipes; track recipe.id) {
+                        <pych-recipe-card
+                            [recipe]="recipe"
+                            routeType="public"
+                            role="listitem"
+                        />
+                    }
+                </div>
+
+                <!-- Paginator -->
+                <mat-paginator
+                    class="recipes-paginator"
+                    [length]="pageState().pagination.totalItems"
+                    [pageSize]="queryState().limit"
+                    [pageIndex]="queryState().page - 1"
+                    [pageSizeOptions]="[12, 24, 48]"
+                    [showFirstLastButtons]="true"
+                    (page)="onPageChange($event)"
+                    aria-label="Wybierz stronę wyników"
+                />
+            }
+        </div>
+    }
+</div>

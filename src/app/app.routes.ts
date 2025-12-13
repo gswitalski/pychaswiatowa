@@ -16,6 +16,13 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'explore',
+                loadComponent: () =>
+                    import('./pages/explore/explore-page.component').then(
+                        (m) => m.ExplorePageComponent
+                    ),
+            },
+            {
                 path: 'register',
                 loadComponent: () =>
                     import('./pages/register/register-page.component').then(

@@ -1,11 +1,12 @@
 <div class="public-search-container">
-    <form class="search-form" (ngSubmit)="onSearchSubmit()">
+    <form class="search-form" (ngSubmit)="onSearchSubmit(); $event.preventDefault()">
         <mat-form-field appearance="outline" class="search-field">
             <mat-label>{{ placeholder() }}</mat-label>
             <input
                 matInput
                 [formControl]="queryControl"
                 (input)="onInputChange()"
+                (keydown.enter)="onSearchSubmit(); $event.preventDefault()"
                 type="text"
                 autocomplete="off"
             />
@@ -18,8 +19,9 @@
         <button
             mat-raised-button
             color="primary"
-            type="submit"
+            type="button"
             class="search-button"
+            (click)="onSearchSubmit()"
         >
             Szukaj
         </button>

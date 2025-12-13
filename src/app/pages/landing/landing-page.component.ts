@@ -101,8 +101,13 @@ export class LandingPageComponent implements OnInit {
      * Obsługa submitu wyszukiwania
      */
     onSearchSubmit(query: string): void {
+        console.log('🔍 Landing page - onSearchSubmit wywołany z query:', query);
+
         // Nawigacja do /explore z parametrem q (jeśli niepuste)
         const queryParams = query ? { q: query } : {};
+
+        console.log('📍 Nawigacja do /explore z parametrami:', queryParams);
+
         this.router.navigate(['/explore'], { queryParams });
     }
 

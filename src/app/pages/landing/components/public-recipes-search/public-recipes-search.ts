@@ -4,6 +4,7 @@ import {
     input,
     output,
     signal,
+    effect,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -48,6 +49,16 @@ export class PublicRecipesSearchComponent {
     /** Signal przechowujący błąd walidacji */
     validationError = signal<string | null>(null);
 
+    constructor() {
+        // Effect do ustawienia początkowej wartości z initialQuery
+        effect(() => {
+            const initial = this.initialQuery();
+            if (initial !== this.queryControl.value) {
+                this.queryControl.setValue(initial, { emitEvent: false });
+            }
+        });
+    }
+
     /**
      * Obsługa submitu wyszukiwania (Enter lub klik przycisku).
      * Waliduje długość zapytania i emituje zdarzenie jeśli poprawne.
@@ -55,23 +66,27 @@ export class PublicRecipesSearchComponent {
     onSearchSubmit(): void {
         const query = this.queryControl.value.trim();
 
+        console.log('🔍 PublicRecipesSearch - onSearchSubmit wywołany, query:', query);
+
         // Resetuj poprzedni błąd
         this.validationError.set(null);
 
-        // Jeśli puste - możemy nawigować do /explore bez parametru
-        // (lub nie robić nic - zależnie od wymagań UX)
+        // Jeśli puste - emituj pusty string (umożliwia nawigację do /explore bez filtra)
         if (query.length === 0) {
+            console.log('✅ Emituję pusty query');
             this.searchSubmit.emit('');
             return;
         }
 
         // Walidacja: min. 2 znaki dla niepustego zapytania
         if (query.length === 1) {
+            console.log('❌ Query za krótki (1 znak)');
             this.validationError.set('Wpisz co najmniej 2 znaki');
             return;
         }
 
         // Emituj poprawne zapytanie
+        console.log('✅ Emituję query:', query);
         this.searchSubmit.emit(query);
     }
 
