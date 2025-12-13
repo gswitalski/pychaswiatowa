@@ -70,3 +70,29 @@ export async function getAuthenticatedContext(req: Request): Promise<{
     const user = await getAuthenticatedUser(client);
     return { client, user };
 }
+
+/**
+ * Creates a Supabase client with service role key for bypassing RLS.
+ * Use ONLY for public endpoints or admin operations where RLS needs to be bypassed.
+ *
+ * ⚠️ WARNING: This client has full access to the database. Always enforce
+ * application-level security filters (e.g., visibility='PUBLIC').
+ *
+ * @returns Service role Supabase client
+ * @throws ApplicationError with INTERNAL_ERROR code if configuration is missing
+ */
+export function createServiceRoleClient(): TypedSupabaseClient {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Missing Supabase service role configuration');
+    }
+
+    return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    });
+}

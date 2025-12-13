@@ -72,6 +72,20 @@ export type RecipeListItemDto = Pick<
 };
 
 /**
+ * DTO for a public recipe list item.
+ * Used for anonymous access to public recipes (no authentication required).
+ */
+export interface PublicRecipeListItemDto {
+    id: number;
+    name: string;
+    description: string | null;
+    image_path: string | null;
+    category: CategoryDto | null;
+    tags: string[];
+    created_at: string;
+}
+
+/**
  * Represents a single content item within a recipe's ingredients or steps.
  * Can be either a header or a regular item.
  */
