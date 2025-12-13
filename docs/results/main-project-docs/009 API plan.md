@@ -7,13 +7,86 @@ This document outlines the REST API for the PychaŚwiatowa application, based on
 The API exposes the following primary resources:
 
 -   **Recipes**: Corresponds to the `recipes` table. Represents a user's culinary recipe.
+-   **Public Recipes**: Read-only access to recipes with `visibility = 'PUBLIC'` for anonymous users.
 -   **Categories**: Corresponds to the `categories` table. Represents a predefined recipe category.
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
 -   **Collections**: Corresponds to the `collections` table. Represents user-created collections of recipes.
 
 ## 2. Endpoints
 
-All endpoints are protected and require a valid JWT from Supabase Auth.
+Private endpoints are protected and require a valid JWT from Supabase Auth.
+Public endpoints are available without authentication and must return **only** recipes with `visibility = 'PUBLIC'` (and `deleted_at IS NULL`).
+
+---
+
+### Public Recipes
+
+#### `GET /public/recipes`
+
+-   **Description**: Retrieve a paginated list of public recipes for anonymous users. Supports basic text search (MVP).
+-   **Query Parameters**:
+    -   `page` (optional, integer, default: 1): The page number for pagination.
+    -   `limit` (optional, integer, default: 20): The number of items per page.
+    -   `sort` (optional, string, default: `created_at.desc`): Sort order. e.g., `created_at.desc`, `name.asc`.
+    -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "data": [
+            {
+              "id": 1,
+              "name": "Apple Pie",
+              "description": "A classic dessert.",
+              "image_path": "path/to/image.jpg",
+              "category": { "id": 2, "name": "Dessert" },
+              "tags": ["sweet", "baking"],
+              "created_at": "2023-10-27T10:00:00Z"
+            }
+          ],
+          "pagination": {
+            "currentPage": 1,
+            "totalPages": 5,
+            "totalItems": 100
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (if `q` is provided and too short)
+    -   **Payload**: `{ "message": "Query must be at least 2 characters" }`
+
+---
+
+#### `GET /public/recipes/{id}`
+
+-   **Description**: Retrieve a single public recipe by its ID. Intended for public, shareable, SEO-friendly recipe pages (frontend can include a slug in the URL, but the API uses the numeric `id`).
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "id": 1,
+          "name": "Apple Pie",
+          "description": "A classic dessert.",
+          "image_path": "path/to/image.jpg",
+          "visibility": "PUBLIC",
+          "category": { "id": 2, "name": "Dessert" },
+          "ingredients": [
+            { "type": "header", "content": "Dough" },
+            { "type": "item", "content": "500g flour" }
+          ],
+          "steps": [
+            { "type": "header", "content": "Preparation" },
+            { "type": "item", "content": "Mix flour and water." }
+          ],
+          "tags": ["sweet", "baking"],
+          "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
+          "created_at": "2023-10-27T10:00:00Z"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `404 Not Found` - If the recipe does not exist or is not public.
 
 ---
 

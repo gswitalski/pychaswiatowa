@@ -15,19 +15,34 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 
 **1. Landing Page**
 - **Ścieżka:** `/`
-- **Główny cel:** Powitanie użytkownika i przedstawienie aplikacji. Skierowanie do logowania lub rejestracji.
-- **Kluczowe informacje do wyświetlenia:** Nazwa i logo aplikacji, krótkie hasło marketingowe, przyciski "Zaloguj się" i "Zarejestruj się".
-- **Kluczowe komponenty widoku:** Główny nagłówek, sekcja "hero", przyciski akcji.
-- **Względy UX, dostępności i bezpieczeństwa:** Prosty i czytelny układ, wyraźne wezwania do akcji.
+- **Główny cel:** Powitanie użytkownika i przedstawienie aplikacji oraz natychmiastowe udostępnienie wartościowego contentu (publiczne przepisy) z możliwością wyszukiwania.
+- **Kluczowe informacje do wyświetlenia:** Nazwa i logo aplikacji, krótkie hasło, pole wyszukiwania publicznych przepisów, sekcje z publicznymi przepisami (np. Najnowsze, Popularne, Sezonowe), przyciski "Zaloguj się" i "Zarejestruj się".
+- **Kluczowe komponenty widoku:** Główny nagłówek, sekcja "hero", publiczny pasek wyszukiwania, sekcje z `RecipeCardComponent`, CTA do logowania/rejestracji.
+- **Względy UX, dostępności i bezpieczeństwa:** Prosty i czytelny układ, wyraźne wezwania do akcji. Treści wyłącznie dla przepisów publicznych.
 
-**2. Logowanie**
+**2. Publiczny katalog przepisów (Explore)**
+- **Ścieżka:** `/explore`
+- **Główny cel:** Przeglądanie i wyszukiwanie publicznych przepisów (MVP: tylko tekst).
+- **Kluczowe informacje do wyświetlenia:** Lista kart przepisów (zdjęcie, nazwa, kategoria), pole wyszukiwania, stronicowanie.
+- **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-paginator`, wskaźniki ładowania (Skeletons).
+- **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników").
+
+**3. Publiczne szczegóły przepisu**
+- **Ścieżka:** `/explore/recipes/:id-:slug`
+- **Główny cel:** Pełny podgląd publicznego przepisu w czytelnym układzie.
+- **Header:** Tytuł przepisu. Akcje: brak akcji właściciela; zamiast tego CTA "Zaloguj się, aby dodać do kolekcji / edytować".
+- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
+- **Kluczowe komponenty widoku:** `mat-list`, `mat-chip-list`, Sticky Navigation (spis treści) na desktopie (opcjonalnie).
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (kroki / składniki). Brak przycisków "Edytuj/Usuń". Wczytywanie danych po `id` (część `-:slug` jest SEO-friendly i nie jest wymagana do pobrania danych).
+
+**4. Logowanie**
 - **Ścieżka:** `/login`
 - **Główny cel:** Uwierzytelnienie istniejącego użytkownika.
 - **Kluczowe informacje do wyświetlenia:** Formularz z polami na e-mail i hasło, komunikat o błędach, link do strony rejestracji.
 - **Kluczowe komponenty widoku:** `mat-card`, `mat-form-field`, `mat-input`, `mat-button`.
 - **Względy UX, dostępności i bezpieczeństwa:** Jasna komunikacja błędów walidacji. Pola formularza poprawnie oetykietowane.
 
-**3. Rejestracja**
+**5. Rejestracja**
 - **Ścieżka:** `/register`
 - **Główny cel:** Umożliwienie nowym użytkownikom założenia konta.
 - **Kluczowe informacje do wyświetlenia:** Formularz z polami na e-mail i hasło (wraz z potwierdzeniem), link do strony logowania.
@@ -36,7 +51,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 
 ### Widoki prywatne (dla zalogowanych)
 
-**4. Dashboard**
+**6. Dashboard**
 - **Ścieżka:** `/dashboard`
 - **Główny cel:** Strona startowa po zalogowaniu, zapewniająca szybki dostęp do głównych funkcji.
 - **Header:** Tytuł "Witaj, [Imię]". Brak przycisków akcji.
@@ -44,7 +59,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `mat-card` jako kafelki nawigacyjne.
 - **Względy UX, dostępności i bezpieczeństwa:** Dostęp chroniony przez `AuthGuard`.
 
-**5. Lista Przepisów (Moje przepisy)**
+**7. Lista Przepisów (Moje przepisy)**
 - **Ścieżka:** `/recipes`
 - **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie wszystkich przepisów użytkownika.
 - **Header:** Tytuł "Twoje Przepisy", Przycisk "Dodaj Przepis" (Split Button: "Ręcznie" | "Import").
@@ -52,7 +67,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-paginator`, `mat-card`, `mat-chip-list`, komponent "stanu pustego" z akcją.
 - **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy. Wskaźniki ładowania (Skeletons). Obsługa stanu pustego z wezwaniem do akcji "Utwórz pierwszy przepis".
 
-**6. Szczegóły Przepisu**
+**8. Szczegóły Przepisu**
 - **Ścieżka:** `/recipes/:id`
 - **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji.
 - **Header:** Tytuł przepisu. Akcje: Ikony (Ulubione, Edytuj, Usuń).
@@ -60,7 +75,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-list`, `mat-chip-list`, Sticky Navigation (spis treści) na desktopie.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 3-kolumnowy (Info / Treść / Spis) na desktopie. Feedback "Toast" po usunięciu z opcją "Cofnij". Numeracja kroków nie resetuje się po nagłówkach sekcji (wymaga zastosowania CSS Counters lub odpowiedniej struktury HTML).
 
-**7. Formularz Przepisu (Dodaj/Edytuj)**
+**9. Formularz Przepisu (Dodaj/Edytuj)**
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
 - **Główny cel:** Tworzenie i modyfikacja przepisu.
 - **Header:** Tytuł "Nowy przepis" / "Edycja". Akcje: "Anuluj", "Zapisz" (Sticky - zawsze widoczny).
@@ -68,7 +83,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), komponent do przesyłania plików, interaktywna lista "przeciągnij i upuść".
 - **Względy UX, dostępności i bezpieczeństwa:** Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
 
-**8. Import Przepisu**
+**10. Import Przepisu**
 - **Ścieżka:** `/recipes/import`
 - **Główny cel:** Szybkie tworzenie przepisu z tekstu w trybie "Focus".
 - **Header:** Tytuł "Importuj Przepis". Akcje: "Anuluj", "Importuj".
@@ -76,21 +91,21 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field` (textarea), Podgląd przepisu.
 - **Względy UX, dostępności i bezpieczeństwa:** Minimalizm interfejsu (ukrycie zbędnych elementów). Podgląd na żywo daje pewność co do formatowania przed importem.
 
-**9. Lista Kolekcji (Moje kolekcje)**
+**11. Lista Kolekcji (Moje kolekcje)**
 - **Ścieżka:** `/collections`
 - **Główny cel:** Zarządzanie kolekcjami przepisów.
 - **Kluczowe informacje do wyświetlenia:** Lista istniejących kolekcji z opcjami edycji i usunięcia.
 - **Kluczowe komponenty widoku:** `mat-list` lub `mat-card` do wyświetlania kolekcji, przycisk do tworzenia nowej, komponent "stanu pustego".
 - **Względy UX, dostępności i bezpieczeństwa:** Potwierdzenie usunięcia kolekcji w oknie modalnym.
 
-**10. Szczegóły Kolekcji**
+**12. Szczegóły Kolekcji**
 - **Ścieżka:** `/collections/:id`
 - **Główny cel:** Wyświetlanie przepisów przypisanych do konkretnej kolekcji.
 - **Kluczowe informacje do wyświetlenia:** Nazwa i opis kolekcji, lista zawartych w niej przepisów.
 - **Kluczowe komponenty widoku:** Lista przepisów (komponent współdzielony z Listą Przepisów), przycisk "Usuń z kolekcji" przy każdym przepisie.
 - **Względy UX, dostępności i bezpieczeństwa:** Spójna prezentacja przepisów z główną listą.
 
-**11. Ustawienia Konta**
+**13. Ustawienia Konta**
 - **Ścieżka:** `/settings`
 - **Główny cel:** Umożliwienie użytkownikowi zarządzania swoim profilem.
 - **Kluczowe informacje do wyświetlenia:** Formularz zmiany nazwy użytkownika, formularz zmiany hasła.
@@ -109,7 +124,7 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 
 ## 4. Układ i struktura nawigacji
 
-- **Nawigacja dla gości:** Ogranicza się do prostego nagłówka z linkami do logowania i rejestracji.
+- **Nawigacja dla gości:** Prosty nagłówek z linkami: `Przeglądaj` (do `/explore`), `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
 - **Nawigacja dla zalogowanych (App Shell):**
     - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Dashboard`, `Moje przepisy`, `Moje kolekcje`, `Ustawienia`, `Wyloguj`. Nie zawiera akcji operacyjnych. Na mobile zwijany (Hamburger) lub Bottom Bar.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:

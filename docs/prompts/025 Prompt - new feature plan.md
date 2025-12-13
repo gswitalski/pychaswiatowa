@@ -12,12 +12,10 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-Jako autor przepisu chcę dodac dodatkowe informacje o moim przepisie
 
-1. chce określić podczs tworzenia lub edycji jaki jest zasięg widoczności mojego przepisu. przepis może mieć jeden z trzech zakrsów widoczniści
- - prywatny - widoczny tylko dla mnie
- - współdzielony - widoczny dla mnie i dla innych użytkowników kórzy są ze mną połączeni  (funkcjonlanośc łaczenia użytkowników będzie realizowana w przyszłości)
- - publiczny - widoczny dla wszystkich użytkowników nawet dla niezalogowanych
+Cche aby portal przyjął formę bardziej publiczną. OStatnio zaimplementowałem funkcjonalnosc któa ustawi widocznosc przepisu - przepisy mogą być publicze , dla użytkowników połaczonych lub prywane.
+chcę mieć więcej funkcji dla użytkonika niezalogowaneo. aby na pierwszej strone miała ciekawy konent, aby mógł wyszukiwac publicnze przepisy i oglądać ich szczegóły/
+Zaproponuj coś sensowngo, zgodnego z trendami oraz bezpiecznego
 
 </nowa_funkcjonalnosc>
 
