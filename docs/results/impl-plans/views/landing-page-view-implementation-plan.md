@@ -1,131 +1,283 @@
-# Plan implementacji widoku Landing Page
+# Plan implementacji widoku Landing Page (Publiczny portal przepisów)
 
 ## 1. Przegląd
 
-Widok "Landing Page" jest publicznie dostępną stroną główną aplikacji PychaŚwiatowa. Jej głównym celem jest powitanie nowych i powracających użytkowników, zwięzłe przedstawienie wartości aplikacji oraz skierowanie ich do kluczowych akcji – logowania lub rejestracji. Strona ma charakter marketingowy i informacyjny.
+Widok **Landing Page** (`/`) jest publicznie dostępną stroną główną dla gościa. Poza warstwą marketingową (hero) prezentuje od razu wartościowy content: **pole wyszukiwania publicznych przepisów** oraz **sekcje z kuratorowanymi listami przepisów publicznych**. Z widoku gość może:
+
+- przejść do logowania lub rejestracji,
+- rozpocząć wyszukiwanie (nawigacja do katalogu publicznego),
+- kliknąć kartę przepisu i przejść do szczegółów publicznego przepisu.
+
+Widok nie może w żaden sposób ujawnić przepisów o widoczności `PRIVATE` ani `SHARED`.
 
 ## 2. Routing widoku
 
-Widok będzie dostępny pod głównym adresem URL aplikacji, czyli pod ścieżką `/`. Będzie to domyślna strona dla wszystkich niezalogowanych użytkowników.
+- **Ścieżka**: `/`
+- **Layout**: `PublicLayoutComponent` (publiczna część aplikacji)
+- **Komponent**: `LandingPageComponent`
+
+Uwagi integracyjne (zależności):
+- Pole wyszukiwania powinno nawigować do `/explore` z parametrem query `q`.
+- Karty przepisów publicznych powinny nawigować do `/explore/recipes/:id-:slug`.
 
 ## 3. Struktura komponentów
 
-Struktura zostanie oparta o reużywalny layout dla części publicznej oraz dedykowane komponenty dla strony głównej.
+Proponowana struktura (z zachowaniem podejścia standalone, selektorów `pych-*` oraz CD OnPush):
 
 ```
-/app
-|-- /layout
-|   |-- /public-layout
-|       |-- public-layout.component.ts      // Główny layout dla stron publicznych
-|-- /pages
-|   |-- /landing
-|       |-- landing-page.component.ts       // Komponent widoku (strony)
-|       |-- /components
-|           |-- /hero
-|               |-- hero.component.ts       // Komponent sekcji "Hero"
-|-- /shared
-|   |-- /components
-|       |-- /public-header
-|           |-- public-header.component.ts  // Nagłówek dla stron publicznych
+PublicLayoutComponent
+ ├─ PublicHeaderComponent
+ └─ RouterOutlet
+     └─ LandingPageComponent
+         ├─ HeroComponent
+         ├─ PublicRecipesSearchComponent
+         └─ PublicRecipesSectionComponent (x3)
+             └─ PublicRecipeCardComponent (lista)
 ```
 
-**Hierarchia:**
+Lokalizacja plików (zgodnie z istniejącą strukturą):
 
-1.  `PublicLayoutComponent`
-    *   `PublicHeaderComponent`
-    *   `<router-outlet>` (w którym renderowany jest `LandingPageComponent`)
-2.  `LandingPageComponent`
-    *   `HeroComponent`
+- `src/app/pages/landing/landing-page.component.*` (modyfikacja)
+- `src/app/pages/landing/components/hero/*` (modyfikacja CTA opcjonalnie)
+- `src/app/pages/landing/components/public-recipes-search/*` (nowe)
+- `src/app/pages/landing/components/public-recipes-section/*` (nowe)
+- `src/app/pages/landing/components/public-recipe-card/*` (nowe)
+- `src/app/core/services/public-recipes.service.ts` (nowe; współdzielone także dla `/explore`)
 
 ## 4. Szczegóły komponentów
 
-### `pych-public-header`
+### `pych-public-header` (istnieje)
+- **Opis komponentu**: Nagłówek dla stron publicznych. Zapewnia widoczne akcje "Zaloguj się" i "Zarejestruj się" (wymaganie US-017).
+- **Główne elementy**: `mat-toolbar`, logo linkujące do `/`, linki do `/login` i `/register`.
+- **Obsługiwane zdarzenia**: kliknięcia `routerLink`.
+- **Obsługiwana walidacja**: brak.
+- **Typy**: brak.
+- **Propsy**: brak.
 
-*   **Opis komponentu:** Nagłówek wyświetlany na wszystkich stronach publicznych (niezalogowany użytkownik). Zawiera logo aplikacji oraz przyciski nawigacyjne do logowania i rejestracji.
-*   **Główne elementy:**
-    *   Logo aplikacji (prawdopodobnie jako `<img>` lub komponent SVG) z linkiem do strony głównej (`/`).
-    *   Kontener na przyciski akcji (`mat-button`).
-    *   Przycisk "Zaloguj się".
-    *   Przycisk "Zarejestruj się" (wariant `raised` lub `stroked` dla odróżnienia).
-*   **Obsługiwane zdarzenia:**
-    *   Kliknięcie w logo: nawigacja do `/`.
-    *   Kliknięcie "Zaloguj się": nawigacja do `/login`.
-    *   Kliknięcie "Zarejestruj się": nawigacja do `/register`.
-*   **Warunki walidacji:** Brak.
-*   **Typy:** Brak.
-*   **Propsy (Inputs):** Brak.
+### `pych-landing-page` (`LandingPageComponent`) (modyfikacja)
+- **Opis komponentu**: Kontener widoku. Renderuje hero, wyszukiwarkę publiczną oraz sekcje z publicznymi przepisami. Odpowiada za pobranie danych do sekcji i przekazanie ich do komponentów prezentacyjnych.
+- **Główne elementy**:
+  - `<pych-hero />`
+  - `<pych-public-recipes-search />`
+  - 3x `<pych-public-recipes-section />` (np. "Najnowsze", "Polecane", "Sezonowe")
+- **Obsługiwane zdarzenia**:
+  - `searchSubmit(q)` z `PublicRecipesSearchComponent` → nawigacja do `/explore?q=...`
+  - `retry(sectionKey)` → ponowne pobranie danych dla sekcji
+- **Obsługiwana walidacja**:
+  - brak walidacji formularza w samym komponencie (walidacja w `PublicRecipesSearchComponent`)
+- **Typy**:
+  - `PublicRecipeListItemDto` (dane wejściowe)
+  - `LandingSectionKey`, `LandingSectionVm`, `AsyncSectionState<T>` (VM lokalne dla widoku)
+- **Propsy**: brak.
 
-### `pych-landing-page`
+### `pych-hero` (`HeroComponent`) (opcjonalna modyfikacja)
+- **Opis komponentu**: Sekcja marketingowa. Dla czytelności UX warto dodać też przycisk "Zaloguj się" obok "Rozpocznij za darmo".
+- **Główne elementy**:
+  - `<h1>`, opis, przyciski CTA (`mat-raised-button` / `mat-button`)
+- **Obsługiwane zdarzenia**: nawigacja do `/register` (istnieje), opcjonalnie do `/login`.
+- **Walidacja**: brak.
+- **Typy/Propsy**: brak.
 
-*   **Opis komponentu:** Główny komponent-kontener dla widoku Landing Page. Jego zadaniem jest złożenie sekcji składowych strony.
-*   **Główne elementy:**
-    *   Komponent `<pych-hero>`.
-    *   (Opcjonalnie w przyszłości) Inne sekcje, np. opisujące funkcje aplikacji.
-*   **Obsługiwane zdarzenia:** Brak (propaguje zdarzenia z komponentów podrzędnych do routera).
-*   **Warunki walidacji:** Brak.
-*   **Typy:** Brak.
-*   **Propsy (Inputs):** Brak.
+### `pych-public-recipes-search` (`PublicRecipesSearchComponent`) (nowy)
+- **Opis komponentu**: Publiczne pole wyszukiwania (na landing), które przenosi użytkownika do katalogu `/explore`.
+- **Główne elementy**:
+  - `mat-form-field` + `input matInput`
+  - opcjonalnie `mat-icon` (ikona lupy) i przycisk "Szukaj"
+  - komunikat błędu walidacji pod polem
+- **Obsługiwane zdarzenia**:
+  - wpisywanie w input (aktualizacja `FormControl`)
+  - submit (Enter lub klik w przycisk) → emit `searchSubmit`
+- **Obsługiwana walidacja (frontend, zgodna z API)**:
+  - `q` po `trim()`:
+    - jeśli puste → nie nawiguj (lub nawiguj do `/explore` bez `q`, jeśli to jest pożądane UX)
+    - jeśli niepuste i długość `< 2` → pokaż błąd: "Wpisz co najmniej 2 znaki" i **nie** nawiguj
+    - jeśli `>= 2` → emituj `searchSubmit(q)`
+- **Typy**:
+  - VM: `PublicRecipesSearchVm` (np. `query: FormControl<string>`)
+- **Propsy**:
+  - `placeholder?: string`
+  - `initialQuery?: string` (opcjonalnie)
+  - `searchSubmit: output<string>`
 
-### `pych-hero`
+### `pych-public-recipes-section` (`PublicRecipesSectionComponent`) (nowy)
+- **Opis komponentu**: Sekcja listy publicznych przepisów na landing (nagłówek + pozioma/siatkowa lista kart).
+- **Główne elementy**:
+  - nagłówek sekcji (np. `<h2>`)
+  - kontener listy (`@for` po `recipes`)
+  - stany: loading (skeleton), error (komunikat + retry), empty ("Brak przepisów")
+- **Obsługiwane zdarzenia**:
+  - `retry` (kliknięcie w przycisk ponowienia)
+- **Obsługiwana walidacja**: brak.
+- **Typy**:
+  - `PublicRecipeCardVm[]` (VM dla kart)
+- **Propsy**:
+  - `title: input.required<string>`
+  - `recipes: input.required<PublicRecipeCardVm[]>`
+  - `isLoading: input<boolean>`
+  - `errorMessage: input<string | null>`
+  - `retry: output<void>`
 
-*   **Opis komponentu:** Kluczowa sekcja "Hero" na stronie głównej. Ma za zadanie przyciągnąć uwagę użytkownika za pomocą chwytliwego hasła i grafiki.
-*   **Główne elementy:**
-    *   Kontener główny z tłem (obraz lub gradient).
-    *   Nagłówek `<h1>` z głównym hasłem marketingowym aplikacji.
-    *   Paragraf `<p>` z krótkim opisem wyjaśniającym, czym jest PychaŚwiatowa.
-    *   Kontener z przyciskami akcji (wezwanie do działania - CTA), powtarzający przyciski z nagłówka dla lepszej widoczności.
-*   **Obsługiwane zdarzenia:**
-    *   Kliknięcie "Zarejestruj się": nawigacja do `/register`.
-*   **Warunki walidacji:** Brak.
-*   **Typy:** Brak.
-*   **Propsy (Inputs):** Brak.
+### `pych-public-recipe-card` (`PublicRecipeCardComponent`) (nowy)
+- **Opis komponentu**: Karta publicznego przepisu spełniająca US-017: zdjęcie (jeśli jest), nazwa, kategoria (jeśli jest). Klik prowadzi do publicznych szczegółów.
+- **Główne elementy**:
+  - `mat-card` z obrazkiem / placeholderem
+  - nazwa przepisu
+  - wiersz z kategorią (np. "Deser") lub ukryty, gdy brak
+- **Obsługiwane zdarzenia**:
+  - kliknięcie karty → nawigacja do `/explore/recipes/:id-:slug`
+- **Obsługiwana walidacja**:
+  - guardy wyświetlania: `@if (categoryName)` i `@if (imageUrl)`
+- **Typy**:
+  - `PublicRecipeCardVm`
+- **Propsy**:
+  - `vm: input.required<PublicRecipeCardVm>`
 
 ## 5. Typy
 
-Widok jest statyczny i nie przetwarza danych, w związku z czym nie wymaga definiowania żadnych niestandardowych typów DTO ani ViewModel.
+Wykorzystaj istniejące typy kontraktów:
+- `PublicRecipeListItemDto`
+- `PaginatedResponseDto<T>`
+
+Zdefiniuj (lokalnie dla widoku/komponentów) nowe ViewModel’e:
+
+- `type LandingSectionKey = 'newest' | 'featured' | 'seasonal';`
+
+- `interface PublicRecipeCardVm {
+    id: number;
+    name: string;
+    slug: string; // generowany po stronie FE (np. slugify(name))
+    imageUrl: string | null;
+    categoryName: string | null;
+}`
+
+- `interface AsyncSectionState<T> {
+    data: T;
+    isLoading: boolean;
+    errorMessage: string | null;
+}`
+
+- `interface LandingSectionVm {
+    key: LandingSectionKey;
+    title: string;
+    query: { page: number; limit: number; sort: string };
+}`
+
+Uwagi:
+- `slug` jest tylko dla SEO-friendly URL; pobieranie danych w szczegółach odbywa się po `id`.
 
 ## 6. Zarządzanie stanem
 
-Widok jest bezstanowy. Nie ma potrzeby implementacji żadnych mechanizmów zarządzania stanem, takich jak serwisy z sygnałami (signals) czy NgRx, ponieważ strona nie przechowuje żadnych danych ani nie reaguje na ich zmiany.
+Zalecane podejście: **signals + lokalny stan asynchroniczny**, bez NgRx.
+
+- W `LandingPageComponent` trzy niezależne stany sekcji:
+  - `sectionsConfig = signal<LandingSectionVm[]>(...)`
+  - `sectionsState = signal<Record<LandingSectionKey, AsyncSectionState<PublicRecipeCardVm[]>>>(...)`
+
+- Ładowanie:
+  - inicjalnie, w `ngOnInit` / `effect`, odpal równolegle pobrania dla wszystkich sekcji.
+  - przy rozpoczęciu ładowania użyj `state.update(...)` i **nie czyść poprzednich danych** (zasada "keep previous data visible").
+
+- RxJS w tle jest akceptowalny na poziomie serwisu, natomiast komponent utrzymuje rezultat w signals.
 
 ## 7. Integracja API
 
-Brak integracji z API. Widok nie pobiera ani nie wysyła żadnych danych do backendu.
+### Endpoint
+- **GET** `/public/recipes`
+
+### Typy
+- **Response**: `PaginatedResponseDto<PublicRecipeListItemDto>`
+
+### Budowanie zapytań dla sekcji na landing
+Ponieważ API MVP udostępnia `sort`, ale nie ma dedykowanych filtrów "popularne/sezonowe", sekcje należy oprzeć o różne kombinacje `sort` i/lub stron:
+
+- **Najnowsze**: `page=1&limit=8&sort=created_at.desc`
+- **Polecane** (wariant MVP): `page=2&limit=8&sort=created_at.desc` (inna „paczka” najnowszych)
+- **Sezonowe** (wariant MVP): `page=1&limit=8&sort=name.asc` (inna perspektywa sortowania)
+
+W przyszłości, jeśli backend doda parametry (np. `filter[season]` albo `sort=popularity.desc`), wystarczy zmienić `sectionsConfig`.
+
+### Serwis
+Utwórz `PublicRecipesService` (np. w `src/app/core/services/`) działający wyłącznie przez Edge Functions:
+- użyj `SupabaseService` i `supabase.functions.invoke()`
+- endpoint buduj jak w istniejącym `RecipesService` (query string)
+
+Proponowane API serwisu:
+- `getPublicRecipes(params: { page?: number; limit?: number; sort?: string; q?: string }): Observable<PaginatedResponseDto<PublicRecipeListItemDto>>`
+
+Mapowanie DTO → VM:
+- `imageUrl = dto.image_path`
+- `categoryName = dto.category?.name ?? null`
+- `slug = slugify(dto.name)`
 
 ## 8. Interakcje użytkownika
 
-*   **Kliknięcie przycisku "Zaloguj się":** Użytkownik jest przekierowywany na stronę logowania (`/login`).
-*   **Kliknięcie przycisku "Zarejestruj się":** Użytkownik jest przekierowywany na stronę rejestracji (`/register`).
-*   **Kliknięcie logo w nagłówku:** Użytkownik jest przekierowywany na stronę główną (`/`).
+- **Wejście na `/` jako gość**:
+  - widzi hero, wyszukiwarkę i sekcje publicznych przepisów.
+  - dane sekcji są pobierane asynchronicznie.
+
+- **Wpisywanie frazy w wyszukiwarce**:
+  - walidacja po stronie FE (min. 2 znaki dla niepustego `q`).
+
+- **Submit wyszukiwania**:
+  - `q` puste → opcjonalnie nawigacja do `/explore` bez parametrów
+  - `q` >= 2 → nawigacja do `/explore?q=<q>`
+
+- **Kliknięcie karty przepisu**:
+  - nawigacja do `/explore/recipes/:id-:slug`
+
+- **Kliknięcie „Zaloguj się” / „Zarejestruj się”**:
+  - nawigacja do `/login` / `/register` (już zapewnia `PublicHeaderComponent`).
 
 ## 9. Warunki i walidacja
 
-Brak warunków i walidacji po stronie frontendowej, ponieważ widok nie zawiera żadnych formularzy ani pól do wprowadzania danych.
+- **Walidacja wyszukiwania (frontend)**:
+  - `q` po `trim()`:
+    - jeśli `q.length === 1` → blokuj submit + komunikat
+    - jeśli `q.length >= 2` → zezwól
+
+- **Warunki API**:
+  - `GET /public/recipes?q=...` zwróci `400 Bad Request`, jeśli `q` za krótkie.
+  - Frontend powinien temu zapobiegać walidacją, ale i tak obsłużyć błąd (gdyby np. ktoś ręcznie zmienił URL w `/explore`).
+
+- **Separacja widoczności**:
+  - landing korzysta wyłącznie z `GET /public/recipes` → z definicji brak `PRIVATE/SHARED`.
 
 ## 10. Obsługa błędów
 
-Ze względu na statyczny charakter strony, ryzyko wystąpienia błędów jest minimalne. Potencjalne błędy mogą dotyczyć jedynie nieprawidłowej konfiguracji routingu. W takim przypadku, globalna obsługa błędów routera (np. strona 404) powinna zadziałać.
+- **Błąd sieci / błąd edge function**:
+  - w danej sekcji pokaż komunikat (np. "Nie udało się pobrać przepisów") i przycisk "Spróbuj ponownie".
+  - nie zasłaniaj całej strony; błąd jest per-sekcja.
+
+- **Pusta lista w sekcji**:
+  - pokaż stan pusty w obrębie sekcji (np. "Brak przepisów do wyświetlenia").
+
+- **Brak obrazka / brak kategorii**:
+  - obrazek: placeholder (ikonka lub grafika)
+  - kategoria: ukryj wiersz kategorii.
 
 ## 11. Kroki implementacji
 
-1.  **Stworzenie struktury plików:** Utworzenie folderów i plików dla komponentów: `PublicLayoutComponent`, `PublicHeaderComponent`, `LandingPageComponent`, `HeroComponent` zgodnie ze strukturą opisaną w punkcie 3.
-2.  **Implementacja `PublicHeaderComponent`:**
-    *   Dodanie selektora `pych-public-header`.
-    *   Stworzenie layoutu nagłówka przy użyciu `mat-toolbar` z Flexbox (`space-between`).
-    *   Dodanie logo i przycisków "Zaloguj się" i "Zarejestruj się" (`mat-button`).
-    *   Dodanie nawigacji za pomocą dyrektywy `routerLink`.
-3.  **Implementacja `HeroComponent`:**
-    *   Dodanie selektora `pych-hero`.
-    *   Zaprojektowanie sekcji w HTML i stylowanie w SCSS, aby była w pełni responsywna (desktop-first).
-    *   Dodanie tła, nagłówka `<h1>`, tekstu i przycisku CTA `mat-raised-button` z `routerLink` do `/register`.
-4.  **Implementacja `LandingPageComponent`:**
-    *   Dodanie selektora `pych-landing-page`.
-    *   Umieszczenie w szablonie komponentu `<pych-hero>`.
-5.  **Implementacja `PublicLayoutComponent`:**
-    *   Dodanie selektora `pych-public-layout`.
-    *   Umieszczenie w szablonie komponentu `<pych-public-header>` oraz `<router-outlet>`.
-6.  **Konfiguracja routingu:**
-    *   W głównym pliku `app.routes.ts` zdefiniowanie ścieżki głównej, która użyje `PublicLayoutComponent` jako komponentu ramowego i `LandingPageComponent` jako domyślnego komponentu dla ścieżki `''`.
-7.  **Stylowanie i dopracowanie:**
-    *   Dopracowanie stylów SCSS dla wszystkich komponentów, aby zapewnić spójność wizualną z Angular Material i responsywność.
-    *   Użycie zmiennych z motywu Angular Material do kolorów i typografii.
+1. **Zaktualizuj planowane założenia UI landingu** w `LandingPageComponent`: pod hero dodaj wyszukiwarkę i sekcje.
+2. **Dodaj serwis `PublicRecipesService`** w `src/app/core/services/`:
+   - metoda `getPublicRecipes(...)` wołająca `supabase.functions.invoke('public/recipes?...')`.
+3. **Dodaj komponent `PublicRecipesSearchComponent`**:
+   - `FormControl<string>` i walidacja min 2 znaki dla niepustego `q`.
+   - `output<string>` emitujące poprawne `q`.
+4. **Dodaj komponenty sekcji i karty**:
+   - `PublicRecipesSectionComponent` (nagłówek + lista + stany loading/error/empty).
+   - `PublicRecipeCardComponent` (obrazek/nazwa/kategoria + link do publicznych szczegółów).
+5. **Rozbuduj `LandingPageComponent` o stan w signals**:
+   - skonfiguruj `sectionsConfig` (3 sekcje + query)
+   - załaduj dane równolegle i aktualizuj stan przez `state.update()` bez czyszczenia danych.
+6. **Dodaj nawigację z wyszukiwarki**:
+   - na `searchSubmit(q)` wykonaj `router.navigate(['/explore'], { queryParams: { q } })`.
+7. **Dopasuj UX/wygląd**:
+   - layout desktop-first, sekcje w grid/karuzeli (np. CSS grid z responsywnymi breakpointami).
+   - loading: skeletony (bez białych półprzezroczystych overlayów).
+8. **(Opcjonalnie) Zaktualizuj `HeroComponent`** o dodatkowy CTA "Zaloguj się".
+9. **Weryfikacja kryteriów US-017**:
+   - `/` jako gość pokazuje search + sekcje.
+   - karty mają obrazek (lub placeholder), nazwę i kategorię (jeśli istnieje).
+   - klik karty prowadzi do szczegółów publicznego przepisu.
+   - akcje "Zaloguj się" i "Zarejestruj się" są widoczne (nagłówek publiczny).
+   - brak wycieku `PRIVATE/SHARED` (wyłącznie endpoint publiczny).
