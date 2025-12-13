@@ -12,10 +12,11 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-### Zmienione endpointy
 
-**GET /public/recipes**
-- **Co się zmieniło:** W odpowiedzi listingu dodano `author` (id + username), aby frontend mógł oznaczyć „Twój przepis” porównując `author.id` z tożsamością użytkownika.
+### Nowe endpointy
+
+**GET /me**
+- **Co się zmieniło:** Nowy endpoint (JWT) zwracający minimalne dane profilu zalogowanego użytkownika do inicjalizacji App Shell także na publicznych ścieżkach.
 
 </api_changes_description>
 
