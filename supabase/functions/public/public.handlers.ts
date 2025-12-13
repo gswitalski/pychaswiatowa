@@ -7,8 +7,8 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { createServiceRoleClient } from '../_shared/supabase-client.ts';
 import { ApplicationError, handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
-import { getPublicRecipes } from './public.service.ts';
-import { GetPublicRecipesQuery } from './public.types.ts';
+import { getPublicRecipes, getPublicRecipeById } from './public.service.ts';
+import { GetPublicRecipesQuery, GetPublicRecipeByIdParams } from './public.types.ts';
 
 /**
  * Zod schema for validating query parameters for GET /public/recipes.
@@ -58,6 +58,19 @@ const GetPublicRecipesQuerySchema = z.object({
             throw new Error('Search query must be at least 2 characters');
         }
         return trimmed;
+    }),
+});
+
+/**
+ * Zod schema for validating recipe ID from path parameter.
+ */
+const RecipeIdParamSchema = z.object({
+    id: z.string().transform((val) => {
+        const num = parseInt(val, 10);
+        if (isNaN(num) || num < 1) {
+            throw new Error('Recipe ID must be a positive integer');
+        }
+        return num;
     }),
 });
 
@@ -139,6 +152,51 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
 }
 
 /**
+ * Handles GET /public/recipes/{id} request.
+ * Returns full details of a single public recipe.
+ * This endpoint is accessible without authentication.
+ *
+ * @param recipeId - Recipe ID extracted from URL path
+ * @returns Response with PublicRecipeDetailDto on success, or error response
+ */
+export async function handleGetPublicRecipeById(recipeId: string): Promise<Response> {
+    try {
+        logger.info('Handling GET /public/recipes/:id request', { recipeId });
+
+        // Validate recipe ID parameter
+        let validatedParams: GetPublicRecipeByIdParams;
+        try {
+            validatedParams = RecipeIdParamSchema.parse({ id: recipeId });
+        } catch (zodError) {
+            if (zodError instanceof z.ZodError) {
+                const firstError = zodError.errors[0];
+                throw new ApplicationError('VALIDATION_ERROR', firstError.message);
+            }
+            // Handle custom transform errors (thrown as plain Error)
+            if (zodError instanceof Error) {
+                throw new ApplicationError('VALIDATION_ERROR', zodError.message);
+            }
+            throw zodError;
+        }
+
+        // Create service role client for public access
+        const client = createServiceRoleClient();
+
+        // Fetch public recipe by ID
+        const recipe = await getPublicRecipeById(client, validatedParams);
+
+        logger.info('GET /public/recipes/:id completed successfully', {
+            recipeId: recipe.id,
+            recipeName: recipe.name,
+        });
+
+        return createSuccessResponse(recipe);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Public router - routes requests to appropriate handlers.
  * Handles routing for /public/* endpoints.
  *
@@ -168,14 +226,22 @@ export async function publicRouter(req: Request): Promise<Response> {
 
     const subPath = match[1] || '/';
 
+    // Route: GET /public/recipes/{id}
+    // Check this BEFORE /public/recipes to match more specific pattern first
+    const recipeByIdMatch = subPath.match(/^\/recipes\/([^/]+)$/);
+    if (recipeByIdMatch && method === 'GET') {
+        const recipeId = recipeByIdMatch[1];
+        return handleGetPublicRecipeById(recipeId);
+    }
+
     // Route: GET /public/recipes
     if (subPath === '/recipes' && method === 'GET') {
         return handleGetPublicRecipes(req);
     }
 
     // Handle unsupported paths
-    if (subPath === '/recipes') {
-        logger.warn('Method not allowed for /public/recipes', { method });
+    if (subPath === '/recipes' || subPath.startsWith('/recipes/')) {
+        logger.warn('Method not allowed for /public/recipes', { method, subPath });
         return new Response(
             JSON.stringify({
                 code: 'METHOD_NOT_ALLOWED',

@@ -86,6 +86,24 @@ export interface PublicRecipeListItemDto {
 }
 
 /**
+ * DTO for detailed view of a single public recipe.
+ * Used for anonymous access to full recipe details (no authentication required).
+ */
+export interface PublicRecipeDetailDto {
+    id: number;
+    name: string;
+    description: string | null;
+    image_path: string | null;
+    visibility: 'PUBLIC';
+    category: CategoryDto | null;
+    ingredients: RecipeContent;
+    steps: RecipeContent;
+    tags: string[];
+    author: ProfileDto;
+    created_at: string;
+}
+
+/**
  * Represents a single content item within a recipe's ingredients or steps.
  * Can be either a header or a regular item.
  */

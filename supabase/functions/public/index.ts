@@ -7,6 +7,7 @@
  *
  * Routes:
  * - GET /public/recipes - Returns paginated list of public recipes
+ * - GET /public/recipes/{id} - Returns full details of a single public recipe
  */
 
 import { publicRouter } from './public.handlers.ts';

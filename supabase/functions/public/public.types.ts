@@ -13,3 +13,10 @@ export interface GetPublicRecipesQuery {
     sortDirection: 'asc' | 'desc';
     q?: string;
 }
+
+/**
+ * Parameters for fetching a single public recipe by ID.
+ */
+export interface GetPublicRecipeByIdParams {
+    id: number;
+}
