@@ -18,12 +18,9 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji
 <view>
-### Nowe widoki
-
-**2. Publiczny katalog przepisów (Explore)**
-- **Ścieżka:** `/explore`
-- **Opis:** Lista publicznych przepisów z wyszukiwaniem tekstowym (MVP) i paginacją.
-
+**3. Publiczne szczegóły przepisu**
+- **Ścieżka:** `/explore/recipes/:id-:slug`
+- **Opis:** Pełny podgląd publicznego przepisu. Brak akcji właściciela; widoczne CTA do logowania/rejestracji.
 
 </view>
 
@@ -32,14 +29,15 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-**US-018: Wyszukiwanie publicznych przepisów (MVP: tylko tekst)**
-- **Opis:** Jako użytkownik niezalogowany, chcę wyszukać publiczne przepisy po frazie tekstowej, abym mógł szybko znaleźć interesujące mnie propozycje.
+**US-019: Przeglądanie szczegółów publicznego przepisu**
+- **Opis:** Jako użytkownik niezalogowany, chcę wyświetlić pełne szczegóły publicznego przepisu w czytelnym układzie, abym mógł z niego korzystać bez konieczności zakładania konta.
 - **Kryteria akceptacji:**
-    1. Gość ma dostęp do pola wyszukiwania publicznych przepisów.
-    2. Wyszukiwanie jest tekstowe i przeszukuje co najmniej: nazwę przepisu, składniki oraz tagi.
-    3. Wyniki zawierają wyłącznie przepisy o widoczności `Publiczny`.
-    4. Wyniki są stronicowane.
-    5. Dla braku wyników wyświetlany jest czytelny komunikat i sugestia zmiany frazy.
+    1. Strona szczegółów publicznego przepisu wyświetla: nazwę, opis, zdjęcie, listę składników i listę kroków.
+    2. Na widoku desktopowym składniki i kroki są wyświetlane obok siebie w dwóch kolumnach.
+    3. Lista kroków jest numerowana w sposób ciągły i nie resetuje się po nagłówkach sekcji.
+    4. Widoczne są kategoria oraz tagi (jeśli istnieją).
+    5. Gość nie widzi akcji właściciela ("Edytuj", "Usuń"). Zamiast tego widzi zachętę do logowania/rejestracji.
+    6. Strona jest dostępna pod publicznym, udostępnialnym adresem URL (SEO-friendly).
 
 </user_stories>
 
