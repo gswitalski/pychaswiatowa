@@ -13,10 +13,12 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-### Nowe endpointy
+- **GET `/explore/recipes/{id}`**
+    - **Nowe:** endpoint dla publicznej ścieżki szczegółów.
+    - **Zasada dostępu:** `PUBLIC` dla wszystkich; nie-`PUBLIC` tylko dla zalogowanego autora; w pozostałych przypadkach `404`.
 
-**GET /me**
-- **Co się zmieniło:** Nowy endpoint (JWT) zwracający minimalne dane profilu zalogowanego użytkownika do inicjalizacji App Shell także na publicznych ścieżkach.
+- **GET `/public/recipes/{id}`**
+    - **Bez zmian funkcjonalnych:** pozostaje stricte publiczny (`PUBLIC` only), zgodnie z dotychczasowym kontraktem.
 
 </api_changes_description>
 

@@ -13,14 +13,21 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
+1. chcę aby strona
+http://localhost:4200/recipes
+wyświetlała tylko moje przepisy
 
-1. chcę aby menu boczne (sidebar) byłow widoczne tylko na stronach:
- - dashboard
- - przepisy
- - kolekcje
- - ustawiania
-2. nazwa opcji 'dashbord' ma się zmienić na 'Moja Pycha'
-3. Wejście na 'Na moją pychę' m być z gónego tolbara po lewj stronie ikonku użytkownika jako czesci głownej nawigacji poziomenj - na razie tlko z ta opcją i ikonką użytkownika)
+2. wejscie naszczególy przepisu z http://localhost:4200/recipes pozoistaje tak jak jest
+
+czyli http://localhost:4200/recipes/1 ma być chronione
+
+4. wejscie na szczegóły przepisu  z landing page lub z wyszukiwarki ogólne (/exlore) wyświtla przepis tak samo jak
+http://localhost:4200/recipes/1 ale
+ a) nie jest chronione (widok publiczny)
+ b) nie wyświetla sidebara 
+ c) ścieżka: http://localhost:4200/explore/recipes/1
+
+
 
 
 

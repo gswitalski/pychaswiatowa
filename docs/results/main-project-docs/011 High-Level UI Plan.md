@@ -28,24 +28,24 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-paginator`, wskaźniki ładowania (Skeletons).
 - **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników"). W trybie zalogowanego: oznaczyć na kartach przepisy użytkownika jako "Twój przepis".
 
-**3. Szczegóły przepisu (uniwersalny widok)**
-- **Ścieżka:** `/recipes/:id`
-- **Główny cel:** Pełny podgląd przepisu w czytelnym układzie - zarówno dla gości jak i zalogowanych użytkowników.
-- **Dostępność:** Widok dostępny dla wszystkich użytkowników. Goście mogą przeglądać tylko przepisy publiczne.
+**3. Szczegóły przepisu publiczne (uniwersalny widok treści)**
+- **Ścieżka:** `/explore/recipes/:id`
+- **Główny cel:** Pełny podgląd przepisu w czytelnym układzie - dostępny publicznie (bez ochrony routingu), ale z zachowaniem zasad widoczności.
+- **Dostępność:** Widok dostępny dla wszystkich użytkowników. Goście mogą przeglądać tylko przepisy publiczne. Zalogowany autor może przeglądać także swoje przepisy niepubliczne w tej ścieżce.
 - **Zachowanie w zależności od kontekstu:**
     - **Gość (niezalogowany):**
         - Brak nagłówka strony z akcjami właściciela
         - CTA do logowania/rejestracji na dole strony
-        - Przy próbie dostępu do niepublicznego przepisu: komunikat o braku dostępu z zachętą do logowania
+        - Przy próbie dostępu do niepublicznego przepisu: `404` (brak ujawniania istnienia zasobu)
     - **Zalogowany (cudzy przepis):**
         - Nagłówek z przyciskiem "Dodaj do kolekcji"
         - Brak przycisków edycji i usuwania
-        - Przy próbie dostępu do niepublicznego przepisu innego autora: komunikat o braku dostępu
+        - Przy próbie dostępu do niepublicznego przepisu innego autora: `404`
     - **Zalogowany (własny przepis):**
         - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Edytuj", "Usuń"
 - **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. Przekierowania ze starej ścieżki `/explore/recipes/:idslug` na `/recipes/:id`.
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. **Sidebar nie jest wyświetlany** (osobny layout publiczny).
 
 **4. Logowanie**
 - **Ścieżka:** `/login`
@@ -72,7 +72,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Względy UX, dostępności i bezpieczeństwa:** Dostęp chroniony przez `AuthGuard`.
 
 **7. Lista Przepisów (Moje przepisy)**
-- **Ścieżka:** `/recipes`
+- **Ścieżka:** `/my-recipes` (docelowo); (opcjonalnie) `/recipes` jako alias/redirect dla kompatybilności wstecznej
 - **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie wszystkich przepisów użytkownika.
 - **Header:** Tytuł "Twoje Przepisy", Przycisk "Dodaj Przepis" (Split Button: "Ręcznie" | "Import").
 - **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem, paginacja.
@@ -81,12 +81,12 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 
 **8. Szczegóły Przepisu**
 - **Ścieżka:** `/recipes/:id`
-- **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji.
-- **Uwaga:** Ten widok jest zunifikowany z publicznym widokiem szczegółów przepisu (patrz punkt 3 w widokach publicznych). Jeden komponent obsługuje wszystkie scenariusze:
-    - Gość przeglądający publiczny przepis
-    - Zalogowany użytkownik przeglądający cudzy publiczny przepis
-    - Zalogowany użytkownik przeglądający własny przepis (pełne akcje)
-- **Header:** Tytuł przepisu. Akcje zależne od kontekstu (patrz punkt 3).
+- **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji w kontekście prywatnym (z Sidebarem).
+- **Dostępność:** Widok chroniony (wymaga zalogowania). Użytkownik ma dostęp wyłącznie do swoich przepisów.
+- **Uwaga (re-użycie komponentu):** Ten sam komponent szczegółów może być reużyty w ścieżce publicznej `/explore/recipes/:id`, ale:
+    - routing i layout różnią się (publiczny bez sidebara, prywatny z sidebarem),
+    - źródło danych i zasady dostępu różnią się (publiczny: `PUBLIC` lub autor; prywatny: tylko autor).
+- **Header:** Tytuł przepisu. Akcje właściciela (np. "Edytuj", "Usuń") dostępne zawsze (bo widok jest tylko dla autora).
 - **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji.
@@ -141,12 +141,12 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 ## 4. Układ i struktura nawigacji
 
 - **Nawigacja dla gości:** Prosty nagłówek z linkami: `Przeglądaj` (do `/explore`), `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
-- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id-:slug`) korzystają z nawigacji zalogowanego użytkownika w Topbarze (bez Sidebara):
+- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id`) korzystają z nawigacji zalogowanego użytkownika w Topbarze (bez Sidebara):
     - brak przycisków "Zaloguj" i "Zarejestruj",
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
     - w Topbarze dostępny jest link "Moja Pycha" prowadzący do `/dashboard`.
 - **Nawigacja dla zalogowanych (App Shell):**
-    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/recipes/**`, `/collections/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
+    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy` (route: `/my-recipes`), `Moje kolekcje`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipes`, `/recipes/**`, `/collections/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
         - **Breadcrumbs:** Ścieżka powrotu (np. `Kolekcje > Święta`).
         - **Omnibox:** Globalne wyszukiwanie dostępne zawsze.

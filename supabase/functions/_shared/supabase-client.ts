@@ -96,3 +96,47 @@ export function createServiceRoleClient(): TypedSupabaseClient {
         },
     });
 }
+
+/**
+ * Extracts optional user ID from Authorization header.
+ * Returns null if no header present (anonymous request).
+ * Throws ApplicationError with UNAUTHORIZED code if token is invalid.
+ *
+ * Use this for endpoints that support both authenticated and anonymous access.
+ *
+ * @param req - The incoming HTTP request
+ * @returns User ID string or null for anonymous request
+ * @throws ApplicationError with UNAUTHORIZED code if token is present but invalid
+ * @throws ApplicationError with INTERNAL_ERROR code if configuration is missing
+ */
+export async function getOptionalAuthenticatedUser(req: Request): Promise<User | null> {
+    const authHeader = req.headers.get('Authorization');
+
+    // No token = anonymous request
+    if (!authHeader) {
+        return null;
+    }
+
+    // Token present = must be valid
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Missing Supabase configuration');
+    }
+
+    // Verify token
+    const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        global: {
+            headers: { Authorization: authHeader },
+        },
+    });
+
+    const { data: { user }, error } = await client.auth.getUser();
+
+    if (error || !user) {
+        throw new ApplicationError('UNAUTHORIZED', 'Invalid or expired token');
+    }
+
+    return user;
+}

@@ -15,7 +15,7 @@ The API exposes the following primary resources:
 ## 2. Endpoints
 
 Private endpoints are protected and require a valid JWT from Supabase Auth.
-Public endpoints are available without authentication and must return **only** recipes with `visibility = 'PUBLIC'` (and `deleted_at IS NULL`).
+Public endpoints are available without authentication and must return **only** recipes with `visibility = 'PUBLIC'` (and `deleted_at IS NULL`), unless explicitly stated otherwise (e.g., optional-auth endpoints that allow the author to access their own non-public recipe).
 
 ---
 
@@ -90,6 +90,19 @@ Public endpoints are available without authentication and must return **only** r
     -   **Code**: `404 Not Found` - If the recipe does not exist or is not public.
 
 ---
+
+#### `GET /explore/recipes/{id}`
+
+-   **Description**: Retrieve a recipe for the public "Explore details" route. Authentication is optional:
+    -   If the recipe is `PUBLIC` → returns it for everyone.
+    -   If the recipe is not `PUBLIC` → returns it **only** when the request is authenticated and the current user is the author.
+    -   Otherwise returns `404` (do not reveal the existence of private recipes).
+-   **Auth**: Optional (`Authorization: Bearer <JWT>`). If omitted, behaves like a strictly public endpoint.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**: Same shape as `GET /recipes/{id}` (full recipe details including `visibility`, `ingredients`, `steps`, `tags`, `category`, `author`, timestamps).
+-   **Error Response**:
+    -   **Code**: `404 Not Found` - If the recipe does not exist, is soft-deleted, or is not accessible in the current context.
 
 ### Recipes
 
