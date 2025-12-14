@@ -1,13 +1,10 @@
 <pych-page-header
-    [title]="pageTitle()"
-    [showBackButton]="true"
->
+    [title]="pageTitle()">
     <button
         mat-stroked-button
         type="button"
         (click)="onCancel()"
-        [disabled]="saving()"
-    >
+        [disabled]="saving()">
         Anuluj
     </button>
     <button
@@ -15,107 +12,102 @@
         color="primary"
         type="button"
         [disabled]="saving() || form.invalid"
-        (click)="onSubmit()"
-    >
+        (click)="onSubmit()">
         @if (saving()) {
-            <mat-spinner diameter="20"></mat-spinner>
+        <mat-spinner diameter="20"></mat-spinner>
         } @else {
-            {{ isEditMode() ? 'Zapisz zmiany' : 'Dodaj przepis' }}
+        {{ isEditMode() ? 'Zapisz zmiany' : 'Dodaj przepis' }}
         }
     </button>
 </pych-page-header>
 
 <div class="recipe-form-page">
     @if (loading()) {
-        <div class="loading-container">
-            <mat-spinner diameter="48"></mat-spinner>
-            <p>Ładowanie przepisu...</p>
-        </div>
+    <div class="loading-container">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Ładowanie przepisu...</p>
+    </div>
     } @else {
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="recipe-form">
-            @if (error()) {
-                <div class="error-banner">
-                    <mat-icon>error</mat-icon>
-                    <span>{{ error() }}</span>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="recipe-form">
+        @if (error()) {
+        <div class="error-banner">
+            <mat-icon>error</mat-icon>
+            <span>{{ error() }}</span>
+        </div>
+        }
+
+        <mat-card class="form-section">
+            <mat-card-header>
+                <mat-card-title>Podstawowe informacje</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <pych-recipe-basic-info-form
+                    [nameControl]="form.controls.name"
+                    [descriptionControl]="form.controls.description" />
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="form-section">
+            <mat-card-header>
+                <mat-card-title>Zdjęcie</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <pych-recipe-image-upload
+                    [currentImageUrl]="currentImageUrl()"
+                    (imageChange)="onImageChange($event)" />
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="form-section">
+            <mat-card-header>
+                <mat-card-title>Kategoria, tagi i widoczność</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <pych-recipe-categorization-form
+                    [categoryControl]="form.controls.categoryId"
+                    [tagsArray]="tagsArray"
+                    [visibilityControl]="form.controls.visibility"
+                    [categories]="categories()" />
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="form-section">
+            <mat-card-header>
+                <mat-card-title>Składniki</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <pych-editable-list
+                    [formArray]="ingredientsArray"
+                    label="Składnik"
+                    placeholder="Dodaj składnik (użyj # na początku dla nagłówka)" />
+                @if (ingredientsArray.hasError('minArrayLength') &&
+                ingredientsArray.touched) {
+                <div class="field-error">
+                    <mat-icon>warning</mat-icon>
+                    <span>Dodaj co najmniej jeden składnik</span>
                 </div>
-            }
+                }
+            </mat-card-content>
+        </mat-card>
 
-            <mat-card class="form-section">
-                <mat-card-header>
-                    <mat-card-title>Podstawowe informacje</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                    <pych-recipe-basic-info-form
-                        [nameControl]="form.controls.name"
-                        [descriptionControl]="form.controls.description"
-                    />
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card class="form-section">
-                <mat-card-header>
-                    <mat-card-title>Zdjęcie</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                    <pych-recipe-image-upload
-                        [currentImageUrl]="currentImageUrl()"
-                        (imageChange)="onImageChange($event)"
-                    />
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card class="form-section">
-                <mat-card-header>
-                    <mat-card-title>Kategoria, tagi i widoczność</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                    <pych-recipe-categorization-form
-                        [categoryControl]="form.controls.categoryId"
-                        [tagsArray]="tagsArray"
-                        [visibilityControl]="form.controls.visibility"
-                        [categories]="categories()"
-                    />
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card class="form-section">
-                <mat-card-header>
-                    <mat-card-title>Składniki</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                    <pych-editable-list
-                        [formArray]="ingredientsArray"
-                        label="Składnik"
-                        placeholder="Dodaj składnik (użyj # na początku dla nagłówka)"
-                    />
-                    @if (ingredientsArray.hasError('minArrayLength') && ingredientsArray.touched) {
-                        <div class="field-error">
-                            <mat-icon>warning</mat-icon>
-                            <span>Dodaj co najmniej jeden składnik</span>
-                        </div>
-                    }
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card class="form-section">
-                <mat-card-header>
-                    <mat-card-title>Kroki przygotowania</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                    <pych-editable-list
-                        [formArray]="stepsArray"
-                        label="Krok"
-                        placeholder="Dodaj krok (użyj # na początku dla nagłówka)"
-                    />
-                    @if (stepsArray.hasError('minArrayLength') && stepsArray.touched) {
-                        <div class="field-error">
-                            <mat-icon>warning</mat-icon>
-                            <span>Dodaj co najmniej jeden krok</span>
-                        </div>
-                    }
-                </mat-card-content>
-            </mat-card>
-        </form>
+        <mat-card class="form-section">
+            <mat-card-header>
+                <mat-card-title>Kroki przygotowania</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <pych-editable-list
+                    [formArray]="stepsArray"
+                    label="Krok"
+                    placeholder="Dodaj krok (użyj # na początku dla nagłówka)" />
+                @if (stepsArray.hasError('minArrayLength') &&
+                stepsArray.touched) {
+                <div class="field-error">
+                    <mat-icon>warning</mat-icon>
+                    <span>Dodaj co najmniej jeden krok</span>
+                </div>
+                }
+            </mat-card-content>
+        </mat-card>
+    </form>
     }
 </div>
-

@@ -1,105 +1,97 @@
 <!-- Loading state -->
 @if (isLoading()) {
-    <div class="loading-container">
-        <mat-spinner diameter="48"></mat-spinner>
-        <p>Ładowanie przepisu...</p>
-    </div>
+<div class="loading-container">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Ładowanie przepisu...</p>
+</div>
 }
 
 <!-- Error state -->
 @if (error() && !isLoading()) {
-    <div class="error-container">
-        <mat-icon class="error-icon">error_outline</mat-icon>
-        <h2 class="error-title">
-            @if (error()!.status === 404) {
-                Nie znaleziono przepisu
-            } @else if (error()!.status === 403) {
-                Brak dostępu
-            } @else if (error()!.status === 400) {
-                Nieprawidłowy adres
-            } @else {
-                Wystąpił błąd
-            }
-        </h2>
-        <p class="error-message">{{ error()!.message }}</p>
+<div class="error-container">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <h2 class="error-title">
+        @if (error()!.status === 404) {
+        Nie znaleziono przepisu
+        } @else if (error()!.status === 403) {
+        Brak dostępu
+        } @else if (error()!.status === 400) {
+        Nieprawidłowy adres
+        } @else {
+        Wystąpił błąd
+        }
+    </h2>
+    <p class="error-message">{{ error()!.message }}</p>
 
-        <div class="error-actions">
-            <button mat-raised-button color="primary" (click)="onBackToList()">
-                <mat-icon>arrow_back</mat-icon>
-                Wróć do listy przepisów
-            </button>
-        </div>
+    <div class="error-actions">
+        <button mat-raised-button color="primary" (click)="onBackToList()">
+            <mat-icon>arrow_back</mat-icon>
+            Wróć do listy przepisów
+        </button>
     </div>
+</div>
 }
 
 <!-- Success state - recipe content -->
 @if (hasRecipe() && !isLoading() && !error()) {
-    <div class="recipe-detail-container">
-        <!-- Page header - akcje właściciela -->
-        <pych-page-header
-            [title]="pageTitle()"
-            [showBackButton]="true"
-        >
-            <!-- Akcje dla właściciela przepisu -->
-            <button
-                mat-icon-button
-                matTooltip="Dodaj do kolekcji"
-                aria-label="Dodaj do kolekcji"
-                (click)="onAddToCollection()"
-            >
-                <mat-icon>bookmark_add</mat-icon>
-            </button>
-            @if (isOwner()) {
-                <button
-                    mat-icon-button
-                    matTooltip="Edytuj przepis"
-                    aria-label="Edytuj przepis"
-                    (click)="onEdit()"
-                >
-                    <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                    mat-icon-button
-                    matTooltip="Usuń przepis"
-                    aria-label="Usuń przepis"
-                    color="warn"
-                    (click)="onDelete()"
-                >
-                    <mat-icon>delete</mat-icon>
-                </button>
-            }
-        </pych-page-header>
+<div class="recipe-detail-container">
+    <!-- Page header - akcje właściciela -->
+    <pych-page-header
+        [title]="pageTitle()"
+        [showBackButton]="true">
+        <!-- Akcje dla właściciela przepisu -->
+        <button
+            mat-icon-button
+            matTooltip="Dodaj do kolekcji"
+            aria-label="Dodaj do kolekcji"
+            (click)="onAddToCollection()">
+            <mat-icon>bookmark_add</mat-icon>
+        </button>
+        @if (isOwner()) {
+        <button
+            mat-icon-button
+            matTooltip="Edytuj przepis"
+            aria-label="Edytuj przepis"
+            (click)="onEdit()">
+            <mat-icon>edit</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            matTooltip="Usuń przepis"
+            aria-label="Usuń przepis"
+            color="warn"
+            (click)="onDelete()">
+            <mat-icon>delete</mat-icon>
+        </button>
+        }
+    </pych-page-header>
 
-        <div class="recipe-content">
-            <!-- Wiersz 1: Header - tytuł, opis (lewa) + zdjęcie (prawa) -->
-            <div class="recipe-header-section">
-                <div class="recipe-info">
-                    <pych-recipe-header
-                        [recipe]="recipe()!"
-                        [isPublic]="false"
-                    />
-                </div>
-
-                <pych-recipe-image
-                    [imageUrl]="recipe()!.image_path"
-                    [recipeName]="recipe()!.name ?? ''"
-                />
+    <div class="recipe-content">
+        <!-- Wiersz 1: Header - tytuł, opis (lewa) + zdjęcie (prawa) -->
+        <div class="recipe-header-section">
+            <div class="recipe-info">
+                <pych-recipe-header
+                    [recipe]="recipe()!"
+                    [isPublic]="false" />
             </div>
 
-            <!-- Wiersz 2: Składniki (lewa) + kroki przygotowania (prawa) -->
-            <div class="recipe-details">
-                <pych-recipe-content-list
-                    title="Składniki"
-                    [content]="recipe()!.ingredients"
-                    [isNumbered]="false"
-                />
+            <pych-recipe-image
+                [imageUrl]="recipe()!.image_path"
+                [recipeName]="recipe()!.name ?? ''" />
+        </div>
 
-                <pych-recipe-content-list
-                    title="Kroki przygotowania"
-                    [content]="recipe()!.steps"
-                    [isNumbered]="true"
-                />
-            </div>
+        <!-- Wiersz 2: Składniki (lewa) + kroki przygotowania (prawa) -->
+        <div class="recipe-details">
+            <pych-recipe-content-list
+                title="Składniki"
+                [content]="recipe()!.ingredients"
+                [isNumbered]="false" />
+
+            <pych-recipe-content-list
+                title="Kroki przygotowania"
+                [content]="recipe()!.steps"
+                [isNumbered]="true" />
         </div>
     </div>
+</div>
 }
