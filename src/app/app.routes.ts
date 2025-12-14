@@ -26,16 +26,6 @@ export const routes: Routes = [
                     ),
             },
             {
-                path: 'explore/recipes/:idslug',
-                redirectTo: (route) => {
-                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /explore/recipes/:id
-                    const idslug = route.params['idslug'] as string;
-                    const id = idslug.split('-')[0];
-                    return `/explore/recipes/${id}`;
-                },
-                pathMatch: 'full',
-            },
-            {
                 path: 'explore/recipes/:id',
                 loadComponent: () =>
                     import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
@@ -108,16 +98,6 @@ export const routes: Routes = [
                     import('./pages/explore/explore-page.component').then(
                         (m) => m.ExplorePageComponent
                     ),
-            },
-            {
-                path: 'explore/recipes/:idslug',
-                redirectTo: (route) => {
-                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /explore/recipes/:id
-                    const idslug = route.params['idslug'] as string;
-                    const id = idslug.split('-')[0];
-                    return `/explore/recipes/${id}`;
-                },
-                pathMatch: 'full',
             },
             {
                 path: 'explore/recipes/:id',

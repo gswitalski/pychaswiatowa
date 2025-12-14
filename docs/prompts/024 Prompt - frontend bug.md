@@ -40,14 +40,16 @@ Zapoznaj się z następującymi materiałami:
 </aktualna_implementacja>
 
 <aktualne_zachowanie>
+wchodze na landing paga ('/') i tam wyswiatalją się karty z najnowszymi przepisami i linkami do nich
+klikam na link (http://localhost:4200/explore/recipes/4)
+i nic sie nie dziaje, żadnych akcji na 'network' żadnych komunikatów w konsoli
 
-1. wyszukiwarka omnibox znajdujee się w toobarze ale nie jest w piie wycentrowana. input jest lekko przesunięty do gury
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
+wchodze na publiczny widok przeglądania przepisu
 
-Wyszukiwarka omnibox wycentrowana w pionie względem toolbara
 
 </oczekiwane_zachowanie>
 
