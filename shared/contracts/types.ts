@@ -69,6 +69,12 @@ export type RecipeListItemDto = Pick<
     'id' | 'name' | 'image_path' | 'created_at'
 > & {
     visibility: RecipeVisibility;
+    is_owner: boolean;
+    in_my_collections: boolean;
+    author: {
+        id: string;
+        username: string;
+    };
 };
 
 /**

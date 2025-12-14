@@ -23,6 +23,12 @@ export interface RecipeListItemDto {
     image_path: string | null;
     created_at: string;
     visibility: RecipeVisibility;
+    is_owner: boolean;
+    in_my_collections: boolean;
+    author: {
+        id: string;
+        username: string;
+    };
 }
 
 /**
@@ -84,6 +90,11 @@ export interface RecipeDetailDto {
 }
 
 /**
+ * Recipe view type for filtering recipes.
+ */
+export type RecipesView = 'owned' | 'my_recipes';
+
+/**
  * Options for querying recipes.
  */
 export interface GetRecipesOptions {
@@ -91,6 +102,8 @@ export interface GetRecipesOptions {
     limit: number;
     sortField: string;
     sortDirection: 'asc' | 'desc';
+    view: RecipesView;
+    requesterUserId: string;
     categoryId?: number;
     tags?: string[];
     search?: string;
@@ -146,9 +159,10 @@ async function resolveTagNamesToIds(
 
 /**
  * Retrieves a paginated list of recipes for the authenticated user.
+ * Uses the get_recipes_list RPC function for efficient querying with proper deduplication.
  *
  * @param client - The authenticated Supabase client
- * @param options - Query options including pagination, sorting, and filters
+ * @param options - Query options including pagination, sorting, filters, view, and requester ID
  * @returns Paginated response with recipe list items
  * @throws ApplicationError for database errors
  */
@@ -161,6 +175,8 @@ export async function getRecipes(
         limit,
         sortField,
         sortDirection,
+        view,
+        requesterUserId,
         categoryId,
         tags,
         search,
@@ -171,6 +187,8 @@ export async function getRecipes(
         limit,
         sortField,
         sortDirection,
+        view,
+        requesterUserId,
         categoryId,
         tagsCount: tags?.length ?? 0,
         hasSearch: !!search,
@@ -181,13 +199,8 @@ export async function getRecipes(
         ? sortField
         : DEFAULT_SORT_FIELD;
 
-    const validSortDirection = sortDirection === 'asc' ? true : false;
-
-    // Calculate pagination offset
-    const offset = (page - 1) * limit;
-
     // Resolve tag names to IDs if tags filter is provided
-    let tagIds: number[] = [];
+    let tagIds: number[] | null = null;
     if (tags && tags.length > 0) {
         tagIds = await resolveTagNamesToIds(client, tags);
         logger.debug('Resolved tag names to IDs', {
@@ -210,50 +223,30 @@ export async function getRecipes(
         }
     }
 
-    // Build the base query using the recipe_details view
-    // Note: The view already filters deleted_at IS NULL
-    let query = client
-        .from('recipe_details')
-        .select(RECIPE_LIST_SELECT_COLUMNS, { count: 'exact' });
-
-    // Apply category filter
-    if (categoryId !== undefined) {
-        query = query.eq('category_id', categoryId);
-    }
-
-    // Apply tags filter - recipes must contain ALL specified tags
-    // Using the tag_ids array column with contains operator
-    if (tagIds.length > 0) {
-        query = query.contains('tag_ids', tagIds);
-    }
-
-    // Apply case-insensitive pattern matching search on name field
-    // Uses ILIKE for better UX - supports prefix and substring matching
-    // Example: "kar" will match "Karp w galarecie" and "Karmelizowane jabłka"
-    if (search && search.trim().length > 0) {
-        const searchTerm = search.trim();
-        // Use ILIKE with wildcards for flexible matching
-        query = query.ilike('name', `%${searchTerm}%`);
-    }
-
-    // Apply sorting
-    query = query.order(validSortField, { ascending: validSortDirection });
-
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
-
-    // Execute the query
-    const { data, error, count } = await query;
+    // Call the RPC function to get recipes
+    const { data, error } = await client.rpc('get_recipes_list', {
+        p_user_id: requesterUserId,
+        p_view: view,
+        p_page: page,
+        p_limit: limit,
+        p_sort_field: validSortField,
+        p_sort_direction: sortDirection,
+        p_category_id: categoryId ?? null,
+        p_tag_ids: tagIds,
+        p_search: search ?? null,
+    });
 
     if (error) {
-        logger.error('Database error while fetching recipes', {
+        logger.error('RPC error while fetching recipes', {
             errorCode: error.code,
             errorMessage: error.message,
+            errorDetails: error.details,
         });
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipes');
     }
 
-    const totalItems = count ?? 0;
+    // Extract total count from first row (all rows have the same total_count)
+    const totalItems = data && data.length > 0 ? Number(data[0].total_count) : 0;
     const totalPages = Math.ceil(totalItems / limit);
 
     logger.info('Recipes fetched successfully', {
@@ -261,15 +254,22 @@ export async function getRecipes(
         returnedItems: data?.length ?? 0,
         page,
         totalPages,
+        view,
     });
 
     // Map the data to DTOs
     const recipes: RecipeListItemDto[] = (data ?? []).map((recipe) => ({
-        id: recipe.id!,
-        name: recipe.name!,
+        id: Number(recipe.id),
+        name: recipe.name,
         image_path: recipe.image_path,
-        created_at: recipe.created_at!,
+        created_at: recipe.created_at,
         visibility: recipe.visibility as RecipeVisibility,
+        is_owner: Boolean(recipe.is_owner),
+        in_my_collections: Boolean(recipe.in_my_collections),
+        author: {
+            id: recipe.author_id,
+            username: recipe.author_username,
+        },
     }));
 
     return {
@@ -343,47 +343,143 @@ function parseTagsContent(jsonTags: Json | null): TagDto[] {
  * @throws ApplicationError with NOT_FOUND if recipe doesn't exist or user has no access
  * @throws ApplicationError with INTERNAL_ERROR for database errors
  */
+/**
+ * Retrieves a single recipe by ID with proper access control.
+ *
+ * Access rules:
+ * - Returns 200 if user is the owner (regardless of visibility)
+ * - Returns 200 if recipe is PUBLIC (regardless of ownership)
+ * - Returns 403 if recipe exists, is not PUBLIC, and user is not the owner
+ * - Returns 404 if recipe does not exist or is soft-deleted
+ *
+ * @param client - Authenticated Supabase client
+ * @param id - Recipe ID
+ * @param requesterUserId - ID of the user making the request
+ * @returns RecipeDetailDto with full recipe details
+ * @throws ApplicationError with NOT_FOUND if recipe doesn't exist or is deleted
+ * @throws ApplicationError with FORBIDDEN if user doesn't have access to private/shared recipe
+ * @throws ApplicationError with INTERNAL_ERROR on database errors
+ */
 export async function getRecipeById(
     client: TypedSupabaseClient,
-    id: number
+    id: number,
+    requesterUserId: string
 ): Promise<RecipeDetailDto> {
-    logger.info('Fetching recipe by ID', { recipeId: id });
+    logger.info('Fetching recipe by ID', { recipeId: id, requesterUserId });
 
+    // Step A: Try to fetch with authenticated client (respects RLS)
     const { data, error } = await client
         .from('recipe_details')
         .select(RECIPE_DETAIL_SELECT_COLUMNS)
         .eq('id', id)
         .single();
 
-    if (error) {
-        // PGRST116 means no rows returned (single() expects exactly one row)
-        if (error.code === 'PGRST116') {
-            logger.warn('Recipe not found', { recipeId: id });
+    // Happy path: RLS allowed access
+    if (data && !error) {
+        logger.info('Recipe fetched successfully via authenticated client', {
+            recipeId: id,
+            recipeName: data.name,
+        });
+
+        return mapToRecipeDetailDto(data);
+    }
+
+    // Step B: If PGRST116 (not found by RLS), distinguish between 403 and 404
+    if (error && error.code === 'PGRST116') {
+        logger.info('Recipe not found via RLS, checking visibility with service role', {
+            recipeId: id,
+        });
+
+        // Import service role client at the top of the function call
+        const { createServiceRoleClient } = await import('../_shared/supabase-client.ts');
+        const serviceClient = createServiceRoleClient();
+
+        // Check if recipe exists and get its visibility/ownership status
+        const { data: recipeCheck, error: checkError } = await serviceClient
+            .from('recipes')
+            .select('id, user_id, visibility, deleted_at')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (checkError) {
+            logger.error('Database error while checking recipe existence', {
+                recipeId: id,
+                errorCode: checkError.code,
+                errorMessage: checkError.message,
+            });
+            throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe');
+        }
+
+        // Recipe doesn't exist or is soft-deleted → 404
+        if (!recipeCheck || recipeCheck.deleted_at !== null) {
+            logger.warn('Recipe not found or deleted', {
+                recipeId: id,
+                exists: !!recipeCheck,
+                deleted: recipeCheck?.deleted_at !== null,
+            });
             throw new ApplicationError(
                 'NOT_FOUND',
                 `Recipe with ID ${id} not found`
             );
         }
 
-        logger.error('Database error while fetching recipe', {
+        // Recipe exists but is not PUBLIC and user is not owner → 403
+        if (recipeCheck.visibility !== 'PUBLIC' && recipeCheck.user_id !== requesterUserId) {
+            logger.warn('Access denied to private/shared recipe', {
+                recipeId: id,
+                visibility: recipeCheck.visibility,
+                ownerId: recipeCheck.user_id,
+                requesterId: requesterUserId,
+            });
+            throw new ApplicationError(
+                'FORBIDDEN',
+                'You do not have permission to access this recipe'
+            );
+        }
+
+        // Recipe is PUBLIC → fetch full details with service role
+        logger.info('Fetching PUBLIC recipe with service role', {
             recipeId: id,
-            errorCode: error.code,
-            errorMessage: error.message,
         });
-        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe');
+
+        const { data: publicRecipe, error: publicError } = await serviceClient
+            .from('recipe_details')
+            .select(RECIPE_DETAIL_SELECT_COLUMNS)
+            .eq('id', id)
+            .single();
+
+        if (publicError || !publicRecipe) {
+            logger.error('Failed to fetch PUBLIC recipe details', {
+                recipeId: id,
+                errorCode: publicError?.code,
+                errorMessage: publicError?.message,
+            });
+            throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe');
+        }
+
+        logger.info('PUBLIC recipe fetched successfully', {
+            recipeId: id,
+            recipeName: publicRecipe.name,
+        });
+
+        return mapToRecipeDetailDto(publicRecipe);
     }
 
-    // This should not happen due to single() and RLS, but handle defensively
-    if (!data) {
-        logger.warn('Recipe not found (null data)', { recipeId: id });
-        throw new ApplicationError(
-            'NOT_FOUND',
-            `Recipe with ID ${id} not found`
-        );
-    }
+    // Other database errors
+    logger.error('Database error while fetching recipe', {
+        recipeId: id,
+        errorCode: error?.code,
+        errorMessage: error?.message,
+    });
+    throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe');
+}
 
-    // Map the database row to RecipeDetailDto with proper type conversions
-    const recipeDetail: RecipeDetailDto = {
+/**
+ * Maps raw recipe_details view data to RecipeDetailDto.
+ * Helper function to avoid code duplication.
+ */
+function mapToRecipeDetailDto(data: any): RecipeDetailDto {
+    return {
         id: data.id!,
         user_id: data.user_id!,
         category_id: data.category_id,
@@ -398,14 +494,6 @@ export async function getRecipeById(
         steps: parseRecipeContent(data.steps),
         tags: parseTagsContent(data.tags),
     };
-
-    logger.info('Recipe fetched successfully', {
-        recipeId: id,
-        recipeName: recipeDetail.name,
-        tagsCount: recipeDetail.tags.length,
-    });
-
-    return recipeDetail;
 }
 
 /**

@@ -1,104 +1,88 @@
-# API Endpoint Implementation Plan: GET /recipes/{id}
+# API Endpoints Implementation Plan: GET /recipes/{id}
 
 ## 1. Przegląd punktu końcowego
-Ten punkt końcowy umożliwia pobranie szczegółowych informacji o pojedynczym przepisie na podstawie jego unikalnego identyfikatora. Dostęp jest ograniczony wyłącznie do uwierzytelnionego użytkownika, który jest właścicielem przepisu. Endpoint wykorzystuje widok `recipe_details` w celu zoptymalizowania zapytań i uniknięcia problemu N+1.
+Endpoint zwraca szczegóły pojedynczego przepisu po `id`.
+
+Zmiana funkcjonalna obejmuje doprecyzowanie autoryzacji:
+- `403 Forbidden` zwracamy **tylko wtedy**, gdy przepis **nie jest publiczny** i użytkownik **nie jest właścicielem**.
+- `404 Not Found` zwracamy, gdy zasób nie istnieje (albo jest soft-deleted).
+
+W praktyce oznacza to, że użytkownik zalogowany może pobrać szczegóły przepisu innego autora, jeśli `visibility = PUBLIC`.
 
 ## 2. Szczegóły żądania
--   **Metoda HTTP**: `GET`
--   **Struktura URL**: `/recipes/{id}`
--   **Parametry**:
-    -   **Wymagane**:
-        -   `id` (w ścieżce): numeryczny identyfikator przepisu.
-    -   **Opcjonalne**: Brak.
--   **Request Body**: Brak.
+- **Metoda HTTP**: `GET`
+- **Struktura URL (Supabase Edge Function)**: `/functions/v1/recipes/{id}`
+- **Wymagane nagłówki**:
+    - `Authorization: Bearer <JWT>`
+- **Parametry**:
+    - **Wymagane**:
+        - `id` (path) — dodatnia liczba całkowita
+    - **Opcjonalne**: brak
+- **Request Body**: brak
 
 ## 3. Wykorzystywane typy
--   **DTO (Data Transfer Object)**: `RecipeDetailDto`
-    -   Struktura ta będzie używana do formatowania danych wyjściowych. Zawiera wszystkie kluczowe informacje o przepisie, w tym dane złączone z kategorii, tagów i kolekcji.
-    -   Definicja znajduje się w `shared/contracts/types.ts`.
+- **Odpowiedź (200)**: `RecipeDetailDto`
+    - bazuje na danych z widoku `recipe_details` (JSONB dla `ingredients`/`steps`, `tags` jako lista DTO)
 
 ## 4. Szczegóły odpowiedzi
--   **Odpowiedź sukcesu (`200 OK`)**:
-    -   Zwraca obiekt JSON zgodny z typem `RecipeDetailDto`.
-    ```json
-    {
-        "id": 1,
-        "user_id": "user-uuid",
-        "category_id": 2,
-        "name": "Spaghetti Bolognese",
-        "description": "Klasyczne włoskie danie.",
-        "image_path": "path/to/image.jpg",
-        "created_at": "2025-12-06T10:00:00Z",
-        "updated_at": "2025-12-06T11:00:00Z",
-        "category_name": "Obiad",
-        "ingredients": [
-            { "type": "header", "content": "Sos" },
-            { "type": "item", "content": "500g mięsa mielonego" }
-        ],
-        "steps": [
-            { "type": "item", "content": "Podsmaż mięso na patelni." }
-        ],
-        "tags": [
-            { "id": 10, "name": "włoskie" },
-            { "id": 15, "name": "makaron" }
-        ]
-    }
-    ```
--   **Odpowiedzi błędów**:
-    -   `400 Bad Request`: Jeśli `id` w URL nie jest prawidłową liczbą.
-    -   `401 Unauthorized`: Jeśli użytkownik nie jest uwierzytelniony (brak nagłówka `Authorization`).
-    -   `404 Not Found`: Jeśli przepis o podanym `id` nie istnieje, został usunięty (`deleted_at` jest ustawione) lub użytkownik nie jest jego właścicielem.
-    -   `500 Internal Server Error`: W przypadku nieoczekiwanego błędu serwera.
+- **200 OK** — `RecipeDetailDto`
+
+- **Odpowiedzi błędów**:
+    - `400 Bad Request` — `id` nie jest poprawną dodatnią liczbą całkowitą
+    - `401 Unauthorized` — brak/niepoprawny JWT
+    - `403 Forbidden` — przepis istnieje, ale `visibility != PUBLIC` i użytkownik nie jest właścicielem
+    - `404 Not Found` — przepis nie istnieje lub został soft-deleted
+    - `500 Internal Server Error` — błąd serwera / bazy
 
 ## 5. Przepływ danych
-1.  Żądanie `GET` trafia do głównego routera w `supabase/functions/recipes/index.ts`.
-2.  Router identyfikuje ścieżkę `/recipes/([^/]+)` i metodę `GET`, a następnie przekierowuje żądanie do odpowiedniego handlera w `recipes.handlers.ts`.
-3.  Handler `handleGetRecipeById` jest wywoływany:
-    a. Ekstrahuje `id` z parametrów ścieżki.
-    b. Waliduje `id` - sprawdza, czy jest to poprawna, dodatnia liczba całkowita. Jeśli nie, zwraca `400 Bad Request`.
-    c. Wywołuje funkcję `getRecipeById(id)` z serwisu `recipes.service.ts`.
-4.  Serwis `getRecipeById` wykonuje następujące operacje:
-    a. Używa klienta Supabase do wykonania zapytania do widoku `recipe_details`.
-    b. Zapytanie filtruje wyniki po `id`.
-    c. Polityki RLS na poziomie bazy danych automatycznie zapewniają, że zapytanie zwróci dane tylko wtedy, gdy `user_id` pasuje do ID uwierzytelnionego użytkownika (`auth.uid()`) oraz `deleted_at IS NULL`.
-5.  Serwis analizuje wynik zapytania:
-    a. Jeśli zapytanie zwróci dane, serwis mapuje je na DTO `RecipeDetailDto` i zwraca do handlera.
-    b. Jeśli zapytanie nie zwróci danych (z powodu braku rekordu lub blokady RLS), serwis zwraca `null` lub rzuca dedykowany błąd `NotFoundError`.
-6.  Handler otrzymuje dane z serwisu:
-    a. Jeśli otrzymał `RecipeDetailDto`, formatuje odpowiedź `200 OK` z obiektem w ciele.
-    b. Jeśli otrzymał informację o braku danych, zwraca odpowiedź `404 Not Found`.
-    c. W przypadku innych błędów (np. błąd walidacji, błąd serwera), zwraca odpowiedni kod statusu i komunikat błędu.
+1. Żądanie trafia do `supabase/functions/recipes/index.ts` i dalej do `recipesRouter`.
+2. Router dopasowuje ścieżkę `/recipes/{id}` i wywołuje `handleGetRecipeById`.
+3. Handler:
+    - waliduje `id` (już istnieje `parseAndValidateRecipeId`),
+    - pobiera kontekst uwierzytelnienia (`getAuthenticatedContext`) i `userId`,
+    - wywołuje serwis `getRecipeById` przekazując `recipeId` i `requesterUserId`.
+4. Serwis realizuje dostęp wg reguł:
+
+   **Krok A (happy path — dostęp przez standardowy klient uwierzytelniony):**
+   - próbuje pobrać `recipe_details` dla `id` przez klienta z JWT.
+   - jeśli rekord zostanie zwrócony, endpoint zwraca `200`.
+
+   **Krok B (rozróżnienie 403 vs 404 — fallback z użyciem service role):**
+   - jeśli zapytanie z kroku A nie zwróciło wiersza (`PGRST116`), serwis wykonuje weryfikację istnienia i widoczności przepisu klientem service-role (bypass RLS):
+        1) `SELECT user_id, visibility, deleted_at FROM recipes WHERE id = :id`.
+        2) jeśli brak rekordu lub `deleted_at IS NOT NULL` → `404`.
+        3) jeśli `visibility != 'PUBLIC'` i `user_id != requesterUserId` → `403`.
+        4) jeśli `visibility == 'PUBLIC'` → pobrać pełne dane z `recipe_details` service-role i zwrócić `200`.
+
+Ta sekwencja pozwala spełnić wymaganie „403 tylko dla niepublicznego i nie-właściciela”, bez „maskowania” zasobu jako 404.
 
 ## 6. Względy bezpieczeństwa
--   **Uwierzytelnianie**: Każde żądanie musi zawierać ważny token JWT w nagłówku `Authorization`. Weryfikacja tokenu jest obsługiwana przez Supabase Edge Functions.
--   **Autoryzacja**: Polityki PostgreSQL Row Level Security (RLS) są kluczowym mechanizmem zabezpieczającym. Zapewniają one, że użytkownik może odczytać wyłącznie te przepisy, dla których jego `user_id` zgadza się z `auth.uid()`.
--   **Walidacja danych wejściowych**: Parametr `id` musi być rygorystycznie walidowany jako liczba, aby zapobiec potencjalnym atakom (np. próbom iniekcji).
+- **Uwierzytelnianie**: wymagany JWT; brak tokena → `401`.
+- **Bezpieczne użycie service role**:
+    - service-role jest używany wyłącznie do:
+        - sprawdzenia istnienia (`recipes.id`) i statusu (`visibility`, `deleted_at`, `user_id`),
+        - pobrania publicznego przepisu (`visibility=PUBLIC`) w przypadku, gdy RLS uniemożliwia odczyt przez klienta uwierzytelnionego.
+    - filtr `visibility == 'PUBLIC'` jest krytyczny — bez niego można przypadkowo ujawnić prywatne dane.
+- **Walidacja wejścia**: `id` musi być liczbą dodatnią; żadnych innych danych wejściowych.
 
-## 7. Rozważania dotyczące wydajności
--   **Użycie widoku `recipe_details`**: Wykorzystanie predefiniowanego widoku bazodanowego jest kluczowe dla wydajności. Agreguje on dane z wielu tabel (`recipes`, `categories`, `tags`) w jednym zapytaniu, co eliminuje problem N+1 zapytań i zmniejsza obciążenie bazy danych.
--   **Indeksowanie**: Tabela `recipes` musi mieć założony indeks na kluczu głównym `id`, co jest standardem i zapewnia błyskawiczne wyszukiwanie.
+## 7. Wydajność
+- Zapytanie podstawowe jest po PK (`id`) i korzysta z indeksu.
+- Fallback wykonuje maksymalnie 1–2 dodatkowe szybkie zapytania; wpływ na wydajność jest minimalny.
+- Widok `recipe_details` agreguje dane, zmniejszając liczbę round-tripów.
 
-## 8. Etapy wdrożenia
-1.  **Aktualizacja serwisu (`recipes.service.ts`)**:
-    -   Utwórz nową, asynchroniczną funkcję `getRecipeById(id: number)`.
-    -   Wewnątrz funkcji, użyj `supabase-js` do wykonania zapytania:
-        ```typescript
-        const { data, error } = await supabase
-            .from('recipe_details')
-            .select('*')
-            .eq('id', id)
-            .single();
-        ```
-    -   Obsłuż błąd (`error`) i przypadek, gdy dane nie zostaną znalezione (`data` jest `null`).
-    -   Jeśli dane zostaną znalezione, zwróć je. W przeciwnym razie rzuć błąd `NotFoundError`.
-2.  **Aktualizacja handlera (`recipes.handlers.ts`)**:
-    -   Utwórz nową, asynchroniczną funkcję `handleGetRecipeById(req: Request, recipeId: string)`.
-    -   Sparsuj `recipeId` do liczby. W przypadku błędu parsowania, zwróć `ApplicationError` z kodem 400.
-    -   Wywołaj `recipesService.getRecipeById()` z przekonwertowanym ID.
-    -   Zawiń wywołanie w blok `try...catch`, aby obsłużyć błędy rzucane przez serwis.
-    -   W przypadku sukcesu, zwróć odpowiedź `200 OK` z danymi w formacie JSON.
-    -   W przypadku błędu `NotFoundError`, zwróć odpowiedź `404 Not Found`.
-3.  **Aktualizacja routera (`index.ts`)**:
-    -   W głównym routerze funkcji `recipes` dodaj nową regułę obsługującą żądania `GET` dla ścieżki pasującej do wzorca `/recipes/([^/]+)`.
-    -   Reguła ta powinna wywoływać nowo utworzony handler `handleGetRecipeById`, przekazując mu przechwycone ID przepisu.
-    -   Upewnij się, że ta reguła jest sprawdzana przed bardziej ogólnymi ścieżkami (np. `/recipes`).
+## 8. Kroki implementacji
+1. **Serwis** (`supabase/functions/recipes/recipes.service.ts`)
+    - zmienić `getRecipeById(client, id)` tak, aby przyjmował także `requesterUserId` (lub stworzyć wrapper, np. `getRecipeByIdWithAccessCheck({ client, recipeId, requesterUserId })`).
+    - dodać logikę fallback (service-role) opisaną w sekcji 5.
+    - użyć `createServiceRoleClient()` z `supabase/functions/_shared/supabase-client.ts`.
+2. **Handler** (`supabase/functions/recipes/recipes.handlers.ts`)
+    - przekazać `user.id` do serwisu w wywołaniu `getRecipeById`.
+    - upewnić się, że błędy są mapowane na kody:
+        - `ApplicationError('FORBIDDEN', ...)` → 403
+        - `ApplicationError('NOT_FOUND', ...)` → 404
+        - `ApplicationError('VALIDATION_ERROR', ...)` → 400
+3. **Testy manualne (smoke)**
+    - zalogowany właściciel: `GET /recipes/{id}` dla własnego PRIVATE → 200
+    - zalogowany nie-właściciel: `GET /recipes/{id}` dla cudzego PRIVATE → 403
+    - zalogowany nie-właściciel: `GET /recipes/{id}` dla cudzego PUBLIC → 200
+    - dowolny użytkownik: `GET /recipes/{id}` dla nieistniejącego / soft-deleted → 404

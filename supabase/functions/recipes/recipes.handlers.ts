@@ -201,6 +201,12 @@ const getRecipesQuerySchema = z.object({
 
             return { field, direction };
         }),
+    view: z
+        .enum(['owned', 'my_recipes'], {
+            invalid_type_error: 'View must be one of: owned, my_recipes',
+        })
+        .optional()
+        .default('owned'),
     'filter[category_id]': z
         .string()
         .optional()
@@ -246,6 +252,7 @@ function createSuccessResponse<T>(data: T, status = 200): Response {
 /**
  * Handles GET /recipes request.
  * Returns a paginated list of recipes for the authenticated user.
+ * Supports 'owned' and 'my_recipes' views.
  *
  * @param req - The incoming HTTP request
  * @returns Response with PaginatedResponseDto<RecipeListItemDto> on success, or error response
@@ -288,6 +295,8 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
                 limit: params.limit,
                 sortField: params.sort.field,
                 sortDirection: params.sort.direction,
+                view: params.view,
+                requesterUserId: user.id,
                 categoryId: params['filter[category_id]'],
                 tags: params['filter[tags]'],
                 search: params.search,
@@ -296,6 +305,7 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
 
         logger.info('GET /recipes completed successfully', {
             userId: user.id,
+            view: params.view,
             totalItems: result.pagination.totalItems,
             page: result.pagination.currentPage,
         });
@@ -334,6 +344,20 @@ function parseAndValidateRecipeId(recipeIdParam: string): number {
  * @param recipeIdParam - The recipe ID extracted from the URL path
  * @returns Response with RecipeDetailDto on success, or error response
  */
+/**
+ * Handler for GET /recipes/{id}
+ * Returns detailed information about a single recipe with proper access control.
+ *
+ * Access rules:
+ * - User can access their own recipes regardless of visibility
+ * - User can access PUBLIC recipes from other users
+ * - Returns 403 if recipe is not PUBLIC and user is not the owner
+ * - Returns 404 if recipe doesn't exist or is soft-deleted
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - Recipe ID from URL path
+ * @returns Response with RecipeDetailDto on success, or error response
+ */
 export async function handleGetRecipeById(
     req: Request,
     recipeIdParam: string
@@ -349,8 +373,12 @@ export async function handleGetRecipeById(
         // Get authenticated context (client + user)
         const { client, user } = await getAuthenticatedContext(req);
 
-        // Call the service to get recipe details
-        const result: RecipeDetailDto = await getRecipeById(client, recipeId);
+        // Call the service to get recipe details with access control
+        const result: RecipeDetailDto = await getRecipeById(
+            client,
+            recipeId,
+            user.id
+        );
 
         logger.info('GET /recipes/{id} completed successfully', {
             userId: user.id,
