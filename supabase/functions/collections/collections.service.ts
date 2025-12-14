@@ -9,7 +9,7 @@ import { logger } from '../_shared/logger.ts';
 import {
     CollectionListItemDto,
     CollectionDetailDto,
-    RecipeInCollectionDto,
+    RecipeListItemDto,
     PaginationDetails,
     CreateCollectionCommand,
     UpdateCollectionCommand,
@@ -18,8 +18,18 @@ import {
 /** Columns to select for collection list queries. */
 const COLLECTION_SELECT_COLUMNS = 'id, name, description';
 
-/** Columns to select for recipe list in collection. */
-const RECIPE_SELECT_COLUMNS = 'id, name';
+/**
+ * Columns to select for recipe list in collection.
+ * Zawiera wszystkie pola wymagane przez RecipeListItemDto.
+ */
+const RECIPE_SELECT_COLUMNS = `
+    id,
+    name,
+    image_path,
+    created_at,
+    visibility,
+    user_id
+`;
 
 // #region --- Collection CRUD Operations ---
 
@@ -139,7 +149,7 @@ export async function getCollectionById(
     }
 
     // Fetch recipe details
-    let recipes: RecipeInCollectionDto[] = [];
+    let recipes: RecipeListItemDto[] = [];
     if (recipeCollections && recipeCollections.length > 0) {
         const recipeIds = recipeCollections.map((rc) => rc.recipe_id);
 
@@ -159,10 +169,47 @@ export async function getCollectionById(
             throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe details');
         }
 
-        recipes = (recipeData ?? []).map((recipe) => ({
-            id: recipe.id,
-            name: recipe.name,
-        }));
+        // Pobierz unikalne user_id przepisów
+        const uniqueUserIds = [...new Set(recipeData?.map((r: any) => r.user_id) || [])];
+
+        // Pobierz profile autorów
+        const { data: profilesData, error: profilesError } = await client
+            .from('profiles')
+            .select('id, username')
+            .in('id', uniqueUserIds);
+
+        if (profilesError) {
+            logger.error('Database error while fetching profiles', {
+                collectionId,
+                userIds: uniqueUserIds,
+                errorCode: profilesError.code,
+                errorMessage: profilesError.message,
+            });
+            throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch author profiles');
+        }
+
+        // Stwórz mapę profiles dla szybkiego dostępu
+        const profilesMap = new Map(
+            (profilesData || []).map((p: any) => [p.id, p])
+        );
+
+        // Mapujemy dane z bazy na RecipeListItemDto
+        recipes = (recipeData ?? []).map((recipe: any) => {
+            const profile = profilesMap.get(recipe.user_id);
+            return {
+                id: recipe.id,
+                name: recipe.name,
+                image_path: recipe.image_path,
+                created_at: recipe.created_at,
+                visibility: recipe.visibility as 'PRIVATE' | 'SHARED' | 'PUBLIC',
+                is_owner: recipe.user_id === userId,
+                in_my_collections: true, // Zawsze true, bo przepis jest w aktualnie przeglądanej kolekcji
+                author: {
+                    id: recipe.user_id,
+                    username: profile?.username || 'Unknown',
+                },
+            };
+        });
     }
 
     const pagination: PaginationDetails = {

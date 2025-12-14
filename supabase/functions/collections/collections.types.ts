@@ -16,6 +16,25 @@ export interface CollectionListItemDto {
 
 /**
  * DTO for a recipe item within a collection detail view.
+ * Używa pełnego RecipeListItemDto aby umożliwić wyświetlanie kart z obrazkami.
+ */
+export interface RecipeListItemDto {
+    id: number;
+    name: string;
+    image_path: string | null;
+    created_at: string;
+    visibility: 'PRIVATE' | 'SHARED' | 'PUBLIC';
+    is_owner: boolean;
+    in_my_collections: boolean;
+    author: {
+        id: string;
+        username: string;
+    };
+}
+
+/**
+ * DTO for a recipe item within a collection detail view (backward compatibility).
+ * @deprecated Użyj RecipeListItemDto zamiast tego.
  */
 export interface RecipeInCollectionDto {
     id: number;
@@ -35,7 +54,7 @@ export interface PaginationDetails {
  * Paginated response structure for recipes in a collection.
  */
 export interface PaginatedRecipesDto {
-    data: RecipeInCollectionDto[];
+    data: RecipeListItemDto[];
     pagination: PaginationDetails;
 }
 

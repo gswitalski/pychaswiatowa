@@ -10,12 +10,18 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
-recipe card ma rózną wysokosc w zaleznosic od tego czy jest przypisana kataegoria do przepisu czy nie (patrz zrzut ekranu)
+widok listy przepisów z mojej kolekcji
+http://localhost:4200/collections/1
+
+w karcie przepisu nie wyświetla ilustracji
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-gdy nie ma kategorii wysokośc jest ciągle ta sama
+widok listy przepisów z mojej kolekcji
+http://localhost:4200/collections/1
+
+w karcie przepisu wyświetla ilustrację
 
 
 </oczekiwane_zachowanie>
@@ -28,11 +34,11 @@ gdy nie ma kategorii wysokośc jest ciągle ta sama
 </implementation_rules>
 
 
-Przeanalizuj przedstawiony bug, porównując aktualne zachowanie z oczekiwanym zachowaniem. Uwzględnij wszystkie dostarczone materiały: PRD, stos technologiczny, plan UI, typy oraz aktualną implementację.
+Przeanalizuj przedstawiony bug, porównując aktualne zachowanie z oczekiwanym zachowaniem. Uwzględnij wszystkie dostarczone materiały: PRD, stos technologiczny, plan UI, Plan API, typy oraz aktualną implementację.
 
 Przed podaniem rozwiązania, użyj tagów <analiza> do przemyślenia problemu:
 - Zidentyfikuj różnice między aktualnym a oczekiwanym zachowaniem
-- Przeanalizuj aktualną implementację w kontekście planu UI i typów
+- Przeanalizuj aktualną implementację w kontekście planu UI i typów i API
 - Określ prawdopodobną przyczynę buga
 - Zaplanuj kroki naprawy
 
