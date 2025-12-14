@@ -46,6 +46,12 @@
         flex-shrink: 0;
     }
 
+    &__dashboard-link {
+        margin-right: 8px;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface);
+    }
+
     &__avatar {
         color: var(--mat-sys-on-surface-variant);
 

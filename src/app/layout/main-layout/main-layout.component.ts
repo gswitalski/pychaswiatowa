@@ -35,24 +35,45 @@ export class MainLayoutComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
 
+    /** Private paths that require sidebar visibility */
+    private readonly PRIVATE_PATHS = ['/dashboard', '/recipes', '/collections', '/settings'];
+
     /** Sidebar open state */
     readonly isSidebarOpen = this.layoutService.isSidebarOpen;
 
     /** Mobile viewport state */
     readonly isMobile = this.layoutService.isMobile;
 
+    /** Sidebar visibility state (conditional rendering based on route) */
+    readonly shouldShowSidebar = this.layoutService.shouldShowSidebar;
+
     ngOnInit(): void {
-        // Close sidebar on navigation (mobile only)
+        // Set initial sidebar visibility based on current URL
+        const initialShouldShow = this.checkSidebarVisibility(this.router.url);
+        this.layoutService.setShouldShowSidebar(initialShouldShow);
+
+        // Update sidebar visibility on navigation
         this.router.events
             .pipe(
                 filter((event) => event instanceof NavigationEnd),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe(() => {
+            .subscribe((event: NavigationEnd) => {
+                const shouldShow = this.checkSidebarVisibility(event.urlAfterRedirects);
+                this.layoutService.setShouldShowSidebar(shouldShow);
+
+                // Close sidebar on navigation (mobile only)
                 if (this.isMobile()) {
                     this.layoutService.closeSidebar();
                 }
             });
+    }
+
+    /**
+     * Determine if sidebar should be visible based on URL
+     */
+    private checkSidebarVisibility(url: string): boolean {
+        return this.PRIVATE_PATHS.some(path => url.startsWith(path));
     }
 
     /**

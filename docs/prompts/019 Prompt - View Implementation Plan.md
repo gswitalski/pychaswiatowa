@@ -16,22 +16,26 @@ Najpierw przejrzyj następujące informacje:
 
 </ui_plan>
 
-3. Widok do implementacji
-<view>
-**3. Publiczne szczegóły przepisu (`/explore/recipes/:id-:slug`)**
-- **Co się zmieniło:**
-    - gość: CTA do logowania/rejestracji,
-    - zalogowany: akcja „Dodaj do kolekcji” (dla cudzych przepisów) lub akcje właściciela (dla własnych).
+3. Widok do implementacji / zmiany w widokach
+<views>
+### Zmodyfikowane widoki / nawigacja
 
-</view>
+- **App Shell / Nawigacja**
+    - **Co się zmieniło:** Sidebar nie jest już traktowany jako element zawsze widoczny "dla zalogowanego" — jest renderowany tylko w sekcjach prywatnych: `/dashboard`, `/recipes/**`, `/collections/**`, `/settings/**`.
+
+- **Widoki publiczne dla zalogowanego (`/`, `/explore`, ...)**
+    - **Co się zmieniło:** Zamiast Sidebara używany jest **Topbar** z profilem oraz linkiem "Moja Pycha" do `/dashboard`.
+
+- **Dashboard**
+    - **Co się zmieniło:** Nazwa w UI: **"Moja Pycha"** (route pozostaje `/dashboard`).
+
+</views>
 
 
 4. User Stories:
 
 <user_stories>
-**US-021: Dodanie publicznego przepisu do kolekcji z widoku publicznego**
-- **Opis:** Jako użytkownik zalogowany, chcę móc dodać publiczny przepis do jednej z moich kolekcji bez opuszczania widoku publicznego, abym mógł zapisywać inspiracje.
-- **Co się zmieniło:** Na publicznych szczegółach przepisu dla zalogowanego pojawia się akcja „Dodaj do kolekcji” (gość widzi CTA do logowania/rejestracji).
+
 
 </user_stories>
 

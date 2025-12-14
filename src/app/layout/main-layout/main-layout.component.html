@@ -1,16 +1,18 @@
 <mat-sidenav-container class="main-layout">
-    <mat-sidenav
-        #sidenav
-        [opened]="isSidebarOpen()"
-        [mode]="isMobile() ? 'over' : 'side'"
-        (closed)="onSidebarClosed()"
-        class="main-layout__sidenav"
-    >
-        <pych-sidebar />
-    </mat-sidenav>
+    @if (shouldShowSidebar()) {
+        <mat-sidenav
+            #sidenav
+            [opened]="isSidebarOpen()"
+            [mode]="isMobile() ? 'over' : 'side'"
+            (closed)="onSidebarClosed()"
+            class="main-layout__sidenav"
+        >
+            <pych-sidebar />
+        </mat-sidenav>
+    }
 
     <mat-sidenav-content class="main-layout__content">
-        <pych-topbar />
+        <pych-topbar [shouldShowSidebar]="shouldShowSidebar()" />
         <main class="main-layout__main">
             <router-outlet />
         </main>

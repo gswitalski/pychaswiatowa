@@ -26,7 +26,7 @@ export class SidebarComponent {
     /** Static list of navigation items */
     readonly navigationItems: NavigationItem[] = [
         {
-            label: 'Dashboard',
+            label: 'Moja Pycha',
             route: '/dashboard',
             icon: 'dashboard',
         },

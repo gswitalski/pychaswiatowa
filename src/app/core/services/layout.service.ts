@@ -15,6 +15,10 @@ export class LayoutService {
     private readonly _isSidebarOpen = signal(true);
     public readonly isSidebarOpen = this._isSidebarOpen.asReadonly();
 
+    // Sidebar visibility state (conditional rendering based on route)
+    private readonly _shouldShowSidebar = signal(true);
+    public readonly shouldShowSidebar = this._shouldShowSidebar.asReadonly();
+
     // Mobile state - reactive to viewport changes
     private readonly isMobileObservable$ = this.breakpointObserver
         .observe([Breakpoints.XSmall, Breakpoints.Small])
@@ -56,6 +60,13 @@ export class LayoutService {
      */
     closeSidebar(): void {
         this._isSidebarOpen.set(false);
+    }
+
+    /**
+     * Set whether the sidebar should be visible based on current route
+     */
+    setShouldShowSidebar(shouldShow: boolean): void {
+        this._shouldShowSidebar.set(shouldShow);
     }
 }
 

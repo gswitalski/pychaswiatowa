@@ -91,6 +91,11 @@ export class BreadcrumbsComponent implements OnInit {
                         );
                     }
 
+                    // Map "Dashboard" to "Moja Pycha" for display
+                    if (label === 'Dashboard') {
+                        label = 'Moja Pycha';
+                    }
+
                     breadcrumbs.push({
                         label,
                         url,

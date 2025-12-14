@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,6 +32,9 @@ export class TopbarComponent {
     private readonly layoutService = inject(LayoutService);
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
+
+    /** Determines if sidebar should be visible (passed from MainLayout) */
+    readonly shouldShowSidebar = input.required<boolean>();
 
     /** Check if mobile viewport */
     readonly isMobile = this.layoutService.isMobile;
