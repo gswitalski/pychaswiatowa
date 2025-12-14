@@ -18,7 +18,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { RecipesService } from '../services/recipes.service';
+import { ExploreRecipesService } from '../../../core/services/explore-recipes.service';
+import { RecipesService } from '../../recipes/services/recipes.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import {
     RecipeDetailDto,
@@ -26,9 +27,9 @@ import {
 } from '../../../../../shared/contracts/types';
 
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
-import { RecipeHeaderComponent } from './components/recipe-header/recipe-header.component';
-import { RecipeImageComponent } from './components/recipe-image/recipe-image.component';
-import { RecipeContentListComponent } from './components/recipe-content-list/recipe-content-list.component';
+import { RecipeHeaderComponent } from '../../recipes/recipe-detail/components/recipe-header/recipe-header.component';
+import { RecipeImageComponent } from '../../recipes/recipe-detail/components/recipe-image/recipe-image.component';
+import { RecipeContentListComponent } from '../../recipes/recipe-detail/components/recipe-content-list/recipe-content-list.component';
 import {
     ConfirmDialogComponent,
     ConfirmDialogData,
@@ -40,9 +41,9 @@ import {
 } from '../../../shared/components/add-to-collection-dialog/add-to-collection-dialog.component';
 
 /**
- * Stan komponentu szczegółów przepisu (prywatnego)
+ * Stan komponentu szczegółów przepisu explore
  */
-interface RecipeDetailsState {
+interface ExploreRecipeDetailState {
     recipe: RecipeDetailDto | null;
     isLoading: boolean;
     error: ApiError | null;
@@ -57,14 +58,16 @@ interface RecipeDetailsState {
 type HeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
 
 /**
- * Komponent strony szczegółów przepisu (prywatny widok).
- * Używany dla ścieżki /recipes/:id - dostęp tylko dla autora przepisu.
+ * Komponent strony szczegółów przepisu w kontekście explore (publiczny widok).
+ * Używany dla ścieżki /explore/recipes/:id.
  *
- * UWAGA: Ten komponent NIE obsługuje publicznych przepisów.
- * Dla publicznych przepisów użyj /explore/recipes/:id (ExploreRecipeDetailPageComponent).
+ * Zasada dostępu:
+ * - visibility=PUBLIC → dostępne dla wszystkich (także gości)
+ * - visibility!=PUBLIC → dostępne tylko dla zalogowanego autora
+ * - pozostałe przypadki → 404
  */
 @Component({
-    selector: 'pych-recipe-detail-page',
+    selector: 'pych-explore-recipe-detail-page',
     standalone: true,
     imports: [
         MatCardModule,
@@ -77,20 +80,21 @@ type HeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
         RecipeImageComponent,
         RecipeContentListComponent,
     ],
-    templateUrl: './recipe-detail-page.component.html',
-    styleUrl: './recipe-detail-page.component.scss',
+    templateUrl: './explore-recipe-detail-page.component.html',
+    styleUrl: './explore-recipe-detail-page.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RecipeDetailPageComponent implements OnInit {
+export class ExploreRecipeDetailPageComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
+    private readonly exploreRecipesService = inject(ExploreRecipesService);
     private readonly recipesService = inject(RecipesService);
     private readonly supabase = inject(SupabaseService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
 
-    readonly state = signal<RecipeDetailsState>({
+    readonly state = signal<ExploreRecipeDetailState>({
         recipe: null,
         isLoading: true,
         error: null,
@@ -122,18 +126,13 @@ export class RecipeDetailPageComponent implements OnInit {
     });
 
     /**
-     * Tryb nagłówka - zawsze 'ownerActions' dla prywatnego widoku
-     * (bo tylko właściciel ma dostęp do /recipes/:id)
+     * Tryb nagłówka - określa jakie akcje są dostępne
      */
     readonly headerMode = computed<HeaderMode>(() => {
-        return 'ownerActions';
-    });
-
-    /**
-     * Czy pokazać nagłówek strony (zawsze true dla zalogowanego właściciela)
-     */
-    readonly showPageHeader = computed(() => {
-        return this.hasRecipe();
+        if (!this.isAuthenticated()) {
+            return 'guest';
+        }
+        return this.isOwner() ? 'ownerActions' : 'addToCollection';
     });
 
     async ngOnInit(): Promise<void> {
@@ -154,7 +153,7 @@ export class RecipeDetailPageComponent implements OnInit {
 
                 const id = parseInt(idParam, 10);
 
-                if (isNaN(id)) {
+                if (isNaN(id) || id <= 0) {
                     this.handleInvalidId();
                     return;
                 }
@@ -187,12 +186,13 @@ export class RecipeDetailPageComponent implements OnInit {
     }
 
     /**
-     * Ładuje przepis przez prywatne API (tylko dla autora)
+     * Ładuje przepis przez endpoint explore
+     * (opcjonalne uwierzytelnienie - PUBLIC dla wszystkich, nie-PUBLIC tylko dla autora)
      */
     private loadRecipe(id: number): void {
         this.state.update((s) => ({ ...s, isLoading: true, error: null }));
 
-        this.recipesService.getRecipeById(id).subscribe({
+        this.exploreRecipesService.getExploreRecipeById(id).subscribe({
             next: (recipe) => {
                 this.state.update((s) => ({
                     ...s,
@@ -213,9 +213,13 @@ export class RecipeDetailPageComponent implements OnInit {
         let message = err.message || 'Wystąpił nieoczekiwany błąd';
         const status = err.status || 500;
 
-        // Dla prywatnego widoku - tylko właściciel ma dostęp
-        if (status === 403 || status === 404) {
-            message = 'Nie masz dostępu do tego przepisu lub nie istnieje.';
+        // Specjalne komunikaty dla różnych statusów
+        if (status === 404) {
+            if (!this.isAuthenticated()) {
+                message = 'Ten przepis nie został znaleziony lub jest prywatny. Zaloguj się, aby uzyskać dostęp.';
+            } else {
+                message = 'Przepis nie został znaleziony lub nie masz do niego dostępu.';
+            }
         }
 
         const apiError: ApiError = { message, status };
@@ -320,13 +324,11 @@ export class RecipeDetailPageComponent implements OnInit {
         });
     }
 
-    onBackToList(): void {
-        // Jeśli gość - wróć do explore, jeśli zalogowany - do recipes
-        if (this.isAuthenticated()) {
-            this.router.navigate(['/recipes']);
-        } else {
-            this.router.navigate(['/explore']);
-        }
+    /**
+     * Powrót do strony explore
+     */
+    onBackToExplore(): void {
+        this.router.navigate(['/explore']);
     }
 
     /**

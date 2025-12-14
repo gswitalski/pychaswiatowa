@@ -28,12 +28,19 @@ export const routes: Routes = [
             {
                 path: 'explore/recipes/:idslug',
                 redirectTo: (route) => {
-                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /recipes/:id
+                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /explore/recipes/:id
                     const idslug = route.params['idslug'] as string;
                     const id = idslug.split('-')[0];
-                    return `/recipes/${id}`;
+                    return `/explore/recipes/${id}`;
                 },
                 pathMatch: 'full',
+            },
+            {
+                path: 'explore/recipes/:id',
+                loadComponent: () =>
+                    import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
+                        (m) => m.ExploreRecipeDetailPageComponent
+                    ),
             },
             {
                 path: 'dashboard',
@@ -42,6 +49,19 @@ export const routes: Routes = [
                         (m) => m.DashboardPageComponent
                     ),
                 data: { breadcrumb: 'Dashboard' },
+            },
+            {
+                path: 'my-recipes',
+                loadComponent: () =>
+                    import('./pages/recipes/recipes-list/recipes-list-page.component').then(
+                        (m) => m.RecipesListPageComponent
+                    ),
+                data: { breadcrumb: 'Moje przepisy' },
+            },
+            {
+                path: 'recipes',
+                pathMatch: 'full',
+                redirectTo: 'my-recipes',
             },
             {
                 path: 'recipes',
@@ -92,19 +112,28 @@ export const routes: Routes = [
             {
                 path: 'explore/recipes/:idslug',
                 redirectTo: (route) => {
-                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /recipes/:id
+                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /explore/recipes/:id
                     const idslug = route.params['idslug'] as string;
                     const id = idslug.split('-')[0];
-                    return `/recipes/${id}`;
+                    return `/explore/recipes/${id}`;
                 },
                 pathMatch: 'full',
             },
             {
-                path: 'recipes/:id',
+                path: 'explore/recipes/:id',
                 loadComponent: () =>
-                    import(
-                        './pages/recipes/recipe-detail/recipe-detail-page.component'
-                    ).then((m) => m.RecipeDetailPageComponent),
+                    import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
+                        (m) => m.ExploreRecipeDetailPageComponent
+                    ),
+            },
+            {
+                path: 'recipes/:id',
+                redirectTo: (route) => {
+                    // Przekierowanie ze starej ścieżki /recipes/:id na /explore/recipes/:id dla gości
+                    const id = route.params['id'] as string;
+                    return `/explore/recipes/${id}`;
+                },
+                pathMatch: 'full',
             },
             {
                 path: 'register',

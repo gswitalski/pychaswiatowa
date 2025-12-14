@@ -82,10 +82,18 @@ export class RecipeCardComponent {
     });
 
     /**
-     * Computed: link do szczegółów przepisu - zawsze /recipes/:id
+     * Computed: link do szczegółów przepisu
+     * - private: /recipes/:id
+     * - public: /explore/recipes/:id
      */
     readonly recipeLink = computed(() => {
         const recipe = this.recipe();
+        const type = this.routeType();
+
+        if (type === 'public') {
+            return `/explore/recipes/${recipe.id}`;
+        }
+
         return `/recipes/${recipe.id}`;
     });
 

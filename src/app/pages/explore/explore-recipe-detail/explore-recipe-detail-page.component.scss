@@ -1,0 +1,195 @@
+// Stany loading i error
+.loading-container,
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 2rem;
+    text-align: center;
+
+    p {
+        margin-top: 1rem;
+        color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+.error-container {
+    .error-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--mat-sys-error);
+        margin-bottom: 1rem;
+    }
+
+    .error-title {
+        margin: 0 0 0.5rem 0;
+        color: var(--mat-sys-on-surface);
+    }
+
+    .error-message {
+        margin-bottom: 2rem;
+        color: var(--mat-sys-on-surface-variant);
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+// Główny kontener
+.recipe-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem 2rem;
+
+    .header-cta {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+}
+
+.recipe-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    padding-top: 2rem;
+}
+
+// Wiersz 1: Header (tytuł, opis, kategoria, tagi) + zdjęcie
+.recipe-header-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+.recipe-info {
+    display: flex;
+    flex-direction: column;
+}
+
+// Wiersz 2: Składniki + kroki (2 kolumny na desktop)
+.recipe-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+}
+
+// Bottom CTA section
+.bottom-cta-section {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+
+    .cta-card {
+        max-width: 600px;
+        width: 100%;
+        background: linear-gradient(
+            135deg,
+            var(--mat-sys-primary-container) 0%,
+            var(--mat-sys-secondary-container) 100%
+        );
+
+        mat-card-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+
+            .cta-icon {
+                font-size: 48px;
+                width: 48px;
+                height: 48px;
+                color: var(--mat-sys-primary);
+                margin-bottom: 1rem;
+            }
+
+            h3 {
+                margin: 0 0 0.5rem 0;
+                color: var(--mat-sys-on-surface);
+            }
+
+            p {
+                margin: 0 0 1.5rem 0;
+                color: var(--mat-sys-on-surface-variant);
+            }
+
+            .cta-buttons {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    }
+}
+
+// Tablet: zdjęcie nad headerem, składniki i kroki w 1 kolumnie
+@media (max-width: 900px) {
+    .recipe-header-section {
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 2rem;
+    }
+
+    .recipe-details {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+
+// Mobile: responsywne przyciski CTA
+@media (max-width: 768px) {
+    .recipe-detail-container {
+        padding: 0 1rem 2rem;
+    }
+
+    .header-cta {
+        flex-direction: column;
+        width: 100%;
+
+        button {
+            width: 100%;
+        }
+    }
+
+    .recipe-content {
+        gap: 2rem;
+    }
+
+    .bottom-cta-section .cta-card mat-card-content {
+        padding: 1.5rem;
+
+        .cta-buttons {
+            flex-direction: column;
+            width: 100%;
+
+            button {
+                width: 100%;
+            }
+        }
+    }
+
+    .error-actions {
+        flex-direction: column;
+        width: 100%;
+
+        button {
+            width: 100%;
+        }
+    }
+}
+
+@media (max-width: 600px) {
+    .recipe-detail-container {
+        padding: 0 1rem 1.5rem;
+    }
+}

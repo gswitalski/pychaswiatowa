@@ -18,16 +18,17 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
-### Zmodyfikowane widoki / nawigacja
 
-- **App Shell / Nawigacja**
-    - **Co się zmieniło:** Sidebar nie jest już traktowany jako element zawsze widoczny "dla zalogowanego" — jest renderowany tylko w sekcjach prywatnych: `/dashboard`, `/recipes/**`, `/collections/**`, `/settings/**`.
+- **Lista „Moje przepisy”**
+    - **Zmiana:** docelowa ścieżka `/my-recipes` (chroniona, wejście z Sidebara po zalogowaniu). (Opcjonalnie) `/recipes` jako alias/redirect.
 
-- **Widoki publiczne dla zalogowanego (`/`, `/explore`, ...)**
-    - **Co się zmieniło:** Zamiast Sidebara używany jest **Topbar** z profilem oraz linkiem "Moja Pycha" do `/dashboard`.
+- **Szczegóły przepisu (prywatne)**
+    - **Zmiana:** `/recipes/:id` pozostaje **chronione** (dostęp tylko dla autora) i działa w layoucie z Sidebarem.
 
-- **Dashboard**
-    - **Co się zmieniło:** Nazwa w UI: **"Moja Pycha"** (route pozostaje `/dashboard`).
+- **Szczegóły przepisu (publiczne / explore)**
+    - **Nowe/zmiana:** `/explore/recipes/:id` jest **niechronione** i działa w layoucie publicznym **bez Sidebara**, ale wyświetla treść przepisu tak samo jak widok prywatny.
+    - **Zmiana:** jeśli przepis nie jest publiczny, widok zwraca `404` dla gościa i nie-autora; autor (zalogowany) widzi przepis.
+
 
 </views>
 
@@ -35,6 +36,21 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
+- **US-007 — Przeglądanie listy wszystkich przepisów**
+    - **Zmiana:** strona „Moje przepisy” jest chroniona i docelowo działa pod ścieżką `/my-recipes` (opcjonalnie `/recipes` jako alias/redirect).
+
+- **US-014 — Globalna nawigacja i orientacja (App Shell)**
+    - **Zmiana:** zakres widoczności Sidebara rozszerzony o `/my-recipes`.
+
+- **US-019 — Przeglądanie szczegółów publicznego przepisu**
+    - **Zmiana:** publiczny widok szczegółów jest pod `/explore/recipes/:id` oraz nie wyświetla Sidebara.
+    - **Zmiana:** zasady dostępu do niepublicznych przepisów na ścieżce publicznej: `404` dla gościa i nie-autora; `200` dla zalogowanego autora.
+
+- **US-020 — Publiczne widoki w trybie zalogowanego (App Shell)**
+    - **Zmiana:** aktualizacja ścieżki szczegółów w sekcji publicznej na `/explore/recipes/:id`.
+
+- **US-024 — Publiczne szczegóły przepisu bez sidebara pod `/explore/recipes/:id`**
+    - **Nowe:** uszczegółowienie wymagań dla publicznych szczegółów przepisu z regułą „PUBLIC lub autor” oraz przejściem do edycji dla autora.
 
 
 </user_stories>
