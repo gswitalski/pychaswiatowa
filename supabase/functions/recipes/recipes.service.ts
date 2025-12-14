@@ -647,6 +647,9 @@ export async function updateRecipe(
     // Determine if tags should be updated
     const updateTags = input.tags !== undefined;
 
+    // Determine if category should be updated
+    const updateCategory = input.category_id !== undefined;
+
     // Call the RPC function to update the recipe with tags atomically
     const { data: updatedRecipeId, error: rpcError } = await client.rpc(
         'update_recipe_with_tags',
@@ -662,6 +665,7 @@ export async function updateRecipe(
             p_update_tags: updateTags,
             p_visibility: input.visibility ?? null,
             p_image_path: input.image_path ?? null,
+            p_update_category: updateCategory,
         }
     );
 

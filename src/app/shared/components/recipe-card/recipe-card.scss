@@ -136,4 +136,6 @@ mat-card-content {
     font-size: 0.875rem;
     color: var(--mat-sys-on-surface-variant);
     font-weight: 400;
+    min-height: 1.25rem; // Zapewnia stałą wysokość nawet gdy kategoria jest pusta
+    line-height: 1.25rem;
 }

@@ -47,8 +47,10 @@
         </div>
         <mat-card-content>
             <h3 class="recipe-name">{{ recipe().name }}</h3>
-            @if (shouldShowCategory() && recipe().categoryName) {
-                <p class="recipe-category">{{ recipe().categoryName }}</p>
+            @if (shouldShowCategory()) {
+                <p class="recipe-category">
+                    {{ recipe().categoryName || '&nbsp;' }}
+                </p>
             }
         </mat-card-content>
     </mat-card>

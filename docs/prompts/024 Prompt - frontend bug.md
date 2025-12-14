@@ -1,54 +1,21 @@
 Jesteś doświadczonym programistą aplikacji webowych. Twoim zadaniem jest przeanalizowanie i naprawienie buga w backendzie aplikacji.
 
-Zapoznaj się z następującymi materiałami:
+Zapoznaj się z dokumnetacją projektu 
 
-<prd>
-
-
-
-</prd>
-
-<stos_technologiczny>
+<dokumentacja_projektu>
 
 
 
-</stos_technologiczny>
+</dokumentacja_projektu>
 
-<plan_ui>
-
-
-
-</plan_ui>
-
-<plan_api>
-
-
-
-</plan_api>
-
-<typy>
-
-
-
-</typy>
-
-
-
-<aktualna_implementacja>
-
-
-</aktualna_implementacja>
 
 <aktualne_zachowanie>
-wchodze na landing paga ('/') i tam wyswiatalją się karty z najnowszymi przepisami i linkami do nich
-klikam na link (http://localhost:4200/explore/recipes/4)
-i nic sie nie dziaje, żadnych akcji na 'network' żadnych komunikatów w konsoli
-
+recipe card ma rózną wysokosc w zaleznosic od tego czy jest przypisana kataegoria do przepisu czy nie (patrz zrzut ekranu)
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-wchodze na publiczny widok przeglądania przepisu
+gdy nie ma kategorii wysokośc jest ciągle ta sama
 
 
 </oczekiwane_zachowanie>
