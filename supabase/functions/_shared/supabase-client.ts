@@ -98,11 +98,39 @@ export function createServiceRoleClient(): TypedSupabaseClient {
 }
 
 /**
+ * Decodes a JWT token without verification to extract the payload.
+ * Used to check the 'role' claim to distinguish anon key from user token.
+ *
+ * @param token - The JWT token string
+ * @returns Decoded payload or null if decoding fails
+ */
+function decodeJwtPayload(token: string): { role?: string; sub?: string } | null {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+
+        // Decode base64url payload (middle part)
+        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(atob(base64));
+        return payload;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Extracts optional user ID from Authorization header.
  * Returns null if no header present or if only anon key is provided (anonymous request).
  * Throws ApplicationError with UNAUTHORIZED code if a real JWT token is invalid.
  *
  * Use this for endpoints that support both authenticated and anonymous access.
+ *
+ * Detection logic:
+ * 1. No Authorization header → anonymous
+ * 2. Token doesn't look like JWT → anonymous
+ * 3. JWT with role='anon' → anonymous (this is the anon key)
+ * 4. JWT with role='authenticated' → verify and return user
+ * 5. Invalid/expired JWT → UNAUTHORIZED error
  *
  * @param req - The incoming HTTP request
  * @returns User object or null for anonymous request
@@ -119,21 +147,25 @@ export async function getOptionalAuthenticatedUser(req: Request): Promise<User |
 
     // Extract token from "Bearer <token>" format
     const token = authHeader.replace('Bearer ', '');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
-    // Jeśli token to klucz anon/publishable (zaczyna się od 'sb_' lub jest równy SUPABASE_ANON_KEY),
-    // traktuj jako anonimowe żądanie. Klucz anon NIE jest tokenem użytkownika.
-    // Prawdziwe tokeny JWT zaczynają się od 'eyJ' (base64 encoded JSON header)
-    if (token.startsWith('sb_') || (supabaseAnonKey && token === supabaseAnonKey)) {
-        return null;
-    }
-
+    // Token doesn't look like JWT = anonymous request
     if (!token.startsWith('eyJ')) {
         return null;
     }
 
-    // Token present and looks like JWT = must be valid
+    // Decode JWT to check role claim
+    const payload = decodeJwtPayload(token);
+
+    // If we can't decode or role is 'anon', treat as anonymous
+    // Supabase anon key is a JWT with role='anon'
+    // User tokens have role='authenticated'
+    if (!payload || payload.role === 'anon') {
+        return null;
+    }
+
+    // Token has role='authenticated' or other role - must be valid user token
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey) {
         throw new ApplicationError('INTERNAL_ERROR', 'Missing Supabase configuration');

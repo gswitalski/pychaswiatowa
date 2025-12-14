@@ -61,8 +61,9 @@ jobs:
 
       - name: Deploy Edge Functions
         run: |
-          # Public/anon endpoints must skip JWT verification
-          supabase functions deploy explore public --no-verify-jwt
+          # Public/anon endpoints must skip JWT verification (deploy separately per function)
+          supabase functions deploy explore --no-verify-jwt
+          supabase functions deploy public --no-verify-jwt
           # Auth-required endpoints keep default JWT verification
           supabase functions deploy categories collections me profile recipes search tags
         env:
