@@ -15,19 +15,15 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 1. chcę aby strona
 http://localhost:4200/recipes
-wyświetlała tylko moje przepisy
 
-2. wejscie naszczególy przepisu z http://localhost:4200/recipes pozoistaje tak jak jest
+wyświetlała tylko moje przepisy 
 
-czyli http://localhost:4200/recipes/1 ma być chronione
+aktualnie wyśietla wszystki
 
-4. wejscie na szczegóły przepisu  z landing page lub z wyszukiwarki ogólne (/exlore) wyświtla przepis tak samo jak
-http://localhost:4200/recipes/1 ale
- a) nie jest chronione (widok publiczny)
- b) nie wyświetla sidebara 
- c) ścieżka: http://localhost:4200/explore/recipes/1
+próba wejścia na przepis prze link
+http://localhost:4200/recipes/2
 
-
+powinna zgłosić 404
 
 
 

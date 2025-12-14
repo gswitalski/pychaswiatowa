@@ -99,14 +99,14 @@ export function createServiceRoleClient(): TypedSupabaseClient {
 
 /**
  * Extracts optional user ID from Authorization header.
- * Returns null if no header present (anonymous request).
- * Throws ApplicationError with UNAUTHORIZED code if token is invalid.
+ * Returns null if no header present or if only anon key is provided (anonymous request).
+ * Throws ApplicationError with UNAUTHORIZED code if a real JWT token is invalid.
  *
  * Use this for endpoints that support both authenticated and anonymous access.
  *
  * @param req - The incoming HTTP request
- * @returns User ID string or null for anonymous request
- * @throws ApplicationError with UNAUTHORIZED code if token is present but invalid
+ * @returns User object or null for anonymous request
+ * @throws ApplicationError with UNAUTHORIZED code if JWT token is present but invalid
  * @throws ApplicationError with INTERNAL_ERROR code if configuration is missing
  */
 export async function getOptionalAuthenticatedUser(req: Request): Promise<User | null> {
@@ -117,9 +117,23 @@ export async function getOptionalAuthenticatedUser(req: Request): Promise<User |
         return null;
     }
 
-    // Token present = must be valid
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    // Extract token from "Bearer <token>" format
+    const token = authHeader.replace('Bearer ', '');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    // Jeśli token to klucz anon/publishable (zaczyna się od 'sb_' lub jest równy SUPABASE_ANON_KEY),
+    // traktuj jako anonimowe żądanie. Klucz anon NIE jest tokenem użytkownika.
+    // Prawdziwe tokeny JWT zaczynają się od 'eyJ' (base64 encoded JSON header)
+    if (token.startsWith('sb_') || (supabaseAnonKey && token === supabaseAnonKey)) {
+        return null;
+    }
+
+    if (!token.startsWith('eyJ')) {
+        return null;
+    }
+
+    // Token present and looks like JWT = must be valid
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
     if (!supabaseUrl || !supabaseAnonKey) {
         throw new ApplicationError('INTERNAL_ERROR', 'Missing Supabase configuration');
