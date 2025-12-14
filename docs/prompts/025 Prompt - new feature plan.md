@@ -12,14 +12,16 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-akltualne publiczne widoki:
- - landig page
- - explore
- - publiczny widok szczegółow przepisu
 
- zakładają , że przegląda je użytkownik niezalogowany. jednak te widoki jako publicze są widoczne też dla użytkownika zalogowanego. Powinny wtefy wyglądać nieco inaczej 
- (powinien być brak przycisków zaloguj i zarejstruj , powinina sie pojaawić sie iknka zludzikiem do profilu i wylogowania , możliwość wejscia na dashboard. 
- coś trzeba zrobić z sidebarem z nawigacją. opracuj te widoki pod tym kątem zgodnie z najnowszymi trendami i dobrymi praktykami uzyteczności.
+
+1. chcę aby menu boczne (sidebar) byłow widoczne tylko na stronach:
+ - dashboard
+ - przepisy
+ - kolekcje
+ - ustawiania
+2. nazwa opcji 'dashbord' ma się zmienić na 'Moja Pycha'
+3. Wejście na 'Na moją pychę' m być z gónego tolbara po lewj stronie ikonku użytkownika jako czesci głownej nawigacji poziomenj - na razie tlko z ta opcją i ikonką użytkownika)
+
 
 
 </nowa_funkcjonalnosc>

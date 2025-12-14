@@ -5,8 +5,8 @@
 Architektura interfejsu użytkownika aplikacji PychaŚwiatowa zostanie zbudowana w oparciu o framework Angular i bibliotekę komponentów Angular Material, zgodnie z podejściem "desktop-first" zapewniającym pełną responsywność. Wdrożona zostanie architektura **"App Shell"** separująca nawigację od akcji kontekstowych. Aplikacja będzie składać się z dwóch głównych obszarów: publicznego (dla niezalogowanych użytkowników) oraz prywatnego (dla zalogowanych).
 
 Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grail"**:
-1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Dashboard, Przepisy, Kolekcje). Nie zawiera przycisków akcji.
-2.  **Globalny Topbar (Góra):** Zawiera kontekst orientacyjny (Breadcrumbs), globalną wyszukiwarkę (Omnibox) oraz profil użytkownika.
+1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Moja Pycha, Przepisy, Kolekcje, Ustawienia). Nie zawiera przycisków akcji. Sidebar jest widoczny wyłącznie w sekcjach: `/dashboard`, `/recipes/**`, `/collections/**`, `/settings/**`.
+2.  **Globalny Topbar (Góra):** Zawiera kontekst orientacyjny (Breadcrumbs), globalną wyszukiwarkę (Omnibox), element nawigacji poziomej "Moja Pycha" (po lewej stronie avatara) oraz profil użytkownika.
 3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
 
 ## 2. Lista widoków
@@ -17,7 +17,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/`
 - **Główny cel:** Powitanie użytkownika i przedstawienie aplikacji oraz natychmiastowe udostępnienie wartościowego contentu (publiczne przepisy) z możliwością wyszukiwania.
 - **Kluczowe informacje do wyświetlenia (gość):** Nazwa i logo aplikacji, krótkie hasło, pole wyszukiwania publicznych przepisów, sekcje z publicznymi przepisami (np. Najnowsze, Popularne, Sezonowe), przyciski "Zaloguj się" i "Zarejestruj się".
-- **Kluczowe informacje do wyświetlenia (zalogowany):** Te same sekcje contentowe + nawigacja zalogowanego użytkownika (App Shell: Sidebar + Topbar z profilem). Brak przycisków "Zaloguj się" i "Zarejestruj się". Dostępny szybki dostęp do `/dashboard` (w sidebarze).
+- **Kluczowe informacje do wyświetlenia (zalogowany):** Te same sekcje contentowe + nawigacja zalogowanego użytkownika w Topbarze (profil + link "Moja Pycha" prowadzący do `/dashboard`). Brak przycisków "Zaloguj się" i "Zarejestruj się". **Sidebar na widokach publicznych nie jest wyświetlany.**
 - **Kluczowe komponenty widoku:** Główny nagłówek, sekcja "hero", publiczny pasek wyszukiwania, sekcje z `RecipeCardComponent`, CTA do logowania/rejestracji.
 - **Względy UX, dostępności i bezpieczeństwa:** Prosty i czytelny układ, wyraźne wezwania do akcji. Treści wyłącznie dla przepisów publicznych. W trybie zalogowanego zachować spójność z App Shell i nie powielać CTA do logowania.
 
@@ -63,7 +63,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 
 ### Widoki prywatne (dla zalogowanych)
 
-**6. Dashboard**
+**6. Moja Pycha (Dashboard)**
 - **Ścieżka:** `/dashboard`
 - **Główny cel:** Strona startowa po zalogowaniu, zapewniająca szybki dostęp do głównych funkcji.
 - **Header:** Tytuł "Witaj, [Imię]". Brak przycisków akcji.
@@ -141,15 +141,16 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 ## 4. Układ i struktura nawigacji
 
 - **Nawigacja dla gości:** Prosty nagłówek z linkami: `Przeglądaj` (do `/explore`), `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
-- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id-:slug`) korzystają z App Shell (Sidebar + Topbar) identycznego jak w prywatnej części aplikacji:
+- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id-:slug`) korzystają z nawigacji zalogowanego użytkownika w Topbarze (bez Sidebara):
     - brak przycisków "Zaloguj" i "Zarejestruj",
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
-    - Sidebar zapewnia szybki dostęp do `/dashboard` i pozostałych modułów prywatnych.
+    - w Topbarze dostępny jest link "Moja Pycha" prowadzący do `/dashboard`.
 - **Nawigacja dla zalogowanych (App Shell):**
-    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Dashboard`, `Moje przepisy`, `Moje kolekcje`, `Ustawienia`, `Wyloguj`. Nie zawiera akcji operacyjnych. Na mobile zwijany (Hamburger) lub Bottom Bar.
+    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/recipes/**`, `/collections/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
         - **Breadcrumbs:** Ścieżka powrotu (np. `Kolekcje > Święta`).
         - **Omnibox:** Globalne wyszukiwanie dostępne zawsze.
+        - **Nawigacja pozioma:** Link "Moja Pycha" po lewej stronie avatara użytkownika.
         - **Profil:** Avatar i menu użytkownika.
     - **Page Header:** Nagłówek widoku pod Topbarem. Zawiera tytuł i przyciski akcji.
 

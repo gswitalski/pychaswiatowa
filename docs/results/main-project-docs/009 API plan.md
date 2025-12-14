@@ -471,6 +471,35 @@ Public endpoints are available without authentication and must return **only** r
 
 ---
 
+### Dashboard / "Moja Pycha"
+
+#### `GET /dashboard/summary`
+
+-   **Description**: Retrieve a minimal dashboard summary for the authenticated user. Used by the "Moja Pycha" (`/dashboard`) view to render quick links and recent activity without multiple round-trips.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "stats": {
+            "recipes_total": 42,
+            "collections_total": 7
+          },
+          "recent_recipes": [
+            {
+              "id": 15,
+              "name": "Spaghetti",
+              "image_path": "path/to/image.jpg",
+              "created_at": "2023-10-27T10:00:00Z"
+            }
+          ]
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+
+---
+
 ### Profiles
 
 #### `GET /profile`
