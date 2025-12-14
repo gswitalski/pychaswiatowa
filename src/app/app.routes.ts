@@ -41,7 +41,7 @@ export const routes: Routes = [
                 data: { breadcrumb: 'Dashboard' },
             },
             {
-                path: 'my-recipes',
+                path: 'my-recipies',
                 loadComponent: () =>
                     import('./pages/recipes/recipes-list/recipes-list-page.component').then(
                         (m) => m.RecipesListPageComponent
@@ -49,9 +49,14 @@ export const routes: Routes = [
                 data: { breadcrumb: 'Moje przepisy' },
             },
             {
+                path: 'my-recipes',
+                pathMatch: 'full',
+                redirectTo: 'my-recipies',
+            },
+            {
                 path: 'recipes',
                 pathMatch: 'full',
-                redirectTo: 'my-recipes',
+                redirectTo: 'my-recipies',
             },
             {
                 path: 'recipes',

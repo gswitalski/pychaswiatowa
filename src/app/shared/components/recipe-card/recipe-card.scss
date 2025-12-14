@@ -45,6 +45,28 @@
     }
 }
 
+.in-collections-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+
+    mat-chip-set {
+        margin: 0;
+
+        mat-chip {
+            --mdc-chip-label-text-size: 0.75rem;
+            --mdc-chip-label-text-weight: 500;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            background-color: var(--mat-sys-secondary-container);
+            color: var(--mat-sys-on-secondary-container);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+    }
+}
+
 .card-menu-button {
     position: absolute;
     top: 8px;

@@ -18,17 +18,13 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
+- **Lista "Moje przepisy"**
+    - **Zmiana:** wyświetla moje przepisy oraz publiczne przepisy innych autorów dodane do moich kolekcji.
+    - **Nowe:** na kartach przepisów innych autorów chip/etykieta "W moich kolekcjach".
+    - **Zmiana:** ścieżka widoku w dokumentacji: `/my-recipies` (alias: `/my-recipes`).
 
-- **Lista „Moje przepisy”**
-    - **Zmiana:** docelowa ścieżka `/my-recipes` (chroniona, wejście z Sidebara po zalogowaniu). (Opcjonalnie) `/recipes` jako alias/redirect.
-
-- **Szczegóły przepisu (prywatne)**
-    - **Zmiana:** `/recipes/:id` pozostaje **chronione** (dostęp tylko dla autora) i działa w layoucie z Sidebarem.
-
-- **Szczegóły przepisu (publiczne / explore)**
-    - **Nowe/zmiana:** `/explore/recipes/:id` jest **niechronione** i działa w layoucie publicznym **bez Sidebara**, ale wyświetla treść przepisu tak samo jak widok prywatny.
-    - **Zmiana:** jeśli przepis nie jest publiczny, widok zwraca `404` dla gościa i nie-autora; autor (zalogowany) widzi przepis.
-
+- **Szczegóły przepisu**
+    - **Zmiana:** dla zalogowanego nie-autora brak akcji "Edytuj" i "Usuń" (także po wejściu z listy "Moje przepisy").
 
 </views>
 
@@ -36,21 +32,20 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
+
 - **US-007 — Przeglądanie listy wszystkich przepisów**
-    - **Zmiana:** strona „Moje przepisy” jest chroniona i docelowo działa pod ścieżką `/my-recipes` (opcjonalnie `/recipes` jako alias/redirect).
+    - **Zmiana:** lista "Moje przepisy" obejmuje teraz: (1) wszystkie moje przepisy oraz (2) publiczne przepisy innych autorów, ale tylko jeśli są dodane do co najmniej jednej mojej kolekcji.
+    - **Zmiana:** ścieżka widoku w dokumentacji doprecyzowana jako `/my-recipies` (alias: `/my-recipes`).
+    - **Zmiana:** przepisy nie mojego autorstwa są oznaczane chipem "W moich kolekcjach".
+
+- **US-004 — Przeglądanie szczegółów przepisu**
+    - **Zmiana:** przyciski "Edytuj" i "Usuń" są dostępne wyłącznie dla autora; dla zalogowanego nie-autora nie są wyświetlane niezależnie od miejsca wejścia w szczegóły.
+
+- **US-025 — Oznaczenie cudzych przepisów zapisanych w moich kolekcjach**
+    - **Nowe:** doprecyzowanie oznaczenia i zachowania UI dla przepisów innych autorów widocznych na liście "Moje przepisy".
 
 - **US-014 — Globalna nawigacja i orientacja (App Shell)**
-    - **Zmiana:** zakres widoczności Sidebara rozszerzony o `/my-recipes`.
-
-- **US-019 — Przeglądanie szczegółów publicznego przepisu**
-    - **Zmiana:** publiczny widok szczegółów jest pod `/explore/recipes/:id` oraz nie wyświetla Sidebara.
-    - **Zmiana:** zasady dostępu do niepublicznych przepisów na ścieżce publicznej: `404` dla gościa i nie-autora; `200` dla zalogowanego autora.
-
-- **US-020 — Publiczne widoki w trybie zalogowanego (App Shell)**
-    - **Zmiana:** aktualizacja ścieżki szczegółów w sekcji publicznej na `/explore/recipes/:id`.
-
-- **US-024 — Publiczne szczegóły przepisu bez sidebara pod `/explore/recipes/:id`**
-    - **Nowe:** uszczegółowienie wymagań dla publicznych szczegółów przepisu z regułą „PUBLIC lub autor” oraz przejściem do edycji dla autora.
+    - **Zmiana:** zakres widoczności Sidebara doprecyzowany o `/my-recipies` (alias: `/my-recipes`).
 
 
 </user_stories>

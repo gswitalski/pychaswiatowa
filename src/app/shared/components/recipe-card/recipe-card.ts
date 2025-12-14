@@ -10,6 +10,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatChipsModule } from '@angular/material/chips';
 
 /**
  * Uogólniony interfejs dla karty przepisu.
@@ -44,6 +45,7 @@ export type RecipeCardRouteType = 'private' | 'public';
         MatIconModule,
         MatButtonModule,
         MatMenuModule,
+        MatChipsModule,
     ],
     templateUrl: './recipe-card.html',
     styleUrl: './recipe-card.scss',
@@ -64,6 +66,9 @@ export class RecipeCardComponent {
 
     /** Czy przepis należy do aktualnie zalogowanego użytkownika (dla badge "Twój przepis") */
     readonly isOwnRecipe = input<boolean>(false);
+
+    /** Czy przepis jest w kolekcjach użytkownika (dla badge "W moich kolekcjach") */
+    readonly inMyCollections = input<boolean>(false);
 
     /** Event emitowany po kliknięciu opcji usunięcia */
     readonly remove = output<void>();

@@ -49,23 +49,25 @@
             >
                 <mat-icon>bookmark_add</mat-icon>
             </button>
-            <button
-                mat-icon-button
-                matTooltip="Edytuj przepis"
-                aria-label="Edytuj przepis"
-                (click)="onEdit()"
-            >
-                <mat-icon>edit</mat-icon>
-            </button>
-            <button
-                mat-icon-button
-                matTooltip="Usuń przepis"
-                aria-label="Usuń przepis"
-                color="warn"
-                (click)="onDelete()"
-            >
-                <mat-icon>delete</mat-icon>
-            </button>
+            @if (isOwner()) {
+                <button
+                    mat-icon-button
+                    matTooltip="Edytuj przepis"
+                    aria-label="Edytuj przepis"
+                    (click)="onEdit()"
+                >
+                    <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                    mat-icon-button
+                    matTooltip="Usuń przepis"
+                    aria-label="Usuń przepis"
+                    color="warn"
+                    (click)="onDelete()"
+                >
+                    <mat-icon>delete</mat-icon>
+                </button>
+            }
         </pych-page-header>
 
         <div class="recipe-content">

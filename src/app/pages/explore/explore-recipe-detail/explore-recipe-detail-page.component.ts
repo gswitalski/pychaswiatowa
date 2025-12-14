@@ -281,7 +281,7 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
                 this.snackBar.open('Przepis został usunięty', 'OK', {
                     duration: 3000,
                 });
-                this.router.navigate(['/my-recipes']);
+                this.router.navigate(['/my-recipies']);
             },
             error: (err) => {
                 this.snackBar.open(

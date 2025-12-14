@@ -19,6 +19,14 @@
                 </div>
             }
 
+            @if (inMyCollections() && !isOwnRecipe()) {
+                <div class="in-collections-badge" aria-label="W moich kolekcjach">
+                    <mat-chip-set>
+                        <mat-chip>W moich kolekcjach</mat-chip>
+                    </mat-chip-set>
+                </div>
+            }
+
             @if (showRemoveAction()) {
                 <button
                     mat-icon-button

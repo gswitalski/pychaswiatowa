@@ -302,7 +302,7 @@ export class RecipeFormPageComponent implements OnInit {
         if (this.isEditMode() && this.recipeId()) {
             this.router.navigate(['/recipes', this.recipeId()]);
         } else {
-            this.router.navigate(['/recipes']);
+            this.router.navigate(['/my-recipies']);
         }
     }
 

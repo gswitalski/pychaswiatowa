@@ -32,7 +32,7 @@ export class SidebarComponent {
         },
         {
             label: 'Przepisy',
-            route: '/my-recipes',
+            route: '/my-recipies',
             icon: 'menu_book',
         },
         {

@@ -194,6 +194,7 @@ export class RecipesListPageComponent implements OnInit {
             search: filters.searchQuery ?? undefined,
             categoryId: filters.categoryId,
             tags: filters.tags.length > 0 ? filters.tags : undefined,
+            view: 'my_recipes',
         };
 
         this.recipesService.getRecipes(params).subscribe({

@@ -54,7 +54,7 @@ returns table (
     name text,
     image_path text,
     created_at timestamptz,
-    visibility text,
+    visibility recipe_visibility,
     is_owner boolean,
     in_my_collections boolean,
     author_id uuid,
@@ -73,15 +73,16 @@ begin
     v_offset := (p_page - 1) * p_limit;
 
     -- Validate and build sort clause (whitelist to prevent SQL injection)
+    -- Note: 'cr' alias refers to 'counted_recipes' CTE in the main query
     case p_sort_field
         when 'name' then
-            v_sort_clause := 'r.name';
+            v_sort_clause := 'cr.name';
         when 'created_at' then
-            v_sort_clause := 'r.created_at';
+            v_sort_clause := 'cr.created_at';
         when 'updated_at' then
-            v_sort_clause := 'r.updated_at';
+            v_sort_clause := 'cr.updated_at';
         else
-            v_sort_clause := 'r.created_at';
+            v_sort_clause := 'cr.created_at';
     end case;
 
     -- Add direction

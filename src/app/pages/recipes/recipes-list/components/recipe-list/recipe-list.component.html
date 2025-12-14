@@ -11,6 +11,8 @@
                 <pych-recipe-card
                     [recipe]="mapToCardData(recipe)"
                     [showRemoveAction]="showRemoveAction()"
+                    [isOwnRecipe]="recipe.is_owner"
+                    [inMyCollections]="recipe.in_my_collections"
                     (remove)="onRemoveRecipe(recipe.id)"
                 />
             }

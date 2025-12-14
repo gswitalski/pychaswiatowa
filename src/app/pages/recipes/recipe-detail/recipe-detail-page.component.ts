@@ -277,7 +277,7 @@ export class RecipeDetailPageComponent implements OnInit {
                 this.snackBar.open('Przepis został usunięty', 'OK', {
                     duration: 3000,
                 });
-                this.router.navigate(['/my-recipes']);
+                this.router.navigate(['/my-recipies']);
             },
             error: (err) => {
                 this.snackBar.open(
@@ -323,7 +323,7 @@ export class RecipeDetailPageComponent implements OnInit {
     onBackToList(): void {
         // Jeśli gość - wróć do explore, jeśli zalogowany - do recipes
         if (this.isAuthenticated()) {
-            this.router.navigate(['/recipes']);
+            this.router.navigate(['/my-recipies']);
         } else {
             this.router.navigate(['/explore']);
         }

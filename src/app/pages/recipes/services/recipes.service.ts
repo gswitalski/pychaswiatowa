@@ -27,6 +27,8 @@ export interface GetRecipesParams {
     categoryId?: number | null;
     /** Lista nazw tagów do filtrowania */
     tags?: string[];
+    /** Widok: 'my_recipes' - moje przepisy + cudze z moich kolekcji, domyślnie wszystkie */
+    view?: 'my_recipes';
 }
 
 @Injectable({
@@ -88,6 +90,10 @@ export class RecipesService {
 
         if (params.tags && params.tags.length > 0) {
             queryParams.append('filter[tags]', params.tags.join(','));
+        }
+
+        if (params.view) {
+            queryParams.append('view', params.view);
         }
 
         const queryString = queryParams.toString();
