@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { PublicLayoutComponent } from './layout/public-layout/public-layout.component';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
-import { authGuard } from './core/guards/auth.guard';
 import { authenticatedMatchGuard } from './core/guards/authenticated-match.guard';
 import { guestOnlyMatchGuard } from './core/guards/guest-only-match.guard';
 
@@ -28,10 +27,13 @@ export const routes: Routes = [
             },
             {
                 path: 'explore/recipes/:idslug',
-                loadComponent: () =>
-                    import(
-                        './pages/explore/public-recipe-detail/public-recipe-detail-page.component'
-                    ).then((m) => m.PublicRecipeDetailPageComponent),
+                redirectTo: (route) => {
+                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /recipes/:id
+                    const idslug = route.params['idslug'] as string;
+                    const id = idslug.split('-')[0];
+                    return `/recipes/${id}`;
+                },
+                pathMatch: 'full',
             },
             {
                 path: 'dashboard',
@@ -89,10 +91,20 @@ export const routes: Routes = [
             },
             {
                 path: 'explore/recipes/:idslug',
+                redirectTo: (route) => {
+                    // Przekierowanie ze starej ścieżki /explore/recipes/:idslug na /recipes/:id
+                    const idslug = route.params['idslug'] as string;
+                    const id = idslug.split('-')[0];
+                    return `/recipes/${id}`;
+                },
+                pathMatch: 'full',
+            },
+            {
+                path: 'recipes/:id',
                 loadComponent: () =>
                     import(
-                        './pages/explore/public-recipe-detail/public-recipe-detail-page.component'
-                    ).then((m) => m.PublicRecipeDetailPageComponent),
+                        './pages/recipes/recipe-detail/recipe-detail-page.component'
+                    ).then((m) => m.RecipeDetailPageComponent),
             },
             {
                 path: 'register',

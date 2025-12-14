@@ -14,7 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { catchError, of } from 'rxjs';
 
-import { PublicRecipesService } from '../../core/services/public-recipes.service';
+import { PublicRecipesService, GetPublicRecipesParams } from '../../core/services/public-recipes.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PublicRecipesSearchComponent } from '../landing/components/public-recipes-search/public-recipes-search';
 import { RecipeCardComponent, RecipeCardData } from '../../shared/components/recipe-card/recipe-card';
@@ -169,7 +169,7 @@ export class ExplorePageComponent {
         }));
 
         // Przygotuj parametry API (nie przekazuj q jeśli puste)
-        const params: any = {
+        const params: GetPublicRecipesParams = {
             page: query.page,
             limit: query.limit,
             sort: query.sort,
@@ -207,7 +207,7 @@ export class ExplorePageComponent {
                         errorMessage: null,
                     }));
                 },
-                error: error => {
+                error: () => {
                     this.pageState.update(state => ({
                         ...state,
                         errorMessage: 'Wystąpił błąd podczas pobierania przepisów. Spróbuj ponownie.',
@@ -290,7 +290,7 @@ export class ExplorePageComponent {
      */
     private updateUrl(): void {
         const query = this.queryState();
-        const queryParams: any = {
+        const queryParams: Record<string, string | number | null> = {
             page: query.page > 1 ? query.page : null,
             limit: query.limit !== DEFAULT_QUERY_STATE.limit ? query.limit : null,
         };

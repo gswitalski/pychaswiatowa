@@ -28,16 +28,24 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-paginator`, wskaźniki ładowania (Skeletons).
 - **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników"). W trybie zalogowanego: oznaczyć na kartach przepisy użytkownika jako "Twój przepis".
 
-**3. Publiczne szczegóły przepisu**
-- **Ścieżka:** `/explore/recipes/:id-:slug`
-- **Główny cel:** Pełny podgląd publicznego przepisu w czytelnym układzie.
-- **Header (gość):** Tytuł przepisu. Akcje: brak akcji właściciela; zamiast tego CTA "Zaloguj się, aby dodać do kolekcji / edytować".
-- **Header (zalogowany):** Tytuł przepisu. Akcje:
-    - dla przepisu niebędącego własnością użytkownika: "Dodaj do kolekcji" (otwiera modal wyboru kolekcji),
-    - dla przepisu będącego własnością użytkownika: akcje właściciela ("Edytuj", "Usuń") jak w prywatnym widoku szczegółów.
-- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
-- **Kluczowe komponenty widoku:** `mat-list`, `mat-chip-list`, Sticky Navigation (spis treści) na desktopie (opcjonalnie).
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (kroki / składniki). Dla gościa: brak przycisków "Edytuj/Usuń". Wczytywanie danych po `id` (część `-:slug` jest SEO-friendly i nie jest wymagana do pobrania danych). Dla zalogowanego: akcje zależne od własności przepisu.
+**3. Szczegóły przepisu (uniwersalny widok)**
+- **Ścieżka:** `/recipes/:id`
+- **Główny cel:** Pełny podgląd przepisu w czytelnym układzie - zarówno dla gości jak i zalogowanych użytkowników.
+- **Dostępność:** Widok dostępny dla wszystkich użytkowników. Goście mogą przeglądać tylko przepisy publiczne.
+- **Zachowanie w zależności od kontekstu:**
+    - **Gość (niezalogowany):**
+        - Brak nagłówka strony z akcjami właściciela
+        - CTA do logowania/rejestracji na dole strony
+        - Przy próbie dostępu do niepublicznego przepisu: komunikat o braku dostępu z zachętą do logowania
+    - **Zalogowany (cudzy przepis):**
+        - Nagłówek z przyciskiem "Dodaj do kolekcji"
+        - Brak przycisków edycji i usuwania
+        - Przy próbie dostępu do niepublicznego przepisu innego autora: komunikat o braku dostępu
+    - **Zalogowany (własny przepis):**
+        - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Edytuj", "Usuń"
+- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
+- **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. Przekierowania ze starej ścieżki `/explore/recipes/:idslug` na `/recipes/:id`.
 
 **4. Logowanie**
 - **Ścieżka:** `/login`
@@ -74,10 +82,14 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 **8. Szczegóły Przepisu**
 - **Ścieżka:** `/recipes/:id`
 - **Główny cel:** Wyświetlenie pełnych informacji o przepisie i umożliwienie wykonania na nim operacji.
-- **Header:** Tytuł przepisu. Akcje: Ikony (Ulubione, Edytuj, Usuń).
-- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły).
-- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-list`, `mat-chip-list`, Sticky Navigation (spis treści) na desktopie.
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 3-kolumnowy (Info / Treść / Spis) na desktopie. Feedback "Toast" po usunięciu z opcją "Cofnij". Numeracja kroków nie resetuje się po nagłówkach sekcji (wymaga zastosowania CSS Counters lub odpowiedniej struktury HTML).
+- **Uwaga:** Ten widok jest zunifikowany z publicznym widokiem szczegółów przepisu (patrz punkt 3 w widokach publicznych). Jeden komponent obsługuje wszystkie scenariusze:
+    - Gość przeglądający publiczny przepis
+    - Zalogowany użytkownik przeglądający cudzy publiczny przepis
+    - Zalogowany użytkownik przeglądający własny przepis (pełne akcje)
+- **Header:** Tytuł przepisu. Akcje zależne od kontekstu (patrz punkt 3).
+- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
+- **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji.
 
 **9. Formularz Przepisu (Dodaj/Edytuj)**
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`

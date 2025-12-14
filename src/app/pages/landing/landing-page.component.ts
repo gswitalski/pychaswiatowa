@@ -4,7 +4,6 @@ import {
     inject,
     signal,
     OnInit,
-    effect,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, of, take } from 'rxjs';

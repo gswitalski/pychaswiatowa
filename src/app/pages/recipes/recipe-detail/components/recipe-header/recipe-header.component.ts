@@ -77,7 +77,7 @@ export class RecipeHeaderComponent {
     /**
      * Zwraca tagi w formacie do wyświetlania
      */
-    getTagsForDisplay(recipe: RecipeDetailDto | PublicRecipeDetailDto): Array<{ id: number | string; name: string }> {
+    getTagsForDisplay(recipe: RecipeDetailDto | PublicRecipeDetailDto): { id: number | string; name: string }[] {
         if (!recipe.tags || recipe.tags.length === 0) {
             return [];
         }

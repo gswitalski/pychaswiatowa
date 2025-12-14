@@ -32,7 +32,8 @@ export type RecipeCardRouteType = 'private' | 'public';
 
 /**
  * Uogólniony komponent karty przepisu.
- * Może być używany zarówno dla prywatnych (/recipes/:id) jak i publicznych (/explore/recipes/:id-:slug) widoków.
+ * Używany zarówno dla widoków prywatnych jak i publicznych.
+ * Wszystkie przepisy prowadzą do zunifikowanego widoku /recipes/:id.
  */
 @Component({
     selector: 'pych-recipe-card',
@@ -52,7 +53,7 @@ export class RecipeCardComponent {
     /** Dane przepisu do wyświetlenia */
     readonly recipe = input.required<RecipeCardData>();
 
-    /** Typ routingu: 'private' dla /recipes/:id, 'public' dla /explore/recipes/:id-:slug */
+    /** Typ routingu: 'private' lub 'public' - wpływa na wyświetlanie kategorii */
     readonly routeType = input<RecipeCardRouteType>('private');
 
     /** Czy pokazać kategorię (domyślnie true dla publicznych, false dla prywatnych) */
@@ -81,18 +82,10 @@ export class RecipeCardComponent {
     });
 
     /**
-     * Computed: link do szczegółów przepisu (zależy od routeType)
+     * Computed: link do szczegółów przepisu - zawsze /recipes/:id
      */
     readonly recipeLink = computed(() => {
         const recipe = this.recipe();
-        const type = this.routeType();
-
-        if (type === 'public') {
-            const slug = recipe.slug || this.slugify(recipe.name);
-            return `/explore/recipes/${recipe.id}-${slug}`;
-        }
-
-        // private
         return `/recipes/${recipe.id}`;
     });
 
@@ -111,17 +104,5 @@ export class RecipeCardComponent {
         event.preventDefault();
         event.stopPropagation();
         this.remove.emit();
-    }
-
-    /**
-     * Generuje slug z nazwy przepisu (fallback gdy brak sluga)
-     */
-    private slugify(text: string): string {
-        return text
-            .toLowerCase()
-            .trim()
-            .replace(/[^\w\s-]/g, '')
-            .replace(/[\s_-]+/g, '-')
-            .replace(/^-+|-+$/g, '');
     }
 }
