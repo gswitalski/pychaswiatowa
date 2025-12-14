@@ -16,14 +16,11 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 1. chcę aby strona
 http://localhost:4200/recipes
 
-wyświetlała tylko moje przepisy 
+wyświetlała tylko moje przepisy orazpubliczne przepisy innych autorw niż jak ale dodane do conajmniej jednej mojej kolekcji
 
-aktualnie wyśietla wszystki
+aktualnie wyśietla wszystkie prepisy
 
-próba wejścia na przepis prze link
-http://localhost:4200/recipes/2
-
-powinna zgłosić 404
+dodatkowo po wejsci na nie mój przepis z pozycjy 'my-recipies' nie powinnny mi się wyświetlać przyciski edycji i usuwania przepisu (na stronie widoku szczegółow przepisu)
 
 
 

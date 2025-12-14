@@ -13,12 +13,12 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-- **GET `/explore/recipes/{id}`**
-    - **Nowe:** endpoint dla publicznej ścieżki szczegółów.
-    - **Zasada dostępu:** `PUBLIC` dla wszystkich; nie-`PUBLIC` tylko dla zalogowanego autora; w pozostałych przypadkach `404`.
+- **GET `/recipes`**
+    - **Zmiana:** dodano parametr `view` (`owned` | `my_recipes`) aby obsłużyć widok listy "Moje przepisy" jako: moje + publiczne z moich kolekcji.
+    - **Zmiana:** odpowiedź listy rozszerzona o pola pomocnicze do UI: `is_owner` oraz `in_my_collections` (oraz `author`).
 
-- **GET `/public/recipes/{id}`**
-    - **Bez zmian funkcjonalnych:** pozostaje stricte publiczny (`PUBLIC` only), zgodnie z dotychczasowym kontraktem.
+- **GET `/recipes/{id}`**
+    - **Zmiana:** doprecyzowanie autoryzacji: `403` tylko gdy przepis nie jest publiczny i użytkownik nie jest właścicielem.
 
 </api_changes_description>
 

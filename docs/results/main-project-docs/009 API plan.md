@@ -96,10 +96,20 @@ Public endpoints are available without authentication and must return **only** r
 #### `GET /recipes`
 
 -   **Description**: Retrieve a list of recipes for the authenticated user.
+-   **Notes**:
+    - The endpoint supports multiple "views" of the user's recipe library.
+    - The `my_recipes` view is designed for the `my-recipies` page in the private (logged-in) UI: it returns both recipes authored by the user and public recipes authored by others that are present in at least one collection owned by the user.
+    - Response helper fields:
+        - `is_owner`: `true` if the authenticated user is the recipe author, otherwise `false`.
+        - `in_my_collections`: `true` if the recipe is present in at least one collection owned by the authenticated user (may be `true` for both owned and non-owned recipes).
+    - When `view = my_recipes`, the result set MUST be de-duplicated (a recipe that belongs to multiple collections must appear only once).
 -   **Query Parameters**:
     -   `page` (optional, integer, default: 1): The page number for pagination.
     -   `limit` (optional, integer, default: 20): The number of items per page.
     -   `sort` (optional, string): Sort order. e.g., `name.asc`, `created_at.desc`.
+    -   `view` (optional, string, default: `owned`): Determines which set of recipes is returned.
+        -   `owned`: Only recipes authored by the authenticated user.
+        -   `my_recipes`: Recipes authored by the authenticated user **plus** public recipes authored by others that are included in at least one collection owned by the authenticated user.
     -   `filter[category_id]` (optional, integer): Filter by category ID.
     -   `filter[tags]` (optional, string): Comma-separated list of tag names to filter by.
     -   `search` (optional, string): Full-text search across name, ingredients, and tags.
@@ -114,6 +124,9 @@ Public endpoints are available without authentication and must return **only** r
               "name": "Apple Pie",
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
+              "is_owner": true,
+              "in_my_collections": false,
+              "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
               "created_at": "2023-10-27T10:00:00Z"
             }
           ],
@@ -225,7 +238,7 @@ Public endpoints are available without authentication and must return **only** r
     -   **Payload**: (Similar to the `POST /recipes` success response)
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
-    -   **Code**: `403 Forbidden` - If the user does not own the recipe.
+    -   **Code**: `403 Forbidden` - If the recipe is not public and the user does not own the recipe.
     -   **Code**: `404 Not Found` - If the recipe does not exist.
 
 ---

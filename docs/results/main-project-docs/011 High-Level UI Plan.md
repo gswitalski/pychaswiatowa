@@ -5,7 +5,7 @@
 Architektura interfejsu użytkownika aplikacji PychaŚwiatowa zostanie zbudowana w oparciu o framework Angular i bibliotekę komponentów Angular Material, zgodnie z podejściem "desktop-first" zapewniającym pełną responsywność. Wdrożona zostanie architektura **"App Shell"** separująca nawigację od akcji kontekstowych. Aplikacja będzie składać się z dwóch głównych obszarów: publicznego (dla niezalogowanych użytkowników) oraz prywatnego (dla zalogowanych).
 
 Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grail"**:
-1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Moja Pycha, Przepisy, Kolekcje, Ustawienia). Nie zawiera przycisków akcji. Sidebar jest widoczny wyłącznie w sekcjach: `/dashboard`, `/recipes/**`, `/collections/**`, `/settings/**`.
+1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Moja Pycha, Przepisy, Kolekcje, Ustawienia). Nie zawiera przycisków akcji. Sidebar jest widoczny wyłącznie w sekcjach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/settings/**`.
 2.  **Globalny Topbar (Góra):** Zawiera kontekst orientacyjny (Breadcrumbs), globalną wyszukiwarkę (Omnibox), element nawigacji poziomej "Moja Pycha" (po lewej stronie avatara) oraz profil użytkownika.
 3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
 
@@ -72,12 +72,12 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Względy UX, dostępności i bezpieczeństwa:** Dostęp chroniony przez `AuthGuard`.
 
 **7. Lista Przepisów (Moje przepisy)**
-- **Ścieżka:** `/recipes`
-- **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie wszystkich przepisów użytkownika.
+- **Ścieżka:** `/my-recipies` (alias: `/my-recipes`)
+- **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie biblioteki przepisów użytkownika: jego własnych przepisów oraz publicznych przepisów innych autorów zapisanych w co najmniej jednej jego kolekcji.
 - **Header:** Tytuł "Twoje Przepisy", Przycisk "Dodaj Przepis" (Split Button: "Ręcznie" | "Import").
-- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem, paginacja.
+- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem (np. "Moje" / "W moich kolekcjach"), paginacja. Dla przepisów nie mojego autorstwa widoczny chip/etykieta "W moich kolekcjach".
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-paginator`, `mat-card`, `mat-chip-list`, komponent "stanu pustego" z akcją.
-- **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy. Wskaźniki ładowania (Skeletons). Obsługa stanu pustego z wezwaniem do akcji "Utwórz pierwszy przepis".
+- **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy. Wskaźniki ładowania (Skeletons). Obsługa stanu pustego z wezwaniem do akcji "Utwórz pierwszy przepis". Przepisy innych autorów pojawiają się na tej liście wyłącznie, gdy są publiczne i znajdują się w kolekcjach użytkownika.
 
 **8. Szczegóły Przepisu**
 - **Ścieżka:** `/recipes/:id`
@@ -89,7 +89,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Header:** Tytuł przepisu. Akcje zależne od kontekstu (patrz punkt 3).
 - **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji.
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji. Dla zalogowanego nie-autora przyciski "Edytuj" i "Usuń" nie są wyświetlane (również gdy wejście nastąpiło z listy `/my-recipies`).
 
 **9. Formularz Przepisu (Dodaj/Edytuj)**
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
@@ -146,7 +146,7 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
     - w Topbarze dostępny jest link "Moja Pycha" prowadzący do `/dashboard`.
 - **Nawigacja dla zalogowanych (App Shell):**
-    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/recipes/**`, `/collections/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
+    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
         - **Breadcrumbs:** Ścieżka powrotu (np. `Kolekcje > Święta`).
         - **Omnibox:** Globalne wyszukiwanie dostępne zawsze.
@@ -160,7 +160,7 @@ Taka struktura zapewnia jasny podział na to "gdzie jestem" (Topbar/Sidebar) i "
 
 Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności oraz efektywności deweloperskiej:
 
-- **Karta przepisu (`RecipeCardComponent`):** Komponent wyświetlający miniaturę przepisu (zdjęcie, nazwa, kategoria) na listach (`/recipes`, `/collections/:id`).
+- **Karta przepisu (`RecipeCardComponent`):** Komponent wyświetlający miniaturę przepisu (zdjęcie, nazwa, kategoria) na listach (`/my-recipies`, `/collections/:id`).
 - **Komponent "stanu pustego" (`EmptyStateComponent`):** Generyczny komponent wyświetlający informację (np. "Nie masz jeszcze żadnych przepisów") i przycisk z wezwaniem do akcji (np. "Dodaj pierwszy przepis"). Używany na listach przepisów i kolekcji.
 - **Komponent przesyłania pliku (`ImageUploadComponent`):** Komponent obsługujący wybór, walidację i podgląd przesyłanego zdjęcia w formularzu przepisu.
 - **Modal dodawania do kolekcji (`AddToCollectionDialogComponent`):** Okno modalne pozwalające na wybranie istniejącej kolekcji z listy lub stworzenie nowej i dodanie do niej bieżącego przepisu.
