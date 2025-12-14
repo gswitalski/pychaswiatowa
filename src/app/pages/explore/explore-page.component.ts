@@ -297,12 +297,12 @@ export class ExplorePageComponent {
 
         // Dodaj q tylko jeśli nie jest puste
         if (query.q) {
-            queryParams.q = query.q;
+            queryParams['q'] = query.q;
         }
 
         // Dodaj sort tylko jeśli różny od domyślnego
         if (query.sort !== DEFAULT_QUERY_STATE.sort) {
-            queryParams.sort = query.sort;
+            queryParams['sort'] = query.sort;
         }
 
         this.router.navigate([], {
