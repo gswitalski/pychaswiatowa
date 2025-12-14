@@ -446,18 +446,30 @@ export async function addRecipeToCollection(
         throw new ApplicationError('NOT_FOUND', 'Collection not found');
     }
 
-    // Verify recipe exists, belongs to user, and is not deleted
+    // Verify recipe exists, is accessible (owner or PUBLIC), and is not deleted
     const { data: recipe, error: recipeError } = await client
         .from('recipes')
-        .select('id')
+        .select('id, user_id, visibility')
         .eq('id', recipeId)
-        .eq('user_id', userId)
         .is('deleted_at', null)
         .single();
 
     if (recipeError || !recipe) {
         logger.warn('Recipe not found for adding to collection', { userId, recipeId });
         throw new ApplicationError('NOT_FOUND', 'Recipe not found');
+    }
+
+    const isOwner = recipe.user_id === userId;
+    const isPublic = recipe.visibility === 'PUBLIC';
+
+    if (!isOwner && !isPublic) {
+        logger.warn('Recipe not accessible for adding to collection', {
+            collectionId,
+            recipeId,
+            userId,
+            visibility: recipe.visibility,
+        });
+        throw new ApplicationError('FORBIDDEN', 'You can only add your own or public recipes');
     }
 
     // Check if recipe is already in collection

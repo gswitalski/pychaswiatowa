@@ -36,12 +36,19 @@ Zapoznaj się z następującymi materiałami:
 <aktualne_zachowanie>
 </aktualne_zachowanie>
 
-endpoit get 
-http://127.0.0.1:54331/functions/v1/explore/recipes/4
-zwraca 404 (dla niezalogowanego i dla zalogownaego usera)
+endpoit POST
+http://127.0.0.1:54331/functions/v1/collections/3/recipes
+
+z payloadem
+{
+  "recipe_id": 4
+}
+
+zwraca 404
+
 <oczekiwane_zachowanie>
 
-endpoint zraca szczegóły przepisu bo jest on publiczny
+powinieniem móc dodać do mojej kolekcji nie mój, ale publiczny przepis
 
 
 </oczekiwane_zachowanie>
