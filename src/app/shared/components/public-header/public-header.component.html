@@ -1,17 +1,19 @@
 <mat-toolbar color="primary" class="public-header">
-    <a routerLink="/" class="logo-link">
-        <span class="logo-text">PychaŚwiatowa</span>
-    </a>
+    <div class="public-header__left">
+        <a routerLink="/" class="logo-link">
+            <span class="logo-text">PychaŚwiatowa</span>
+        </a>
+    </div>
 
-    <div class="public-header__navigation">
+    <div class="public-header__center">
         <pych-main-navigation />
     </div>
 
-    <span class="spacer"></span>
-
-    <div class="header-actions">
-        <a mat-button routerLink="/login">Zaloguj się</a>
-        <a mat-raised-button color="accent" routerLink="/register">Zarejestruj się</a>
+    <div class="public-header__right">
+        <div class="header-actions">
+            <a mat-button routerLink="/login">Zaloguj się</a>
+            <a mat-raised-button color="accent" routerLink="/register">Zarejestruj się</a>
+        </div>
     </div>
 </mat-toolbar>
 
