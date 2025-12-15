@@ -31,6 +31,19 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0 auto;
+    }
+
+    &__main-navigation {
+        display: flex;
+        align-items: center;
+    }
+
+    &__search-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         max-width: 500px;
         margin: 0 auto;
     }
@@ -70,21 +83,21 @@
         padding: 0 8px;
         gap: 8px;
 
-        &__center {
-            flex: 1;
-            max-width: none;
-        }
-
         &__breadcrumbs {
             display: none;
+        }
+
+        &__search-container {
+            flex: 1;
+            max-width: none;
         }
     }
 }
 
-// Very small screens - hide search
+// Very small screens
 @media (max-width: 480px) {
     .topbar {
-        &__center {
+        &__search-container {
             display: none;
         }
     }

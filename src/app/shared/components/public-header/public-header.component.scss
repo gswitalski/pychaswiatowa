@@ -4,6 +4,15 @@
     z-index: 1000;
     background-color: var(--mat-sys-surface);
     border-bottom: 1px solid var(--mat-sys-outline-variant);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+
+    &__navigation {
+        display: flex;
+        align-items: center;
+        margin-left: 24px;
+    }
 }
 
 .logo-link {
@@ -30,9 +39,27 @@
     gap: 8px;
 }
 
+@media (max-width: 959px) {
+    .public-header {
+        gap: 16px;
+
+        &__navigation {
+            margin-left: 8px;
+        }
+    }
+}
+
 @media (max-width: 599px) {
     .logo-text {
         font-size: 1.2rem;
+    }
+
+    .public-header {
+        gap: 8px;
+
+        &__navigation {
+            margin-left: 0;
+        }
     }
 
     .header-actions {

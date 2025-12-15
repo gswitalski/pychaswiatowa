@@ -13,23 +13,17 @@
         <pych-breadcrumbs class="topbar__breadcrumbs" />
     </div>
 
-    @if (false) {
     <div class="topbar__center">
+        <pych-main-navigation class="topbar__main-navigation" />
+    </div>
+
+    @if (false) {
+    <div class="topbar__search-container">
         <pych-omnibox class="topbar__search" />
     </div>
     }
 
     <div class="topbar__right">
-        @if (!shouldShowSidebar()) {
-        <a
-            routerLink="/dashboard"
-            mat-button
-            class="topbar__dashboard-link"
-            aria-label="Przejdź do Moja Pycha">
-            Moja Pycha
-        </a>
-        }
-
         <button
             mat-icon-button
             [matMenuTriggerFor]="userMenu"

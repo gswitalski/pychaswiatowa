@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { RegisterFormComponent } from './components/register-form/register-form.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiError } from '../../../../shared/contracts/types';
@@ -20,6 +20,7 @@ interface RegisterState {
 export class RegisterPageComponent {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
 
     state = signal<RegisterState>({
         isLoading: false,
@@ -44,7 +45,11 @@ export class RegisterPageComponent {
                 },
             });
 
-            this.router.navigate(['/dashboard']);
+            // Get redirect URL from query params and validate it
+            const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
+            const safeRedirectUrl = this.validateRedirectUrl(redirectTo);
+            
+            this.router.navigateByUrl(safeRedirectUrl);
         } catch (error) {
             const apiError = this.parseError(error);
             this.state.update((s) => ({ ...s, error: apiError }));
@@ -78,5 +83,36 @@ export class RegisterPageComponent {
         };
 
         return errorMessages[message] ?? message;
+    }
+
+    /**
+     * Validates redirect URL to prevent open redirect vulnerabilities.
+     * Only allows relative paths within the application.
+     * 
+     * @param url - The URL to validate
+     * @returns Safe redirect URL or default '/dashboard'
+     */
+    private validateRedirectUrl(url: string | null): string {
+        // Default fallback
+        const defaultUrl = '/dashboard';
+
+        if (!url) {
+            return defaultUrl;
+        }
+
+        // Security checks: only allow relative paths
+        // Must start with '/' but not '//' (protocol-relative URL)
+        // Must not contain protocol (http:, https:, etc.)
+        const isValidRelativePath = 
+            url.startsWith('/') && 
+            !url.startsWith('//') && 
+            !url.includes('://');
+
+        if (!isValidRelativePath) {
+            console.warn('Invalid redirect URL detected, using default:', url);
+            return defaultUrl;
+        }
+
+        return url;
     }
 }

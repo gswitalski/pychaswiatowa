@@ -1,0 +1,42 @@
+@if (effectiveVariant() === 'desktop') {
+<!-- Desktop: Tab navigation -->
+<nav mat-tab-nav-bar class="main-navigation main-navigation--desktop">
+    @for (item of items(); track item.route) {
+    <a
+        mat-tab-link
+        [routerLink]="item.route"
+        routerLinkActive
+        #rla="routerLinkActive"
+        [active]="rla.isActive"
+        [routerLinkActiveOptions]="{ exact: item.exact }"
+        [attr.aria-label]="item.ariaLabel || item.label">
+        {{ item.label }}
+    </a>
+    }
+</nav>
+} @else {
+<!-- Mobile: Hamburger menu -->
+<div class="main-navigation main-navigation--mobile">
+    <button
+        mat-icon-button
+        [matMenuTriggerFor]="navMenu"
+        aria-label="Menu główne"
+        class="main-navigation__menu-button">
+        <mat-icon>menu</mat-icon>
+    </button>
+
+    <mat-menu #navMenu="matMenu">
+        @for (item of items(); track item.route) {
+        <a
+            mat-menu-item
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.exact }"
+            [attr.aria-label]="item.ariaLabel || item.label">
+            {{ item.label }}
+        </a>
+        }
+    </mat-menu>
+</div>
+}
+

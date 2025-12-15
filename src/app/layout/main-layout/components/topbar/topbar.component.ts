@@ -8,6 +8,7 @@ import { LayoutService } from '../../../../core/services/layout.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { BreadcrumbsComponent } from '../../../../shared/components/breadcrumbs/breadcrumbs.component';
 import { OmniboxComponent } from '../../../../shared/components/omnibox/omnibox.component';
+import { MainNavigationComponent } from '../../../../shared/components/main-navigation/main-navigation.component';
 
 /**
  * Top bar component containing breadcrumbs, global search, and user menu.
@@ -23,6 +24,7 @@ import { OmniboxComponent } from '../../../../shared/components/omnibox/omnibox.
         MatMenuModule,
         BreadcrumbsComponent,
         OmniboxComponent,
+        MainNavigationComponent,
     ],
     templateUrl: './topbar.component.html',
     styleUrl: './topbar.component.scss',

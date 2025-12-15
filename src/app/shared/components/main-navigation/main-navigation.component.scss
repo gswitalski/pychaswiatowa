@@ -1,0 +1,27 @@
+.main-navigation {
+    display: flex;
+    align-items: center;
+
+    &--desktop {
+        ::ng-deep .mat-mdc-tab-link {
+            min-width: 120px;
+            font-weight: 500;
+        }
+    }
+
+    &--mobile {
+        display: flex;
+        align-items: center;
+    }
+
+    &__menu-button {
+        color: inherit;
+    }
+}
+
+// Active state styling for mobile menu items
+::ng-deep .mat-mdc-menu-item.active {
+    background-color: var(--mat-sys-surface-container);
+    font-weight: 600;
+}
+

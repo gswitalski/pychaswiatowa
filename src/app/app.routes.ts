@@ -112,6 +112,14 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'dashboard',
+                redirectTo: () => {
+                    // Redirect guests to login with return URL
+                    return '/login?redirectTo=%2Fdashboard';
+                },
+                pathMatch: 'full',
+            },
+            {
                 path: 'recipes/:id',
                 redirectTo: (route) => {
                     // Przekierowanie ze starej ścieżki /recipes/:id na /explore/recipes/:id dla gości

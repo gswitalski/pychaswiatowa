@@ -18,13 +18,15 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
-- **Lista "Moje przepisy"**
-    - **Zmiana:** wyświetla moje przepisy oraz publiczne przepisy innych autorów dodane do moich kolekcji.
-    - **Nowe:** na kartach przepisów innych autorów chip/etykieta "W moich kolekcjach".
-    - **Zmiana:** ścieżka widoku w dokumentacji: `/my-recipies` (alias: `/my-recipes`).
+- **Topbar / Nawigacja główna** *(zmienione)*  
+  - **Co się zmieniło:** zamiast „losowych” przycisków zależnych od widoku, Topbar posiada przewidywalną, stałą nawigację główną (zakładki): **Moja Pycha** (`/dashboard`) i **Odkrywaj przepisy** (`/explore`), z aktywnym stanem.
+  - **Mobile:** główna nawigacja dostępna jako hamburger/drawer (ta sama kolejność i etykiety).
 
-- **Szczegóły przepisu**
-    - **Zmiana:** dla zalogowanego nie-autora brak akcji "Edytuj" i "Usuń" (także po wejściu z listy "Moje przepisy").
+- **Widoki publiczne** *(zmienione)*  
+  - **Co się zmieniło:** na ścieżkach publicznych (`/`, `/explore`, `/explore/recipes/:id`) Topbar zawiera tę samą główną nawigację, a po prawej stronie:
+    - dla gościa: `Zaloguj` / `Zarejestruj`,
+    - dla zalogowanego: profil (menu + wylogowanie).
+
 
 </views>
 
@@ -32,20 +34,14 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
+- **US-014: Globalna nawigacja i orientacja (App Shell)** *(zmienione)*  
+  - **Co się zmieniło:** doprecyzowano, że Topbar zawiera stałą główną nawigację (zakładki) **Moja Pycha** i **Odkrywaj przepisy** z wyróżnieniem aktywnej pozycji; Breadcrumbs są kontekstowe (na głębszych trasach), a Omnibox może być realizowany jako stała ikona/akcja.
 
-- **US-007 — Przeglądanie listy wszystkich przepisów**
-    - **Zmiana:** lista "Moje przepisy" obejmuje teraz: (1) wszystkie moje przepisy oraz (2) publiczne przepisy innych autorów, ale tylko jeśli są dodane do co najmniej jednej mojej kolekcji.
-    - **Zmiana:** ścieżka widoku w dokumentacji doprecyzowana jako `/my-recipies` (alias: `/my-recipes`).
-    - **Zmiana:** przepisy nie mojego autorstwa są oznaczane chipem "W moich kolekcjach".
+- **US-023: Wejście do „Moja Pycha” z Topbara** *(zmienione)*  
+  - **Co się zmieniło:** story obejmuje również gościa; wejście na `/dashboard` dla gościa wymaga logowania (redirect do logowania z powrotem po sukcesie).
 
-- **US-004 — Przeglądanie szczegółów przepisu**
-    - **Zmiana:** przyciski "Edytuj" i "Usuń" są dostępne wyłącznie dla autora; dla zalogowanego nie-autora nie są wyświetlane niezależnie od miejsca wejścia w szczegóły.
-
-- **US-025 — Oznaczenie cudzych przepisów zapisanych w moich kolekcjach**
-    - **Nowe:** doprecyzowanie oznaczenia i zachowania UI dla przepisów innych autorów widocznych na liście "Moje przepisy".
-
-- **US-014 — Globalna nawigacja i orientacja (App Shell)**
-    - **Zmiana:** zakres widoczności Sidebara doprecyzowany o `/my-recipies` (alias: `/my-recipes`).
+- **US-026: Wejście do „Odkrywaj przepisy” z Topbara** *(nowe)*  
+  - Stała pozycja „Odkrywaj przepisy” w Topbarze prowadząca do `/explore`, widoczna dla gościa i zalogowanego, z wyróżnieniem aktywnego stanu na `/explore`.
 
 
 </user_stories>
