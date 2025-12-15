@@ -55,10 +55,10 @@ export class MainLayoutComponent implements OnInit {
         // Update sidebar visibility on navigation
         this.router.events
             .pipe(
-                filter((event) => event instanceof NavigationEnd),
+                filter((event): event is NavigationEnd => event instanceof NavigationEnd),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe((event: NavigationEnd) => {
+            .subscribe((event) => {
                 const shouldShow = this.checkSidebarVisibility(event.urlAfterRedirects);
                 this.layoutService.setShouldShowSidebar(shouldShow);
 

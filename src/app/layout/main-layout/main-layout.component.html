@@ -1,21 +1,29 @@
-<mat-sidenav-container class="main-layout">
-    @if (shouldShowSidebar()) {
-        <mat-sidenav
-            #sidenav
-            [opened]="isSidebarOpen()"
-            [mode]="isMobile() ? 'over' : 'side'"
-            (closed)="onSidebarClosed()"
-            class="main-layout__sidenav"
-        >
-            <pych-sidebar />
-        </mat-sidenav>
-    }
+<div class="main-layout">
+    <!-- Topbar na całą szerokość -->
+    <pych-topbar 
+        class="main-layout__topbar"
+        [shouldShowSidebar]="shouldShowSidebar()" 
+    />
 
-    <mat-sidenav-content class="main-layout__content">
-        <pych-topbar [shouldShowSidebar]="shouldShowSidebar()" />
-        <main class="main-layout__main">
-            <router-outlet />
-        </main>
-    </mat-sidenav-content>
-</mat-sidenav-container>
+    <!-- Sidebar + Content -->
+    <mat-sidenav-container class="main-layout__body">
+        @if (shouldShowSidebar()) {
+            <mat-sidenav
+                #sidenav
+                [opened]="isSidebarOpen()"
+                [mode]="isMobile() ? 'over' : 'side'"
+                (closed)="onSidebarClosed()"
+                class="main-layout__sidenav"
+            >
+                <pych-sidebar />
+            </mat-sidenav>
+        }
+
+        <mat-sidenav-content class="main-layout__content">
+            <main class="main-layout__main">
+                <router-outlet />
+            </main>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+</div>
 
