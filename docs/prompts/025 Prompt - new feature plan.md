@@ -13,15 +13,7 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-1. chcę aby strona
-http://localhost:4200/recipes
-
-wyświetlała tylko moje przepisy orazpubliczne przepisy innych autorw niż jak ale dodane do conajmniej jednej mojej kolekcji
-
-aktualnie wyśietla wszystkie prepisy
-
-dodatkowo po wejsci na nie mój przepis z pozycjy 'my-recipies' nie powinnny mi się wyświetlać przyciski edycji i usuwania przepisu (na stronie widoku szczegółow przepisu)
-
+chce aby w góryn toolbarze nie było randomowych przycisków które się pojawiają i znikają  tylko aby to była usystematyzowana nawigacja główna, dzieki której wiem gdzie jestwm i dzieki której mogę szybcko wejśc na wybraną funkcję lub grupę funkci. aktualnie jest tam wejsćie 'na moja pycha' ale chcę dodać też opcje 'odkrywaj przepisy' (ścieżka '/explore'). W przyszłosci bedzie ich więcje: np blog, menu, zkupy itd.
 
 
 </nowa_funkcjonalnosc>

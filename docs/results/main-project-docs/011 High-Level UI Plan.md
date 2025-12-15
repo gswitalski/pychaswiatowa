@@ -6,7 +6,7 @@ Architektura interfejsu użytkownika aplikacji PychaŚwiatowa zostanie zbudowana
 
 Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grail"**:
 1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Moja Pycha, Przepisy, Kolekcje, Ustawienia). Nie zawiera przycisków akcji. Sidebar jest widoczny wyłącznie w sekcjach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/settings/**`.
-2.  **Globalny Topbar (Góra):** Zawiera kontekst orientacyjny (Breadcrumbs), globalną wyszukiwarkę (Omnibox), element nawigacji poziomej "Moja Pycha" (po lewej stronie avatara) oraz profil użytkownika.
+2.  **Globalny Topbar (Góra):** Zawiera stałą główną nawigację (zakładki) **Moja Pycha** (`/dashboard`) i **Odkrywaj przepisy** (`/explore`) z wyróżnieniem aktywnej pozycji, stałą ikonę/akcję globalnego wyszukiwania (Omnibox, np. jako overlay) oraz profil użytkownika. Breadcrumbs są wyświetlane jako element orientacyjny na głębszych trasach (np. wewnątrz kolekcji).
 3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
 
 ## 2. Lista widoków
@@ -29,7 +29,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników"). W trybie zalogowanego: oznaczyć na kartach przepisy użytkownika jako "Twój przepis".
 
 **3. Szczegóły przepisu (uniwersalny widok)**
-- **Ścieżka:** `/recipes/:id`
+- **Ścieżka:** prywatnie `/recipes/:id` oraz publicznie `/explore/recipes/:id`
 - **Główny cel:** Pełny podgląd przepisu w czytelnym układzie - zarówno dla gości jak i zalogowanych użytkowników.
 - **Dostępność:** Widok dostępny dla wszystkich użytkowników. Goście mogą przeglądać tylko przepisy publiczne.
 - **Zachowanie w zależności od kontekstu:**
@@ -45,7 +45,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Edytuj", "Usuń"
 - **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. Przekierowania ze starej ścieżki `/explore/recipes/:idslug` na `/recipes/:id`.
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. (Opcjonalnie) przekierowania/normalizacja URL w warstwie frontendu: `/explore/recipes/:id-:slug` -> `/explore/recipes/:id`.
 
 **4. Logowanie**
 - **Ścieżka:** `/login`
@@ -140,17 +140,17 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 
 ## 4. Układ i struktura nawigacji
 
-- **Nawigacja dla gości:** Prosty nagłówek z linkami: `Przeglądaj` (do `/explore`), `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
-- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id-:slug`) korzystają z nawigacji zalogowanego użytkownika w Topbarze (bez Sidebara):
+- **Nawigacja dla gości:** Topbar zawiera stałą główną nawigację: `Moja Pycha` (do `/dashboard`) i `Odkrywaj przepisy` (do `/explore`) oraz akcje po prawej stronie: `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
+- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id`) korzystają z Topbara (bez Sidebara):
     - brak przycisków "Zaloguj" i "Zarejestruj",
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
-    - w Topbarze dostępny jest link "Moja Pycha" prowadzący do `/dashboard`.
+    - w Topbarze dostępna jest stała główna nawigacja: `Moja Pycha` (`/dashboard`) i `Odkrywaj przepisy` (`/explore`).
 - **Nawigacja dla zalogowanych (App Shell):**
     - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
-        - **Breadcrumbs:** Ścieżka powrotu (np. `Kolekcje > Święta`).
-        - **Omnibox:** Globalne wyszukiwanie dostępne zawsze.
-        - **Nawigacja pozioma:** Link "Moja Pycha" po lewej stronie avatara użytkownika.
+        - **Główna nawigacja (stała):** Zakładki "Moja Pycha" oraz "Odkrywaj przepisy" z wyróżnieniem aktywnej pozycji. **Lista pozycji jest zahardkodowana we froncie** (konfiguracja statyczna) i przygotowana pod przyszłe moduły: blog, menu, zakupy.
+        - **Breadcrumbs (kontekstowe):** Ścieżka powrotu wyświetlana na głębszych trasach (np. `Kolekcje > Święta`).
+        - **Omnibox:** Globalne wyszukiwanie dostępne zawsze (np. jako ikona otwierająca overlay).
         - **Profil:** Avatar i menu użytkownika.
     - **Page Header:** Nagłówek widoku pod Topbarem. Zawiera tytuł i przyciski akcji.
 
