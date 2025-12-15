@@ -43,7 +43,7 @@ interface LandingSectionConfig {
 
 /**
  * Główny komponent landing page.
- * Wyświetla hero, wyszukiwarkę i sekcje z kuratorowanymi listami publicznych przepisów.
+ * Wyświetla hero, wyszukiwarkę i sekcje z kuratorowanymi listami publicznych przepisów.<p
  */
 @Component({
     selector: 'pych-landing-page',
@@ -75,18 +75,18 @@ export class LandingPageComponent implements OnInit {
         {
             key: 'newest',
             title: 'Najnowsze przepisy',
-            query: { page: 1, limit: 8, sort: 'created_at.desc' },
+            query: { page: 1, limit: 16, sort: 'created_at.desc' },
         },
-        {
-            key: 'featured',
-            title: 'Polecane',
-            query: { page: 2, limit: 8, sort: 'created_at.desc' },
-        },
-        {
-            key: 'seasonal',
-            title: 'Sezonowe',
-            query: { page: 1, limit: 8, sort: 'name.asc' },
-        },
+        // {
+        //     key: 'featured',
+        //     title: 'Polecane',
+        //     query: { page: 2, limit: 8, sort: 'created_at.desc' },
+        // },
+        // {
+        //     key: 'seasonal',
+        //     title: 'Sezonowe',
+        //     query: { page: 1, limit: 8, sort: 'name.asc' },
+        // },
     ];
 
     /**

@@ -147,3 +147,4 @@ Implementacja jest kompletna. Wymagane testy manualne:
 3. Wejście w szczegóły cudzego przepisu - brak przycisków "Edytuj/Usuń"
 4. Wejście w szczegóły własnego przepisu - przyciski obecne
 
+

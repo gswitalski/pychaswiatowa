@@ -1,41 +1,40 @@
 <mat-toolbar class="topbar">
     <div class="topbar__left">
         @if (isMobile() && shouldShowSidebar()) {
-            <button
-                mat-icon-button
-                aria-label="Toggle menu"
-                (click)="toggleSidebar()"
-                class="topbar__menu-btn"
-            >
-                <mat-icon>menu</mat-icon>
-            </button>
+        <button
+            mat-icon-button
+            aria-label="Toggle menu"
+            (click)="toggleSidebar()"
+            class="topbar__menu-btn">
+            <mat-icon>menu</mat-icon>
+        </button>
         }
 
         <pych-breadcrumbs class="topbar__breadcrumbs" />
     </div>
 
+    @if (false) {
     <div class="topbar__center">
         <pych-omnibox class="topbar__search" />
     </div>
+    }
 
     <div class="topbar__right">
         @if (!shouldShowSidebar()) {
-            <a
-                routerLink="/dashboard"
-                mat-button
-                class="topbar__dashboard-link"
-                aria-label="Przejdź do Moja Pycha"
-            >
-                Moja Pycha
-            </a>
+        <a
+            routerLink="/dashboard"
+            mat-button
+            class="topbar__dashboard-link"
+            aria-label="Przejdź do Moja Pycha">
+            Moja Pycha
+        </a>
         }
 
         <button
             mat-icon-button
             [matMenuTriggerFor]="userMenu"
             aria-label="Menu użytkownika"
-            class="topbar__avatar"
-        >
+            class="topbar__avatar">
             <mat-icon>account_circle</mat-icon>
         </button>
 
@@ -51,4 +50,3 @@
         </mat-menu>
     </div>
 </mat-toolbar>
-
