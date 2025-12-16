@@ -1,17 +1,18 @@
 @if (effectiveVariant() === 'desktop') {
 <!-- Desktop: Tab navigation -->
-<nav mat-tab-nav-bar class="main-navigation main-navigation--desktop">
+<nav class="main-navigation main-navigation--desktop">
     @for (item of items(); track item.route) {
-    <a
-        mat-tab-link
+    <mat-nav-list>
+
+        <a
+        mat-button
         [routerLink]="item.route"
-        routerLinkActive
-        #rla="routerLinkActive"
-        [active]="rla.isActive"
-        [routerLinkActiveOptions]="{ exact: item.exact }"
-        [attr.aria-label]="item.ariaLabel || item.label">
+        [class.active]="isItemActive(item)"
+        [attr.aria-label]="item.ariaLabel || item.label"
+        class="main-navigation__link">
         {{ item.label }}
     </a>
+</mat-nav-list>
     }
 </nav>
 } @else {
@@ -30,8 +31,7 @@
         <a
             mat-menu-item
             [routerLink]="item.route"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: item.exact }"
+            [class.active]="isItemActive(item)"
             [attr.aria-label]="item.ariaLabel || item.label">
             {{ item.label }}
         </a>

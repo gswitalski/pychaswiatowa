@@ -201,3 +201,4 @@ Jedyna operacja „backendowa” związana z nagłówkiem:
 8. **Dopisz krótką notatkę w dokumentacji zmian** (opcjonalnie) i zweryfikuj spójność z istniejącym planem `sidebar-visibility-and-navigation-changes-implementation-plan.md`.
 
 
+

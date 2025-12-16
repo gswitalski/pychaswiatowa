@@ -31,6 +31,8 @@ export interface MainNavigationItem {
     exact: boolean;
     /** Optional aria-label for accessibility */
     ariaLabel?: string;
+    /** Optional array of additional routes that should also activate this item */
+    matchingRoutes?: string[];
 }
 
 /**
@@ -41,8 +43,9 @@ export const MAIN_NAVIGATION_ITEMS: MainNavigationItem[] = [
     {
         label: 'Moja Pycha',
         route: '/dashboard',
-        exact: true,
+        exact: false,
         ariaLabel: 'Przejdź do Moja Pycha',
+        matchingRoutes: ['/dashboard', '/my-recipies', '/recipes', '/collections', '/settings'],
     },
     {
         label: 'Odkrywaj przepisy',

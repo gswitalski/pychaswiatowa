@@ -1,17 +1,27 @@
 .main-navigation {
     display: flex;
     align-items: center;
+    gap: 8px;
 
     &--desktop {
-        ::ng-deep .mat-mdc-tab-link {
-            min-width: 120px;
-            font-weight: 500;
-        }
+        gap: 4px;
     }
 
     &--mobile {
         display: flex;
         align-items: center;
+    }
+
+    &__link {
+        min-width: 100px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &.active {
+            background-color: var(--mat-sys-primary-container);
+            color: var(--mat-sys-on-primary-container);
+            font-weight: 600;
+        }
     }
 
     &__menu-button {
