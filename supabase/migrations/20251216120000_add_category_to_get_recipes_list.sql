@@ -4,6 +4,10 @@
 -- dependencies: recipes, categories, profiles, collections, recipe_tags, recipe_collections
 -- reason: bug fix - recipe cards should display category information
 
+-- Usuń istniejącą funkcję, ponieważ zmieniamy jej sygnaturę (typ zwracany)
+-- PostgreSQL nie pozwala na zmianę sygnatury funkcji przez CREATE OR REPLACE
+drop function if exists public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text);
+
 /**
  * Zaktualizowana funkcja get_recipes_list która zwraca również informacje o kategorii przepisu.
  *
@@ -35,7 +39,7 @@
  *   - category_name: nazwa kategorii (null jeśli nie przypisano)
  *   - total_count: całkowita liczba elementów spełniających filtry (do paginacji)
  */
-create or replace function public.get_recipes_list(
+create function public.get_recipes_list(
     p_user_id uuid,
     p_view text default 'owned',
     p_page integer default 1,
