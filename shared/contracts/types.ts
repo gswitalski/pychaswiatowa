@@ -178,6 +178,19 @@ export type ImportRecipeCommand = {
     raw_text: string;
 };
 
+/**
+ * Response DTO for uploading a recipe image.
+ * Returns the recipe ID, image path in storage, and optional public URL.
+ */
+export interface UploadRecipeImageResponseDto {
+    /** Recipe ID. */
+    id: number;
+    /** Storage path of the uploaded image (e.g., "recipe-images/userId/recipeId/cover_timestamp.webp"). */
+    image_path: string;
+    /** Optional public URL for immediate display (may be null for private buckets). */
+    image_url?: string;
+}
+
 // #endregion
 
 // #region --- Categories ---

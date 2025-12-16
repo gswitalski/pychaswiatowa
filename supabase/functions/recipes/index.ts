@@ -40,6 +40,16 @@
  * Request Body (JSON):
  * - raw_text (string, required) - Raw text block containing the recipe
  *
+ * POST /functions/v1/recipes/{id}/image
+ * Uploads or replaces an image for an existing recipe.
+ * Supports paste from clipboard and drag & drop scenarios.
+ * Request Body (multipart/form-data):
+ * - file (File, required) - Image file (PNG, JPEG, or WebP, max 10 MB)
+ * Response (200 OK):
+ * - id (number) - Recipe ID
+ * - image_path (string) - Storage path of the uploaded image
+ * - image_url (string, optional) - Public URL for immediate display
+ *
  * PUT /functions/v1/recipes/{id}
  * Updates an existing recipe for the authenticated user.
  * Request Body (JSON) - all fields optional, at least one required:

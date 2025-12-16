@@ -14,11 +14,13 @@ import {
     updateRecipe,
     importRecipeFromText,
     deleteRecipe,
+    uploadRecipeImage,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
     CreateRecipeInput,
     UpdateRecipeInput,
+    UploadRecipeImageResponseDto,
 } from './recipes.service.ts';
 
 /** Maximum allowed limit for pagination. */
@@ -29,6 +31,12 @@ const DEFAULT_LIMIT = 20;
 
 /** Default page number. */
 const DEFAULT_PAGE = 1;
+
+/** Maximum allowed file size for recipe images (10 MB in bytes). */
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+/** Allowed MIME types for recipe images. */
+const ALLOWED_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 /**
  * Schema for validating POST /recipes request body.
@@ -669,6 +677,136 @@ export async function handleDeleteRecipe(
 }
 
 /**
+ * Handles POST /recipes/{id}/image request.
+ * Uploads or replaces a recipe image for the authenticated user.
+ * Accepts multipart/form-data with a 'file' field containing the image.
+ *
+ * Validation:
+ * - Recipe ID must be a positive integer
+ * - Content-Type must be multipart/form-data
+ * - File field must be present
+ * - File MIME type must be image/png, image/jpeg, or image/webp
+ * - File size must not exceed 10 MB
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - The recipe ID extracted from the URL path
+ * @returns Response with UploadRecipeImageResponseDto on success (200), or error response
+ */
+export async function handleUploadRecipeImage(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling POST /recipes/{id}/image request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Check Content-Type header
+        const contentType = req.headers.get('Content-Type');
+        if (!contentType || !contentType.includes('multipart/form-data')) {
+            logger.warn('Invalid Content-Type for image upload', {
+                contentType,
+            });
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'Content-Type must be multipart/form-data'
+            );
+        }
+
+        // Parse FormData
+        let formData: FormData;
+        try {
+            formData = await req.formData();
+        } catch (error) {
+            logger.warn('Failed to parse FormData', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'Failed to parse multipart/form-data'
+            );
+        }
+
+        // Extract file from FormData
+        const file = formData.get('file');
+
+        if (!file) {
+            logger.warn('Missing file in FormData');
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'File field is required'
+            );
+        }
+
+        if (!(file instanceof File)) {
+            logger.warn('File field is not a File object', {
+                fileType: typeof file,
+            });
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'File field must contain a valid file'
+            );
+        }
+
+        // Validate file MIME type
+        if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
+            logger.warn('Invalid file MIME type', {
+                mimeType: file.type,
+                allowedTypes: ALLOWED_IMAGE_MIME_TYPES,
+            });
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `Invalid file type. Allowed types: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}`
+            );
+        }
+
+        // Validate file size
+        if (file.size > MAX_IMAGE_SIZE) {
+            logger.warn('File size exceeds limit', {
+                fileSize: file.size,
+                maxSize: MAX_IMAGE_SIZE,
+            });
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `File size exceeds maximum allowed size of ${MAX_IMAGE_SIZE / 1024 / 1024} MB`
+            );
+        }
+
+        logger.info('File validation passed', {
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+        });
+
+        // Call the service to upload the image
+        const result: UploadRecipeImageResponseDto = await uploadRecipeImage(
+            client,
+            {
+                recipeId,
+                userId: user.id,
+                file,
+            }
+        );
+
+        logger.info('POST /recipes/{id}/image completed successfully', {
+            userId: user.id,
+            recipeId: result.id,
+            imagePath: result.image_path,
+        });
+
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Checks if the URL path matches /recipes/import.
  *
  * @param url - The URL object to check
@@ -677,6 +815,26 @@ export async function handleDeleteRecipe(
 function isImportPath(url: URL): boolean {
     const pathname = url.pathname;
     return /\/recipes\/import\/?$/.test(pathname);
+}
+
+/**
+ * Extracts the recipe ID from a URL path if it matches /recipes/{id}/image pattern.
+ * Returns null if the path doesn't match the pattern.
+ *
+ * @param url - The URL object to extract path from
+ * @returns The recipe ID string if present, null otherwise
+ */
+function extractRecipeIdFromImagePath(url: URL): string | null {
+    // Match pattern: /recipes/{id}/image where id is captured
+    // This handles both local (/recipes/123/image) and deployed (/functions/v1/recipes/123/image) paths
+    const pathname = url.pathname;
+    const imagePathMatch = pathname.match(/\/recipes\/([^/]+)\/image\/?$/);
+
+    if (imagePathMatch && imagePathMatch[1]) {
+        return imagePathMatch[1];
+    }
+
+    return null;
 }
 
 /**
@@ -709,7 +867,9 @@ function extractRecipeIdFromPath(url: URL): string | null {
  * - GET /recipes/{id} - Get single recipe by ID
  * - POST /recipes - Create a new recipe
  * - POST /recipes/import - Import a recipe from raw text
+ * - POST /recipes/{id}/image - Upload or replace recipe image
  * - PUT /recipes/{id} - Update an existing recipe
+ * - DELETE /recipes/{id} - Soft-delete a recipe
  *
  * @param req - The incoming HTTP request
  * @returns Response from the appropriate handler, or 405 Method Not Allowed
@@ -720,6 +880,9 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Check for /recipes/import path first (before checking for recipe ID)
     const isImport = isImportPath(url);
+
+    // Check for /recipes/{id}/image path (must be checked before extracting simple recipe ID)
+    const imageRecipeId = extractRecipeIdFromImagePath(url);
 
     // Extract recipe ID from path (if present and not import path)
     const recipeId = isImport ? null : extractRecipeIdFromPath(url);
@@ -767,6 +930,11 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Route POST requests
     if (method === 'POST') {
+        // Handle POST /recipes/{id}/image (most specific path, check first)
+        if (imageRecipeId) {
+            return handleUploadRecipeImage(req, imageRecipeId);
+        }
+
         // Handle POST /recipes/import
         if (isImport) {
             return handleImportRecipe(req);

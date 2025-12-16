@@ -72,6 +72,15 @@ export interface TagDto {
 }
 
 /**
+ * Response DTO for uploading a recipe image.
+ */
+export interface UploadRecipeImageResponseDto {
+    id: number;
+    image_path: string;
+    image_url?: string;
+}
+
+/**
  * DTO for the detailed view of a single recipe.
  * Based on the `recipe_details` view, with strongly-typed JSONB fields.
  */
@@ -529,6 +538,15 @@ export interface UpdateRecipeInput {
 }
 
 /**
+ * Input data for uploading a recipe image.
+ */
+export interface UploadRecipeImageInput {
+    recipeId: number;
+    userId: string;
+    file: File;
+}
+
+/**
  * Creates a new recipe with associated tags for the authenticated user.
  * Uses the `create_recipe_with_tags` RPC function to ensure atomicity.
  *
@@ -605,7 +623,7 @@ export async function createRecipe(
     });
 
     // Fetch the complete recipe details using the existing function
-    const recipeDetail = await getRecipeById(client, recipeId);
+    const recipeDetail = await getRecipeById(client, recipeId, userId);
 
     logger.info('Recipe creation completed', {
         recipeId: recipeDetail.id,
@@ -718,7 +736,7 @@ export async function updateRecipe(
     });
 
     // Fetch the complete recipe details using the existing function
-    const recipeDetail = await getRecipeById(client, updatedRecipeId);
+    const recipeDetail = await getRecipeById(client, updatedRecipeId, userId);
 
     logger.info('Recipe update completed', {
         recipeId: recipeDetail.id,
@@ -923,7 +941,7 @@ export async function deleteRecipe(
         .eq('id', recipeId)
         .eq('user_id', userId)
         .is('deleted_at', null)
-        .select('id', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true });
 
     if (error) {
         logger.error('Database error while deleting recipe', {
@@ -949,5 +967,211 @@ export async function deleteRecipe(
     logger.info('Recipe soft-deleted successfully', {
         recipeId,
     });
+}
+
+/**
+ * Maps MIME type to file extension for image uploads.
+ *
+ * @param mimeType - The MIME type of the file
+ * @returns File extension without dot (e.g., 'png', 'jpg', 'webp')
+ */
+function getFileExtensionFromMimeType(mimeType: string): string {
+    const mimeToExtMap: Record<string, string> = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/webp': 'webp',
+    };
+
+    return mimeToExtMap[mimeType] || 'jpg'; // Default to jpg if unknown
+}
+
+/**
+ * Uploads or replaces a recipe image in Supabase Storage.
+ *
+ * Process:
+ * 1. Verifies recipe exists and user is the owner (using authenticated client with RLS)
+ * 2. Uploads the new image to Storage bucket 'recipe-images' under path: /{userId}/{recipeId}/cover_{timestamp}.{ext}
+ * 3. Updates the recipes.image_path column in the database
+ * 4. If database update fails, performs rollback by removing the newly uploaded file
+ * 5. Best-effort deletion of the old image file (if it existed)
+ *
+ * @param client - The authenticated Supabase client (RLS enforces ownership)
+ * @param input - Upload input containing recipeId, userId, and file
+ * @returns UploadRecipeImageResponseDto with id, image_path, and optional image_url
+ * @throws ApplicationError with NOT_FOUND if recipe doesn't exist or user doesn't own it
+ * @throws ApplicationError with INTERNAL_ERROR for storage or database errors
+ */
+export async function uploadRecipeImage(
+    client: TypedSupabaseClient,
+    input: UploadRecipeImageInput
+): Promise<UploadRecipeImageResponseDto> {
+    const { recipeId, userId, file } = input;
+
+    logger.info('Starting recipe image upload', {
+        recipeId,
+        userId,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+    });
+
+    // Step 1: Verify recipe exists, user owns it, and it's not deleted
+    // Fetch current image_path to enable cleanup of old file
+    const { data: recipe, error: fetchError } = await client
+        .from('recipes')
+        .select('id, image_path')
+        .eq('id', recipeId)
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+    if (fetchError) {
+        logger.error('Database error while fetching recipe for image upload', {
+            recipeId,
+            userId,
+            errorCode: fetchError.code,
+            errorMessage: fetchError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to verify recipe ownership');
+    }
+
+    if (!recipe) {
+        logger.warn('Recipe not found or access denied for image upload', {
+            recipeId,
+            userId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            `Recipe with ID ${recipeId} not found`
+        );
+    }
+
+    const oldImagePath = recipe.image_path;
+
+    logger.info('Recipe verified, proceeding with upload', {
+        recipeId,
+        hasOldImage: !!oldImagePath,
+        oldImagePath,
+    });
+
+    // Step 2: Generate storage path for the new image
+    const timestamp = Date.now();
+    const fileExtension = getFileExtensionFromMimeType(file.type);
+    const storagePath = `${userId}/${recipeId}/cover_${timestamp}.${fileExtension}`;
+
+    logger.info('Generated storage path', {
+        storagePath,
+        fileExtension,
+    });
+
+    // Step 3: Upload file to Supabase Storage
+    const fileBuffer = await file.arrayBuffer();
+    const { data: uploadData, error: uploadError } = await client.storage
+        .from('recipe-images')
+        .upload(storagePath, fileBuffer, {
+            contentType: file.type,
+            upsert: false, // Never overwrite - use unique timestamp in filename
+        });
+
+    if (uploadError) {
+        logger.error('Storage upload error', {
+            recipeId,
+            storagePath,
+            errorCode: uploadError.message,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to upload image to storage'
+        );
+    }
+
+    logger.info('File uploaded to storage successfully', {
+        storagePath: uploadData.path,
+    });
+
+    // Step 4: Update recipes.image_path in database
+    const { error: updateError } = await client
+        .from('recipes')
+        .update({ image_path: storagePath })
+        .eq('id', recipeId)
+        .eq('user_id', userId);
+
+    if (updateError) {
+        logger.error('Database update error after upload, performing rollback', {
+            recipeId,
+            storagePath,
+            errorCode: updateError.code,
+            errorMessage: updateError.message,
+        });
+
+        // Rollback: Remove the newly uploaded file
+        const { error: rollbackError } = await client.storage
+            .from('recipe-images')
+            .remove([storagePath]);
+
+        if (rollbackError) {
+            logger.error('Rollback failed - orphaned file in storage', {
+                storagePath,
+                rollbackError: rollbackError.message,
+            });
+        } else {
+            logger.info('Rollback successful - removed uploaded file', {
+                storagePath,
+            });
+        }
+
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to update recipe with new image path'
+        );
+    }
+
+    logger.info('Database updated with new image path', {
+        recipeId,
+        newImagePath: storagePath,
+    });
+
+    // Step 5: Best-effort deletion of old image (if it existed)
+    if (oldImagePath) {
+        logger.info('Attempting to delete old image', {
+            oldImagePath,
+        });
+
+        const { error: deleteOldError } = await client.storage
+            .from('recipe-images')
+            .remove([oldImagePath]);
+
+        if (deleteOldError) {
+            logger.warn('Failed to delete old image (non-critical)', {
+                oldImagePath,
+                errorMessage: deleteOldError.message,
+            });
+        } else {
+            logger.info('Old image deleted successfully', {
+                oldImagePath,
+            });
+        }
+    }
+
+    // Step 6: Generate public URL for the image (optional)
+    // Note: This assumes bucket is configured as public.
+    // For private buckets, use createSignedUrl() instead.
+    const { data: publicUrlData } = client.storage
+        .from('recipe-images')
+        .getPublicUrl(storagePath);
+
+    const imageUrl = publicUrlData?.publicUrl || undefined;
+
+    logger.info('Recipe image upload completed successfully', {
+        recipeId,
+        imagePath: storagePath,
+        hasPublicUrl: !!imageUrl,
+    });
+
+    return {
+        id: recipeId,
+        image_path: storagePath,
+        image_url: imageUrl,
+    };
 }
 

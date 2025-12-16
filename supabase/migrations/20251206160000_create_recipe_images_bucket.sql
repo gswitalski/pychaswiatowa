@@ -4,7 +4,7 @@ VALUES (
     'recipe-images',
     'recipe-images',
     true,
-    5242880, -- 5MB limit
+    10485760, -- 10MB limit
     ARRAY['image/jpeg', 'image/png', 'image/webp']
 )
 ON CONFLICT (id) DO NOTHING;
@@ -14,7 +14,7 @@ CREATE POLICY "Users can upload recipe images to own folder"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
-    bucket_id = 'recipe-images' 
+    bucket_id = 'recipe-images'
     AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
@@ -23,11 +23,11 @@ CREATE POLICY "Users can update own recipe images"
 ON storage.objects FOR UPDATE
 TO authenticated
 USING (
-    bucket_id = 'recipe-images' 
+    bucket_id = 'recipe-images'
     AND (storage.foldername(name))[1] = auth.uid()::text
 )
 WITH CHECK (
-    bucket_id = 'recipe-images' 
+    bucket_id = 'recipe-images'
     AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
@@ -36,7 +36,7 @@ CREATE POLICY "Users can delete own recipe images"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (
-    bucket_id = 'recipe-images' 
+    bucket_id = 'recipe-images'
     AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
