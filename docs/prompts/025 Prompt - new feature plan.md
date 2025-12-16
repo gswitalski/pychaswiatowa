@@ -13,7 +13,7 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-chce aby w góryn toolbarze nie było randomowych przycisków które się pojawiają i znikają  tylko aby to była usystematyzowana nawigacja główna, dzieki której wiem gdzie jestwm i dzieki której mogę szybcko wejśc na wybraną funkcję lub grupę funkci. aktualnie jest tam wejsćie 'na moja pycha' ale chcę dodać też opcje 'odkrywaj przepisy' (ścieżka '/explore'). W przyszłosci bedzie ich więcje: np blog, menu, zkupy itd.
+chce aby podczas edycji przepisu nie trzeba było wybierać obrazka przepisu z plku ale aby można było wkleić obraz ze schowka lub przeciągnąć plik w pole ze zdjęciem
 
 
 </nowa_funkcjonalnosc>

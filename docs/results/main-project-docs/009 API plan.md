@@ -277,6 +277,43 @@ Public endpoints are available without authentication and must return **only** r
 
 ---
 
+#### `POST /recipes/{id}/image`
+
+-   **Description**: Upload or replace a recipe image for the authenticated user. Intended for "paste from clipboard" (Ctrl+V) and drag&drop flows in the recipe edit form. The server stores the file (e.g., Supabase Storage) and updates `recipes.image_path`.
+-   **Content-Type**: `multipart/form-data`
+-   **Request Payload (form fields)**:
+    -   `file` (required, file): The image file to upload.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "id": 1,
+          "image_path": "recipes/1/cover_1700000000.webp",
+          "image_url": "https://.../storage/v1/object/public/..."
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (invalid file type/size, missing file)
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden` (user doesn't own the recipe)
+    -   **Code**: `404 Not Found`
+    -   **Code**: `413 Payload Too Large` (file exceeds max size)
+
+---
+
+#### `DELETE /recipes/{id}/image`
+
+-   **Description**: Remove the recipe image (set `image_path = NULL`). Optionally deletes the underlying storage object.
+-   **Success Response**:
+    -   **Code**: `204 No Content`
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
+---
+
 ### Categories
 
 #### `GET /categories`
@@ -580,6 +617,10 @@ Public endpoints are available without authentication and must return **only** r
     -   `recipes.name`: required, 1-150 characters.
     -   `recipes.visibility`: required, enum: 'PRIVATE', 'SHARED', 'PUBLIC'. Default: 'PRIVATE'.
     -   `recipes.ingredients_raw`, `recipes.steps_raw`: required.
+    -   `POST /recipes/{id}/image`:
+        - `file`: required
+        - allowed mime types: `image/png`, `image/jpeg`, `image/webp`
+        - max file size: `10 MB`
     -   `tags.name`: required, 1-50 characters.
     -   `collections.name`: required, 1-100 characters.
 -   **Business Logic**:

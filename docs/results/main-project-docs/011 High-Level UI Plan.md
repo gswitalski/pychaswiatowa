@@ -96,8 +96,14 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Główny cel:** Tworzenie i modyfikacja przepisu.
 - **Header:** Tytuł "Nowy przepis" / "Edycja". Akcje: "Anuluj", "Zapisz" (Sticky - zawsze widoczny).
 - **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, kategoria, widoczność), Składniki, Kroki, Zdjęcie.
-- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), komponent do przesyłania plików, interaktywna lista "przeciągnij i upuść".
-- **Względy UX, dostępności i bezpieczeństwa:** Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), `ImageUploadComponent` (strefa paste/drop + fallback file picker), `EditableListComponent` (składniki/kroki).
+- **Względy UX, dostępności i bezpieczeństwa:**
+    - Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
+    - Sekcja **Zdjęcie** działa jako **strefa docelowa**: użytkownik może wkleić obraz ze schowka (Ctrl+V) lub przeciągnąć i upuścić plik obrazu. Opcja "Wybierz plik" pozostaje jako fallback.
+    - Drag&drop dotyczy **pliku obrazu (File) z dysku** — nie zakładamy obsługi upuszczania samych URL-i / linków do obrazków ze stron WWW w MVP.
+    - Strefa zdjęcia ma czytelne stany: `idle` (instrukcja), `dragover` (podświetlenie), `uploading` (progres/spinner), `success` (podgląd), `error` (komunikat).
+    - Walidacja po stronie UI: akceptowane typy `image/png`, `image/jpeg`, `image/webp`, max rozmiar `10 MB`. Błędy są pokazywane przy polu zdjęcia + w Snackbarze.
+    - Auto-upload startuje od razu po paste/drop, a po sukcesie wyświetlany jest Snackbar z akcją **"Cofnij"** (działa do czasu zapisu całego przepisu). Dostępna jest też akcja **"Usuń zdjęcie"**.
 
 **10. Import Przepisu**
 - **Ścieżka:** `/recipes/import`
@@ -162,6 +168,6 @@ Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności o
 
 - **Karta przepisu (`RecipeCardComponent`):** Komponent wyświetlający miniaturę przepisu (zdjęcie, nazwa, kategoria) na listach (`/my-recipies`, `/collections/:id`).
 - **Komponent "stanu pustego" (`EmptyStateComponent`):** Generyczny komponent wyświetlający informację (np. "Nie masz jeszcze żadnych przepisów") i przycisk z wezwaniem do akcji (np. "Dodaj pierwszy przepis"). Używany na listach przepisów i kolekcji.
-- **Komponent przesyłania pliku (`ImageUploadComponent`):** Komponent obsługujący wybór, walidację i podgląd przesyłanego zdjęcia w formularzu przepisu.
+- **Komponent przesyłania pliku (`ImageUploadComponent`):** Komponent obsługujący wybór, walidację i podgląd zdjęcia w formularzu przepisu, z obsługą **wklejania ze schowka (Ctrl+V)** oraz **drag&drop** (plik z dysku) w trybie edycji. Umożliwia auto-upload, pokazuje progres oraz udostępnia akcje: "Wybierz plik" (fallback), "Usuń zdjęcie", "Cofnij" (Undo).
 - **Modal dodawania do kolekcji (`AddToCollectionDialogComponent`):** Okno modalne pozwalające na wybranie istniejącej kolekcji z listy lub stworzenie nowej i dodanie do niej bieżącego przepisu.
 - **Lista edytowalnych elementów (`EditableListComponent`):** Komponent do zarządzania listą składników/kroków w formularzu, wspierający dodawanie, usuwanie, edycję "in-line" oraz zmianę kolejności za pomocą "przeciągnij i upuść".
