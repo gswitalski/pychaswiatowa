@@ -67,7 +67,7 @@ export class ExplorePageComponent {
     /** Computed: aktualny query string dla wyszukiwarki */
     readonly currentQuery = computed(() => this.queryState().q);
 
-    /** Computed: lista kart przepisów z informacją o własności */
+    /** Computed: lista kart przepisów z informacją o własności i kolekcjach */
     readonly recipeCards = computed<ExploreRecipeCardVm[]>(() => {
         const items = this.pageState().items;
         const userId = this.currentUserId();
@@ -75,6 +75,7 @@ export class ExplorePageComponent {
         return items.map(dto => ({
             card: this.mapToRecipeCard(dto),
             isOwnRecipe: userId !== null && dto.author.id === userId,
+            inMyCollections: dto.in_my_collections,
         }));
     });
 

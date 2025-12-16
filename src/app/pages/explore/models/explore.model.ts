@@ -36,11 +36,12 @@ export interface ExplorePageState {
 }
 
 /**
- * Model widoku dla karty przepisu w widoku Explore (z informacją o własności)
+ * Model widoku dla karty przepisu w widoku Explore (z informacją o własności i kolekcjach)
  */
 export interface ExploreRecipeCardVm {
     card: RecipeCardData;
     isOwnRecipe: boolean;
+    inMyCollections: boolean;
 }
 
 /**

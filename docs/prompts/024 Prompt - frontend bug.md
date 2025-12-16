@@ -10,14 +10,15 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
-karty przepiów na komponencie recipe-list nie pokazują kategorii przepisu
+ścieżka /explore p[okazuje wszystkie przepisy publiczne i wszsytki moje. 
+jak jakis przepis publiczny (nie mój) jest w którejś z mojej kolekcji to nie  wyświetla się badge 'w moich kolekcjach'
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-wszystie mają pokazywac katergorie
+jak jakis przepis publiczny (nie mój) jest w którejś z mojej kolekcji to  wyświetla się badge 'w moich kolekcjach' tak jak w ściueżce my-recipies
 
 </oczekiwane_zachowanie>
 

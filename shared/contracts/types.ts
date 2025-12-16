@@ -81,7 +81,8 @@ export type RecipeListItemDto = Pick<
 
 /**
  * DTO for a public recipe list item.
- * Used for anonymous access to public recipes (no authentication required).
+ * Used for public recipes (supports optional authentication).
+ * When user is authenticated, includes information about collections.
  */
 export interface PublicRecipeListItemDto {
     id: number;
@@ -92,6 +93,8 @@ export interface PublicRecipeListItemDto {
     tags: string[];
     author: ProfileDto;
     created_at: string;
+    /** True if recipe is in authenticated user's collections (always false for anonymous) */
+    in_my_collections: boolean;
 }
 
 /**

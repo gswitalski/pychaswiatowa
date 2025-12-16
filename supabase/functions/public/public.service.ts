@@ -48,6 +48,8 @@ export interface PublicRecipeListItemDto {
     tags: string[];
     author: ProfileDto;
     created_at: string;
+    /** True if recipe is in authenticated user's collections (always false for anonymous) */
+    in_my_collections: boolean;
 }
 
 /**
@@ -129,18 +131,20 @@ const PROFILE_SELECT_COLUMNS = 'id, username';
 
 /**
  * Retrieves public recipes with pagination, sorting, and optional search.
- * This function is intended for anonymous access using service role key.
+ * Supports optional authentication - when user is authenticated, includes collection information.
  *
  * Security: Always filters for visibility='PUBLIC' and deleted_at IS NULL.
  *
  * @param client - Service role Supabase client
  * @param query - Query parameters for filtering, sorting, and pagination
+ * @param userId - Optional authenticated user ID (null for anonymous)
  * @returns Object containing recipe data and pagination details
  * @throws ApplicationError with INTERNAL_ERROR code for database errors
  */
 export async function getPublicRecipes(
     client: TypedSupabaseClient,
-    query: GetPublicRecipesQuery
+    query: GetPublicRecipesQuery,
+    userId: string | null = null
 ): Promise<{
     data: PublicRecipeListItemDto[];
     pagination: PaginationDetails;
@@ -150,6 +154,7 @@ export async function getPublicRecipes(
         limit: query.limit,
         sort: `${query.sortField}.${query.sortDirection}`,
         hasSearch: !!query.q,
+        isAuthenticated: userId !== null,
     });
 
     // Calculate offset for pagination
@@ -251,6 +256,39 @@ export async function getPublicRecipes(
         throw new ApplicationError('INTERNAL_ERROR', 'Some recipe authors could not be found');
     }
 
+    // If user is authenticated, fetch collection information for all recipes
+    let recipeIdsInCollections = new Set<number>();
+
+    if (userId !== null) {
+        const recipeIds = recipeRows.map(r => r.id);
+
+        logger.info('Checking if recipes are in user collections', {
+            userId,
+            recipeIdsCount: recipeIds.length,
+        });
+
+        // Query recipe_collections to find which recipes are in user's collections
+        const { data: collectionsData, error: collectionsError } = await client
+            .from('recipe_collections')
+            .select('recipe_id, collection_id, collections!inner(user_id)')
+            .in('recipe_id', recipeIds)
+            .eq('collections.user_id', userId);
+
+        if (collectionsError) {
+            logger.error('Error checking recipe collections', {
+                errorCode: collectionsError.code,
+                errorMessage: collectionsError.message,
+                userId,
+            });
+            // Don't fail the entire request - just assume no recipes in collections
+        } else if (collectionsData) {
+            recipeIdsInCollections = new Set(collectionsData.map((rc: any) => rc.recipe_id));
+            logger.info('Found recipes in user collections', {
+                count: recipeIdsInCollections.size,
+            });
+        }
+    }
+
     // Map database records to DTOs
     const recipes: PublicRecipeListItemDto[] = recipeRows.map((recipe) => {
         const author = profilesById.get(recipe.user_id);
@@ -274,6 +312,7 @@ export async function getPublicRecipes(
                 username: author.username,
             },
             created_at: recipe.created_at,
+            in_my_collections: recipeIdsInCollections.has(recipe.id),
         };
     });
 

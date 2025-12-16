@@ -4,7 +4,7 @@
  */
 
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { createServiceRoleClient } from '../_shared/supabase-client.ts';
+import { createServiceRoleClient, getOptionalAuthenticatedUser } from '../_shared/supabase-client.ts';
 import { ApplicationError, handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { getPublicRecipes, getPublicRecipeById } from './public.service.ts';
@@ -91,7 +91,7 @@ function createSuccessResponse<T>(data: T, status = 200): Response {
 /**
  * Handles GET /public/recipes request.
  * Returns paginated list of public recipes with optional search and sorting.
- * This endpoint is accessible without authentication.
+ * Supports optional authentication - when authenticated, includes collection information.
  *
  * @param req - The incoming HTTP request
  * @returns Response with PaginatedResponseDto<PublicRecipeListItemDto> on success, or error response
@@ -99,6 +99,15 @@ function createSuccessResponse<T>(data: T, status = 200): Response {
 export async function handleGetPublicRecipes(req: Request): Promise<Response> {
     try {
         logger.info('Handling GET /public/recipes request');
+
+        // Extract optional user (null for anonymous, throws on invalid token)
+        const user = await getOptionalAuthenticatedUser(req);
+        const userId = user?.id ?? null;
+
+        logger.info('Request context determined', {
+            isAuthenticated: userId !== null,
+            userId: userId ?? 'anonymous',
+        });
 
         // Parse and validate query parameters
         const url = new URL(req.url);
@@ -136,13 +145,14 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
         // Create service role client for public access
         const client = createServiceRoleClient();
 
-        // Fetch public recipes
-        const result = await getPublicRecipes(client, query);
+        // Fetch public recipes (with optional user context for collections)
+        const result = await getPublicRecipes(client, query, userId);
 
         logger.info('GET /public/recipes completed successfully', {
             recipesCount: result.data.length,
             totalItems: result.pagination.totalItems,
             page: query.page,
+            isAuthenticated: userId !== null,
         });
 
         return createSuccessResponse(result);
