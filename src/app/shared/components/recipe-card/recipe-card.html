@@ -2,55 +2,55 @@
     <mat-card class="recipe-card">
         <div class="card-image-container">
             @if (recipe().imageUrl) {
-                <img
-                    [src]="recipe().imageUrl"
-                    [alt]="recipe().name"
-                    class="card-image"
-                />
+            <img
+                [src]="recipe().imageUrl"
+                [alt]="recipe().name"
+                class="card-image" />
             } @else {
-                <div class="card-image-placeholder">
-                    <mat-icon>restaurant_menu</mat-icon>
-                </div>
+            <div class="card-image-placeholder">
+                <mat-icon>restaurant_menu</mat-icon>
+            </div>
             }
 
             @if (isOwnRecipe()) {
-                <div class="own-recipe-badge" aria-label="Twój przepis">
-                    <span>Twój przepis</span>
-                </div>
+            <div class="recipe-badge" aria-label="Mój przepis">
+                <mat-chip-set>
+                    <mat-chip>Mój przepis</mat-chip>
+                </mat-chip-set>
+            </div>
             }
 
             @if (inMyCollections() && !isOwnRecipe()) {
-                <div class="in-collections-badge" aria-label="W moich kolekcjach">
-                    <mat-chip-set>
-                        <mat-chip>W moich kolekcjach</mat-chip>
-                    </mat-chip-set>
-                </div>
+            <div class="recipe-badge" aria-label="W moich kolekcjach">
+                <mat-chip-set>
+                    <mat-chip>W moich kolekcjach</mat-chip>
+                </mat-chip-set>
+            </div>
             }
 
             @if (showRemoveAction()) {
-                <button
-                    mat-icon-button
-                    class="card-menu-button"
-                    [matMenuTriggerFor]="cardMenu"
-                    (click)="onMenuClick($event)"
-                    aria-label="Menu akcji"
-                >
-                    <mat-icon>more_vert</mat-icon>
+            <button
+                mat-icon-button
+                class="card-menu-button"
+                [matMenuTriggerFor]="cardMenu"
+                (click)="onMenuClick($event)"
+                aria-label="Menu akcji">
+                <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #cardMenu="matMenu">
+                <button mat-menu-item (click)="onRemoveClick($event)">
+                    <mat-icon>remove_circle_outline</mat-icon>
+                    <span>Usuń z kolekcji</span>
                 </button>
-                <mat-menu #cardMenu="matMenu">
-                    <button mat-menu-item (click)="onRemoveClick($event)">
-                        <mat-icon>remove_circle_outline</mat-icon>
-                        <span>Usuń z kolekcji</span>
-                    </button>
-                </mat-menu>
+            </mat-menu>
             }
         </div>
         <mat-card-content>
             <h3 class="recipe-name">{{ recipe().name }}</h3>
             @if (shouldShowCategory()) {
-                <p class="recipe-category">
-                    {{ recipe().categoryName || '&nbsp;' }}
-                </p>
+            <p class="recipe-category">
+                {{ recipe().categoryName || '&nbsp;' }}
+            </p>
             }
         </mat-card-content>
     </mat-card>

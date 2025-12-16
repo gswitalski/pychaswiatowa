@@ -10,14 +10,14 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
-style bagge'ów na komponencie recipe-card są niespójne. uspójnij jako podstawę przyjmij in-collections-badge
+karty przepiów na komponencie recipe-list nie pokazują kategorii przepisu
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-logo ma być wyswietlane tez dla zalogowanego
+wszystie mają pokazywac katergorie
 
 </oczekiwane_zachowanie>
 
