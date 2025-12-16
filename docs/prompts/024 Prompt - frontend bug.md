@@ -1,4 +1,19 @@
-Jesteś doświadczonym programistą aplikacji webowych. Twoim zadaniem jest przeanalizowanie i naprawienie buga w backendzie aplikacji.
+Jesteś doświadczonym programistą aplikacji webowych. Twoim zadaniem jest przeanalizowanie i naprawienie buga w frontendzie aplikacji.
+
+## ✅ STATUS: NAPRAWIONE
+
+**Data naprawy:** 2025-12-16
+
+**Opis naprawy:**
+Dodano logo "PychaŚwiatowa" do komponentu topbar dla zalogowanych użytkowników.
+
+**Zmienione pliki:**
+- `src/app/layout/main-layout/components/topbar/topbar.component.html` - dodano logo w sekcji topbar__left
+- `src/app/layout/main-layout/components/topbar/topbar.component.scss` - dodano style dla logo z responsywnością
+
+---
+
+## OPIS ORYGINALNY
 
 Zapoznaj się z dokumnetacją projektu 
 
@@ -10,19 +25,14 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
-widok listy przepisów z mojej kolekcji
-http://localhost:4200/collections/1
+logo w headerze jest wyswietlane tylklko dla niezalogowanego uzytkownika
 
-w karcie przepisu nie wyświetla ilustracji
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-widok listy przepisów z mojej kolekcji
-http://localhost:4200/collections/1
 
-w karcie przepisu wyświetla ilustrację
-
+logo ma być wyswietlane tez dla zalogowanego
 
 </oczekiwane_zachowanie>
 

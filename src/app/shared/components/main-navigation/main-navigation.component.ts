@@ -74,6 +74,11 @@ export class MainNavigationComponent {
     isItemActive(item: MainNavigationItem): boolean {
         const url = this.currentUrl();
 
+        // Guard clause: handle undefined url
+        if (!url) {
+            return false;
+        }
+
         // If item has matchingRoutes, check if current URL starts with any of them
         if (item.matchingRoutes && item.matchingRoutes.length > 0) {
             return item.matchingRoutes.some(route => url.startsWith(route));

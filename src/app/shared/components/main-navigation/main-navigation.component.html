@@ -2,9 +2,7 @@
 <!-- Desktop: Tab navigation -->
 <nav class="main-navigation main-navigation--desktop">
     @for (item of items(); track item.route) {
-    <mat-nav-list>
-
-        <a
+    <a
         mat-button
         [routerLink]="item.route"
         [class.active]="isItemActive(item)"
@@ -12,7 +10,6 @@
         class="main-navigation__link">
         {{ item.label }}
     </a>
-</mat-nav-list>
     }
 </nav>
 } @else {
@@ -39,4 +36,3 @@
     </mat-menu>
 </div>
 }
-
