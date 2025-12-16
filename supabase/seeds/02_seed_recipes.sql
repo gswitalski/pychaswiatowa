@@ -1876,4 +1876,484 @@ begin
 
 end $$;
 
+-- ============================================================================
+-- SEEDING RECIPES FOR test2@pychaswiatowa.pl
+-- ============================================================================
+
+do $$
+declare
+    target_user_id uuid := '6e2596af-e62a-4be6-93fc-680f8b83dc06';
+    category_obiad_id bigint;
+    category_deser_id bigint;
+    category_zupa_id bigint;
+    category_sniadanie_id bigint;
+    category_dodatek_id bigint;
+begin
+    -- verify that user exists
+    if not exists (select 1 from auth.users where id = target_user_id) then
+        raise exception 'User with id % does not exist', target_user_id;
+    end if;
+
+    -- get category IDs
+    select id into category_obiad_id from public.categories where name = 'Danie główne' limit 1;
+    select id into category_deser_id from public.categories where name = 'Deser' limit 1;
+    select id into category_zupa_id from public.categories where name = 'Zupa' limit 1;
+    select id into category_sniadanie_id from public.categories where name = 'Śniadanie' limit 1;
+    select id into category_dodatek_id from public.categories where name = 'Dodatek' limit 1;
+
+    -- recipe 1: Lasagne
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Lasagne') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Lasagne',
+            'Klasyczna włoska lasagne z bogatym sosem bolognese i beszamelem.',
+            public.parse_text_to_jsonb(
+                '## Sos bolognese
+- 600g mięsa mielonego wołowo-wieprzowego
+- 800g pomidorów krojonych z puszki
+- 1 cebula
+- 2 ząbki czosnku
+- 1 marchewka
+- 100ml czerwonego wina
+- 2 łyżki koncentratu pomidorowego
+- oliwa, sól, pieprz, bazylia
+## Sos beszamelowy
+- 50g masła
+- 50g mąki pszennej
+- 500ml mleka
+- gałka muszkatołowa, sól
+## Pozostałe
+- 12 płatów lasagne (bez gotowania)
+- 200g sera mozzarella
+- 100g sera parmezan'
+            ),
+            public.parse_text_to_jsonb(
+                '## Sos bolognese
+- Cebulę, czosnek i marchewkę drobno posiekaj.
+- Zeszklij warzywa na oliwie, dodaj mięso.
+- Smaż aż mięso się zrumieni.
+- Wlej wino, gotuj aż odparuje.
+- Dodaj pomidory i koncentrat.
+- Duś 45 minut na małym ogniu.
+## Sos beszamelowy
+- Rozpuść masło, dodaj mąkę, smaż 2 minuty.
+- Stopniowo wlewaj mleko, ciągle mieszając.
+- Gotuj aż zgęstnieje, dopraw gałką i solą.
+## Składanie
+- Na dnie naczynia nałóż warstwę sosu bolognese.
+- Ułóż płaty lasagne, polej beszamelem.
+- Powtarzaj warstwy, na końcu posyp serem.
+- Piecz w 180°C przez 35-40 minut.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 2: Cheesecake nowojorski
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Cheesecake nowojorski') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_deser_id,
+            'Cheesecake nowojorski',
+            'Klasyczny amerykański sernik z sera philadelphia, kremowy i delikatny.',
+            public.parse_text_to_jsonb(
+                '## Spód
+- 200g herbatników digestive
+- 100g masła
+## Masa serowa
+- 900g sera philadelphia
+- 200g cukru
+- 3 jajka
+- 2 żółtka
+- 200ml śmietany kremówki 36%
+- 2 łyżki mąki ziemniaczanej
+- sok z połowy cytryny
+- 1 łyżeczka ekstraktu waniliowego'
+            ),
+            public.parse_text_to_jsonb(
+                '## Spód
+- Herbatniki rozdrobnij, wymieszaj z roztopionym masłem.
+- Wyłóż dno formy rozkładanej (24cm), ugnij.
+## Masa
+- Ser ubij z cukrem na gładką masę.
+- Dodawaj po jednym jajku, miksując.
+- Dodaj żółtka, śmietanę, mąkę, sok i wanilię.
+- Wymieszaj na gładką masę.
+- Wylej na spód.
+- Piecz w 160°C przez 60-70 minut.
+- Wyłącz piekarnik, pozostaw sernik w środku na 1 godzinę.
+- Wyjmij i schłódź w lodówce minimum 4 godziny.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 3: Tom Yum
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Tom Yum') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_zupa_id,
+            'Tom Yum',
+            'Pikantna, kwaśna tajska zupa z krewetkami i trawą cytrynową.',
+            public.parse_text_to_jsonb(
+                '- 500g krewetek
+- 1 litr bulionu warzywnego
+- 3 łodygi trawy cytrynowej
+- 5 cm korzenia galangalu
+- 4 liście limonki kaffir
+- 200g pieczarek
+- 2 pomidory
+- 2 papryczki chili
+- 3 łyżki pasty tom yum
+- 2 łyżki sosu rybnego
+- sok z 2 limonek
+- kolendra świeża'
+            ),
+            public.parse_text_to_jsonb(
+                '- Trawę cytrynową pokrój na kawałki i lekko ubij.
+- Galangal pokrój w plastry.
+- Bulion zagotuj z trawą, galangal i liśćmi limonki.
+- Gotuj 10 minut, aby się zaprawiło.
+- Dodaj pastę tom yum i sos rybny.
+- Wrzuć pieczarki i pomidory pokrojone w ćwiartki.
+- Gotuj 5 minut.
+- Dodaj krewetki i chili, gotuj 3 minuty.
+- Zdejmij z ognia, dodaj sok z limonki.
+- Posyp kolendrą przed podaniem.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 4: Pancakes amerykańskie
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Pancakes amerykańskie') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_sniadanie_id,
+            'Pancakes amerykańskie',
+            'Puszyste, grube naleśniki na słodkie śniadanie z syropem klonowym.',
+            public.parse_text_to_jsonb(
+                '- 250g mąki pszennej
+- 2 łyżeczki proszku do pieczenia
+- 2 łyżki cukru
+- szczypta soli
+- 300ml mleka
+- 2 jajka
+- 50g masła (rozpuszczonego)
+- masło do smażenia
+- syrop klonowy i owoce do podania'
+            ),
+            public.parse_text_to_jsonb(
+                '- Mąkę przesiej z proszkiem, cukrem i solą.
+- Jajka ubij z mlekiem.
+- Dodaj rozpuszczone masło do jajek.
+- Wymieszaj mokre składniki z suchymi.
+- Nie miksuj za długo - ciasto może być grudkowate.
+- Odstaw na 10 minut.
+- Rozgrzej patelnię, posmaruj masłem.
+- Nalewaj ciasto łyżką, formując okrągłe placki.
+- Smaż aż pojawią się bąbelki, przewróć.
+- Smaż drugą stronę do zrumienienia.
+- Podawaj na ciepło z syropem i owocami.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 5: Pad Thai
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Pad Thai') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Pad Thai',
+            'Kultowe tajskie danie z makaronem ryżowym, krewetkami i orzeszkami.',
+            public.parse_text_to_jsonb(
+                '## Makaron i dodatki
+- 250g makaronu ryżowego (rice noodles)
+- 300g krewetek
+- 2 jajka
+- 200g kiełków sojowych
+- 3 łodygi szczypiorku
+- 50g orzeszków ziemnych prażonych
+- 1 limonka
+## Sos
+- 3 łyżki sosu rybnego
+- 2 łyżki sosu sojowego
+- 2 łyżki cukru palmowego
+- 1 łyżka pasty tamaryndowca
+- 2 ząbki czosnku
+- 1 papryczka chili'
+            ),
+            public.parse_text_to_jsonb(
+                '- Makaron namocz w ciepłej wodzie na 30 minut.
+- Sos: wymieszaj wszystkie składniki.
+- Czosnek i chili posiekaj, smaż na woku.
+- Dodaj krewetki, smaż 2 minuty.
+- Odsuń na bok, wbij jajka, smaż jak omlet.
+- Dodaj odsączony makaron i sos.
+- Smaż mieszając 3-4 minuty.
+- Dodaj kiełki i szczypiorek, smaż minutę.
+- Posyp orzeszkami, skrop sokiem z limonki.
+- Podawaj natychmiast.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 6: Hummus klasyczny
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Hummus klasyczny') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_dodatek_id,
+            'Hummus klasyczny',
+            'Bliskowschodni klasyk z ciecierzycy i tahini, idealny do dipsowania.',
+            public.parse_text_to_jsonb(
+                '- 400g ciecierzycy z puszki (odsączonej)
+- 3 łyżki tahini (pasty sezamowej)
+- 2 ząbki czosnku
+- sok z 1 cytryny
+- 4 łyżki oliwy z oliwek
+- 1/2 łyżeczki kminku
+- sól
+- papryka słodka i oliwa do dekoracji'
+            ),
+            public.parse_text_to_jsonb(
+                '- Ciecierzycę przepłucz i odsącz (zachowaj płyn).
+- Do blendera włóż ciecierzycę, tahini, czosnek.
+- Dodaj sok z cytryny, oliwę, kminek i sól.
+- Blenduj na gładką masę.
+- Jeśli za gęsty, dodaj płyn z ciecierzycy.
+- Przełóż do miski, zrób wgłębienie.
+- Wlej oliwę, posyp papryką.
+- Podawaj z pieczywem pita lub warzywami.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 7: Ramen domowy
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Ramen domowy') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_zupa_id,
+            'Ramen domowy',
+            'Aromatyczna japońska zupa z makaronem, jajkiem i warzywami.',
+            public.parse_text_to_jsonb(
+                '## Bulion
+- 1,5 litra bulionu drobiowego
+- 3 łyżki miso paste
+- 2 łyżki sosu sojowego
+- 1 łyżka oleju sezamowego
+- 2 ząbki czosnku
+- 2 cm imbiru
+## Dodatki
+- 300g makaronu ramen
+- 2 jajka
+- 200g piersi kurczaka
+- 100g szpinaku baby
+- 2 marchewki
+- grzyby shiitake
+- szczypiorek'
+            ),
+            public.parse_text_to_jsonb(
+                '- Jajka gotuj 6 minut (miękkie), schłódź i obierz.
+- Kurczaka ugotuj w bulionie, wyjmij i pokrój.
+- Do bulionu dodaj miso, sos sojowy i olej.
+- Dodaj starty imbir i czosnek.
+- Marchewkę pokrój w cienkie paski.
+- Grzyby pokrój w plastry, dodaj do bulionu.
+- Gotuj 10 minut.
+- Makaron ugotuj według instrukcji.
+- Do misek włóż makaron, zalej bulionem.
+- Ułóż kurczaka, jajko, marchewkę i szpinak.
+- Posyp szczypiorkiem.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    -- recipe 8: Panna cotta
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Panna cotta') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_deser_id,
+            'Panna cotta',
+            'Elegancki włoski deser z kremówki z sosem owocowym.',
+            public.parse_text_to_jsonb(
+                '## Panna cotta
+- 500ml śmietany kremówki 36%
+- 100g cukru
+- 1 laska wanilii
+- 10g żelatyny
+## Sos malinowy
+- 300g malin świeżych
+- 50g cukru
+- sok z połowy cytryny'
+            ),
+            public.parse_text_to_jsonb(
+                '## Panna cotta
+- Żelatynę namocz w zimnej wodzie.
+- Śmietanę podgrzej z cukrem i nasionami wanilii.
+- Nie doprowadzaj do wrzenia.
+- Zdejmij z ognia, dodaj odciśniętą żelatynę.
+- Mieszaj aż się rozpuści.
+- Rozlej do foremek, schłódź 4 godziny.
+## Sos
+- Maliny podgrzej z cukrem i cytryną.
+- Gotuj 5 minut, przecedź przez sito.
+- Schłódź.
+- Panna cottę wyjmij z foremek, polej sosem.'
+            ),
+            'PUBLIC'
+        );
+    end if;
+
+    -- recipe 9: Quesadilla z kurczakiem
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Quesadilla z kurczakiem') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_obiad_id,
+            'Quesadilla z kurczakiem',
+            'Meksykańska tortilla z kurczakiem i serem, szybka i pyszna.',
+            public.parse_text_to_jsonb(
+                '- 4 tortille pszenne
+- 300g piersi z kurczaka
+- 200g sera cheddar tartego
+- 1 papryka czerwona
+- 1 cebula
+- 2 łyżeczki przyprawy cajun
+- oliwa
+- guacamole i salsa do podania'
+            ),
+            public.parse_text_to_jsonb(
+                '- Kurczaka pokrój w paski, dopraw cajun.
+- Smaż na patelni do zrumienienia.
+- Cebulę i paprykę pokrój, dodaj do kurczaka.
+- Smaż 5 minut, zdejmij z ognia.
+- Na połowie tortilli nałóż ser.
+- Dodaj farsz z kurczaka.
+- Posyp serem, złóż tortillę na pół.
+- Smaż na suchej patelni z obu stron.
+- Pokrój w trójkąty, podawaj z guacamole.'
+            ),
+            'SHARED'
+        );
+    end if;
+
+    -- recipe 10: Smoothie zielone
+    if not exists (select 1 from public.recipes where user_id = target_user_id and name = 'Smoothie zielone') then
+        insert into public.recipes (
+            user_id,
+            category_id,
+            name,
+            description,
+            ingredients,
+            steps,
+            visibility
+        ) values (
+            target_user_id,
+            category_sniadanie_id,
+            'Smoothie zielone',
+            'Zdrowe smoothie pełne witamin ze szpinaku i owoców.',
+            public.parse_text_to_jsonb(
+                '- 2 garście szpinaku baby
+- 1 banan
+- 1 kiwi
+- 1 zielone jabłko
+- 200ml wody kokosowej
+- 1 łyżka nasion chia
+- 1 łyżka miodu
+- sok z połowy limonki'
+            ),
+            public.parse_text_to_jsonb(
+                '- Szpinak przepłucz.
+- Banana obierz i pokrój.
+- Kiwi obierz i pokrój.
+- Jabłko pokrój, usuń gniazdo nasienne.
+- Wszystko włóż do blendera.
+- Dodaj wodę kokosową, chia i miód.
+- Dodaj sok z limonki.
+- Blenduj na gładką konsystencję.
+- Podawaj natychmiast.'
+            ),
+            'PRIVATE'
+        );
+    end if;
+
+    raise notice 'Recipes for test2@pychaswiatowa.pl created successfully';
+end $$;
+
 
