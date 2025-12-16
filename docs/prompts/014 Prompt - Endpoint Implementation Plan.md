@@ -12,11 +12,9 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
--   **`POST /recipes/{id}/image`**
-    -   **Cel**: upload / podmiana zdjęcia przepisu (dla paste/drop).
-    -   **Wejście**: `multipart/form-data` z polem `file`.
-    -   **Walidacja**: `image/png`, `image/jpeg`, `image/webp`, max 10 MB.
-    -   **Wyjście**: `200 OK` z `image_path` (+ opcjonalnie `image_url`).
+-   **`DELETE /recipes/{id}/image`**
+    -   **Cel**: usunięcie zdjęcia przepisu (ustawienie `image_path = NULL`, opcjonalnie kasowanie obiektu w storage).
+    -   **Wyjście**: `204 No Content`.
 
 
 </api_changes_description>
