@@ -970,6 +970,14 @@ export async function deleteRecipe(
 }
 
 /**
+ * Input parameters for deleting a recipe image.
+ */
+export interface DeleteRecipeImageParams {
+    recipeId: number;
+    userId: string;
+}
+
+/**
  * Maps MIME type to file extension for image uploads.
  *
  * @param mimeType - The MIME type of the file
@@ -1173,5 +1181,126 @@ export async function uploadRecipeImage(
         image_path: storagePath,
         image_url: imageUrl,
     };
+}
+
+/**
+ * Deletes a recipe image by setting image_path to NULL in the database.
+ * Also performs best-effort deletion of the image file from Supabase Storage.
+ *
+ * Process:
+ * 1. Fetches the current image_path for the recipe (verifies ownership and existence)
+ * 2. If image_path is already NULL, returns success (idempotent operation)
+ * 3. Updates the recipes.image_path column to NULL in the database
+ * 4. Best-effort: Attempts to delete the image file from Storage (non-blocking)
+ *
+ * @param client - The authenticated Supabase client (RLS enforces ownership)
+ * @param params - Delete parameters containing recipeId and userId
+ * @throws ApplicationError with NOT_FOUND if recipe doesn't exist, is soft-deleted, or user doesn't own it
+ * @throws ApplicationError with INTERNAL_ERROR for database errors
+ */
+export async function deleteRecipeImage(
+    client: TypedSupabaseClient,
+    params: DeleteRecipeImageParams
+): Promise<void> {
+    const { recipeId, userId } = params;
+
+    logger.info('Starting recipe image deletion', {
+        recipeId,
+        userId,
+    });
+
+    // Step 1: Fetch current image_path to verify recipe exists and get path for cleanup
+    const { data: recipe, error: fetchError } = await client
+        .from('recipes')
+        .select('id, image_path')
+        .eq('id', recipeId)
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+    if (fetchError) {
+        logger.error('Database error while fetching recipe for image deletion', {
+            recipeId,
+            userId,
+            errorCode: fetchError.code,
+            errorMessage: fetchError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to verify recipe ownership');
+    }
+
+    if (!recipe) {
+        logger.warn('Recipe not found or access denied for image deletion', {
+            recipeId,
+            userId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            `Recipe with ID ${recipeId} not found`
+        );
+    }
+
+    const oldImagePath = recipe.image_path;
+
+    // Step 2: If image_path is already NULL, operation is idempotent - return success
+    if (!oldImagePath) {
+        logger.info('Recipe image_path already NULL, operation is idempotent', {
+            recipeId,
+        });
+        return;
+    }
+
+    logger.info('Current image path found, proceeding with deletion', {
+        recipeId,
+        oldImagePath,
+    });
+
+    // Step 3: Update recipes.image_path to NULL in database
+    const { error: updateError } = await client
+        .from('recipes')
+        .update({ image_path: null })
+        .eq('id', recipeId)
+        .eq('user_id', userId)
+        .is('deleted_at', null);
+
+    if (updateError) {
+        logger.error('Database error while updating recipe to remove image', {
+            recipeId,
+            errorCode: updateError.code,
+            errorMessage: updateError.message,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to remove image from recipe'
+        );
+    }
+
+    logger.info('Database updated - image_path set to NULL', {
+        recipeId,
+    });
+
+    // Step 4: Best-effort deletion of image file from Storage
+    // This is non-critical and should not block the response
+    logger.info('Attempting best-effort deletion of image file from Storage', {
+        oldImagePath,
+    });
+
+    const { error: deleteStorageError } = await client.storage
+        .from('recipe-images')
+        .remove([oldImagePath]);
+
+    if (deleteStorageError) {
+        logger.warn('Failed to delete image file from Storage (non-critical)', {
+            oldImagePath,
+            errorMessage: deleteStorageError.message,
+        });
+    } else {
+        logger.info('Image file deleted from Storage successfully', {
+            oldImagePath,
+        });
+    }
+
+    logger.info('Recipe image deletion completed successfully', {
+        recipeId,
+    });
 }
 

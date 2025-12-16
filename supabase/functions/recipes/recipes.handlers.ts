@@ -15,6 +15,7 @@ import {
     importRecipeFromText,
     deleteRecipe,
     uploadRecipeImage,
+    deleteRecipeImage,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
@@ -838,6 +839,47 @@ function extractRecipeIdFromImagePath(url: URL): string | null {
 }
 
 /**
+ * Handles DELETE /recipes/{id}/image request.
+ * Removes the image from a recipe by setting image_path to NULL.
+ * Also performs best-effort deletion of the image file from Storage.
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - The recipe ID extracted from the URL path
+ * @returns Response with 204 No Content on success, or error response
+ */
+export async function handleDeleteRecipeImage(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling DELETE /recipes/{id}/image request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Call the service to delete the recipe image
+        await deleteRecipeImage(client, { recipeId, userId: user.id });
+
+        logger.info('DELETE /recipes/{id}/image completed successfully', {
+            userId: user.id,
+            recipeId,
+        });
+
+        // Return 204 No Content for successful deletion
+        return new Response(null, {
+            status: 204,
+        });
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Extracts the recipe ID from a URL path if it matches /recipes/{id} pattern.
  * Returns null if the path doesn't match the pattern or is the base /recipes path.
  *
@@ -1004,8 +1046,13 @@ export async function recipesRouter(req: Request): Promise<Response> {
         return handleUpdateRecipe(req, recipeId);
     }
 
-    // Route DELETE requests (only for /recipes/{id} path)
+    // Route DELETE requests
     if (method === 'DELETE') {
+        // Handle DELETE /recipes/{id}/image (most specific path, check first)
+        if (imageRecipeId) {
+            return handleDeleteRecipeImage(req, imageRecipeId);
+        }
+
         // DELETE /recipes/import is not allowed
         if (isImport) {
             logger.warn('DELETE /recipes/import not allowed');

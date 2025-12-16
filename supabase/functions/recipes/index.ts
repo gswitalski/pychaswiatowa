@@ -50,6 +50,12 @@
  * - image_path (string) - Storage path of the uploaded image
  * - image_url (string, optional) - Public URL for immediate display
  *
+ * DELETE /functions/v1/recipes/{id}/image
+ * Removes the image from an existing recipe by setting image_path to NULL.
+ * Also performs best-effort deletion of the image file from Storage.
+ * Response (204 No Content):
+ * - No response body
+ *
  * PUT /functions/v1/recipes/{id}
  * Updates an existing recipe for the authenticated user.
  * Request Body (JSON) - all fields optional, at least one required:
