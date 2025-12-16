@@ -6,7 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { LayoutService } from '../../../../core/services/layout.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { BreadcrumbsComponent } from '../../../../shared/components/breadcrumbs/breadcrumbs.component';
 import { OmniboxComponent } from '../../../../shared/components/omnibox/omnibox.component';
 import { MainNavigationComponent } from '../../../../shared/components/main-navigation/main-navigation.component';
 
@@ -22,7 +21,6 @@ import { MainNavigationComponent } from '../../../../shared/components/main-navi
         MatButtonModule,
         MatIconModule,
         MatMenuModule,
-        BreadcrumbsComponent,
         OmniboxComponent,
         MainNavigationComponent,
     ],
