@@ -337,5 +337,10 @@ Backend jest odpowiedzialny za **WSZYSTKIE** operacje związane z danymi:
 ## Testowanie Lokalnie
 
 -   Uruchamiaj funkcje lokalnie: `supabase functions serve nazwa-funkcji`
--   Testuj endpoint pod adresem: `http://localhost:54321/functions/v1/nazwa-funkcji`
+-   Testuj endpoint pod adresem: `http://localhost:54331/functions/v1/nazwa-funkcji`
 -   Używaj nagłówka `Authorization: Bearer TOKEN` dla endpointów wymagających uwierzytelnienia
+-   Użyj nastepującyh danych logowania użytkownika testowego na lokalnym srodowisku:
+    user:
+    test@pychaswiatowa.pl
+    hasło:
+    554G5rjnbdAanGR

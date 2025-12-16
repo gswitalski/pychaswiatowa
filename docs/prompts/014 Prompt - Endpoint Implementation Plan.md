@@ -12,21 +12,18 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
+-   **`POST /recipes/{id}/image`**
+    -   **Cel**: upload / podmiana zdjęcia przepisu (dla paste/drop).
+    -   **Wejście**: `multipart/form-data` z polem `file`.
+    -   **Walidacja**: `image/png`, `image/jpeg`, `image/webp`, max 10 MB.
+    -   **Wyjście**: `200 OK` z `image_path` (+ opcjonalnie `image_url`).
 
-- **GET `/recipes`**
-    - **Zmiana:** dodano parametr `view` (`owned` | `my_recipes`) aby obsłużyć widok listy "Moje przepisy" jako: moje + publiczne z moich kolekcji.
-    - **Zmiana:** odpowiedź listy rozszerzona o pola pomocnicze do UI: `is_owner` oraz `in_my_collections` (oraz `author`).
-
-- **GET `/recipes/{id}`**
-    - **Zmiana:** doprecyzowanie autoryzacji: `403` tylko gdy przepis nie jest publiczny i użytkownik nie jest właścicielem.
 
 </api_changes_description>
 
 aktualna implementacja:
 <current_implementation>
-
 brak
-
 </current_implementation>
 
 
