@@ -10,6 +10,7 @@
             @for (recipe of recipes(); track recipe.id) {
                 <pych-recipe-card
                     [recipe]="mapToCardData(recipe)"
+                    [showCategory]="true"
                     [showRemoveAction]="showRemoveAction()"
                     [isOwnRecipe]="recipe.is_owner"
                     [inMyCollections]="recipe.in_my_collections"

@@ -29,6 +29,8 @@ export interface RecipeListItemDto {
         id: string;
         username: string;
     };
+    category_id: number | null;
+    category_name: string | null;
 }
 
 /**
@@ -270,6 +272,8 @@ export async function getRecipes(
             id: recipe.author_id,
             username: recipe.author_username,
         },
+        category_id: recipe.category_id ? Number(recipe.category_id) : null,
+        category_name: recipe.category_name ?? null,
     }));
 
     return {

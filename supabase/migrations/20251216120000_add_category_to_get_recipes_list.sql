@@ -1,44 +1,39 @@
--- migration: create get_recipes_list function
--- description: creates a postgresql function to retrieve paginated recipes list with filtering
--- function created: get_recipes_list
--- dependencies: recipes, profiles, categories, tags, collections, recipe_tags, recipe_collections
--- note: supports 'owned' and 'my_recipes' views with proper deduplication and pagination
+-- migration: update get_recipes_list function to include category information
+-- description: adds category_id and category_name fields to get_recipes_list function output
+-- function updated: get_recipes_list
+-- dependencies: recipes, categories, profiles, collections, recipe_tags, recipe_collections
+-- reason: bug fix - recipe cards should display category information
 
 /**
- * Retrieves a paginated list of recipes with filtering and sorting.
+ * Zaktualizowana funkcja get_recipes_list która zwraca również informacje o kategorii przepisu.
  *
- * This function supports two views:
- * 1. 'owned' - Returns only recipes owned by the requesting user
- * 2. 'my_recipes' - Returns owned recipes + PUBLIC recipes from other authors that are in at least one user's collection
+ * Zmiany w stosunku do poprzedniej wersji:
+ * - Dodano zwracanie category_id i category_name
+ * - Dodano JOIN do tabeli categories w końcowym SELECT
  *
- * For each recipe, the function calculates:
- * - is_owner: boolean indicating if the requesting user owns the recipe
- * - in_my_collections: boolean indicating if the recipe is in any of user's collections
- * - author: object with author's id and username
+ * @param p_user_id - UUID zalogowanego użytkownika
+ * @param p_view - Typ widoku: 'owned' lub 'my_recipes'
+ * @param p_page - Numer strony (1-based)
+ * @param p_limit - Liczba elementów na stronę
+ * @param p_sort_field - Pole sortowania: 'name', 'created_at', lub 'updated_at'
+ * @param p_sort_direction - Kierunek sortowania: 'asc' lub 'desc'
+ * @param p_category_id - Opcjonalny filtr kategorii
+ * @param p_tag_ids - Opcjonalna tablica ID tagów
+ * @param p_search - Opcjonalny termin wyszukiwania
  *
- * @param p_user_id - The UUID of the authenticated user making the request
- * @param p_view - The view type: 'owned' or 'my_recipes'
- * @param p_page - Page number (1-based)
- * @param p_limit - Number of items per page
- * @param p_sort_field - Field to sort by: 'name', 'created_at', or 'updated_at'
- * @param p_sort_direction - Sort direction: 'asc' or 'desc'
- * @param p_category_id - Optional category filter
- * @param p_tag_ids - Optional array of tag IDs (recipes must have ALL tags)
- * @param p_search - Optional search term for recipe name (case-insensitive ILIKE)
- *
- * @returns TABLE with columns:
- *   - id: recipe ID
- *   - name: recipe name
- *   - image_path: path to recipe image
- *   - created_at: creation timestamp
- *   - visibility: recipe visibility ('PRIVATE', 'SHARED', 'PUBLIC')
- *   - is_owner: true if user owns the recipe
- *   - in_my_collections: true if recipe is in user's collection
- *   - author_id: author's user ID
- *   - author_username: author's username
- *   - category_id: category ID (null if no category assigned)
- *   - category_name: category name (null if no category assigned)
- *   - total_count: total number of items matching filters (for pagination)
+ * @returns TABLE z kolumnami:
+ *   - id: ID przepisu
+ *   - name: nazwa przepisu
+ *   - image_path: ścieżka do obrazu przepisu
+ *   - created_at: znacznik czasu utworzenia
+ *   - visibility: widoczność przepisu ('PRIVATE', 'SHARED', 'PUBLIC')
+ *   - is_owner: true jeśli użytkownik jest właścicielem przepisu
+ *   - in_my_collections: true jeśli przepis jest w kolekcji użytkownika
+ *   - author_id: ID autora
+ *   - author_username: nazwa użytkownika autora
+ *   - category_id: ID kategorii (null jeśli nie przypisano)
+ *   - category_name: nazwa kategorii (null jeśli nie przypisano)
+ *   - total_count: całkowita liczba elementów spełniających filtry (do paginacji)
  */
 create or replace function public.get_recipes_list(
     p_user_id uuid,
@@ -73,11 +68,11 @@ declare
     v_offset integer;
     v_sort_clause text;
 begin
-    -- Calculate pagination offset
+    -- Oblicz offset paginacji
     v_offset := (p_page - 1) * p_limit;
 
-    -- Validate and build sort clause (whitelist to prevent SQL injection)
-    -- Note: 'cr' alias refers to 'counted_recipes' CTE in the main query
+    -- Walidacja i budowa klauzuli sortowania (whitelist zapobiegający SQL injection)
+    -- Uwaga: alias 'cr' odnosi się do CTE 'counted_recipes' w głównym zapytaniu
     case p_sort_field
         when 'name' then
             v_sort_clause := 'cr.name';
@@ -89,14 +84,14 @@ begin
             v_sort_clause := 'cr.created_at';
     end case;
 
-    -- Add direction
+    -- Dodaj kierunek
     if lower(p_sort_direction) = 'asc' then
         v_sort_clause := v_sort_clause || ' ASC';
     else
         v_sort_clause := v_sort_clause || ' DESC';
     end if;
 
-    -- Main query
+    -- Główne zapytanie
     return query execute format('
         with filtered_recipes as (
             select distinct on (r.id)
@@ -107,9 +102,9 @@ begin
                 r.visibility,
                 r.user_id,
                 r.category_id,
-                -- Check if user is owner
+                -- Sprawdź czy użytkownik jest właścicielem
                 (r.user_id = $1) as is_owner,
-                -- Check if recipe is in any of user''s collections
+                -- Sprawdź czy przepis jest w kolekcjach użytkownika
                 exists(
                     select 1
                     from public.recipe_collections rc
@@ -119,12 +114,12 @@ begin
                 ) as in_my_collections
             from public.recipes r
             where r.deleted_at is null
-              -- View filter
+              -- Filtr widoku
               and (
-                  -- owned view: only user''s recipes
+                  -- widok owned: tylko przepisy użytkownika
                   ($2 = ''owned'' and r.user_id = $1)
                   or
-                  -- my_recipes view: user''s recipes OR public recipes in user''s collections
+                  -- widok my_recipes: przepisy użytkownika LUB publiczne przepisy w kolekcjach użytkownika
                   (
                       $2 = ''my_recipes''
                       and (
@@ -142,9 +137,9 @@ begin
                       )
                   )
               )
-              -- Category filter
+              -- Filtr kategorii
               and ($3::bigint is null or r.category_id = $3)
-              -- Tags filter (recipe must have ALL specified tags)
+              -- Filtr tagów (przepis musi posiadać WSZYSTKIE wskazane tagi)
               and (
                   $4::bigint[] is null
                   or array(
@@ -153,7 +148,7 @@ begin
                       where rt.recipe_id = r.id
                   ) @> $4
               )
-              -- Search filter (case-insensitive pattern matching on name)
+              -- Filtr wyszukiwania (dopasowanie wzorca case-insensitive w nazwie)
               and (
                   $5::text is null
                   or r.name ilike ''%%'' || $5 || ''%%''
@@ -196,9 +191,9 @@ begin
 end;
 $$;
 
--- Add comment for documentation
+-- Dodaj komentarz do dokumentacji
 comment on function public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text) is
-    'Retrieves a paginated list of recipes with support for owned and my_recipes views. Returns recipe details with ownership and collection status.';
+    'Pobiera stronicowaną listę przepisów z wsparciem dla widoków owned i my_recipes. Zwraca szczegóły przepisu wraz z informacjami o kategorii, własności i statusie kolekcji.';
 
--- Grant execute permission to authenticated users
+-- Przyznaj uprawnienia wykonania uwierzytelnionym użytkownikom
 grant execute on function public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text) to authenticated;

@@ -75,6 +75,8 @@ export type RecipeListItemDto = Pick<
         id: string;
         username: string;
     };
+    category_id: number | null;
+    category_name: string | null;
 };
 
 /**
