@@ -41,17 +41,17 @@ export interface MainNavigationItem {
  */
 export const MAIN_NAVIGATION_ITEMS: MainNavigationItem[] = [
     {
+        label: 'Odkrywaj przepisy',
+        route: '/explore',
+        exact: false,
+        ariaLabel: 'Przejdź do Odkrywaj przepisy',
+    },
+    {
         label: 'Moja Pycha',
         route: '/dashboard',
         exact: false,
         ariaLabel: 'Przejdź do Moja Pycha',
         matchingRoutes: ['/dashboard', '/my-recipies', '/recipes', '/collections', '/settings'],
-    },
-    {
-        label: 'Odkrywaj przepisy',
-        route: '/explore',
-        exact: false,
-        ariaLabel: 'Przejdź do Odkrywaj przepisy',
     },
 ];
 

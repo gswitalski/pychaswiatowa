@@ -1,20 +1,5 @@
 Jesteś doświadczonym programistą aplikacji webowych. Twoim zadaniem jest przeanalizowanie i naprawienie buga w frontendzie aplikacji.
 
-## ✅ STATUS: NAPRAWIONE
-
-**Data naprawy:** 2025-12-16
-
-**Opis naprawy:**
-Dodano logo "PychaŚwiatowa" do komponentu topbar dla zalogowanych użytkowników.
-
-**Zmienione pliki:**
-- `src/app/layout/main-layout/components/topbar/topbar.component.html` - dodano logo w sekcji topbar__left
-- `src/app/layout/main-layout/components/topbar/topbar.component.scss` - dodano style dla logo z responsywnością
-
----
-
-## OPIS ORYGINALNY
-
 Zapoznaj się z dokumnetacją projektu 
 
 <dokumentacja_projektu>
@@ -25,7 +10,7 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
-logo w headerze jest wyswietlane tylklko dla niezalogowanego uzytkownika
+style bagge'ów na komponencie recipe-card są niespójne. uspójnij jako podstawę przyjmij in-collections-badge
 
 
 </aktualne_zachowanie>
