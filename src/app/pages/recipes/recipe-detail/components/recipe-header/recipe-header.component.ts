@@ -99,8 +99,8 @@ export class RecipeHeaderComponent {
     readonly servingsLabel = computed(() => {
         const servings = this.recipe().servings;
 
-        // Guard: nie renderuj jeśli null lub poza zakresem
-        if (servings === null || servings < 1 || servings > 99) {
+        // Guard: nie renderuj jeśli null, undefined lub poza zakresem
+        if (servings === null || servings === undefined || servings < 1 || servings > 99) {
             return null;
         }
 

@@ -51,6 +51,7 @@ export interface RecipeDetailDto {
     ingredients: RecipeContent;
     steps: RecipeContent;
     tags: TagDto[];
+    servings: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -70,6 +71,7 @@ interface RecipeDetailFullRow {
     ingredients: RecipeContent;
     steps: RecipeContent;
     tags: Array<{ id: number; name: string }> | null;
+    servings: number | null;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -81,7 +83,7 @@ interface RecipeDetailFullRow {
  */
 const RECIPE_DETAIL_SELECT_COLUMNS =
     'id, user_id, name, description, image_path, visibility, category_id, category_name, ' +
-    'ingredients, steps, tags, created_at, updated_at, deleted_at';
+    'ingredients, steps, tags, servings, created_at, updated_at, deleted_at';
 
 /**
  * Retrieves a single recipe by ID with optional authentication.
@@ -216,6 +218,7 @@ function mapToDto(recipe: RecipeDetailFullRow): RecipeDetailDto {
         tags: recipe.tags
             ? recipe.tags.map((tag) => ({ id: tag.id, name: tag.name }))
             : [],
+        servings: recipe.servings ?? null,
         created_at: recipe.created_at,
         updated_at: recipe.updated_at,
     };
