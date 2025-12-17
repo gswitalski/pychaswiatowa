@@ -1,9 +1,9 @@
 <a [routerLink]="recipeLink()" class="recipe-card-link">
     <mat-card class="recipe-card">
         <div class="card-image-container">
-            @if (recipe().imageUrl) {
+            @if (fullImageUrl()) {
             <img
-                [src]="recipe().imageUrl"
+                [src]="fullImageUrl()"
                 [alt]="recipe().name"
                 class="card-image" />
             } @else {

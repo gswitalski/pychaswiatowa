@@ -1,5 +1,6 @@
 <div class="image-upload">
-    @if (hasImage) {
+    @if (hasImage && !isUploading) {
+        <!-- Success state: Image preview -->
         <div class="image-preview">
             <img [src]="displayImageUrl" alt="Podgląd zdjęcia przepisu" />
             <div class="image-overlay">
@@ -9,6 +10,7 @@
                     (click)="removeImage()"
                     class="remove-btn"
                     aria-label="Usuń zdjęcie"
+                    [disabled]="disabled"
                 >
                     <mat-icon>delete</mat-icon>
                 </button>
@@ -18,40 +20,77 @@
             <p class="file-name">{{ fileName() }}</p>
         }
     } @else {
-        <div class="upload-area">
+        <!-- Idle/Dragover/Uploading state: Drop zone -->
+        <div
+            class="drop-zone"
+            [class.drop-zone--dragover]="isDragover"
+            [class.drop-zone--uploading]="isUploading"
+            [class.drop-zone--disabled]="disabled"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="isUploading ? 'Przesyłanie...' : 'Wklej (Ctrl+V) lub przeciągnij plik'"
+            (paste)="onPaste($event)"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="!disabled && !isUploading && fileInput.click()"
+            (keydown.enter)="!disabled && !isUploading && fileInput.click()"
+            (keydown.space)="!disabled && !isUploading && fileInput.click()"
+        >
             <input
                 type="file"
                 #fileInput
                 accept="image/jpeg,image/png,image/webp"
                 (change)="onFileSelected($event)"
                 class="file-input"
+                [disabled]="disabled"
             />
-            <button
-                type="button"
-                class="upload-content"
-                (click)="fileInput.click()"
-                aria-label="Wybierz zdjęcie do przesłania"
-            >
-                <mat-icon class="upload-icon">add_photo_alternate</mat-icon>
-                <p class="upload-text">Kliknij, aby dodać zdjęcie</p>
-                <p class="upload-hint">JPG, PNG lub WebP (max. 5MB)</p>
-            </button>
+
+            @if (isUploading) {
+                <!-- Uploading state -->
+                <mat-spinner diameter="48"></mat-spinner>
+                <p class="drop-zone__text">Przesyłanie...</p>
+            } @else if (isDragover) {
+                <!-- Dragover state -->
+                <mat-icon class="drop-zone__icon drop-zone__icon--dragover">
+                    file_download
+                </mat-icon>
+                <p class="drop-zone__text drop-zone__text--dragover">
+                    Upuść plik tutaj
+                </p>
+            } @else {
+                <!-- Idle state -->
+                <mat-icon class="drop-zone__icon">add_photo_alternate</mat-icon>
+                <p class="drop-zone__text">
+                    Wklej (Ctrl+V) lub przeciągnij plik
+                </p>
+                <p class="drop-zone__hint">
+                    albo
+                    <span class="drop-zone__link">wybierz plik</span>
+                </p>
+                <p class="drop-zone__hint drop-zone__hint--small">
+                    JPG, PNG lub WebP (max. 10 MB)
+                </p>
+            }
         </div>
     }
 
-    @if (error()) {
+    <!-- Error message -->
+    @if (error() && !isUploading) {
         <div class="upload-error">
             <mat-icon>error</mat-icon>
             <span>{{ error() }}</span>
         </div>
     }
 
-    @if (hasImage) {
+    <!-- Change image button (when in success state) -->
+    @if (hasImage && !isUploading) {
         <button
             mat-stroked-button
             type="button"
             (click)="fileInput.click()"
             class="change-image-btn"
+            [disabled]="disabled"
         >
             <mat-icon>image</mat-icon>
             Zmień zdjęcie
@@ -62,7 +101,7 @@
             accept="image/jpeg,image/png,image/webp"
             (change)="onFileSelected($event)"
             class="file-input"
+            [disabled]="disabled"
         />
     }
 </div>
-

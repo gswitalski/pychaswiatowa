@@ -23,7 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { RecipeBasicInfoFormComponent } from './components/recipe-basic-info-form/recipe-basic-info-form.component';
-import { RecipeImageUploadComponent } from './components/recipe-image-upload/recipe-image-upload.component';
+import { RecipeImageUploadComponent, RecipeImageEvent } from './components/recipe-image-upload/recipe-image-upload.component';
 import { RecipeCategorizationFormComponent } from './components/recipe-categorization-form/recipe-categorization-form.component';
 import { EditableListComponent } from '../../../shared/components/editable-list/editable-list.component';
 
@@ -35,6 +35,7 @@ import {
     UpdateRecipeCommand,
     RecipeVisibility,
 } from '../../../../../shared/contracts/types';
+import { switchMap, of } from 'rxjs';
 
 export interface RecipeFormViewModel {
     name: FormControl<string>;
@@ -85,6 +86,9 @@ export class RecipeFormPageComponent implements OnInit {
     /** Saving state for form submission */
     readonly saving = signal<boolean>(false);
 
+    /** Image uploading state (for blocking save button) */
+    readonly imageUploading = signal<boolean>(false);
+
     /** Error message */
     readonly error = signal<string | null>(null);
 
@@ -94,13 +98,25 @@ export class RecipeFormPageComponent implements OnInit {
     /** Current image URL (for edit mode) */
     readonly currentImageUrl = signal<string | null>(null);
 
-    /** Selected image file */
-    private selectedImageFile: File | null = null;
+    /** Pending image file (for create mode) */
+    private pendingImageFile: File | null = null;
 
     /** Page title computed based on mode */
     readonly pageTitle = computed(() =>
         this.isEditMode() ? 'Edytuj przepis' : 'Nowy przepis'
     );
+
+    /** Signal: track form validity manually */
+    private readonly formValid = signal<boolean>(false);
+
+    /** Computed: should save button be disabled */
+    readonly isSaveDisabled = computed(() => {
+        const formInvalid = !this.formValid();
+        const saving = this.saving();
+        const imageUploading = this.imageUploading();
+
+        return formInvalid || saving || imageUploading;
+    });
 
     /** Main form group */
     form!: FormGroup<RecipeFormViewModel>;
@@ -124,6 +140,14 @@ export class RecipeFormPageComponent implements OnInit {
         this.initForm();
         this.loadCategories();
         this.checkEditMode();
+
+        // Subscribe to form status changes to update formValid signal
+        this.form.statusChanges.subscribe(() => {
+            this.formValid.set(this.form.valid);
+        });
+
+        // Set initial form validity
+        this.formValid.set(this.form.valid);
     }
 
     private initForm(): void {
@@ -206,42 +230,66 @@ export class RecipeFormPageComponent implements OnInit {
 
         // Clear and populate ingredients
         this.ingredientsArray.clear();
-        if (recipe.ingredients) {
+        if (recipe.ingredients && recipe.ingredients.length > 0) {
             recipe.ingredients.forEach((item) => {
+                const value = item.type === 'header'
+                    ? `# ${item.content}`
+                    : item.content;
                 this.ingredientsArray.push(
-                    this.fb.control(
-                        item.type === 'header'
-                            ? `# ${item.content}`
-                            : item.content,
-                        { nonNullable: true }
-                    )
+                    this.fb.control(value, { nonNullable: true })
                 );
             });
         }
 
         // Clear and populate steps
         this.stepsArray.clear();
-        if (recipe.steps) {
+        if (recipe.steps && recipe.steps.length > 0) {
             recipe.steps.forEach((item) => {
+                const value = item.type === 'header'
+                    ? `# ${item.content}`
+                    : item.content;
                 this.stepsArray.push(
-                    this.fb.control(
-                        item.type === 'header'
-                            ? `# ${item.content}`
-                            : item.content,
-                        { nonNullable: true }
-                    )
+                    this.fb.control(value, { nonNullable: true })
                 );
             });
         }
     }
 
-    onImageChange(file: File | null): void {
-        this.selectedImageFile = file;
+    /**
+     * Handles image events from RecipeImageUploadComponent
+     */
+    onImageEvent(event: RecipeImageEvent): void {
+        switch (event.type) {
+            case 'pendingFileChanged':
+                // Create mode - store pending file
+                this.pendingImageFile = event.file;
+                break;
+
+            case 'uploaded':
+                // Edit mode - update current image URL
+                this.currentImageUrl.set(event.imageUrl || event.imagePath);
+                break;
+
+            case 'deleted':
+                // Edit mode - clear current image URL
+                this.currentImageUrl.set(null);
+                break;
+
+            case 'uploadingChanged':
+                // Update uploading state to block/unblock save button
+                this.imageUploading.set(event.uploading);
+                break;
+        }
     }
 
     onSubmit(): void {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
+            return;
+        }
+
+        // Don't allow submit while image is uploading
+        if (this.imageUploading()) {
             return;
         }
 
@@ -272,11 +320,21 @@ export class RecipeFormPageComponent implements OnInit {
         };
     }
 
+    /**
+     * Creates a new recipe
+     * If there's a pending image file, uploads it after recipe creation
+     */
     private createRecipe(command: CreateRecipeCommand): void {
-        this.recipesService.createRecipe(command, this.selectedImageFile).subscribe({
+        this.recipesService.createRecipe(command, null).subscribe({
             next: (recipe) => {
-                this.saving.set(false);
-                this.router.navigate(['/recipes', recipe.id]);
+                // If there's a pending image, upload it now
+                if (this.pendingImageFile) {
+                    this.uploadPendingImage(recipe.id);
+                } else {
+                    // No pending image, navigate immediately
+                    this.saving.set(false);
+                    this.router.navigate(['/recipes', recipe.id]);
+                }
             },
             error: (err) => {
                 this.error.set(err.message || 'Nie udało się utworzyć przepisu');
@@ -285,8 +343,37 @@ export class RecipeFormPageComponent implements OnInit {
         });
     }
 
+    /**
+     * Uploads pending image after recipe creation
+     */
+    private uploadPendingImage(recipeId: number): void {
+        if (!this.pendingImageFile) {
+            this.saving.set(false);
+            this.router.navigate(['/recipes', recipeId]);
+            return;
+        }
+
+        this.recipesService.uploadRecipeImage(recipeId, this.pendingImageFile).subscribe({
+            next: () => {
+                this.saving.set(false);
+                this.router.navigate(['/recipes', recipeId]);
+            },
+            error: (err) => {
+                // Recipe was created, but image upload failed
+                // Still navigate to the recipe, but show error
+                console.error('Failed to upload image:', err);
+                this.saving.set(false);
+                this.router.navigate(['/recipes', recipeId]);
+            },
+        });
+    }
+
+    /**
+     * Updates an existing recipe
+     * Note: Image is handled separately through RecipeImageUploadComponent's auto-upload
+     */
     private updateRecipe(id: number, command: UpdateRecipeCommand): void {
-        this.recipesService.updateRecipe(id, command, this.selectedImageFile).subscribe({
+        this.recipesService.updateRecipe(id, command, null).subscribe({
             next: () => {
                 this.saving.set(false);
                 this.router.navigate(['/recipes', id]);
@@ -316,4 +403,3 @@ export class RecipeFormPageComponent implements OnInit {
         };
     }
 }
-

@@ -9,6 +9,7 @@ import {
     PaginatedResponseDto,
     RecipeListItemDto,
     ImportRecipeCommand,
+    UploadRecipeImageResponseDto,
 } from '../../../../../shared/contracts/types';
 
 /**
@@ -121,23 +122,25 @@ export class RecipesService {
 
     /**
      * Creates a new recipe
+     * Note: Image should be uploaded separately using uploadRecipeImage() after recipe creation
      */
     createRecipe(
         command: CreateRecipeCommand,
-        imageFile: File | null
+        _imageFile: File | null = null // Deprecated parameter, kept for compatibility
     ): Observable<{ id: number }> {
-        return from(this.performCreateRecipe(command, imageFile));
+        return from(this.performCreateRecipe(command));
     }
 
     /**
      * Updates an existing recipe
+     * Note: Image should be uploaded separately using uploadRecipeImage() or deleteRecipeImage()
      */
     updateRecipe(
         id: number,
         command: UpdateRecipeCommand,
-        imageFile: File | null
+        _imageFile: File | null = null // Deprecated parameter, kept for compatibility
     ): Observable<void> {
-        return from(this.performUpdateRecipe(id, command, imageFile));
+        return from(this.performUpdateRecipe(id, command));
     }
 
     /**
@@ -195,42 +198,117 @@ export class RecipesService {
         );
     }
 
+    /**
+     * Uploads an image for a specific recipe
+     * Uses multipart/form-data to send the file
+     */
+    uploadRecipeImage(
+        recipeId: number,
+        file: File
+    ): Observable<UploadRecipeImageResponseDto> {
+        return from(this.performUploadRecipeImage(recipeId, file));
+    }
+
+    /**
+     * Deletes the image associated with a recipe
+     */
+    deleteRecipeImage(recipeId: number): Observable<void> {
+        return from(this.performDeleteRecipeImage(recipeId));
+    }
+
+    private async performUploadRecipeImage(
+        recipeId: number,
+        file: File
+    ): Promise<UploadRecipeImageResponseDto> {
+        const {
+            data: { session },
+        } = await this.supabase.auth.getSession();
+
+        if (!session) {
+            throw new Error('Brak sesji użytkownika');
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const functionUrl = `${environment.supabase.url}/functions/v1/recipes/${recipeId}/image`;
+
+        try {
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                    // Note: Don't set Content-Type for FormData - browser will set it automatically with boundary
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({
+                    message: 'Nie udało się przesłać zdjęcia',
+                }));
+                throw new Error(
+                    errorData.message || 'Nie udało się przesłać zdjęcia'
+                );
+            }
+
+            const data: UploadRecipeImageResponseDto = await response.json();
+            return data;
+        } catch (error) {
+            throw new Error(
+                error instanceof Error
+                    ? error.message
+                    : 'Nie udało się przesłać zdjęcia'
+            );
+        }
+    }
+
+    private async performDeleteRecipeImage(recipeId: number): Promise<void> {
+        const {
+            data: { session },
+        } = await this.supabase.auth.getSession();
+
+        if (!session) {
+            throw new Error('Brak sesji użytkownika');
+        }
+
+        const functionUrl = `${environment.supabase.url}/functions/v1/recipes/${recipeId}/image`;
+
+        try {
+            const response = await fetch(functionUrl, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({
+                    message: 'Nie udało się usunąć zdjęcia',
+                }));
+                throw new Error(
+                    errorData.message || 'Nie udało się usunąć zdjęcia'
+                );
+            }
+        } catch (error) {
+            throw new Error(
+                error instanceof Error
+                    ? error.message
+                    : 'Nie udało się usunąć zdjęcia'
+            );
+        }
+    }
 
     private async performCreateRecipe(
-        command: CreateRecipeCommand,
-        imageFile: File | null
+        command: CreateRecipeCommand
     ): Promise<{ id: number }> {
-        const {
-            data: { user },
-        } = await this.supabase.auth.getUser();
-
-        if (!user) {
-            throw new Error('Użytkownik niezalogowany');
-        }
-
-        let imagePath: string | null = null;
-
-        // Upload image if provided (Storage operations are allowed in frontend)
-        if (imageFile) {
-            const uploadResult = await this.uploadImage(imageFile, user.id);
-            if (uploadResult.error) {
-                throw uploadResult.error;
-            }
-            imagePath = uploadResult.path;
-        }
-
-        // Prepare command with image path
-        const createCommand = {
-            ...command,
-            image_path: imagePath,
-        };
-
         // Call backend API to create recipe
+        // Note: Image is now handled separately via uploadRecipeImage()
         const response = await this.supabase.functions.invoke<{ id: number }>(
             'recipes',
             {
                 method: 'POST',
-                body: createCommand,
+                body: command,
             }
         );
 
@@ -247,68 +325,21 @@ export class RecipesService {
 
     private async performUpdateRecipe(
         id: number,
-        command: UpdateRecipeCommand,
-        imageFile: File | null
+        command: UpdateRecipeCommand
     ): Promise<void> {
-        const {
-            data: { user },
-        } = await this.supabase.auth.getUser();
-
-        if (!user) {
-            throw new Error('Użytkownik niezalogowany');
-        }
-
-        let imagePath: string | undefined = undefined;
-
-        // Upload new image if provided (Storage operations are allowed in frontend)
-        if (imageFile) {
-            const uploadResult = await this.uploadImage(imageFile, user.id);
-            if (uploadResult.error) {
-                throw uploadResult.error;
-            }
-            imagePath = uploadResult.path ?? undefined;
-        }
-
-        // Prepare update command with image path if uploaded
-        const updateCommand = imagePath
-            ? { ...command, image_path: imagePath }
-            : command;
-
         // Call backend API to update recipe
+        // Note: Image is now handled separately via uploadRecipeImage() or deleteRecipeImage()
         const response = await this.supabase.functions.invoke(
             `recipes/${id}`,
             {
                 method: 'PUT',
-                body: updateCommand,
+                body: command,
             }
         );
 
         if (response.error) {
             throw new Error(response.error.message);
         }
-    }
-
-    private async uploadImage(
-        file: File,
-        userId: string
-    ): Promise<{ path: string | null; error: Error | null }> {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${userId}/${Date.now()}.${fileExt}`;
-
-        const { data, error } = await this.supabase.storage
-            .from('recipe-images')
-            .upload(fileName, file);
-
-        if (error) {
-            return { path: null, error };
-        }
-
-        // Get public URL
-        const {
-            data: { publicUrl },
-        } = this.supabase.storage.from('recipe-images').getPublicUrl(data.path);
-
-        return { path: publicUrl, error: null };
     }
 
 

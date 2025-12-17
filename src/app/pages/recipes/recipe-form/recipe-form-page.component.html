@@ -11,7 +11,7 @@
         mat-flat-button
         color="primary"
         type="button"
-        [disabled]="saving() || form.invalid"
+        [disabled]="isSaveDisabled()"
         (click)="onSubmit()">
         @if (saving()) {
         <mat-spinner diameter="20"></mat-spinner>
@@ -53,8 +53,10 @@
             </mat-card-header>
             <mat-card-content>
                 <pych-recipe-image-upload
+                    [recipeId]="recipeId()"
                     [currentImageUrl]="currentImageUrl()"
-                    (imageChange)="onImageChange($event)" />
+                    [disabled]="saving()"
+                    (imageEvent)="onImageEvent($event)" />
             </mat-card-content>
         </mat-card>
 

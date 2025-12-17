@@ -202,3 +202,4 @@ Jedyna operacja „backendowa” związana z nagłówkiem:
 
 
 
+

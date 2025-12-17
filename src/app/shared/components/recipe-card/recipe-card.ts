@@ -4,6 +4,7 @@ import {
     input,
     output,
     computed,
+    inject,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -11,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
+import { SupabaseService } from '../../../core/services/supabase.service';
 
 /**
  * Uogólniony interfejs dla karty przepisu.
@@ -52,6 +54,8 @@ export type RecipeCardRouteType = 'private' | 'public';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeCardComponent {
+    private readonly supabase = inject(SupabaseService);
+
     /** Dane przepisu do wyświetlenia */
     readonly recipe = input.required<RecipeCardData>();
 
@@ -75,6 +79,30 @@ export class RecipeCardComponent {
 
     /** Placeholder dla brakującego obrazka */
     readonly placeholderImage = '/placeholder-recipe.svg';
+
+    /**
+     * Computed: full image URL
+     * Converts storage path to public URL if needed
+     */
+    readonly fullImageUrl = computed(() => {
+        const url = this.recipe().imageUrl;
+
+        if (!url) {
+            return null;
+        }
+
+        // If already a full URL, return as is
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            return url;
+        }
+
+        // Otherwise, construct public URL from storage path
+        const { data } = this.supabase.storage
+            .from('recipe-images')
+            .getPublicUrl(url);
+
+        return data?.publicUrl || null;
+    });
 
     /**
      * Computed: czy pokazać kategorię (bazuje na showCategory lub routeType)

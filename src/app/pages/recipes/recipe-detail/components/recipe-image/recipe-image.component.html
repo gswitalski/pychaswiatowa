@@ -1,7 +1,7 @@
 <div class="recipe-image-container">
-    @if (imageUrl()) {
+    @if (fullImageUrl()) {
         <img
-            [src]="imageUrl()"
+            [src]="fullImageUrl()"
             [alt]="'Zdjęcie przepisu: ' + recipeName()"
             class="recipe-image"
         />

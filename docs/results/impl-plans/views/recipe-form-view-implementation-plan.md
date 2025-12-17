@@ -1,36 +1,47 @@
-# Plan implementacji widoku: Formularz Przepisu (Dodaj/Edytuj) — sekcja „Widoczność”
+# Plan implementacji widoku: Formularz Przepisu (Dodaj/Edytuj)
 
 ## 1. Przegląd
 
-Celem aktualizacji widoku „Formularz Przepisu (Dodaj/Edytuj)” jest dodanie do istniejącego formularza sekcji **„Widoczność”** zgodnie z US‑016 oraz PRD: użytkownik ma zawsze wybrać jedną z wartości `PRIVATE | SHARED | PUBLIC`, z domyślną wartością `PRIVATE`. Zmiana dotyczy zarówno trybu tworzenia, jak i edycji oraz mapowania danych na `CreateRecipeCommand` / `UpdateRecipeCommand`.
+Celem wdrożenia/aktualizacji widoku **„Formularz Przepisu (Dodaj/Edytuj)”** jest zapewnienie pełnej, spójnej z PRD i API obsługi tworzenia oraz edycji przepisu, ze szczególnym uwzględnieniem zmian w sekcji **„Zdjęcie”**:
 
-Plan jest dopasowany do aktualnie istniejącej implementacji w `src/app/pages/recipes/recipe-form/…` (standalone, signals, `@if/@for`, OnPush, Reactive Forms).
+- Strefa **paste/drop**: wklejanie ze schowka (Ctrl+V) oraz drag&drop pliku z dysku.
+- Jawne stany UI: `idle` / `dragover` / `uploading` / `success` / `error`.
+- Walidacja po stronie UI zgodna z API: `image/png`, `image/jpeg`, `image/webp`, max **10 MB**.
+- **Auto-upload** po poprawnym paste/drop (w trybie edycji lub gdy przepis ma już ID).
+- Snackbar/Toast z akcją **„Cofnij”** (Undo) działającą do czasu zapisu (w praktyce: możliwość przywrócenia poprzedniego zdjęcia, zanim użytkownik opuści formularz).
+- Akcja **„Usuń zdjęcie”**.
 
-> Uwaga: w repo nie znaleziono „formularza do tworzenia piosenki” (brak plików/komponentów powiązanych z `song` / `piosenk*`). W planie opisano reużycie istniejących komponentów formularza przepisu (`RecipeCategorizationFormComponent`, `EditableListComponent`, `PageHeaderComponent`) i wzorca „smart page + dumb components”.
+Plan zakłada aktualny stos i zasady repo:
+- standalone components, signals, `inject()`, OnPush,
+- kontrola przepływu `@if/@for/@switch`,
+- Angular Material,
+- komunikacja z API wyłącznie przez Supabase Edge Functions oraz dozwolone operacje Storage.
 
 ## 2. Routing widoku
 
-Routing pozostaje bez zmian (już istnieje w module `recipes`):
+Routing pozostaje bez zmian:
 
 - **Tworzenie**: `/recipes/new`
 - **Edycja**: `/recipes/:id/edit`
 
-Widok jest chroniony mechanizmem autoryzacji aplikacji (np. guard dla zalogowanych).
+Widok jest częścią prywatnej sekcji aplikacji (wymaga zalogowania).
 
 ## 3. Struktura komponentów
 
-Drzewo komponentów (stan obecny + miejsce na widoczność):
+Wysokopoziomowe drzewo komponentów (stan bieżący + rozszerzenia):
 
 ```
 RecipeFormPageComponent
 │
 ├── PageHeaderComponent
+│    ├── (Anuluj)
+│    └── (Zapisz) [sticky]
 │
 ├── RecipeBasicInfoFormComponent
 │
-├── RecipeImageUploadComponent
+├── RecipeImageUploadComponent   (PASTE/DROP + auto-upload + undo + delete)
 │
-├── RecipeCategorizationFormComponent   (TU: Kategoria + Tagi + Widoczność)
+├── RecipeCategorizationFormComponent   (kategoria + tagi + widoczność)
 │
 ├── EditableListComponent               (Składniki)
 │
@@ -41,222 +52,273 @@ RecipeFormPageComponent
 
 ### `RecipeFormPageComponent` (`src/app/pages/recipes/recipe-form/recipe-form-page.component.ts`)
 
-- **Opis komponentu**: Smart‑page odpowiedzialny za inicjalizację formularza, wypełnianie danych w trybie edycji, submit/cancel, stany `loading/saving/error`, pobranie kategorii z `CategoriesService`.
+- **Opis komponentu**: komponent-strona (smart) odpowiedzialny za inicjalizację formularza, pobranie danych w trybie edycji, mapowanie formularza na komendy API, obsługę nawigacji oraz koordynację stanów zapisu i uploadu zdjęcia.
 - **Główne elementy**:
-    - `pych-page-header` z akcjami: „Anuluj”, „Dodaj przepis” / „Zapisz zmiany”.
-    - Sekcje w `mat-card` (podstawowe info, zdjęcie, kategoryzacja, składniki, kroki).
-    - Control-flow `@if` na stan ładowania i błąd.
+    - `pych-page-header` z akcjami: „Anuluj”, „Zapisz”.
+    - Sekcje formularza (np. w `mat-card`): dane podstawowe, zdjęcie, kategoryzacja, składniki, kroki.
+    - Widoki stanów: ładowanie danych (spinner/skeleton), błąd (komunikat + retry).
 - **Obsługiwane zdarzenia**:
-    - `(click)` na „Anuluj” → `onCancel()`
-    - `(click)` na „Zapisz…” → `onSubmit()`
-    - `(imageChange)` z `RecipeImageUploadComponent` → `onImageChange(file)`
-- **Walidacja (frontend, zgodnie z API/PRD)**:
-    - `name`: required, maxLength 150
-    - `ingredients`: min 1 element (walidator na `FormArray`)
-    - `steps`: min 1 element (walidator na `FormArray`)
-    - **`visibility`: required** i zawsze ustawione (domyślnie `PRIVATE`)
-    - Przycisk zapisu `disabled` gdy `form.invalid` lub `saving()`.
+    - `(click)` „Anuluj” → `onCancel()`.
+    - `(click)` „Zapisz” → `onSubmit()`.
+    - `(imageEvent)` z `RecipeImageUploadComponent` (patrz niżej) → aktualizacja stanu zdjęcia po uploadzie/usunięciu lub ustawienie pliku oczekującego (tryb tworzenia).
+- **Obsługiwana walidacja (frontend, zgodnie z PRD/API)**:
+    - `name`: `required`, `maxLength(150)`.
+    - `ingredients`, `steps`: min. 1 element (walidator FormArray).
+    - `visibility`: `required`, domyślnie `PRIVATE`.
+    - **Zapis**: przycisk „Zapisz” wyłączony, gdy `form.invalid` lub trwa `saving` lub trwa `imageUploading`.
 - **Typy**:
-    - `RecipeDetailDto`, `CreateRecipeCommand`, `UpdateRecipeCommand`
-    - `RecipeVisibility` (z `shared/contracts/types.ts`)
-    - `CategoryDto`
-    - Lokalny `RecipeFormViewModel` (patrz sekcja 5)
+    - DTO/Command: `RecipeDetailDto`, `CreateRecipeCommand`, `UpdateRecipeCommand`.
+    - Typy domenowe: `RecipeVisibility`, `UploadRecipeImageResponseDto`.
+    - ViewModel: `RecipeFormViewModel` (formularz) + `RecipeImageVm` (lokalny VM zdjęcia).
 - **Propsy**: brak (komponent routowany).
+
+> Uwaga dot. zachowania „zdjęcia” w trybie tworzenia:
+> - Przepis na `/recipes/new` nie ma jeszcze `id`, więc endpoint `POST /recipes/{id}/image` nie może być wywołany natychmiast.
+> - W tym trybie komponent zdjęcia powinien pozwolić na wybór/paste/drop, ale traktować plik jako **pending** i przesłać go dopiero po sukcesie `POST /recipes` (lub jawnie komunikować „Zdjęcie zostanie przesłane po zapisaniu przepisu”).
+
+### `RecipeImageUploadComponent` (`src/app/pages/recipes/recipe-form/components/recipe-image-upload/...`)
+
+- **Opis komponentu**: komponent sekcji zdjęcia w formularzu. Odpowiada za:
+    - UI strefy paste/drop (instrukcja, focus, dragover),
+    - walidację pliku (typ/rozmiar),
+    - podgląd obrazu,
+    - auto-upload w edycji (i/lub gdy `recipeId` jest dostępne),
+    - akcję usuwania zdjęcia,
+    - Snackbar „Cofnij” po uploadzie/usunięciu.
+
+- **Główne elementy** (Angular Material + a11y):
+    - focusable drop-zone: `div` z `tabindex="0"`, rolą/etykietą (np. `role="button"`, `aria-label="Wklej (Ctrl+V) lub przeciągnij plik"`).
+    - układ stanów:
+        - `idle`: instrukcja „Wklej (Ctrl+V) lub przeciągnij plik” + przycisk/link „Wybierz plik”.
+        - `dragover`: podświetlenie strefy.
+        - `uploading`: spinner + opis „Przesyłanie…”, blokada akcji.
+        - `success`: podgląd + przyciski „Zmień” i „Usuń zdjęcie”.
+        - `error`: komunikat w polu + (opcjonalnie) snackbar.
+    - fallback `input[type=file]` (ukryty) z `accept="image/jpeg,image/png,image/webp"`.
+
+- **Obsługiwane interakcje/zdarzenia**:
+    - **Klik** na strefę lub „Wybierz plik” → otwarcie file-pickera.
+    - **Paste** (`(paste)` na fokusowanej strefie) → pobranie obrazu z `ClipboardEvent.clipboardData.items`.
+    - **Drag & Drop**:
+        - `(dragenter)/(dragover)` → `preventDefault`, ustawienie stanu `dragover`.
+        - `(dragleave)` → powrót do `idle/success`.
+        - `(drop)` → `preventDefault`, odczyt `DataTransfer.files[0]`, odrzucenie gdy brak pliku obrazu.
+    - **Usuń zdjęcie**:
+        - gdy zdjęcie pochodzi z serwera (edycja): wywołanie `DELETE /recipes/{id}/image`.
+        - gdy zdjęcie jest pending (tworzenie): czyszczenie pending pliku.
+    - **Cofnij** (SnackBar action): przywrócenie poprzedniego zdjęcia (szczegóły w sekcji „Zarządzanie stanem”).
+
+- **Walidacja (szczegółowa, zgodna z API)**:
+    - typ MIME: tylko `image/png`, `image/jpeg`, `image/webp`.
+    - rozmiar: max **10 MB** (komponent ma mieć ustawione `maxSizeBytes = 10 * 1024 * 1024`).
+    - edge case: paste bez obrazu → komunikat „Schowek nie zawiera obrazu”.
+    - edge case: drop bez pliku (np. URL/tekst z przeglądarki) → komunikat „Upuść plik obrazu z dysku”.
+
+- **Typy**:
+    - `UploadRecipeImageResponseDto` (response po uploadzie).
+    - `RecipeImageUploadUiState = 'idle' | 'dragover' | 'uploading' | 'success' | 'error'`.
+    - `RecipeImageEvent` (emit do rodzica) – rekomendowane:
+        - `{ type: 'pendingFileChanged'; file: File | null }` (tryb tworzenia)
+        - `{ type: 'uploaded'; imagePath: string; imageUrl?: string }` (tryb edycji)
+        - `{ type: 'deleted' }` (tryb edycji)
+        - `{ type: 'uploadingChanged'; uploading: boolean }` (koordynacja blokady „Zapisz”)
+
+- **Propsy (interfejs komponentu)** – rekomendowane:
+    - `[recipeId]: number | null` (gdy `null` → tryb pending)
+    - `[currentImageUrl]: string | null` (URL do wyświetlenia)
+    - `[disabled]: boolean` (np. gdy trwa zapis formularza)
+    - `(imageEvent): EventEmitter<RecipeImageEvent>`
+
+### `RecipeCategorizationFormComponent`
+
+- **Opis komponentu**: sekcja kategoryzacji przepisu: kategoria, tagi oraz widoczność.
+- **Główne elementy**:
+    - `mat-select` dla kategorii.
+    - `mat-chip-grid` + input dla tagów.
+    - `mat-radio-group` dla widoczności: `PRIVATE` / `SHARED` / `PUBLIC` (z `mat-hint`).
+- **Obsługiwane interakcje**:
+    - dodawanie/usuwanie tagów,
+    - wybór kategorii,
+    - zmiana widoczności.
+- **Walidacja**:
+    - `visibility`: required (pole zawsze ustawione; domyślnie `PRIVATE`).
+- **Typy**:
+    - `CategoryDto[]`, `RecipeVisibility`.
+- **Propsy**:
+    - `[categoryControl]`, `[tagsArray]`, `[categories]`, `[visibilityControl]`.
 
 ### `RecipeBasicInfoFormComponent`
 
-- **Opis komponentu**: Sekcja danych podstawowych: nazwa i opis.
-- **Główne elementy**:
-    - `mat-form-field` + `input matInput` (name)
-    - `mat-form-field` + `textarea matInput` (description)
-    - `mat-error` dla błędów required/maxLength
-- **Obsługiwane zdarzenia**: standardowo Reactive Forms (`FormControl`).
+- **Opis**: nazwa i opis.
 - **Walidacja**:
-    - `name`: required, maxLength 150
-    - `description`: opcjonalne
-- **Typy**:
-    - `FormControl<string>` (name, description)
-- **Propsy**:
-    - `[nameControl]: FormControl<string>`
-    - `[descriptionControl]: FormControl<string>`
+    - `name` required, max 150.
 
-### `RecipeImageUploadComponent`
+### `EditableListComponent`
 
-- **Opis komponentu**: Upload zdjęcia przepisu (wybór pliku + podgląd); plik jest przechowywany w stanie strony (nie w `FormGroup`), a zapis idzie przez `RecipesService` (storage upload + `image_path` w komendzie).
-- **Główne elementy**:
-    - `input[type="file"]` (ograniczenie do obrazów)
-    - podgląd aktualnego obrazu (`currentImageUrl`)
-    - przycisk usunięcia/zmiany
-- **Obsługiwane zdarzenia**:
-    - `(change)` na file input → emit `(imageChange)` z `File | null`
+- **Opis**: lista edytowalna dla składników/kroków.
 - **Walidacja**:
-    - rekomendowane: typ pliku (jpg/png/webp), rozmiar (np. limit MB), komunikat błędu UI
-- **Typy**: `File`
-- **Propsy**:
-    - `[currentImageUrl]: string | null`
-    - `(imageChange): EventEmitter<File | null>`
-
-### `RecipeCategorizationFormComponent` (do rozszerzenia o widoczność)
-
-- **Opis komponentu**: Sekcja „Kategoria i tagi” oraz **nowa sekcja „Widoczność”** (zgodnie z wymaganiem: obok kategorii, w danych podstawowych formularza).
-- **Główne elementy**:
-    - `mat-select` dla kategorii
-    - `mat-chip-grid` + input dla tagów
-    - **Widoczność** (rekomendacja UX):
-        - `mat-radio-group` z trzema opcjami:
-            - `PRIVATE` → „Prywatny”
-            - `SHARED` → „Współdzielony”
-            - `PUBLIC` → „Publiczny”
-        - `mat-hint` opisujący konsekwencje wyboru
-        - `aria-label` dla grupy radiowej
-- **Obsługiwane zdarzenia**:
-    - Dodawanie tagu: `(matChipInputTokenEnd)`
-    - Usuwanie tagu: `(removed)`
-    - Wybór kategorii: binding do `categoryControl`
-    - **Zmiana widoczności**: binding do `visibilityControl`
-- **Walidacja**:
-    - `visibility`: required (w praktyce pole zawsze ustawione — domyślnie `PRIVATE`)
-    - `category`/`tags`: opcjonalne
-- **Typy**:
-    - `FormControl<number | null>` (category)
-    - `FormArray<FormControl<string>>` (tags)
-    - `FormControl<RecipeVisibility>` (visibility)
-    - `CategoryDto[]`
-    - `RecipeVisibility`
-- **Propsy (interfejs komponentu)**:
-    - `[categoryControl]: FormControl<number | null>`
-    - `[tagsArray]: FormArray<FormControl<string>>`
-    - `[categories]: CategoryDto[]`
-    - **`[visibilityControl]: FormControl<RecipeVisibility>`** (NOWE)
-
-### `EditableListComponent` (komponent współdzielony)
-
-- **Opis komponentu**: Reużywalna lista edytowalna dla składników/kroków. Wspiera dodawanie, usuwanie, edycję, drag&drop (CDK) oraz skróty klawiaturowe (Enter/Escape).
-- **Główne elementy**:
-    - `cdkDropList` + `cdkDrag`
-    - `mat-form-field` dla nowej pozycji i edycji
-    - przyciski z ikonami Material
-- **Obsługiwane zdarzenia**:
-    - `(cdkDropListDropped)` → reorder
-    - Enter w polu dodawania → `addItem()`
-    - Enter/Escape w edycji → `saveEdit()/cancelEdit()`
-- **Walidacja**:
-    - walidacja minimalnej liczby elementów pozostaje na poziomie strony (`FormArray`).
-- **Typy**:
-    - `FormArray<FormControl<string>>`
-- **Propsy**:
-    - `[formArray]`, `[label]`, `[placeholder]`
+    - minimalna liczba elementów walidowana na poziomie `FormArray` w komponencie strony.
 
 ## 5. Typy
 
-### `RecipeVisibility`
-
-Używany typ kontraktowy (już istnieje):
+### Kontrakty API (istniejące)
 
 - `RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC'`
+- `CreateRecipeCommand`, `UpdateRecipeCommand`
+- `UploadRecipeImageResponseDto`:
+    - `id: number`
+    - `image_path: string`
+    - `image_url?: string`
 
-### `RecipeFormViewModel` (do aktualizacji)
+### ViewModel / typy lokalne widoku (rekomendowane)
 
-Model formularza w `RecipeFormPageComponent` powinien zawierać pole `visibility`:
+- `RecipeFormViewModel` (już istnieje w `RecipeFormPageComponent`).
+- `RecipeImageVm` (lokalny stan zdjęcia w stronie):
+    - `currentUrl: string | null` (co wyświetlamy)
+    - `pendingFile: File | null` (tworzenie)
+    - `uploading: boolean`
+    - `error: string | null`
+    - `undoSnapshot: RecipeImageUndoSnapshot | null`
 
-```typescript
-import { FormArray, FormControl } from '@angular/forms';
-import { RecipeVisibility } from '../../../../../shared/contracts/types';
-
-export interface RecipeFormViewModel {
-    name: FormControl<string>;
-    description: FormControl<string>;
-    categoryId: FormControl<number | null>;
-    visibility: FormControl<RecipeVisibility>;
-    tags: FormArray<FormControl<string>>;
-    ingredients: FormArray<FormControl<string>>;
-    steps: FormArray<FormControl<string>>;
-}
-```
-
-- **Domyślna wartość**: `visibility = 'PRIVATE'`
-- **Walidator**: `Validators.required` (oraz sanity-check przy mapowaniu na komendę)
+- `RecipeImageUndoSnapshot`:
+    - `kind: 'none' | 'existing'`
+    - `previousUrl: string | null`
+    - `previousFile: File | null` (jeśli da się odtworzyć poprzednie zdjęcie)
 
 ## 6. Zarządzanie stanem
 
-- **Stan formularza**: Reactive Forms (`FormGroup<RecipeFormViewModel>`) w `RecipeFormPageComponent`.
-- **Stan UI**: `signal<boolean>` dla `loading/saving`, `signal<string | null>` dla błędu.
-- **Kategorie**: `CategoriesService` jako cache oparty o signals (już istnieje).
-- **Zdjęcie**: wybrany plik trzymany poza `FormGroup` (lokalne pole + event z upload komponentu).
-- **Wymóg dotyczący loadingów**: utrzymywać poprzednie dane podczas odświeżania; unikać białych overlay (zgodnie z regułami repo).
+- **Formularz**: Reactive Forms (`FormGroup<RecipeFormViewModel>`) w `RecipeFormPageComponent`.
+- **Stany asynchroniczne**:
+    - `loading`, `saving` jako `signal<boolean>`.
+    - Błąd strony `error` jako `signal<string | null>`.
+
+- **Zdjęcie (ważne dla paste/drop + undo)**:
+    - Komponent zdjęcia utrzymuje swój `uiState` (signal) i emituje zdarzenia do strony.
+    - Strona utrzymuje `imageUploading` (signal) i blokuje „Zapisz” podczas uploadu.
+
+- **Undo po auto-uploadzie** (scenariusz edycji):
+    - Przed rozpoczęciem uploadu nowego zdjęcia komponent powinien spróbować utworzyć snapshot poprzedniego zdjęcia:
+        - jeśli istnieje poprzedni obraz i jest dostępny przez URL, pobrać go (`fetch(previousUrl) -> Blob`) i zamienić w `File` (np. `previous.webp`).
+        - snapshot przechować w pamięci (tylko na czas sesji formularza).
+    - Po sukcesie uploadu/usunięcia: pokazać `MatSnackBar` z akcją „Cofnij”.
+    - Gdy użytkownik kliknie „Cofnij”:
+        - jeśli snapshot ma `previousFile` → ponownie wywołać `POST /recipes/{id}/image` z tym plikiem.
+        - jeśli snapshot oznacza „brak poprzedniego” → wywołać `DELETE /recipes/{id}/image`.
+    - Jeśli pobranie poprzedniego obrazu nie jest możliwe, „Cofnij” nadal może istnieć, ale powinien być wyłączony lub pokazać komunikat „Nie można przywrócić poprzedniego zdjęcia” (rekomendacja: ukryć akcję, jeśli brak snapshotu).
 
 ## 7. Integracja API
 
-Zgodnie z kontraktami w `shared/contracts/types.ts`:
+### Endpointy związane ze zdjęciem
 
-- **Create**: `POST /recipes` (Edge Function) z payloadem `CreateRecipeCommand`:
-    - wymagane: `name`, `ingredients_raw`, `steps_raw`, `tags`, **`visibility`**
-    - opcjonalne: `description`, `category_id`
-    - `image_path` jest ustawiane przez `RecipesService` po uploadzie do storage
-- **Update**: `PUT /recipes/:id` (Edge Function) z payloadem `UpdateRecipeCommand` (częściowy):
-    - może zawierać **`visibility`** i inne edytowane pola
-- **Read**: `GET /recipes/:id` zwraca `RecipeDetailDto`, zawiera `visibility`
+- `POST /recipes/{id}/image`
+    - `multipart/form-data` z polem `file`
+    - response: `UploadRecipeImageResponseDto`.
 
-Mapowanie formularza → komenda:
+- `DELETE /recipes/{id}/image`
+    - `204 No Content`.
 
-- `ingredients_raw = ingredients.join('\n')`
-- `steps_raw = steps.join('\n')`
-- `tags = tags[]`
-- **`visibility = formValue.visibility`**
-- `description`: mapować pusty string na `null`
+### Implementacja wywołań w frontendzie (wymagana zmiana w serwisie)
+
+W `RecipesService` należy dodać metody (lub nowy `RecipeImagesService`) korzystające z **fetch** + tokenu z sesji, ponieważ `supabase.functions.invoke(...)` w praktyce jest używany do JSON, a upload wymaga `FormData`:
+
+- `uploadRecipeImage(recipeId: number, file: File): Observable<UploadRecipeImageResponseDto>`
+    - `POST ${supabaseUrl}/functions/v1/recipes/${recipeId}/image`
+    - headers: `Authorization: Bearer <access_token>` (bez ustawiania `Content-Type` ręcznie; zrobi to `fetch` dla FormData)
+
+- `deleteRecipeImage(recipeId: number): Observable<void>`
+    - `DELETE ${supabaseUrl}/functions/v1/recipes/${recipeId}/image`
+
+> Ważne: zgodnie z zasadami repo, frontend nie powinien robić bezpośrednich operacji na tabelach Supabase (`from(...)`). Wywołujemy Edge Functions.
+
+### Integracja formularza przepisu (create/update)
+
+- `POST /recipes` – tworzenie przepisu (`CreateRecipeCommand`).
+- `PUT /recipes/{id}` – aktualizacja przepisu (`UpdateRecipeCommand`).
+
+Zalecane zachowanie względem zdjęcia:
+- **Edycja**: zdjęcie obsługujemy przez endpointy image (auto-upload, delete). `PUT /recipes/{id}` nie powinien już przenosić `image_path` ustawianego przez frontend.
+- **Tworzenie**: jeśli użytkownik doda zdjęcie w trakcie tworzenia:
+    - po sukcesie `POST /recipes` (mamy `id`) wykonać `POST /recipes/{id}/image` i dopiero potem nawigować do szczegółów (lub nawigować od razu i wykonywać upload w tle – decyzja UX; w MVP rekomendowane: wykonać upload przed przejściem, żeby uniknąć niespójności podglądu).
 
 ## 8. Interakcje użytkownika
 
-- Użytkownik wypełnia nazwę/ opis.
-- Użytkownik wybiera kategorię i dodaje tagi (chips).
-- **Użytkownik wybiera widoczność**:
-    - Domyślnie widzi ustawione „Prywatny”.
-    - Może przełączyć na „Współdzielony” lub „Publiczny”.
-    - UI pokazuje krótki opis skutków (hint).
-- Użytkownik zarządza listą składników i kroków (`EditableListComponent`).
-- Użytkownik dodaje/zmienia zdjęcie.
-- Kliknięcie „Zapisz…”:
-    - waliduje formularz
-    - wysyła komendę do API
-    - po sukcesie nawigacja do `/recipes/:id`
-- Kliknięcie „Anuluj” wraca do listy lub szczegółów (zależnie od trybu).
+- **Tworzenie (`/recipes/new`)**:
+    - Użytkownik wypełnia nazwę/opis, listy składników/kroków, kategorię/tagi, widoczność.
+    - Użytkownik może dodać zdjęcie (wybór pliku lub paste/drop) – zdjęcie jest „pending” do czasu zapisu.
+    - Klik „Zapisz”:
+        - walidacja formularza,
+        - `POST /recipes`,
+        - jeśli jest pending image → `POST /recipes/{id}/image`,
+        - nawigacja do `/recipes/:id`.
+
+- **Edycja (`/recipes/:id/edit`)**:
+    - Użytkownik może:
+        - wkleić obraz (Ctrl+V) po fokusie na strefie zdjęcia,
+        - przeciągnąć i upuścić plik na strefę,
+        - użyć fallback „Wybierz plik”.
+    - Po poprawnym paste/drop:
+        - natychmiastowy podgląd,
+        - auto-upload (`uploading` → `success`),
+        - Snackbar: „Zmieniono zdjęcie” + akcja „Cofnij”.
+    - Klik „Usuń zdjęcie”:
+        - `DELETE /recipes/{id}/image`,
+        - Snackbar: „Usunięto zdjęcie” + „Cofnij”.
+    - Klik „Zapisz”:
+        - zapis pozostałych pól `PUT /recipes/{id}` (zdjęcie już ustawione wcześniej przez endpointy image).
 
 ## 9. Warunki i walidacja
 
-- **`name`**:
-    - required
-    - maxLength 150
-    - UI: `mat-error` po `touched`
-- **`ingredients` i `steps`**:
-    - min 1 element (walidator na `FormArray`)
-    - UI: błąd sekcji po `touched`
-- **`visibility`**:
-    - required
-    - domyślne `PRIVATE` (formularz nie powinien startować z `null`)
-    - UI: radio-group bez możliwości odznaczenia; dodatkowo `mat-error` jeśli jednak pole jest niepoprawne (edge case).
-- **Zapis**:
-    - disabled gdy `saving()` lub `form.invalid`
+- **Pola formularza**:
+    - `name`: required, max 150.
+    - `ingredients`, `steps`: min 1 element.
+    - `visibility`: required, domyślnie `PRIVATE`.
+
+- **Zdjęcie**:
+    - MIME: tylko `image/png`, `image/jpeg`, `image/webp`.
+    - Rozmiar: max 10 MB.
+    - Walidacja wykonywana:
+        - przy wyborze pliku,
+        - przy paste,
+        - przy drop.
+    - Gdy walidacja nie przejdzie:
+        - nie rozpoczynać uploadu,
+        - pokazać błąd w sekcji zdjęcia (oraz opcjonalnie snackbar).
+
+- **Blokady UI**:
+    - w stanie `uploading` blokować „Zapisz” oraz akcje zdjęcia.
 
 ## 10. Obsługa błędów
 
-- **Walidacja lokalna**: `markAllAsTouched()` na submit gdy invalid.
-- **Błędy API**:
-    - `GET /recipes/:id` (404/403): komunikat + nawigacja do listy przepisów
-    - `POST/PUT` (400): pokazać komunikat i (jeśli API zwraca szczegóły) mapować na pola
-    - pozostałe: banner błędu w formularzu (jak obecnie `error-banner`)
-- **Błędy uploadu**:
-    - komunikat w sekcji zdjęcia (np. typ/rozmiar lub błąd storage)
+- **Błędy danych formularza**: `markAllAsTouched()` na submit.
+- **Błędy API (formularz)**:
+    - `GET /recipes/{id}`: 404/403 → komunikat + nawigacja do listy lub 404.
+    - `POST/PUT /recipes`: 400 → komunikat (opcjonalnie mapowanie na pola), inne → banner błędu.
+
+- **Błędy uploadu zdjęcia**:
+    - 400 (typ/rozmiar) → komunikat walidacyjny.
+    - 401 → komunikat „Sesja wygasła” + przekierowanie do logowania (jeśli to standard aplikacji).
+    - 404 → komunikat „Przepis nie istnieje lub nie masz dostępu”.
+    - 413 → komunikat „Plik zbyt duży (max 10 MB)”.
+    - 5xx / sieć → komunikat „Nie udało się przesłać zdjęcia – spróbuj ponownie” + pozostawienie poprzedniego zdjęcia (lub powrót do snapshotu).
 
 ## 11. Kroki implementacji
 
-1. **Aktualizacja ViewModel**: dodać `visibility: FormControl<RecipeVisibility>` do `RecipeFormViewModel`, domyślnie `'PRIVATE'`, z `Validators.required`.
-2. **Aktualizacja UI „Kategoria i tagi”**: rozszerzyć `RecipeCategorizationFormComponent` o `visibilityControl` i dodać `mat-radio-group` (lub `mat-select` jeśli UX wymaga).
-3. **Podpięcie kontrolki w stronie**: przekazać `form.controls.visibility` do `pych-recipe-categorization-form` oraz zdefiniować layout „obok kategorii”.
-4. **Tryb edycji**: w `populateForm(recipe)` ustawić `visibility` z `recipe.visibility` (z fallbackiem na `'PRIVATE'`).
-5. **Mapowanie do komend API**: w `mapFormToCommand()` uwzględnić `visibility` (dla create; dla update analogicznie, jeśli wysyłamy cały model).
-6. **Walidacja i komunikaty**: dodać `mat-hint`/`mat-error` dla widoczności i przetestować edge case `null`.
-7. **Testy manualne**:
-    - tworzenie: domyślna `PRIVATE`, zmiana na `PUBLIC`, zapis
-    - edycja: odczyt istniejącej widoczności, zmiana, zapis
-    - walidacja: wymuszenie błędów (pusta nazwa, puste listy)
-    - odporność: zachowanie danych przy `saving/loading`
+1. **Aktualizacja planu interfejsu zdjęcia**: zaprojektować UI strefy paste/drop z 5 stanami (`idle/dragover/uploading/success/error`) oraz instrukcjami i a11y (`tabindex`, `aria-label`).
+2. **Walidacja zdjęcia**: w `RecipeImageUploadComponent` ujednolicić zasady z API (typy + max 10 MB) i dopasować komunikaty.
+3. **Obsługa paste**: dodać obsługę `ClipboardEvent` na fokusowanej strefie; odrzucać brak obrazu w schowku.
+4. **Obsługa drag&drop**: dodać `dragenter/dragover/dragleave/drop` z `preventDefault` i walidacją obecności pliku.
+5. **Serwis API dla obrazów**: dodać w warstwie serwisów metody `uploadRecipeImage` i `deleteRecipeImage` oparte o `fetch` + token sesji.
+6. **Auto-upload w edycji**: po paste/drop/file-pick w trybie edycji (`recipeId != null`) wywołać upload endpoint i po sukcesie zaktualizować `currentImageUrl`.
+7. **Tryb tworzenia (pending)**: gdy `recipeId == null`, emitować `pendingFileChanged` i trzymać plik do czasu `POST /recipes`.
+8. **Undo (Snackbar)**:
+    - przed zmianą pobrać poprzedni obraz do `File` (jeśli istnieje),
+    - po sukcesie zmiany/usunięcia pokazać snackbar z „Cofnij”,
+    - po „Cofnij” przywrócić poprzedni stan przez upload lub delete.
+9. **Blokady i spójność**: spiąć `imageUploading` ze stanem strony, aby „Zapisz” był zablokowany podczas uploadu.
+10. **Porządek w API dla `image_path`**: dostosować zachowanie `RecipesService.createRecipe/updateRecipe`, aby nie uploadować zdjęć bezpośrednio do Storage i nie wstrzykiwać `image_path` w komendach (po wdrożeniu endpointów image).
+11. **Testy manualne (krytyczne ścieżki)**:
+    - edycja: drop jpg/png/webp < 10MB → upload + podgląd + snackbar undo,
+    - edycja: paste bez obrazu → komunikat,
+    - edycja: drop >10MB / zły typ → komunikat,
+    - edycja: „Usuń zdjęcie” + undo,
+    - tworzenie: dodanie zdjęcia jako pending, zapis przepisu, upload po utworzeniu.

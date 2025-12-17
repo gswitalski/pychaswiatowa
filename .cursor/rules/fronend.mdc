@@ -111,10 +111,20 @@ export class RecipesService {
 }
 ```
 
+##### Testowanie ręczne
+-   Użyj nastepującyh danych logowania użytkownika testowego na lokalnym srodowisku:
+    user:
+    test@pychaswiatowa.pl
+    hasło:
+    554G5rjnbdAanGR
+
+
 ##### Wyjątki (Bardzo Rzadkie):
 
 Jeśli absolutnie konieczne (np. prototypowanie, one-off scripts), **ZAWSZE**:
 1. Dodaj komentarz `// TEMPORARY: Will be migrated to API`
 2. Utwórz task/issue do migracji na API
 3. Skonsultuj z zespołem przed merge
+
+
 

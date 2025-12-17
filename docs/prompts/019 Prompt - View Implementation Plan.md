@@ -18,14 +18,8 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
-- **Topbar / Nawigacja główna** *(zmienione)*  
-  - **Co się zmieniło:** zamiast „losowych” przycisków zależnych od widoku, Topbar posiada przewidywalną, stałą nawigację główną (zakładki): **Moja Pycha** (`/dashboard`) i **Odkrywaj przepisy** (`/explore`), z aktywnym stanem.
-  - **Mobile:** główna nawigacja dostępna jako hamburger/drawer (ta sama kolejność i etykiety).
-
-- **Widoki publiczne** *(zmienione)*  
-  - **Co się zmieniło:** na ścieżkach publicznych (`/`, `/explore`, `/explore/recipes/:id`) Topbar zawiera tę samą główną nawigację, a po prawej stronie:
-    - dla gościa: `Zaloguj` / `Zarejestruj`,
-    - dla zalogowanego: profil (menu + wylogowanie).
+-   **Widok 9: Formularz Przepisu (Dodaj/Edytuj)** (`/recipes/new`, `/recipes/:id/edit`)
+    -   **Co się zmieniło**: sekcja **Zdjęcie** działa jako strefa paste/drop (Ctrl+V + drag&drop pliku z dysku) z wyraźnymi stanami UI (idle/dragover/uploading/success/error), walidacją, auto-upload oraz Snackbar „Cofnij” i akcją „Usuń zdjęcie”.
 
 
 </views>
@@ -34,14 +28,17 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-- **US-014: Globalna nawigacja i orientacja (App Shell)** *(zmienione)*  
-  - **Co się zmieniło:** doprecyzowano, że Topbar zawiera stałą główną nawigację (zakładki) **Moja Pycha** i **Odkrywaj przepisy** z wyróżnieniem aktywnej pozycji; Breadcrumbs są kontekstowe (na głębszych trasach), a Omnibox może być realizowany jako stała ikona/akcja.
+### Nowe
 
-- **US-023: Wejście do „Moja Pycha” z Topbara** *(zmienione)*  
-  - **Co się zmieniło:** story obejmuje również gościa; wejście na `/dashboard` dla gościa wymaga logowania (redirect do logowania z powrotem po sukcesie).
+-   **US-027: Szybka zmiana zdjęcia przepisu przez wklejenie lub przeciągnięcie (edycja)**
+    -   **Co wnosi**: możliwość wklejenia obrazu ze schowka (Ctrl+V) lub przeciągnięcia pliku na pole zdjęcia w formularzu edycji.
+    -   **Walidacja**: PNG/JPG/WebP, max 10 MB.
+    -   **Zachowanie**: auto-upload od razu po paste/drop, podgląd, komunikaty błędów, Snackbar z akcją „Cofnij” (do czasu zapisu).
 
-- **US-026: Wejście do „Odkrywaj przepisy” z Topbara** *(nowe)*  
-  - Stała pozycja „Odkrywaj przepisy” w Topbarze prowadząca do `/explore`, widoczna dla gościa i zalogowanego, z wyróżnieniem aktywnego stanu na `/explore`.
+### Zmienione
+
+-   **US-005: Edycja istniejącego przepisu**
+    -   **Co się zmieniło**: doprecyzowano zmianę zdjęcia (paste/drop + fallback wybór pliku), dodano walidację typów/rozmiaru, auto-upload, „Cofnij” i „Usuń zdjęcie”.
 
 
 </user_stories>
