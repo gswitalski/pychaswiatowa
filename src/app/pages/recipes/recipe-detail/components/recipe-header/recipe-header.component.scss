@@ -6,8 +6,15 @@
     font-size: 2.5rem;
     font-weight: 600;
     color: var(--mat-sys-on-background);
-    margin: 0 0 16px;
+    margin: 0 0 8px;
     line-height: 1.2;
+}
+
+.recipe-servings {
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0 0 16px;
+    font-weight: 500;
 }
 
 .recipe-description {

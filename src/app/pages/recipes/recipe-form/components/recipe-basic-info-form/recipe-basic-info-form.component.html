@@ -26,5 +26,43 @@
         ></textarea>
         <mat-hint>Opcjonalny opis przepisu</mat-hint>
     </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Liczba porcji</mat-label>
+        <input
+            matInput
+            type="number"
+            [formControl]="servingsControl"
+            placeholder="np. 4"
+            min="1"
+            max="99"
+            step="1"
+            inputmode="numeric"
+        />
+        @if (servingsControl.value !== null && servingsControl.value !== undefined) {
+            <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="clearServings()"
+                aria-label="Wyczyść liczbę porcji"
+            >
+                <mat-icon>clear</mat-icon>
+            </button>
+        }
+        @if (servingsControl.hasError('required') && servingsControl.touched) {
+            <mat-error>Liczba porcji jest wymagana</mat-error>
+        }
+        @if (servingsControl.hasError('min') && !servingsControl.hasError('required')) {
+            <mat-error>Minimalna wartość to 1</mat-error>
+        }
+        @if (servingsControl.hasError('max') && !servingsControl.hasError('required')) {
+            <mat-error>Maksymalna wartość to 99</mat-error>
+        }
+        @if (servingsControl.hasError('notInteger') && !servingsControl.hasError('required') && !servingsControl.hasError('min') && !servingsControl.hasError('max')) {
+            <mat-error>Podaj liczbę całkowitą</mat-error>
+        }
+        <mat-hint>Opcjonalne. Zakres 1–99.</mat-hint>
+    </mat-form-field>
 </div>
 

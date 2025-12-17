@@ -1,6 +1,10 @@
 <header class="recipe-header">
     <h1 class="recipe-title">{{ recipe().name }}</h1>
 
+    @if (servingsLabel()) {
+        <p class="recipe-servings">{{ servingsLabel() }}</p>
+    }
+
     @if (recipe().description) {
         <p class="recipe-description">{{ recipe().description }}</p>
     }

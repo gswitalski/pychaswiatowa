@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
 import { RecipeDetailDto, PublicRecipeDetailDto, TagDto } from '../../../../../../../shared/contracts/types';
@@ -89,6 +89,39 @@ export class RecipeHeaderComponent {
             // string[] - generujemy prosty format
             return recipe.tags.map((tag, index) => ({ id: `tag-${index}`, name: tag }));
         }
+    }
+
+    /**
+     * Computed signal dla etykiety liczby porcji.
+     * Zwraca sformatowany string z odpowiednią odmianą "porcja/porcje/porcji"
+     * lub null jeśli servings nie jest ustawione lub poza zakresem 1-99.
+     */
+    readonly servingsLabel = computed(() => {
+        const servings = this.recipe().servings;
+
+        // Guard: nie renderuj jeśli null lub poza zakresem
+        if (servings === null || servings < 1 || servings > 99) {
+            return null;
+        }
+
+        const word = this.getServingsWord(servings);
+        return `${servings} ${word}`;
+    });
+
+    /**
+     * Zwraca odpowiednią odmianę słowa "porcja" dla polskiego języka.
+     * - 1 → porcja
+     * - 2-4 → porcje (z wyjątkiem 12-14)
+     * - pozostałe → porcji
+     */
+    private getServingsWord(n: number): string {
+        if (n % 10 === 1 && n % 100 !== 11) {
+            return 'porcja';
+        }
+        if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) {
+            return 'porcje';
+        }
+        return 'porcji';
     }
 }
 

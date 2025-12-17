@@ -14,6 +14,8 @@ import {
     FormControl,
     ReactiveFormsModule,
     Validators,
+    AbstractControl,
+    ValidationErrors,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -44,6 +46,7 @@ export interface RecipeFormViewModel {
     tags: FormArray<FormControl<string>>;
     ingredients: FormArray<FormControl<string>>;
     steps: FormArray<FormControl<string>>;
+    servings: FormControl<number | null>;
 }
 
 @Component({
@@ -135,6 +138,11 @@ export class RecipeFormPageComponent implements OnInit {
         return this.form.controls.tags;
     }
 
+    /** Quick access to servings FormControl */
+    get servingsControl(): FormControl<number | null> {
+        return this.form.controls.servings;
+    }
+
     ngOnInit(): void {
         this.initForm();
         this.loadCategories();
@@ -167,6 +175,9 @@ export class RecipeFormPageComponent implements OnInit {
             }),
             steps: this.fb.array<FormControl<string>>([], {
                 validators: [Validators.required, this.minArrayLength(1)],
+            }),
+            servings: this.fb.control<number | null>(null, {
+                validators: [Validators.min(1), Validators.max(99), this.integerValidator()],
             }),
         });
     }
@@ -210,6 +221,7 @@ export class RecipeFormPageComponent implements OnInit {
             description: recipe.description ?? '',
             categoryId: recipe.category_id,
             visibility: recipe.visibility ?? 'PRIVATE',
+            servings: recipe.servings ?? null,
         });
 
         // Set current image URL
@@ -308,6 +320,11 @@ export class RecipeFormPageComponent implements OnInit {
     private mapFormToCommand(
         formValue: ReturnType<FormGroup<RecipeFormViewModel>['getRawValue']>
     ): CreateRecipeCommand {
+        // Normalizacja servings: puste wartości → null, wartości liczbowe → liczba całkowita
+        const servings = formValue.servings !== null && formValue.servings !== undefined
+            ? Math.round(formValue.servings)
+            : null;
+
         return {
             name: formValue.name,
             description: formValue.description || null,
@@ -316,6 +333,7 @@ export class RecipeFormPageComponent implements OnInit {
             ingredients_raw: formValue.ingredients.join('\n'),
             steps_raw: formValue.steps.join('\n'),
             tags: formValue.tags,
+            servings: servings,
         };
     }
 
@@ -394,10 +412,30 @@ export class RecipeFormPageComponent implements OnInit {
 
     /** Custom validator to check minimum array length */
     private minArrayLength(min: number) {
-        return (control: FormArray): Record<string, boolean> | null => {
-            if (control.length < min) {
+        return (control: AbstractControl): ValidationErrors | null => {
+            const arrayControl = control as FormArray;
+            if (arrayControl.length < min) {
                 return { minArrayLength: true };
             }
+            return null;
+        };
+    }
+
+    /** Custom validator to check if value is an integer */
+    private integerValidator() {
+        return (control: AbstractControl): ValidationErrors | null => {
+            const value = control.value;
+
+            // Wartość null jest dozwolona (pole opcjonalne)
+            if (value === null || value === undefined) {
+                return null;
+            }
+
+            // Sprawdź czy wartość jest liczbą całkowitą
+            if (!Number.isInteger(value)) {
+                return { notInteger: true };
+            }
+
             return null;
         };
     }

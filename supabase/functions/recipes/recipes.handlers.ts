@@ -483,6 +483,7 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
             steps_raw: validatedData.steps_raw,
             tags: validatedData.tags,
             visibility: validatedData.visibility,
+            servings: validatedData.servings,
         };
 
         // Call the service to create the recipe
@@ -569,6 +570,7 @@ export async function handleUpdateRecipe(
             tags: validatedData.tags,
             visibility: validatedData.visibility,
             image_path: validatedData.image_path,
+            servings: validatedData.servings,
         };
 
         // Call the service to update the recipe

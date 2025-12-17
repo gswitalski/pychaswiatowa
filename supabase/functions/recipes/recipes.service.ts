@@ -911,6 +911,7 @@ export async function importRecipeFromText(
         steps_raw: stepsRaw || '- (empty)', // Provide fallback if empty
         tags: [],
         visibility: 'PRIVATE', // Import always creates private recipes
+        servings: null, // No servings information from import
     };
 
     logger.info('Creating recipe from parsed text', { name });
