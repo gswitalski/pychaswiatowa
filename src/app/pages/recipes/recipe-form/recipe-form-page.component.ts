@@ -35,7 +35,6 @@ import {
     UpdateRecipeCommand,
     RecipeVisibility,
 } from '../../../../../shared/contracts/types';
-import { switchMap, of } from 'rxjs';
 
 export interface RecipeFormViewModel {
     name: FormControl<string>;

@@ -67,7 +67,7 @@ export class RecipeImageUploadComponent implements OnInit {
     readonly currentImageUrl = input<string | null>(null);
 
     /** Disable all interactions */
-    @Input() disabled: boolean = false;
+    @Input() disabled = false;
 
     /** Emits image-related events */
     @Output() imageEvent = new EventEmitter<RecipeImageEvent>();
@@ -148,8 +148,7 @@ export class RecipeImageUploadComponent implements OnInit {
 
         // Find image in clipboard
         let imageFile: File | null = null;
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
+        for (const item of items) {
             if (item.type.startsWith('image/')) {
                 const blob = item.getAsFile();
                 if (blob) {
@@ -379,7 +378,7 @@ export class RecipeImageUploadComponent implements OnInit {
                 previousUrl: currentUrl,
                 previousFile: file,
             };
-        } catch (error) {
+        } catch {
             // If fetching fails, still save snapshot without file
             this.undoSnapshot = {
                 kind: 'existing',

@@ -126,6 +126,7 @@ export class RecipesService {
      */
     createRecipe(
         command: CreateRecipeCommand,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _imageFile: File | null = null // Deprecated parameter, kept for compatibility
     ): Observable<{ id: number }> {
         return from(this.performCreateRecipe(command));
@@ -138,6 +139,7 @@ export class RecipesService {
     updateRecipe(
         id: number,
         command: UpdateRecipeCommand,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _imageFile: File | null = null // Deprecated parameter, kept for compatibility
     ): Observable<void> {
         return from(this.performUpdateRecipe(id, command));
