@@ -92,6 +92,16 @@ const createRecipeSchema = z.object({
         required_error: 'Visibility is required',
         invalid_type_error: 'Visibility must be one of: PRIVATE, SHARED, PUBLIC',
     }),
+    servings: z
+        .number({
+            invalid_type_error: 'Servings must be a number',
+        })
+        .int('Servings must be an integer')
+        .min(1, 'Servings must be at least 1')
+        .max(99, 'Servings cannot exceed 99')
+        .nullable()
+        .optional()
+        .transform((val) => val ?? null),
 });
 
 /**
@@ -147,6 +157,15 @@ const updateRecipeSchema = z
             .enum(['PRIVATE', 'SHARED', 'PUBLIC'], {
                 invalid_type_error: 'Visibility must be one of: PRIVATE, SHARED, PUBLIC',
             })
+            .optional(),
+        servings: z
+            .number({
+                invalid_type_error: 'Servings must be a number',
+            })
+            .int('Servings must be an integer')
+            .min(1, 'Servings must be at least 1')
+            .max(99, 'Servings cannot exceed 99')
+            .nullable()
             .optional(),
         image_path: z
             .string({

@@ -77,6 +77,7 @@ export type RecipeListItemDto = Pick<
     };
     category_id: number | null;
     category_name: string | null;
+    servings: number | null;
 };
 
 /**
@@ -95,6 +96,7 @@ export interface PublicRecipeListItemDto {
     created_at: string;
     /** True if recipe is in authenticated user's collections (always false for anonymous) */
     in_my_collections: boolean;
+    servings: number | null;
 }
 
 /**
@@ -113,6 +115,7 @@ export interface PublicRecipeDetailDto {
     tags: string[];
     author: ProfileDto;
     created_at: string;
+    servings: number | null;
 }
 
 /**
@@ -144,6 +147,8 @@ export type RecipeDetailDto = Omit<
     tags: TagDto[];
     /** Recipe visibility setting. */
     visibility: RecipeVisibility;
+    /** Number of servings the recipe yields (1-99 or null if not specified). */
+    servings: number | null;
 };
 
 /**
@@ -160,6 +165,8 @@ export type CreateRecipeCommand = Pick<
     tags: string[];
     /** Recipe visibility setting (required). */
     visibility: RecipeVisibility;
+    /** Number of servings the recipe yields (1-99 or null if not specified). */
+    servings?: number | null;
 };
 
 /**

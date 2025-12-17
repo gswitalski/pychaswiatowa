@@ -50,6 +50,7 @@ export interface PublicRecipeListItemDto {
     created_at: string;
     /** True if recipe is in authenticated user's collections (always false for anonymous) */
     in_my_collections: boolean;
+    servings: number | null;
 }
 
 /**
@@ -67,6 +68,7 @@ export interface PublicRecipeDetailDto {
     tags: string[];
     author: ProfileDto;
     created_at: string;
+    servings: number | null;
 }
 
 /**
@@ -91,6 +93,7 @@ interface RecipeDetailsRow {
     category_name: string | null;
     tags: Array<{ id: number; name: string }> | null;
     created_at: string;
+    servings: number | null;
 }
 
 /**
@@ -110,6 +113,7 @@ interface RecipeDetailFullRow {
     tags: Array<{ id: number; name: string }> | null;
     created_at: string;
     deleted_at: string | null;
+    servings: number | null;
 }
 
 /**
@@ -121,10 +125,10 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, category_id, category_name, tags, created_at';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, category_id, category_name, tags, created_at, servings';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
-const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at';
+const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings';
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
@@ -313,6 +317,7 @@ export async function getPublicRecipes(
             },
             created_at: recipe.created_at,
             in_my_collections: recipeIdsInCollections.has(recipe.id),
+            servings: recipe.servings,
         };
     });
 
@@ -436,6 +441,7 @@ export async function getPublicRecipeById(
             username: profile.username,
         },
         created_at: recipe.created_at,
+        servings: recipe.servings,
     };
 
     logger.info('Public recipe fetched successfully', {

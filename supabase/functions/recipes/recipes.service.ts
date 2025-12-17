@@ -31,6 +31,7 @@ export interface RecipeListItemDto {
     };
     category_id: number | null;
     category_name: string | null;
+    servings: number | null;
 }
 
 /**
@@ -98,6 +99,7 @@ export interface RecipeDetailDto {
     ingredients: RecipeContent;
     steps: RecipeContent;
     tags: TagDto[];
+    servings: number | null;
 }
 
 /**
@@ -121,11 +123,11 @@ export interface GetRecipesOptions {
 }
 
 /** Columns to select for recipe list queries. */
-const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility';
+const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings';
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -283,6 +285,7 @@ export async function getRecipes(
         },
         category_id: recipe.category_id ? Number(recipe.category_id) : null,
         category_name: recipe.category_name ?? null,
+        servings: recipe.servings ? Number(recipe.servings) : null,
     }));
 
     return {
@@ -506,6 +509,7 @@ function mapToRecipeDetailDto(data: any): RecipeDetailDto {
         ingredients: parseRecipeContent(data.ingredients),
         steps: parseRecipeContent(data.steps),
         tags: parseTagsContent(data.tags),
+        servings: data.servings ? Number(data.servings) : null,
     };
 }
 
@@ -520,6 +524,7 @@ export interface CreateRecipeInput {
     steps_raw: string;
     tags: string[];
     visibility: RecipeVisibility;
+    servings: number | null;
 }
 
 /**
@@ -535,6 +540,7 @@ export interface UpdateRecipeInput {
     tags?: string[];
     visibility?: RecipeVisibility;
     image_path?: string | null;
+    servings?: number | null;
 }
 
 /**
@@ -569,6 +575,7 @@ export async function createRecipe(
         hasDescription: !!input.description,
         categoryId: input.category_id,
         tagsCount: input.tags.length,
+        servings: input.servings,
     });
 
     // Call the RPC function to create the recipe with tags atomically
@@ -583,6 +590,7 @@ export async function createRecipe(
             p_steps_raw: input.steps_raw,
             p_tag_names: input.tags,
             p_visibility: input.visibility,
+            p_servings: input.servings,
         }
     );
 
@@ -664,6 +672,7 @@ export async function updateRecipe(
         updatingSteps: input.steps_raw !== undefined,
         updatingTags: input.tags !== undefined,
         updatingImagePath: input.image_path !== undefined,
+        updatingServings: input.servings !== undefined,
     });
 
     // Determine if tags should be updated
@@ -671,6 +680,9 @@ export async function updateRecipe(
 
     // Determine if category should be updated
     const updateCategory = input.category_id !== undefined;
+
+    // Determine if servings should be updated
+    const updateServings = input.servings !== undefined;
 
     // Call the RPC function to update the recipe with tags atomically
     const { data: updatedRecipeId, error: rpcError } = await client.rpc(
@@ -688,6 +700,8 @@ export async function updateRecipe(
             p_visibility: input.visibility ?? null,
             p_image_path: input.image_path ?? null,
             p_update_category: updateCategory,
+            p_servings: input.servings ?? null,
+            p_update_servings: updateServings,
         }
     );
 
