@@ -12,10 +12,31 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
--   **`DELETE /recipes/{id}/image`**
-    -   **Cel**: usunięcie zdjęcia przepisu (ustawienie `image_path = NULL`, opcjonalnie kasowanie obiektu w storage).
-    -   **Wyjście**: `204 No Content`.
+### Zmienione
 
+- **Modele/odpowiedzi dla przepisów**
+  - **Co się zmieniło**: do obiektów receptur dodano pole `servings` (`number | null`).
+
+- **`GET /public/recipes`**
+  - **Co się zmieniło**: elementy listy zawierają `servings`.
+
+- **`GET /public/recipes/{id}`**
+  - **Co się zmieniło**: obiekt szczegółów zawiera `servings`.
+
+- **`GET /recipes`**
+  - **Co się zmieniło**: elementy listy zawierają `servings`.
+
+- **`POST /recipes`**
+  - **Co się zmieniło**: request może zawierać `servings`; response zwraca `servings`.
+
+- **`POST /recipes/import`**
+  - **Co się zmieniło**: response zawiera `servings` (domyślnie `null`).
+
+- **`PUT /recipes/{id}`**
+  - **Co się zmieniło**: request może aktualizować `servings` (w tym ustawić `null`).
+
+- **Walidacja**
+  - **Co się zmieniło**: `recipes.servings` jest opcjonalne, integer `1-99`, dopuszcza `null`.
 
 </api_changes_description>
 
