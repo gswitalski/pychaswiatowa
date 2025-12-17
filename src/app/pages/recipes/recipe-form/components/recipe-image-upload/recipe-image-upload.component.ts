@@ -148,7 +148,7 @@ export class RecipeImageUploadComponent implements OnInit {
 
         // Find image in clipboard
         let imageFile: File | null = null;
-        for (const item of items) {
+        for (const item of Array.from(items)) {
             if (item.type.startsWith('image/')) {
                 const blob = item.getAsFile();
                 if (blob) {
