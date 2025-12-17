@@ -30,9 +30,6 @@ export class PageHeaderComponent {
     /** Optional subtitle/description */
     subtitle = input<string>();
 
-    /** Show back button (default: false) */
-    showBackButton = input<boolean>(false);
-
     /** Emits when back button is clicked (if not handled, uses Location.back()) */
     backClick = output<void>();
 
