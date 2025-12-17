@@ -33,6 +33,7 @@ Główna tabela przechowująca wszystkie przepisy użytkowników.
 | `category_id` | `bigint`      | `REFERENCES categories(id)`                                               | Klucz obcy do tabeli `categories`.                          |
 | `name`        | `text`        | `NOT NULL`, `CHECK (char_length(name) > 0 AND char_length(name) <= 150)`  | Nazwa przepisu.                                             |
 | `description` | `text`        | -                                                                         | Opcjonalny opis przepisu.                                   |
+| `servings`    | `smallint`    | `CHECK (servings IS NULL OR (servings >= 1 AND servings <= 99))`          | Opcjonalna liczba porcji (dla ilu porcji jest przepis).     |
 | `image_path`  | `text`        | -                                                                         | Ścieżka do zdjęcia w Supabase Storage.                      |
 | `ingredients` | `jsonb`       | `NOT NULL`                                                                | Lista składników w formacie JSON.                           |
 | `steps`       | `jsonb`       | `NOT NULL`                                                                | Lista kroków w formacie JSON.                               |

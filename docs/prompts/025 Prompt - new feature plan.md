@@ -13,7 +13,8 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-chce aby podczas edycji przepisu nie trzeba było wybierać obrazka przepisu z plku ale aby można było wkleić obraz ze schowka lub przeciągnąć plik w pole ze zdjęciem
+chce podczas edycji przepisu podać liczbę porcji (opcjonalnie)
+a podczas przegldania przepisu zobaczyć liczbe porcji pod tytułem przepisu
 
 
 </nowa_funkcjonalnosc>

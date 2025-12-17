@@ -43,7 +43,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - Przy próbie dostępu do niepublicznego przepisu innego autora: komunikat o braku dostępu
     - **Zalogowany (własny przepis):**
         - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Edytuj", "Usuń"
-- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
+- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. (Opcjonalnie) przekierowania/normalizacja URL w warstwie frontendu: `/explore/recipes/:id-:slug` -> `/explore/recipes/:id`.
 
@@ -87,7 +87,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - Zalogowany użytkownik przeglądający cudzy publiczny przepis
     - Zalogowany użytkownik przeglądający własny przepis (pełne akcje)
 - **Header:** Tytuł przepisu. Akcje zależne od kontekstu (patrz punkt 3).
-- **Kluczowe informacje do wyświetlenia:** Nazwa, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
+- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji. Dla zalogowanego nie-autora przyciski "Edytuj" i "Usuń" nie są wyświetlane (również gdy wejście nastąpiło z listy `/my-recipies`).
 
@@ -95,10 +95,11 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
 - **Główny cel:** Tworzenie i modyfikacja przepisu.
 - **Header:** Tytuł "Nowy przepis" / "Edycja". Akcje: "Anuluj", "Zapisz" (Sticky - zawsze widoczny).
-- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, kategoria, widoczność), Składniki, Kroki, Zdjęcie.
+- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, **liczba porcji (opcjonalnie)**, kategoria, widoczność), Składniki, Kroki, Zdjęcie.
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), `ImageUploadComponent` (strefa paste/drop + fallback file picker), `EditableListComponent` (składniki/kroki).
 - **Względy UX, dostępności i bezpieczeństwa:**
     - Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
+    - Pole **"Liczba porcji"** jest opcjonalne, przyjmuje tylko liczbę całkowitą w zakresie `1-99`, może zostać wyczyszczone (brak wartości). W szczegółach przepisu wartość jest wyświetlana pod tytułem (np. `4 porcje`, `6 porcji`).
     - Sekcja **Zdjęcie** działa jako **strefa docelowa**: użytkownik może wkleić obraz ze schowka (Ctrl+V) lub przeciągnąć i upuścić plik obrazu. Opcja "Wybierz plik" pozostaje jako fallback.
     - Drag&drop dotyczy **pliku obrazu (File) z dysku** — nie zakładamy obsługi upuszczania samych URL-i / linków do obrazków ze stron WWW w MVP.
     - Strefa zdjęcia ma czytelne stany: `idle` (instrukcja), `dragover` (podświetlenie), `uploading` (progres/spinner), `success` (podgląd), `error` (komunikat).

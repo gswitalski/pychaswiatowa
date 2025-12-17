@@ -39,6 +39,7 @@ Public endpoints are available without authentication and must return **only** r
               "id": 1,
               "name": "Apple Pie",
               "description": "A classic dessert.",
+              "servings": 6,
               "image_path": "path/to/image.jpg",
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
@@ -70,6 +71,7 @@ Public endpoints are available without authentication and must return **only** r
           "id": 1,
           "name": "Apple Pie",
           "description": "A classic dessert.",
+          "servings": 6,
           "image_path": "path/to/image.jpg",
           "visibility": "PUBLIC",
           "category": { "id": 2, "name": "Dessert" },
@@ -122,6 +124,7 @@ Public endpoints are available without authentication and must return **only** r
             {
               "id": 1,
               "name": "Apple Pie",
+              "servings": 6,
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
               "is_owner": true,
@@ -151,6 +154,7 @@ Public endpoints are available without authentication and must return **only** r
     {
       "name": "New Awesome Recipe",
       "description": "A short description.",
+      "servings": 4,
       "category_id": 2,
       "visibility": "PRIVATE",
       "ingredients_raw": "# Dough\n- 500g flour\n- 250ml water",
@@ -166,6 +170,7 @@ Public endpoints are available without authentication and must return **only** r
           "id": 101,
           "name": "New Awesome Recipe",
           "description": "A short description.",
+          "servings": 4,
           "category_id": 2,
           "visibility": "PRIVATE",
           "ingredients": [
@@ -209,6 +214,7 @@ Public endpoints are available without authentication and must return **only** r
           "id": 102,
           "name": "Pizza",
           "description": null,
+          "servings": null,
           "category_id": null,
           "visibility": "PRIVATE",
           "ingredients": [
@@ -251,6 +257,7 @@ Public endpoints are available without authentication and must return **only** r
     {
       "name": "Updated Awesome Recipe",
       "description": "An updated description.",
+      "servings": 6,
       "visibility": "PUBLIC"
     }
     ```
@@ -615,6 +622,7 @@ Public endpoints are available without authentication and must return **only** r
 
 -   **Validation**: Input validation will be performed at the API level before data is sent to the database. This includes checking for required fields, data types, and length constraints as defined in the database schema.
     -   `recipes.name`: required, 1-150 characters.
+    -   `recipes.servings`: optional, integer, 1-99. Can be `null` (no value provided).
     -   `recipes.visibility`: required, enum: 'PRIVATE', 'SHARED', 'PUBLIC'. Default: 'PRIVATE'.
     -   `recipes.ingredients_raw`, `recipes.steps_raw`: required.
     -   `POST /recipes/{id}/image`:
