@@ -762,10 +762,10 @@ export async function updateRecipe(
 }
 
 /**
- * Parses raw text to extract recipe name, ingredients, and steps.
+ * Parses raw text to extract recipe name, description, ingredients, and steps.
  * Expected format:
  * - Title: Line starting with `#` (required)
- * - Main sections: Lines starting with `##` (e.g., "## Składniki", "## Kroki")
+ * - Main sections: Lines starting with `##` (e.g., "## Opis", "## Składniki", "## Kroki")
  * - Subsections: Lines starting with `###` (headers within sections)
  * - Items: Lines starting with `-` (ingredients or steps)
  *
@@ -775,6 +775,7 @@ export async function updateRecipe(
  */
 function parseRecipeText(rawText: string): {
     name: string;
+    description: string | null;
     ingredientsRaw: string;
     stepsRaw: string;
 } {
@@ -783,9 +784,10 @@ function parseRecipeText(rawText: string): {
     const lines = rawText.split('\n').map((line) => line.trim());
 
     let name = '';
+    let description = '';
     let ingredientsRaw = '';
     let stepsRaw = '';
-    let currentSection: 'none' | 'ingredients' | 'steps' = 'none';
+    let currentSection: 'none' | 'description' | 'ingredients' | 'steps' = 'none';
 
     for (const line of lines) {
         // Skip empty lines
@@ -804,8 +806,13 @@ function parseRecipeText(rawText: string): {
         if (line.startsWith('## ')) {
             const sectionName = line.substring(3).trim().toLowerCase();
 
+            // Detect "Opis" section (description)
+            if (sectionName.includes('opis') || sectionName.includes('description')) {
+                currentSection = 'description';
+                logger.debug('Entering description section');
+            }
             // Detect "Składniki" section (ingredients)
-            if (sectionName.includes('składnik') || sectionName.includes('ingredient')) {
+            else if (sectionName.includes('składnik') || sectionName.includes('ingredient')) {
                 currentSection = 'ingredients';
                 logger.debug('Entering ingredients section');
             }
@@ -826,8 +833,12 @@ function parseRecipeText(rawText: string): {
         }
 
         // Add content to the appropriate section
+        if (currentSection === 'description') {
+            // For description, collect all lines as plain text
+            description += line + '\n';
+        }
         // Transform ### to # for subsection headers (as per ingredients_raw/steps_raw format)
-        if (currentSection === 'ingredients' || currentSection === 'steps') {
+        else if (currentSection === 'ingredients' || currentSection === 'steps') {
             let transformedLine = line;
 
             // Convert ### subsection headers to # format expected by parse_text_to_jsonb
@@ -853,17 +864,21 @@ function parseRecipeText(rawText: string): {
     }
 
     // Trim the collected raw text
+    description = description.trim();
     ingredientsRaw = ingredientsRaw.trim();
     stepsRaw = stepsRaw.trim();
 
     logger.info('Recipe text parsed successfully', {
         name,
+        hasDescription: !!description,
+        descriptionLength: description.length,
         ingredientsLength: ingredientsRaw.length,
         stepsLength: stepsRaw.length,
     });
 
     return {
         name,
+        description: description.length > 0 ? description : null,
         ingredientsRaw,
         stepsRaw,
     };
@@ -900,12 +915,12 @@ export async function importRecipeFromText(
     }
 
     // Parse the raw text to extract recipe components
-    const { name, ingredientsRaw, stepsRaw } = parseRecipeText(rawText);
+    const { name, description, ingredientsRaw, stepsRaw } = parseRecipeText(rawText);
 
     // Prepare input for createRecipe
     const createRecipeInput: CreateRecipeInput = {
         name,
-        description: null,
+        description, // Use parsed description from text
         category_id: null,
         ingredients_raw: ingredientsRaw || '- (empty)', // Provide fallback if empty
         steps_raw: stepsRaw || '- (empty)', // Provide fallback if empty

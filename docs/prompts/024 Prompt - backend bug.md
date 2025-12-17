@@ -11,25 +11,69 @@ Zapoznaj się z dokumentamu projektu
 
 
 <aktualne_zachowanie>
-
-po niedawnym dodaniu liczby porcji do przepisu
-
-endpoint PUT
-http://127.0.0.1:54331/functions/v1/recipes/2
-zwraca kod 500
-
+endpoint POST http://127.0.0.1:54331/functions/v1/recipes/import
+z body:
 {
-  "code": "INTERNAL_ERROR",
-  "message": "Failed to update recipe"
+  "raw_text": "# Za’atar – wersja dostępna w polskich sklepach\n\n## Opis\nBliskowschodnia klasyka w sprytnej adaptacji: oregano i tymianek udają za’atar, a efekt jest zaskakująco autentyczny. Idealny dowód, że geografia nie musi ograniczać smaku.\n\n## Składniki\n- 1/2 szklanki suszonego oregano\n- 2 łyżki suszonego tymianku\n- 3 łyżki sezamu niesolonego\n- 2 łyżki sumaku\n- 1/2 łyżeczki soli morskiej\n\n## Kroki\n- Prażyć sezam na suchej patelni na średnim ogniu przez 5–10 minut, mieszając, aż lekko zbrązowieje i zacznie pachnieć orzechowo\n- Zmielić oregano i tymianek w młynku do kawy lub moździerzu na drobny proszek\n- Połączyć wszystkie składniki w misce i dokładnie wymieszać\n\n## Przechowywanie i użycie\n- Przechowywać w szczelnym słoiku, w suchym i ciemnym miejscu, do 6 miesięcy  \n- Używać do oliwy z chlebem, hummusu, grillowanych warzyw lub mięs; można posypywać bezpośrednio lub mieszać z oliwą"
 }
-
+zwraca
+{
+  "id": 52,
+  "user_id": "c553b8d1-3dbb-488f-b610-97eb6f95d357",
+  "category_id": null,
+  "name": "Za’atar – wersja dostępna w polskich sklepach",
+  "description": null,
+  "image_path": null,
+  "created_at": "2025-12-17T21:12:47.637536+00:00",
+  "updated_at": "2025-12-17T21:12:47.637536+00:00",
+  "category_name": null,
+  "visibility": "PRIVATE",
+  "ingredients": [
+    {
+      "type": "item",
+      "content": "1/2 szklanki suszonego oregano"
+    },
+    {
+      "type": "item",
+      "content": "2 łyżki suszonego tymianku"
+    },
+    {
+      "type": "item",
+      "content": "3 łyżki sezamu niesolonego"
+    },
+    {
+      "type": "item",
+      "content": "2 łyżki sumaku"
+    },
+    {
+      "type": "item",
+      "content": "1/2 łyżeczki soli morskiej"
+    }
+  ],
+  "steps": [
+    {
+      "type": "item",
+      "content": "Prażyć sezam na suchej patelni na średnim ogniu przez 5–10 minut, mieszając, aż lekko zbrązowieje i zacznie pachnieć orzechowo"
+    },
+    {
+      "type": "item",
+      "content": "Zmielić oregano i tymianek w młynku do kawy lub moździerzu na drobny proszek"
+    },
+    {
+      "type": "item",
+      "content": "Połączyć wszystkie składniki w misce i dokładnie wymieszać"
+    }
+  ],
+  "tags": [],
+  "servings": null
+}
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-przepis się zapisuje
+endpoin zwaca description takie jak było podane na wejści (nie zapisuje się w bazie)
 
 </oczekiwane_zachowanie>
 
