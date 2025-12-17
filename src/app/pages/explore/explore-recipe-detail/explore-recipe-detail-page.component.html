@@ -48,7 +48,6 @@
         @if (isAuthenticated()) {
             <pych-page-header
                 [title]="pageTitle()"
-                [showBackButton]="true"
             >
                 @if (headerMode() === 'ownerActions') {
                     <!-- Akcje dla właściciela przepisu -->
