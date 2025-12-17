@@ -18,8 +18,7 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
--   **Widok 9: Formularz Przepisu (Dodaj/Edytuj)** (`/recipes/new`, `/recipes/:id/edit`)
-    -   **Co się zmieniło**: sekcja **Zdjęcie** działa jako strefa paste/drop (Ctrl+V + drag&drop pliku z dysku) z wyraźnymi stanami UI (idle/dragover/uploading/success/error), walidacją, auto-upload oraz Snackbar „Cofnij” i akcją „Usuń zdjęcie”.
+
 
 
 </views>
@@ -28,17 +27,6 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-### Nowe
-
--   **US-027: Szybka zmiana zdjęcia przepisu przez wklejenie lub przeciągnięcie (edycja)**
-    -   **Co wnosi**: możliwość wklejenia obrazu ze schowka (Ctrl+V) lub przeciągnięcia pliku na pole zdjęcia w formularzu edycji.
-    -   **Walidacja**: PNG/JPG/WebP, max 10 MB.
-    -   **Zachowanie**: auto-upload od razu po paste/drop, podgląd, komunikaty błędów, Snackbar z akcją „Cofnij” (do czasu zapisu).
-
-### Zmienione
-
--   **US-005: Edycja istniejącego przepisu**
-    -   **Co się zmieniło**: doprecyzowano zmianę zdjęcia (paste/drop + fallback wybór pliku), dodano walidację typów/rozmiaru, auto-upload, „Cofnij” i „Usuń zdjęcie”.
 
 
 </user_stories>
