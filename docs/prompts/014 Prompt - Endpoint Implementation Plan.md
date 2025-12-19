@@ -14,30 +14,28 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 <api_changes_description>
 ### Zmienione
 
-- **Modele/odpowiedzi dla przepisów**
-  - **Co się zmieniło**: do obiektów receptur dodano pole `servings` (`number | null`).
+- **Public recipes – `GET /public/recipes`**
+  - **Zmiana**: dodane pole `is_termorobot` w obiekcie przepisu.
+  - **Zmiana**: dodany parametr `filter[termorobot]` (boolean) – API-ready.
 
-- **`GET /public/recipes`**
-  - **Co się zmieniło**: elementy listy zawierają `servings`.
+- **Public recipes – `GET /public/recipes/{id}`**
+  - **Zmiana**: dodane pole `is_termorobot` w odpowiedzi.
 
-- **`GET /public/recipes/{id}`**
-  - **Co się zmieniło**: obiekt szczegółów zawiera `servings`.
+- **Recipes – `GET /recipes`**
+  - **Zmiana**: dodane pole `is_termorobot` w obiektach listy.
+  - **Zmiana**: dodany parametr `filter[termorobot]` (boolean).
 
-- **`GET /recipes`**
-  - **Co się zmieniło**: elementy listy zawierają `servings`.
+- **Recipes – `POST /recipes`**
+  - **Zmiana**: request wspiera `is_termorobot` (boolean), a response zwraca `is_termorobot`.
 
-- **`POST /recipes`**
-  - **Co się zmieniło**: request może zawierać `servings`; response zwraca `servings`.
+- **Recipes – `POST /recipes/import`**
+  - **Zmiana**: response zwraca `is_termorobot` (domyślnie `false`).
 
-- **`POST /recipes/import`**
-  - **Co się zmieniło**: response zawiera `servings` (domyślnie `null`).
-
-- **`PUT /recipes/{id}`**
-  - **Co się zmieniło**: request może aktualizować `servings` (w tym ustawić `null`).
+- **Recipes – `PUT /recipes/{id}`**
+  - **Zmiana**: request wspiera `is_termorobot` (boolean).
 
 - **Walidacja**
-  - **Co się zmieniło**: `recipes.servings` jest opcjonalne, integer `1-99`, dopuszcza `null`.
-
+  - **Zmiana**: dodana reguła `recipes.is_termorobot`: optional boolean, default `false`.
 </api_changes_description>
 
 aktualna implementacja:

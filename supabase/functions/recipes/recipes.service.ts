@@ -32,6 +32,7 @@ export interface RecipeListItemDto {
     category_id: number | null;
     category_name: string | null;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -100,6 +101,7 @@ export interface RecipeDetailDto {
     steps: RecipeContent;
     tags: TagDto[];
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -120,14 +122,15 @@ export interface GetRecipesOptions {
     categoryId?: number;
     tags?: string[];
     search?: string;
+    termorobot?: boolean;
 }
 
 /** Columns to select for recipe list queries. */
-const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings';
+const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings, is_termorobot';
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings, is_termorobot';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -193,6 +196,7 @@ export async function getRecipes(
         categoryId,
         tags,
         search,
+        termorobot,
     } = options;
 
     logger.info('Fetching recipes', {
@@ -205,6 +209,7 @@ export async function getRecipes(
         categoryId,
         tagsCount: tags?.length ?? 0,
         hasSearch: !!search,
+        termorobot,
     });
 
     // Validate sort field to prevent injection
@@ -247,6 +252,7 @@ export async function getRecipes(
         p_category_id: categoryId ?? null,
         p_tag_ids: tagIds,
         p_search: search ?? null,
+        p_termorobot: termorobot ?? null,
     });
 
     if (error) {
@@ -286,6 +292,7 @@ export async function getRecipes(
         category_id: recipe.category_id ? Number(recipe.category_id) : null,
         category_name: recipe.category_name ?? null,
         servings: recipe.servings ? Number(recipe.servings) : null,
+        is_termorobot: Boolean(recipe.is_termorobot),
     }));
 
     return {
@@ -525,6 +532,7 @@ export interface CreateRecipeInput {
     tags: string[];
     visibility: RecipeVisibility;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -541,6 +549,7 @@ export interface UpdateRecipeInput {
     visibility?: RecipeVisibility;
     image_path?: string | null;
     servings?: number | null;
+    is_termorobot?: boolean;
 }
 
 /**
@@ -576,6 +585,7 @@ export async function createRecipe(
         categoryId: input.category_id,
         tagsCount: input.tags.length,
         servings: input.servings,
+        is_termorobot: input.is_termorobot,
     });
 
     // Call the RPC function to create the recipe with tags atomically
@@ -591,6 +601,7 @@ export async function createRecipe(
             p_tag_names: input.tags,
             p_visibility: input.visibility,
             p_servings: input.servings,
+            p_is_termorobot: input.is_termorobot,
         }
     );
 
@@ -673,6 +684,7 @@ export async function updateRecipe(
         updatingTags: input.tags !== undefined,
         updatingImagePath: input.image_path !== undefined,
         updatingServings: input.servings !== undefined,
+        updatingIsTermorobot: input.is_termorobot !== undefined,
     });
 
     // Determine if tags should be updated
@@ -683,6 +695,9 @@ export async function updateRecipe(
 
     // Determine if servings should be updated
     const updateServings = input.servings !== undefined;
+
+    // Determine if termorobot flag should be updated
+    const updateIsTermorobot = input.is_termorobot !== undefined;
 
     // Call the RPC function to update the recipe with tags atomically
     const { data: updatedRecipeId, error: rpcError } = await client.rpc(
@@ -702,6 +717,8 @@ export async function updateRecipe(
             p_update_category: updateCategory,
             p_servings: input.servings ?? null,
             p_update_servings: updateServings,
+            p_is_termorobot: input.is_termorobot ?? null,
+            p_update_is_termorobot: updateIsTermorobot,
         }
     );
 

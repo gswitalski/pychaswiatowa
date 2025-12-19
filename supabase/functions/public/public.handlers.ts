@@ -59,6 +59,17 @@ const GetPublicRecipesQuerySchema = z.object({
         }
         return trimmed;
     }),
+    'filter[termorobot]': z.string().optional().transform((val) => {
+        if (val === undefined) return undefined;
+        const lowerVal = val.toLowerCase().trim();
+        if (lowerVal === 'true' || lowerVal === '1') {
+            return true;
+        }
+        if (lowerVal === 'false' || lowerVal === '0') {
+            return false;
+        }
+        throw new Error('filter[termorobot] must be true, false, 1, or 0');
+    }),
 });
 
 /**
@@ -116,6 +127,7 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             limit: url.searchParams.get('limit') || undefined,
             sort: url.searchParams.get('sort') || undefined,
             q: url.searchParams.get('q') || undefined,
+            'filter[termorobot]': url.searchParams.get('filter[termorobot]') || undefined,
         };
 
         let validatedParams;
@@ -140,6 +152,7 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             sortField: validatedParams.sort.field,
             sortDirection: validatedParams.sort.direction,
             q: validatedParams.q,
+            termorobot: validatedParams['filter[termorobot]'],
         };
 
         // Create service role client for public access

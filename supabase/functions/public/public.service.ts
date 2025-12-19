@@ -51,6 +51,7 @@ export interface PublicRecipeListItemDto {
     /** True if recipe is in authenticated user's collections (always false for anonymous) */
     in_my_collections: boolean;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -69,6 +70,7 @@ export interface PublicRecipeDetailDto {
     author: ProfileDto;
     created_at: string;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -94,6 +96,7 @@ interface RecipeDetailsRow {
     tags: Array<{ id: number; name: string }> | null;
     created_at: string;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -114,6 +117,7 @@ interface RecipeDetailFullRow {
     created_at: string;
     deleted_at: string | null;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -125,10 +129,10 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, category_id, category_name, tags, created_at, servings';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, category_id, category_name, tags, created_at, servings, is_termorobot';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
-const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings';
+const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot';
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
@@ -176,6 +180,11 @@ export async function getPublicRecipes(
         // MVP: Search by name using ILIKE
         // TODO: Implement full-text search with search_vector for better performance
         dbQuery = dbQuery.ilike('name', `%${query.q}%`);
+    }
+
+    // Apply termorobot filter if provided
+    if (query.termorobot !== undefined) {
+        dbQuery = dbQuery.eq('is_termorobot', query.termorobot);
     }
 
     // Apply sorting
@@ -318,6 +327,7 @@ export async function getPublicRecipes(
             created_at: recipe.created_at,
             in_my_collections: recipeIdsInCollections.has(recipe.id),
             servings: recipe.servings,
+            is_termorobot: recipe.is_termorobot,
         };
     });
 
@@ -442,6 +452,7 @@ export async function getPublicRecipeById(
         },
         created_at: recipe.created_at,
         servings: recipe.servings,
+        is_termorobot: recipe.is_termorobot,
     };
 
     logger.info('Public recipe fetched successfully', {

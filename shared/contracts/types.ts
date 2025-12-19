@@ -78,6 +78,7 @@ export type RecipeListItemDto = Pick<
     category_id: number | null;
     category_name: string | null;
     servings: number | null;
+    is_termorobot: boolean;
 };
 
 /**
@@ -97,6 +98,7 @@ export interface PublicRecipeListItemDto {
     /** True if recipe is in authenticated user's collections (always false for anonymous) */
     in_my_collections: boolean;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -116,6 +118,7 @@ export interface PublicRecipeDetailDto {
     author: ProfileDto;
     created_at: string;
     servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -167,6 +170,8 @@ export type CreateRecipeCommand = Pick<
     visibility: RecipeVisibility;
     /** Number of servings the recipe yields (1-99 or null if not specified). */
     servings?: number | null;
+    /** Flag indicating recipe is designed for Thermomix/Lidlomix (Termorobot). Defaults to false if not provided. */
+    is_termorobot?: boolean;
 };
 
 /**

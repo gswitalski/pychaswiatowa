@@ -12,6 +12,7 @@ export interface GetPublicRecipesQuery {
     sortField: 'created_at' | 'name';
     sortDirection: 'asc' | 'desc';
     q?: string;
+    termorobot?: boolean;
 }
 
 /**

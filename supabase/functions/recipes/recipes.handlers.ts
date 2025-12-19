@@ -102,6 +102,12 @@ const createRecipeSchema = z.object({
         .nullable()
         .optional()
         .transform((val) => val ?? null),
+    is_termorobot: z
+        .boolean({
+            invalid_type_error: 'is_termorobot must be a boolean',
+        })
+        .optional()
+        .default(false),
 });
 
 /**
@@ -172,6 +178,11 @@ const updateRecipeSchema = z
                 invalid_type_error: 'Image path must be a string',
             })
             .nullable()
+            .optional(),
+        is_termorobot: z
+            .boolean({
+                invalid_type_error: 'is_termorobot must be a boolean',
+            })
             .optional(),
     })
     .refine(
@@ -249,6 +260,16 @@ const getRecipesQuerySchema = z.object({
         .transform((val) => {
             if (!val || val.trim().length === 0) return undefined;
             return val.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+        }),
+    'filter[termorobot]': z
+        .string()
+        .optional()
+        .transform((val) => {
+            if (!val) return undefined;
+            const lowerVal = val.toLowerCase().trim();
+            if (lowerVal === 'true' || lowerVal === '1') return true;
+            if (lowerVal === 'false' || lowerVal === '0') return false;
+            throw new Error('filter[termorobot] must be true, false, 1, or 0');
         }),
     search: z
         .string()
@@ -328,6 +349,7 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
                 categoryId: params['filter[category_id]'],
                 tags: params['filter[tags]'],
                 search: params.search,
+                termorobot: params['filter[termorobot]'],
             }
         );
 
