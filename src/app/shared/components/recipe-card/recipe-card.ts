@@ -26,6 +26,8 @@ export interface RecipeCardData {
     categoryName?: string | null;
     /** Opcjonalny slug dla SEO-friendly URLs (używany w widokach publicznych) */
     slug?: string;
+    /** Czy przepis jest przeznaczony dla termorobota (Thermomix/Lidlomix) */
+    isTermorobot?: boolean;
 }
 
 /**
@@ -73,6 +75,9 @@ export class RecipeCardComponent {
 
     /** Czy przepis jest w kolekcjach użytkownika (dla badge "W moich kolekcjach") */
     readonly inMyCollections = input<boolean>(false);
+
+    /** Czy przepis jest przeznaczony dla termorobota (Thermomix/Lidlomix) */
+    readonly isTermorobot = input<boolean>(false);
 
     /** Event emitowany po kliknięciu opcji usunięcia */
     readonly remove = output<void>();

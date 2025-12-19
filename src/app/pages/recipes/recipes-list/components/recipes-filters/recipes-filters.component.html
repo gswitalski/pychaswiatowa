@@ -78,5 +78,23 @@
             </mat-autocomplete>
         </mat-form-field>
     </div>
+
+    <!-- Termorobot filter -->
+    <div class="termorobot-section">
+        <span class="termorobot-label">Termorobot:</span>
+        <mat-chip-listbox
+            class="termorobot-chips"
+            [value]="termorobot"
+            (change)="onTermorobotChange($event.value)"
+            aria-label="Filtr Termorobot"
+        >
+            <mat-chip-option [value]="null">Wszystkie</mat-chip-option>
+            <mat-chip-option [value]="true">
+                <mat-icon matChipAvatar>blender</mat-icon>
+                Termorobot
+            </mat-chip-option>
+            <mat-chip-option [value]="false">Bez termorobota</mat-chip-option>
+        </mat-chip-listbox>
+    </div>
 </div>
 

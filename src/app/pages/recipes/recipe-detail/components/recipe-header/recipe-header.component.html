@@ -10,6 +10,12 @@
     }
 
     <div class="recipe-meta">
+        @if (recipe().is_termorobot) {
+            <mat-chip class="termorobot-badge non-clickable">
+                <mat-icon matChipAvatar>blender</mat-icon>
+                Termorobot
+            </mat-chip>
+        }
         @if (getCategoryName(recipe())) {
             <!-- Prywatny kontekst: kategoria jako link -->
             @if (!isPublic()) {

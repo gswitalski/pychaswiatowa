@@ -30,6 +30,8 @@ export interface GetRecipesParams {
     tags?: string[];
     /** Widok: 'my_recipes' - moje przepisy + cudze z moich kolekcji, domyślnie wszystkie */
     view?: 'my_recipes';
+    /** Filtr termorobot: true = tylko termorobot, false = bez termorobota, null/undefined = wszystkie */
+    termorobot?: boolean | null;
 }
 
 @Injectable({
@@ -95,6 +97,10 @@ export class RecipesService {
 
         if (params.view) {
             queryParams.append('view', params.view);
+        }
+
+        if (params.termorobot !== null && params.termorobot !== undefined) {
+            queryParams.append('filter[termorobot]', params.termorobot.toString());
         }
 
         const queryString = queryParams.toString();

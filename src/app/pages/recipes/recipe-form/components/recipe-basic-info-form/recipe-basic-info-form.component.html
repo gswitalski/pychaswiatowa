@@ -64,5 +64,12 @@
         }
         <mat-hint>Opcjonalne. Zakres 1–99.</mat-hint>
     </mat-form-field>
+
+    <div class="termorobot-toggle">
+        <mat-slide-toggle [formControl]="isTermorobotControl">
+            Termorobot (Thermomix/Lidlomix)
+        </mat-slide-toggle>
+        <p class="toggle-hint">Zaznacz, jeśli przepis jest przeznaczony dla urządzeń typu Thermomix lub Lidlomix</p>
+    </div>
 </div>
 

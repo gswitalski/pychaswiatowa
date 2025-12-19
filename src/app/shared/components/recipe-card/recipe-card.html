@@ -12,21 +12,28 @@
             </div>
             }
 
-            @if (isOwnRecipe()) {
-            <div class="recipe-badge" aria-label="Mój przepis">
-                <mat-chip-set>
-                    <mat-chip>Mój przepis</mat-chip>
-                </mat-chip-set>
-            </div>
-            }
+            <div class="recipe-badges">
+                @if (isOwnRecipe()) {
+                    <mat-chip-set>
+                        <mat-chip>Mój przepis</mat-chip>
+                    </mat-chip-set>
+                }
 
-            @if (inMyCollections() && !isOwnRecipe()) {
-            <div class="recipe-badge" aria-label="W moich kolekcjach">
-                <mat-chip-set>
-                    <mat-chip>W moich kolekcjach</mat-chip>
-                </mat-chip-set>
+                @if (inMyCollections() && !isOwnRecipe()) {
+                    <mat-chip-set>
+                        <mat-chip>W moich kolekcjach</mat-chip>
+                    </mat-chip-set>
+                }
+
+                @if (isTermorobot() || recipe().isTermorobot) {
+                    <mat-chip-set>
+                        <mat-chip class="termorobot-chip">
+                            <mat-icon matChipAvatar>blender</mat-icon>
+                            Termorobot
+                        </mat-chip>
+                    </mat-chip-set>
+                }
             </div>
-            }
 
             @if (showRemoveAction()) {
             <button

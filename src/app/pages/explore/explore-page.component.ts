@@ -229,6 +229,7 @@ export class ExplorePageComponent {
             imageUrl: dto.image_path,
             categoryName: dto.category?.name ?? null,
             slug: this.slugify(dto.name),
+            isTermorobot: dto.is_termorobot ?? false,
         };
     }
 

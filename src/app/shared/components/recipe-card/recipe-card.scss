@@ -67,6 +67,42 @@
     }
 }
 
+.recipe-badges {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    mat-chip-set {
+        margin: 0;
+
+        mat-chip {
+            --mdc-chip-label-text-size: 0.75rem;
+            --mdc-chip-label-text-weight: 500;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            background-color: var(--mat-sys-secondary-container);
+            color: var(--mat-sys-on-secondary-container);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+            &.termorobot-chip {
+                background-color: var(--mat-sys-tertiary-container);
+                color: var(--mat-sys-on-tertiary-container);
+
+                mat-icon {
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                }
+            }
+        }
+    }
+}
+
 .card-menu-button {
     position: absolute;
     top: 8px;

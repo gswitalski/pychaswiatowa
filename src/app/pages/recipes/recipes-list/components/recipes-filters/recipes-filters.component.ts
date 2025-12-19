@@ -61,6 +61,7 @@ export class RecipesFiltersComponent implements OnInit {
     private readonly _categoryId = signal<number | null>(null);
     private readonly _selectedTags = signal<string[]>([]);
     private readonly _sortOption = signal<SortOption>('created_at_desc');
+    private readonly _termorobot = signal<boolean | null>(null);
 
     /** Input dla nowego tagu */
     readonly tagInput = signal<string>('');
@@ -102,6 +103,10 @@ export class RecipesFiltersComponent implements OnInit {
         return this._sortOption();
     }
 
+    get termorobot(): boolean | null {
+        return this._termorobot();
+    }
+
     constructor() {
         // Inicjalizacja stanu z initialFilters
         effect(() => {
@@ -112,6 +117,7 @@ export class RecipesFiltersComponent implements OnInit {
             this._sortOption.set(
                 `${filters.sortBy}_${filters.sortDirection}` as SortOption
             );
+            this._termorobot.set(filters.termorobot);
         }, { allowSignalWrites: true });
     }
 
@@ -162,6 +168,11 @@ export class RecipesFiltersComponent implements OnInit {
         this.emitFilters();
     }
 
+    onTermorobotChange(value: boolean | null): void {
+        this._termorobot.set(value);
+        this.emitFilters();
+    }
+
     private emitFilters(): void {
         const sortOption = this._sortOption();
         // Znajdź ostatni underscore żeby poprawnie rozdzielić 'created_at_desc'
@@ -175,6 +186,7 @@ export class RecipesFiltersComponent implements OnInit {
             tags: this._selectedTags(),
             sortBy,
             sortDirection,
+            termorobot: this._termorobot(),
         };
 
         this.filtersChange.emit(filters);

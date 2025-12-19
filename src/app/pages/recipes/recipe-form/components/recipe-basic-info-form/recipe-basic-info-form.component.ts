@@ -4,6 +4,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @Component({
     selector: 'pych-recipe-basic-info-form',
@@ -14,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
         MatInputModule,
         MatButtonModule,
         MatIconModule,
+        MatSlideToggleModule,
     ],
     templateUrl: './recipe-basic-info-form.component.html',
     styleUrl: './recipe-basic-info-form.component.scss',
@@ -23,6 +25,7 @@ export class RecipeBasicInfoFormComponent {
     @Input({ required: true }) nameControl!: FormControl<string>;
     @Input({ required: true }) descriptionControl!: FormControl<string>;
     @Input({ required: true }) servingsControl!: FormControl<number | null>;
+    @Input({ required: true }) isTermorobotControl!: FormControl<boolean>;
 
     /**
      * Czyści pole liczby porcji (ustawia wartość na null)

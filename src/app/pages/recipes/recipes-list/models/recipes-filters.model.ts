@@ -12,6 +12,8 @@ export interface RecipesFiltersViewModel {
     sortBy: 'name' | 'created_at';
     /** Kierunek sortowania */
     sortDirection: 'asc' | 'desc';
+    /** Filtr termorobot: true = tylko termorobot, false = bez termorobota, null = wszystkie */
+    termorobot: boolean | null;
 }
 
 /**
@@ -32,5 +34,6 @@ export const DEFAULT_FILTERS: RecipesFiltersViewModel = {
     tags: [],
     sortBy: 'created_at',
     sortDirection: 'desc',
+    termorobot: null,
 };
 

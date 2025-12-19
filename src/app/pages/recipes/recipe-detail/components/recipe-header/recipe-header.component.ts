@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
 import { RecipeDetailDto, PublicRecipeDetailDto, TagDto } from '../../../../../../../shared/contracts/types';
 
 /**
@@ -25,7 +26,7 @@ function isTagDtoArray(tags: TagDto[] | string[]): tags is TagDto[] {
 @Component({
     selector: 'pych-recipe-header',
     standalone: true,
-    imports: [RouterLink, MatChipsModule],
+    imports: [RouterLink, MatChipsModule, MatIconModule],
     templateUrl: './recipe-header.component.html',
     styleUrl: './recipe-header.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

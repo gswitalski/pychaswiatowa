@@ -224,6 +224,7 @@ export class LandingPageComponent implements OnInit {
             slug: this.slugify(dto.name),
             imageUrl: dto.image_path,
             categoryName: dto.category?.name ?? null,
+            isTermorobot: dto.is_termorobot ?? false,
         };
     }
 

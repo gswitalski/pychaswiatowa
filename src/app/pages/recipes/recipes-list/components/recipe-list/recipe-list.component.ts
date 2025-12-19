@@ -58,6 +58,7 @@ export class RecipeListComponent {
             name: recipe.name,
             imageUrl: recipe.image_path,
             categoryName: recipe.category_name ?? null,
+            isTermorobot: recipe.is_termorobot ?? false,
         };
     }
 }

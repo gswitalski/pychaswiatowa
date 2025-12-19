@@ -47,6 +47,7 @@ export interface RecipeFormViewModel {
     ingredients: FormArray<FormControl<string>>;
     steps: FormArray<FormControl<string>>;
     servings: FormControl<number | null>;
+    isTermorobot: FormControl<boolean>;
 }
 
 @Component({
@@ -143,6 +144,11 @@ export class RecipeFormPageComponent implements OnInit {
         return this.form.controls.servings;
     }
 
+    /** Quick access to isTermorobot FormControl */
+    get isTermorobotControl(): FormControl<boolean> {
+        return this.form.controls.isTermorobot;
+    }
+
     ngOnInit(): void {
         this.initForm();
         this.loadCategories();
@@ -179,6 +185,7 @@ export class RecipeFormPageComponent implements OnInit {
             servings: this.fb.control<number | null>(null, {
                 validators: [Validators.min(1), Validators.max(99), this.integerValidator()],
             }),
+            isTermorobot: this.fb.control<boolean>(false, { nonNullable: true }),
         });
     }
 
@@ -222,6 +229,7 @@ export class RecipeFormPageComponent implements OnInit {
             categoryId: recipe.category_id,
             visibility: recipe.visibility ?? 'PRIVATE',
             servings: recipe.servings ?? null,
+            isTermorobot: recipe.is_termorobot ?? false,
         });
 
         // Set current image URL
@@ -334,6 +342,7 @@ export class RecipeFormPageComponent implements OnInit {
             steps_raw: formValue.steps.join('\n'),
             tags: formValue.tags,
             servings: servings,
+            is_termorobot: formValue.isTermorobot,
         };
     }
 

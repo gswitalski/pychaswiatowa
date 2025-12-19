@@ -195,6 +195,7 @@ export class RecipesListPageComponent implements OnInit {
             categoryId: filters.categoryId,
             tags: filters.tags.length > 0 ? filters.tags : undefined,
             view: 'my_recipes',
+            termorobot: filters.termorobot,
         };
 
         this.recipesService.getRecipes(params).subscribe({
