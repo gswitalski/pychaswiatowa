@@ -29,6 +29,7 @@ Public endpoints are available without authentication and must return **only** r
     -   `limit` (optional, integer, default: 20): The number of items per page.
     -   `sort` (optional, string, default: `created_at.desc`): Sort order. e.g., `created_at.desc`, `name.asc`.
     -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
+    -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
@@ -40,6 +41,7 @@ Public endpoints are available without authentication and must return **only** r
               "name": "Apple Pie",
               "description": "A classic dessert.",
               "servings": 6,
+              "is_termorobot": false,
               "image_path": "path/to/image.jpg",
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
@@ -72,6 +74,7 @@ Public endpoints are available without authentication and must return **only** r
           "name": "Apple Pie",
           "description": "A classic dessert.",
           "servings": 6,
+          "is_termorobot": false,
           "image_path": "path/to/image.jpg",
           "visibility": "PUBLIC",
           "category": { "id": 2, "name": "Dessert" },
@@ -114,6 +117,7 @@ Public endpoints are available without authentication and must return **only** r
         -   `my_recipes`: Recipes authored by the authenticated user **plus** public recipes authored by others that are included in at least one collection owned by the authenticated user.
     -   `filter[category_id]` (optional, integer): Filter by category ID.
     -   `filter[tags]` (optional, string): Comma-separated list of tag names to filter by.
+    -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`).
     -   `search` (optional, string): Full-text search across name, ingredients, and tags.
 -   **Success Response**:
     -   **Code**: `200 OK`
@@ -125,6 +129,7 @@ Public endpoints are available without authentication and must return **only** r
               "id": 1,
               "name": "Apple Pie",
               "servings": 6,
+              "is_termorobot": false,
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
               "is_owner": true,
@@ -155,6 +160,7 @@ Public endpoints are available without authentication and must return **only** r
       "name": "New Awesome Recipe",
       "description": "A short description.",
       "servings": 4,
+      "is_termorobot": false,
       "category_id": 2,
       "visibility": "PRIVATE",
       "ingredients_raw": "# Dough\n- 500g flour\n- 250ml water",
@@ -171,6 +177,7 @@ Public endpoints are available without authentication and must return **only** r
           "name": "New Awesome Recipe",
           "description": "A short description.",
           "servings": 4,
+          "is_termorobot": false,
           "category_id": 2,
           "visibility": "PRIVATE",
           "ingredients": [
@@ -215,6 +222,7 @@ Public endpoints are available without authentication and must return **only** r
           "name": "Pizza",
           "description": null,
           "servings": null,
+          "is_termorobot": false,
           "category_id": null,
           "visibility": "PRIVATE",
           "ingredients": [
@@ -258,6 +266,7 @@ Public endpoints are available without authentication and must return **only** r
       "name": "Updated Awesome Recipe",
       "description": "An updated description.",
       "servings": 6,
+      "is_termorobot": true,
       "visibility": "PUBLIC"
     }
     ```
@@ -623,6 +632,7 @@ Public endpoints are available without authentication and must return **only** r
 -   **Validation**: Input validation will be performed at the API level before data is sent to the database. This includes checking for required fields, data types, and length constraints as defined in the database schema.
     -   `recipes.name`: required, 1-150 characters.
     -   `recipes.servings`: optional, integer, 1-99. Can be `null` (no value provided).
+    -   `recipes.is_termorobot`: optional, boolean. Default: `false`.
     -   `recipes.visibility`: required, enum: 'PRIVATE', 'SHARED', 'PUBLIC'. Default: 'PRIVATE'.
     -   `recipes.ingredients_raw`, `recipes.steps_raw`: required.
     -   `POST /recipes/{id}/image`:

@@ -13,9 +13,7 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-chce podczas edycji przepisu podać liczbę porcji (opcjonalnie)
-a podczas przegldania przepisu zobaczyć liczbe porcji pod tytułem przepisu
-
+chcę podczas edycji i tworzenia przepisu moć ustawić dodatkową flagę przepisu o nazwie 'Termorobot' aby oznaczyć te przpisy, które są przeznaczone na roboty tylu Thermomix, Lidlomix
 
 </nowa_funkcjonalnosc>
 

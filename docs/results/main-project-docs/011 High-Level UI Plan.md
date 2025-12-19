@@ -27,6 +27,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe informacje do wyświetlenia:** Lista kart przepisów (zdjęcie, nazwa, kategoria), pole wyszukiwania, stronicowanie.
 - **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-paginator`, wskaźniki ładowania (Skeletons).
 - **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników"). W trybie zalogowanego: oznaczyć na kartach przepisy użytkownika jako "Twój przepis".
+    - (Przyszłościowo / API-ready) Aplikacja może zostać rozszerzona o filtrowanie publicznych przepisów po metadanych (np. "Termorobot"), jednak w MVP pozostaje **wyłącznie wyszukiwanie tekstowe**.
 
 **3. Szczegóły przepisu (uniwersalny widok)**
 - **Ścieżka:** prywatnie `/recipes/:id` oraz publicznie `/explore/recipes/:id`
@@ -43,7 +44,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - Przy próbie dostępu do niepublicznego przepisu innego autora: komunikat o braku dostępu
     - **Zalogowany (własny przepis):**
         - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Edytuj", "Usuń"
-- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
+- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, **badge/chip "Termorobot" (jeśli ustawione)**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. (Opcjonalnie) przekierowania/normalizacja URL w warstwie frontendu: `/explore/recipes/:id-:slug` -> `/explore/recipes/:id`.
 
@@ -75,7 +76,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/my-recipies` (alias: `/my-recipes`)
 - **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie biblioteki przepisów użytkownika: jego własnych przepisów oraz publicznych przepisów innych autorów zapisanych w co najmniej jednej jego kolekcji.
 - **Header:** Tytuł "Twoje Przepisy", Przycisk "Dodaj Przepis" (Split Button: "Ręcznie" | "Import").
-- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem (np. "Moje" / "W moich kolekcjach"), paginacja. Dla przepisów nie mojego autorstwa widoczny chip/etykieta "W moich kolekcjach".
+- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem (np. "Moje" / "W moich kolekcjach", **"Termorobot"**), paginacja. Dla przepisów nie mojego autorstwa widoczny chip/etykieta "W moich kolekcjach". Dla przepisów oznaczonych "Termorobot" widoczny dodatkowy badge/chip "Termorobot" na karcie.
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-paginator`, `mat-card`, `mat-chip-list`, komponent "stanu pustego" z akcją.
 - **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy. Wskaźniki ładowania (Skeletons). Obsługa stanu pustego z wezwaniem do akcji "Utwórz pierwszy przepis". Przepisy innych autorów pojawiają się na tej liście wyłącznie, gdy są publiczne i znajdują się w kolekcjach użytkownika.
 
@@ -87,7 +88,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - Zalogowany użytkownik przeglądający cudzy publiczny przepis
     - Zalogowany użytkownik przeglądający własny przepis (pełne akcje)
 - **Header:** Tytuł przepisu. Akcje zależne od kontekstu (patrz punkt 3).
-- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
+- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, **badge/chip "Termorobot" (jeśli ustawione)**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji. Dla zalogowanego nie-autora przyciski "Edytuj" i "Usuń" nie są wyświetlane (również gdy wejście nastąpiło z listy `/my-recipies`).
 
@@ -95,11 +96,12 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
 - **Główny cel:** Tworzenie i modyfikacja przepisu.
 - **Header:** Tytuł "Nowy przepis" / "Edycja". Akcje: "Anuluj", "Zapisz" (Sticky - zawsze widoczny).
-- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, **liczba porcji (opcjonalnie)**, kategoria, widoczność), Składniki, Kroki, Zdjęcie.
+- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, **liczba porcji (opcjonalnie)**, **Termorobot (toggle/checkbox, opcjonalnie, domyślnie wyłączone)**, kategoria, widoczność), Składniki, Kroki, Zdjęcie.
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), `ImageUploadComponent` (strefa paste/drop + fallback file picker), `EditableListComponent` (składniki/kroki).
 - **Względy UX, dostępności i bezpieczeństwa:**
     - Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
     - Pole **"Liczba porcji"** jest opcjonalne, przyjmuje tylko liczbę całkowitą w zakresie `1-99`, może zostać wyczyszczone (brak wartości). W szczegółach przepisu wartość jest wyświetlana pod tytułem (np. `4 porcje`, `6 porcji`).
+    - Flaga **"Termorobot"** jest opcjonalna, domyślnie wyłączona. Kontrolka jest jednoznacznie opisana (np. "Termorobot (Thermomix/Lidlomix)"), a stan jest zapisywany razem z przepisem i odtwarzany przy ponownym wejściu w edycję.
     - Sekcja **Zdjęcie** działa jako **strefa docelowa**: użytkownik może wkleić obraz ze schowka (Ctrl+V) lub przeciągnąć i upuścić plik obrazu. Opcja "Wybierz plik" pozostaje jako fallback.
     - Drag&drop dotyczy **pliku obrazu (File) z dysku** — nie zakładamy obsługi upuszczania samych URL-i / linków do obrazków ze stron WWW w MVP.
     - Strefa zdjęcia ma czytelne stany: `idle` (instrukcja), `dragover` (podświetlenie), `uploading` (progres/spinner), `success` (podgląd), `error` (komunikat).
@@ -167,7 +169,7 @@ Taka struktura zapewnia jasny podział na to "gdzie jestem" (Topbar/Sidebar) i "
 
 Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności oraz efektywności deweloperskiej:
 
-- **Karta przepisu (`RecipeCardComponent`):** Komponent wyświetlający miniaturę przepisu (zdjęcie, nazwa, kategoria) na listach (`/my-recipies`, `/collections/:id`).
+- **Karta przepisu (`RecipeCardComponent`):** Komponent wyświetlający miniaturę przepisu (zdjęcie, nazwa, kategoria) na listach (`/my-recipies`, `/collections/:id`). Jeśli przepis ma flagę "Termorobot", karta pokazuje dodatkowy badge/chip "Termorobot" odpowiednią ikonką.
 - **Komponent "stanu pustego" (`EmptyStateComponent`):** Generyczny komponent wyświetlający informację (np. "Nie masz jeszcze żadnych przepisów") i przycisk z wezwaniem do akcji (np. "Dodaj pierwszy przepis"). Używany na listach przepisów i kolekcji.
 - **Komponent przesyłania pliku (`ImageUploadComponent`):** Komponent obsługujący wybór, walidację i podgląd zdjęcia w formularzu przepisu, z obsługą **wklejania ze schowka (Ctrl+V)** oraz **drag&drop** (plik z dysku) w trybie edycji. Umożliwia auto-upload, pokazuje progres oraz udostępnia akcje: "Wybierz plik" (fallback), "Usuń zdjęcie", "Cofnij" (Undo).
 - **Modal dodawania do kolekcji (`AddToCollectionDialogComponent`):** Okno modalne pozwalające na wybranie istniejącej kolekcji z listy lub stworzenie nowej i dodanie do niej bieżącego przepisu.
