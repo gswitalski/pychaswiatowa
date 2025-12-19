@@ -517,6 +517,7 @@ function mapToRecipeDetailDto(data: any): RecipeDetailDto {
         steps: parseRecipeContent(data.steps),
         tags: parseTagsContent(data.tags),
         servings: data.servings ? Number(data.servings) : null,
+        is_termorobot: Boolean(data.is_termorobot),
     };
 }
 
@@ -944,6 +945,7 @@ export async function importRecipeFromText(
         tags: [],
         visibility: 'PRIVATE', // Import always creates private recipes
         servings: null, // No servings information from import
+        is_termorobot: false, // Import nie ustawia flagi termorobot
     };
 
     logger.info('Creating recipe from parsed text', { name });

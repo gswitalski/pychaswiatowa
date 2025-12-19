@@ -11,63 +11,29 @@ Zapoznaj się z dokumentamu projektu
 
 
 <aktualne_zachowanie>
-endpoint POST http://127.0.0.1:54331/functions/v1/recipes/import
-z body:
+endpoint PUT
+
+http://127.0.0.1:54331/functions/v1/recipes/3
+
+
+
+
+
+
 {
-  "raw_text": "# Za’atar – wersja dostępna w polskich sklepach\n\n## Opis\nBliskowschodnia klasyka w sprytnej adaptacji: oregano i tymianek udają za’atar, a efekt jest zaskakująco autentyczny. Idealny dowód, że geografia nie musi ograniczać smaku.\n\n## Składniki\n- 1/2 szklanki suszonego oregano\n- 2 łyżki suszonego tymianku\n- 3 łyżki sezamu niesolonego\n- 2 łyżki sumaku\n- 1/2 łyżeczki soli morskiej\n\n## Kroki\n- Prażyć sezam na suchej patelni na średnim ogniu przez 5–10 minut, mieszając, aż lekko zbrązowieje i zacznie pachnieć orzechowo\n- Zmielić oregano i tymianek w młynku do kawy lub moździerzu na drobny proszek\n- Połączyć wszystkie składniki w misce i dokładnie wymieszać\n\n## Przechowywanie i użycie\n- Przechowywać w szczelnym słoiku, w suchym i ciemnym miejscu, do 6 miesięcy  \n- Używać do oliwy z chlebem, hummusu, grillowanych warzyw lub mięs; można posypywać bezpośrednio lub mieszać z oliwą"
-}
-zwraca
-{
-  "id": 52,
-  "user_id": "c553b8d1-3dbb-488f-b610-97eb6f95d357",
-  "category_id": null,
-  "name": "Za’atar – wersja dostępna w polskich sklepach",
-  "description": null,
-  "image_path": null,
-  "created_at": "2025-12-17T21:12:47.637536+00:00",
-  "updated_at": "2025-12-17T21:12:47.637536+00:00",
-  "category_name": null,
+  "name": "Rosół",
+  "description": "Tradycyjna polska zupa, podstawa wielu dań. Idealny na niedzielny obiad.",
+  "category_id": 3,
   "visibility": "PRIVATE",
-  "ingredients": [
-    {
-      "type": "item",
-      "content": "1/2 szklanki suszonego oregano"
-    },
-    {
-      "type": "item",
-      "content": "2 łyżki suszonego tymianku"
-    },
-    {
-      "type": "item",
-      "content": "3 łyżki sezamu niesolonego"
-    },
-    {
-      "type": "item",
-      "content": "2 łyżki sumaku"
-    },
-    {
-      "type": "item",
-      "content": "1/2 łyżeczki soli morskiej"
-    }
-  ],
-  "steps": [
-    {
-      "type": "item",
-      "content": "Prażyć sezam na suchej patelni na średnim ogniu przez 5–10 minut, mieszając, aż lekko zbrązowieje i zacznie pachnieć orzechowo"
-    },
-    {
-      "type": "item",
-      "content": "Zmielić oregano i tymianek w młynku do kawy lub moździerzu na drobny proszek"
-    },
-    {
-      "type": "item",
-      "content": "Połączyć wszystkie składniki w misce i dokładnie wymieszać"
-    }
-  ],
+  "ingredients_raw": "# Mięso\r\n1 kg mięsa wołowego (np. mostek)\r\n500g mięsa drobiowego (skrzydełka, nóżki)\r\n# Warzywa\r\n2 marchewki\r\n1 pietruszka\r\n1 seler\r\n1 cebula\r\n1 por\r\n2 ząbki czosnku\r\n# Przyprawy\r\nliść laurowy\r\nziele angielskie\r\nsól, pieprz\r\nnatka pietruszki",
+  "steps_raw": "# Przygotowanie\r\nMięso umyj i wrzuć do dużego garnka z zimną wodą.\r\nGotuj na małym ogniu, zbierając szumowiny.\r\nWarzywa umyj, obierz i pokrój na większe kawałki.\r\nPo około godzinie dodaj warzywa i przyprawy.\r\nGotuj jeszcze przez 1,5-2 godziny na małym ogniu.\r\nPod koniec dodaj sól i pieprz do smaku.\r\nPrzecedź przez sito, mięso pokrój i dodaj z powrotem.\r\nPodawaj z makaronem i posiekaną natką pietruszki.",
   "tags": [],
-  "servings": null
+  "servings": null,
+  "is_termorobot": true
 }
 
+nie zapisuje w bazie danych wartosci
+"is_termorobot": true
 </aktualne_zachowanie>
 
 
@@ -76,7 +42,8 @@ zwraca
 endpoin zwaca description takie jak było podane na wejści (nie zapisuje się w bazie)
 
 </oczekiwane_zachowanie>
-
+zapisuje w bazie danych wartosc
+"is_termorobot": true
 
 <implementation_rules>
 
