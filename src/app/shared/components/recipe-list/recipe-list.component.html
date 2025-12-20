@@ -4,17 +4,27 @@
             <mat-spinner diameter="48"></mat-spinner>
         </div>
     } @else if (recipes().length === 0) {
-        <pych-empty-state />
+        @if (emptyStateTemplate) {
+            <ng-container *ngTemplateOutlet="emptyStateTemplate" />
+        } @else {
+            <pych-empty-state
+                [icon]="emptyStateIcon()"
+                [title]="emptyStateTitle()"
+                [description]="emptyStateDescription()"
+            />
+        }
     } @else {
         <div class="recipes-grid">
-            @for (recipe of recipes(); track recipe.id) {
+            @for (recipe of recipes(); track recipe.card.id) {
                 <pych-recipe-card
-                    [recipe]="mapToCardData(recipe)"
-                    [showCategory]="true"
+                    [recipe]="recipe.card"
+                    [showCategory]="showCategory()"
                     [showRemoveAction]="showRemoveAction()"
-                    [isOwnRecipe]="recipe.is_owner"
-                    [inMyCollections]="recipe.in_my_collections"
-                    (remove)="onRemoveRecipe(recipe.id)"
+                    [isOwnRecipe]="recipe.isOwnRecipe ?? false"
+                    [inMyCollections]="recipe.inMyCollections ?? false"
+                    [routeType]="routeType()"
+                    [isTermorobot]="recipe.card.isTermorobot ?? false"
+                    (remove)="onRemoveRecipe(recipe.card.id)"
                 />
             }
         </div>
@@ -30,11 +40,10 @@
                 [length]="pag.totalItems"
                 [pageSize]="pageSize()"
                 [pageIndex]="pag.currentPage - 1"
-                [pageSizeOptions]="[6, 12, 24]"
+                [pageSizeOptions]="pageSizeOptions()"
                 (page)="onPageChange($event)"
                 showFirstLastButtons
             />
         }
     }
 </div>
-

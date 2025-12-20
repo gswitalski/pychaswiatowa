@@ -16,7 +16,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin } from 'rxjs';
 
 import { RecipesFiltersComponent } from './components/recipes-filters/recipes-filters.component';
-import { RecipeListComponent } from './components/recipe-list/recipe-list.component';
+import {
+    RecipeListComponent,
+    RecipeListItemViewModel,
+} from '../../../shared/components/recipe-list/recipe-list.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { RecipesService, GetRecipesParams } from '../services/recipes.service';
@@ -99,6 +102,19 @@ export class RecipesListPageComponent implements OnInit {
     readonly isLoading = computed(() => this.state().isLoading);
     readonly isInitialLoading = computed(() => this.state().isInitialLoading);
     readonly error = computed(() => this.state().error);
+    readonly recipeListItems = computed<RecipeListItemViewModel[]>(() =>
+        this.recipes().map((recipe) => ({
+            card: {
+                id: recipe.id,
+                name: recipe.name,
+                imageUrl: recipe.image_path,
+                categoryName: recipe.category_name ?? null,
+                isTermorobot: recipe.is_termorobot ?? false,
+            },
+            isOwnRecipe: recipe.is_owner,
+            inMyCollections: recipe.in_my_collections,
+        }))
+    );
 
     /** Opcje paginatora */
     readonly pageSizeOptions = [6, 12, 24, 48];

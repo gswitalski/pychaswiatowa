@@ -54,46 +54,19 @@
 
     <!-- Główna zawartość - siatka przepisów -->
     @if (!pageState().isInitialLoading && !pageState().errorMessage) {
-        <div class="content-wrapper" [class.loading]="pageState().isLoading">
-            <!-- Empty state - brak wyników -->
-            @if (recipeCards().length === 0 && !pageState().isLoading) {
-                <pych-empty-state
-                    icon="search_off"
-                    title="Nie znaleziono przepisów"
-                    [description]="
-                        queryState().q
-                            ? 'Spróbuj zmienić frazę wyszukiwania lub wyszukaj czegoś innego'
-                            : 'Brak publicznych przepisów do wyświetlenia'
-                    "
-                />
-            }
-
-            <!-- Siatka kart przepisów -->
-            @if (recipeCards().length > 0) {
-                <div class="recipes-grid" role="list">
-                    @for (recipeVm of recipeCards(); track recipeVm.card.id) {
-                        <pych-recipe-card
-                            [recipe]="recipeVm.card"
-                            [isOwnRecipe]="recipeVm.isOwnRecipe"
-                            [inMyCollections]="recipeVm.inMyCollections"
-                            routeType="public"
-                            role="listitem"
-                        />
-                    }
-                </div>
-
-                <!-- Paginator -->
-                <mat-paginator
-                    class="recipes-paginator"
-                    [length]="pageState().pagination.totalItems"
-                    [pageSize]="queryState().limit"
-                    [pageIndex]="queryState().page - 1"
-                    [pageSizeOptions]="[12, 24, 48]"
-                    [showFirstLastButtons]="true"
-                    (page)="onPageChange($event)"
-                    aria-label="Wybierz stronę wyników"
-                />
-            }
+        <div class="content-wrapper">
+            <pych-recipe-list
+                [recipes]="recipeListItems()"
+                [isLoading]="pageState().isLoading"
+                [pagination]="pageState().pagination"
+                [pageSize]="queryState().limit"
+                [pageSizeOptions]="[12, 24, 48]"
+                routeType="public"
+                [emptyStateTitle]="'Nie znaleziono przepisów'"
+                [emptyStateDescription]="emptyStateDescription()"
+                [emptyStateIcon]="'search_off'"
+                (pageChange)="onPageChange($event)"
+            />
         </div>
     }
 </div>

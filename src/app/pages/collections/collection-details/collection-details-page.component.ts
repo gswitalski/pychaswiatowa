@@ -22,7 +22,10 @@ import {
     ConfirmDialogComponent,
     ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { RecipeListComponent } from '../../recipes/recipes-list/components/recipe-list/recipe-list.component';
+import {
+    RecipeListComponent,
+    RecipeListItemViewModel,
+} from '../../../shared/components/recipe-list/recipe-list.component';
 import { CollectionHeaderComponent } from './components/collection-header/collection-header.component';
 import {
     CollectionDetailsViewModel,
@@ -80,6 +83,19 @@ export class CollectionDetailsPageComponent implements OnDestroy {
     );
     readonly hasData = computed(
         () => !this.state().isLoading && !this.state().error && this.state().id > 0
+    );
+    readonly recipeListItems = computed<RecipeListItemViewModel[]>(() =>
+        this.state().recipes.map((recipe) => ({
+            card: {
+                id: recipe.id,
+                name: recipe.name,
+                imageUrl: recipe.image_path,
+                categoryName: recipe.category_name ?? null,
+                isTermorobot: recipe.is_termorobot ?? false,
+            },
+            isOwnRecipe: recipe.is_owner,
+            inMyCollections: recipe.in_my_collections,
+        }))
     );
 
     /** Page title - collection name or fallback */

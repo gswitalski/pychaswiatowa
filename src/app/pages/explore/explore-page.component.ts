@@ -8,8 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { PageEvent } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { catchError, of } from 'rxjs';
@@ -17,12 +16,14 @@ import { catchError, of } from 'rxjs';
 import { PublicRecipesService, GetPublicRecipesParams } from '../../core/services/public-recipes.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PublicRecipesSearchComponent } from '../landing/components/public-recipes-search/public-recipes-search';
-import { RecipeCardComponent, RecipeCardData } from '../../shared/components/recipe-card/recipe-card';
-import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { RecipeCardData } from '../../shared/components/recipe-card/recipe-card';
+import {
+    RecipeListComponent,
+    RecipeListItemViewModel,
+} from '../../shared/components/recipe-list/recipe-list.component';
 import {
     ExplorePageState,
     ExploreQueryState,
-    ExploreRecipeCardVm,
     DEFAULT_PAGE_STATE,
     DEFAULT_QUERY_STATE,
 } from './models/explore.model';
@@ -37,13 +38,10 @@ import { PublicRecipeListItemDto } from '../../../../shared/contracts/types';
     standalone: true,
     imports: [
         CommonModule,
-        MatPaginatorModule,
-        MatProgressSpinnerModule,
         MatButtonModule,
         MatIconModule,
         PublicRecipesSearchComponent,
-        RecipeCardComponent,
-        EmptyStateComponent,
+        RecipeListComponent,
     ],
     templateUrl: './explore-page.component.html',
     styleUrl: './explore-page.component.scss',
@@ -68,16 +66,23 @@ export class ExplorePageComponent {
     readonly currentQuery = computed(() => this.queryState().q);
 
     /** Computed: lista kart przepisów z informacją o własności i kolekcjach */
-    readonly recipeCards = computed<ExploreRecipeCardVm[]>(() => {
+    readonly recipeListItems = computed<RecipeListItemViewModel[]>(() => {
         const items = this.pageState().items;
         const userId = this.currentUserId();
 
-        return items.map(dto => ({
+        return items.map((dto) => ({
             card: this.mapToRecipeCard(dto),
             isOwnRecipe: userId !== null && dto.author.id === userId,
             inMyCollections: dto.in_my_collections,
         }));
     });
+
+    /** Computed: opis dla stanu pustego zależny od wyszukiwanej frazy */
+    readonly emptyStateDescription = computed(() =>
+        this.queryState().q
+            ? 'Spróbuj zmienić frazę wyszukiwania lub wyszukaj czegoś innego'
+            : 'Brak publicznych przepisów do wyświetlenia'
+    );
 
     constructor() {
         // Pobierz ID zalogowanego użytkownika (jeśli jest)
