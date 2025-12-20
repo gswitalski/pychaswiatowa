@@ -157,7 +157,7 @@
 }
 
 // Tablet: zdjęcie nad headerem, składniki i kroki w 1 kolumnie
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     .recipe-header-section {
         display: flex;
         flex-direction: column-reverse;
