@@ -1,148 +1,20 @@
-<!-- Loading state -->
-@if (isLoading()) {
-    <div class="loading-container">
-        <mat-spinner diameter="48"></mat-spinner>
-        <p>Ładowanie przepisu...</p>
-    </div>
-}
-
-<!-- Error state -->
-@if (error() && !isLoading()) {
-    <div class="error-container">
-        <mat-icon class="error-icon">error_outline</mat-icon>
-        <h2 class="error-title">
-            @if (error()!.status === 404) {
-                Nie znaleziono przepisu
-            } @else if (error()!.status === 400) {
-                Nieprawidłowy adres
-            } @else {
-                Wystąpił błąd
-            }
-        </h2>
-        <p class="error-message">{{ error()!.message }}</p>
-
-        <div class="error-actions">
-            @if (!isAuthenticated() && error()!.status === 404) {
-                <!-- Dla gości bez dostępu - zachęta do logowania -->
-                <button mat-raised-button color="primary" (click)="onLogin()">
-                    <mat-icon>login</mat-icon>
-                    Zaloguj się
-                </button>
-                <button mat-stroked-button (click)="onRegister()">
-                    Zarejestruj się
-                </button>
-            } @else {
-                <button mat-raised-button color="primary" (click)="onBackToExplore()">
-                    <mat-icon>arrow_back</mat-icon>
-                    Wróć do przeglądania
-                </button>
-            }
-        </div>
-    </div>
-}
-
-<!-- Success state - recipe content -->
-@if (hasRecipe() && !isLoading() && !error()) {
-    <div class="recipe-detail-container">
-        <!-- Page header - akcje zależne od kontekstu (gość/zalogowany/właściciel) -->
-        @if (isAuthenticated()) {
-            <pych-page-header
-                [title]="pageTitle()"
-            >
-                @if (headerMode() === 'ownerActions') {
-                    <!-- Akcje dla właściciela przepisu -->
-                    <button
-                        mat-icon-button
-                        matTooltip="Dodaj do kolekcji"
-                        aria-label="Dodaj do kolekcji"
-                        (click)="onAddToCollection()"
-                    >
-                        <mat-icon>bookmark_add</mat-icon>
-                    </button>
-                    <button
-                        mat-icon-button
-                        matTooltip="Edytuj przepis"
-                        aria-label="Edytuj przepis"
-                        (click)="onEdit()"
-                    >
-                        <mat-icon>edit</mat-icon>
-                    </button>
-                    <button
-                        mat-icon-button
-                        matTooltip="Usuń przepis"
-                        aria-label="Usuń przepis"
-                        color="warn"
-                        (click)="onDelete()"
-                    >
-                        <mat-icon>delete</mat-icon>
-                    </button>
-                } @else if (headerMode() === 'addToCollection') {
-                    <!-- Akcje dla zalogowanego użytkownika - cudzy przepis -->
-                    <button
-                        mat-raised-button
-                        color="primary"
-                        (click)="onAddToCollection()"
-                        matTooltip="Dodaj ten przepis do swojej kolekcji"
-                        aria-label="Dodaj do kolekcji"
-                    >
-                        <mat-icon>bookmark_add</mat-icon>
-                        Dodaj do kolekcji
-                    </button>
-                }
-            </pych-page-header>
-        }
-
-        <div class="recipe-content">
-            <!-- Wiersz 1: Header - tytuł, opis (lewa) + zdjęcie (prawa) -->
-            <div class="recipe-header-section">
-                <div class="recipe-info">
-                    <pych-recipe-header
-                        [recipe]="recipe()!"
-                        [isPublic]="true"
-                    />
-                </div>
-
-                <pych-recipe-image
-                    [imageUrl]="recipe()!.image_path"
-                    [recipeName]="recipe()!.name ?? ''"
-                />
-            </div>
-
-            <!-- Wiersz 2: Składniki (lewa) + kroki przygotowania (prawa) -->
-            <div class="recipe-details">
-                <pych-recipe-content-list
-                    title="Składniki"
-                    [content]="recipe()!.ingredients"
-                    [isNumbered]="false"
-                />
-
-                <pych-recipe-content-list
-                    title="Kroki przygotowania"
-                    [content]="recipe()!.steps"
-                    [isNumbered]="true"
-                />
-            </div>
-
-            <!-- CTA Section at the bottom (only for guests) -->
-            @if (headerMode() === 'guest') {
-                <div class="bottom-cta-section">
-                    <mat-card class="cta-card">
-                        <mat-card-content>
-                            <mat-icon class="cta-icon">bookmark_border</mat-icon>
-                            <h3>Chcesz zapisać ten przepis?</h3>
-                            <p>Zaloguj się lub zarejestruj, aby dodać przepisy do swoich kolekcji!</p>
-                            <div class="cta-buttons">
-                                <button mat-raised-button color="primary" (click)="onLogin()">
-                                    Zaloguj się
-                                </button>
-                                <button mat-stroked-button color="primary" (click)="onRegister()">
-                                    Zarejestruj się
-                                </button>
-                            </div>
-                        </mat-card-content>
-                    </mat-card>
-                </div>
-            }
-        </div>
-    </div>
-}
+<pych-recipe-detail-view
+    [recipe]="recipe()"
+    [isLoading]="isLoading()"
+    [error]="error()"
+    [isAuthenticated]="isAuthenticated()"
+    [isOwner]="isOwner()"
+    [headerMode]="headerMode()"
+    [pageTitle]="pageTitle()"
+    [isPublicView]="true"
+    [showPageHeader]="isAuthenticated()"
+    [showGuestCta]="true"
+    [showAuthCtaOnError]="true"
+    backLabel="Wróć do przeglądania"
+    (login)="onLogin()"
+    (register)="onRegister()"
+    (back)="onBackToExplore()"
+    (addToCollection)="onAddToCollection()"
+    (edit)="onEdit()"
+    (delete)="onDelete()"
+/>

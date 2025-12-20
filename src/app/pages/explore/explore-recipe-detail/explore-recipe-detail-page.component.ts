@@ -10,13 +10,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ExploreRecipesService } from '../../../core/services/explore-recipes.service';
 import { RecipesService } from '../../recipes/services/recipes.service';
@@ -26,10 +21,6 @@ import {
     ApiError,
 } from '../../../../../shared/contracts/types';
 
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
-import { RecipeHeaderComponent } from '../../recipes/recipe-detail/components/recipe-header/recipe-header.component';
-import { RecipeImageComponent } from '../../recipes/recipe-detail/components/recipe-image/recipe-image.component';
-import { RecipeContentListComponent } from '../../recipes/recipe-detail/components/recipe-content-list/recipe-content-list.component';
 import {
     ConfirmDialogComponent,
     ConfirmDialogData,
@@ -39,6 +30,10 @@ import {
     AddToCollectionDialogData,
     AddToCollectionDialogResult,
 } from '../../../shared/components/add-to-collection-dialog/add-to-collection-dialog.component';
+import {
+    RecipeDetailHeaderMode,
+    RecipeDetailViewComponent,
+} from '../../../shared/components/recipe-detail-view/recipe-detail-view.component';
 
 /**
  * Stan komponentu szczegółów przepisu explore
@@ -48,14 +43,6 @@ interface ExploreRecipeDetailState {
     isLoading: boolean;
     error: ApiError | null;
 }
-
-/**
- * Tryb nagłówka strony - określa jakie akcje są dostępne
- * - 'guest': niezalogowany użytkownik - CTA do logowania
- * - 'addToCollection': zalogowany, ale nie jest właścicielem - przycisk dodaj do kolekcji
- * - 'ownerActions': zalogowany i jest właścicielem - pełne akcje (edytuj, usuń, dodaj do kolekcji)
- */
-type HeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
 
 /**
  * Komponent strony szczegółów przepisu w kontekście explore (publiczny widok).
@@ -70,15 +57,7 @@ type HeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
     selector: 'pych-explore-recipe-detail-page',
     standalone: true,
     imports: [
-        MatCardModule,
-        MatButtonModule,
-        MatIconModule,
-        MatProgressSpinnerModule,
-        MatTooltipModule,
-        PageHeaderComponent,
-        RecipeHeaderComponent,
-        RecipeImageComponent,
-        RecipeContentListComponent,
+        RecipeDetailViewComponent,
     ],
     templateUrl: './explore-recipe-detail-page.component.html',
     styleUrl: './explore-recipe-detail-page.component.scss',
@@ -128,7 +107,7 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
     /**
      * Tryb nagłówka - określa jakie akcje są dostępne
      */
-    readonly headerMode = computed<HeaderMode>(() => {
+    readonly headerMode = computed<RecipeDetailHeaderMode>(() => {
         if (!this.isAuthenticated()) {
             return 'guest';
         }
