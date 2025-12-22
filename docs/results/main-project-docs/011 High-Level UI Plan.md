@@ -24,10 +24,15 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 **2. Publiczny katalog przepisów (Explore)**
 - **Ścieżka:** `/explore`
 - **Główny cel:** Przeglądanie i wyszukiwanie publicznych przepisów (MVP: tylko tekst).
-- **Kluczowe informacje do wyświetlenia:** Lista kart przepisów (zdjęcie, nazwa, kategoria), pole wyszukiwania, stronicowanie.
-- **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-paginator`, wskaźniki ładowania (Skeletons).
+- **Kluczowe informacje do wyświetlenia:** Lista kart przepisów (zdjęcie, nazwa, kategoria), pole wyszukiwania, przycisk "Więcej" do doładowywania kolejnych wyników.
+- **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-button` ("Więcej"), wskaźniki ładowania (Skeletons).
 - **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników"). W trybie zalogowanego: oznaczyć na kartach przepisy użytkownika jako "Twój przepis".
     - (Przyszłościowo / API-ready) Aplikacja może zostać rozszerzona o filtrowanie publicznych przepisów po metadanych (np. "Termorobot"), jednak w MVP pozostaje **wyłącznie wyszukiwanie tekstowe**.
+    - **Load more (zamiast paginacji):** Domyślnie ładowane jest **12 przepisów**. Pod listą widoczny jest przycisk **"Więcej"**, który:
+        - doładowuje kolejne **12** i **dopina** je pod już widocznymi,
+        - pokazuje stan ładowania (np. label "Ładowanie…" + `disabled`),
+        - znika, gdy nie ma już kolejnych wyników (`hasMore=false`).
+    - **Reset kontekstu listy:** Zmiana frazy wyszukiwania (i ewentualnych filtrów w przyszłości) resetuje listę do pierwszych 12 wyników oraz ponownie pokazuje przycisk "Więcej" (jeśli są kolejne).
 
 **3. Szczegóły przepisu (uniwersalny widok)**
 - **Ścieżka:** prywatnie `/recipes/:id` oraz publicznie `/explore/recipes/:id`
@@ -76,9 +81,11 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/my-recipies` (alias: `/my-recipes`)
 - **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie biblioteki przepisów użytkownika: jego własnych przepisów oraz publicznych przepisów innych autorów zapisanych w co najmniej jednej jego kolekcji.
 - **Header:** Tytuł "Twoje Przepisy", Przycisk "Dodaj Przepis" (Split Button: "Ręcznie" | "Import").
-- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem (np. "Moje" / "W moich kolekcjach", **"Termorobot"**), paginacja. Dla przepisów nie mojego autorstwa widoczny chip/etykieta "W moich kolekcjach". Dla przepisów oznaczonych "Termorobot" widoczny dodatkowy badge/chip "Termorobot" na karcie.
-- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-paginator`, `mat-card`, `mat-chip-list`, komponent "stanu pustego" z akcją.
+- **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem (np. "Moje" / "W moich kolekcjach", **"Termorobot"**), przycisk "Więcej" do doładowywania kolejnych wyników. Dla przepisów nie mojego autorstwa widoczny chip/etykieta "W moich kolekcjach". Dla przepisów oznaczonych "Termorobot" widoczny dodatkowy badge/chip "Termorobot" na karcie.
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-card`, `mat-chip-list`, `mat-button` ("Więcej"), komponent "stanu pustego" z akcją.
 - **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy. Wskaźniki ładowania (Skeletons). Obsługa stanu pustego z wezwaniem do akcji "Utwórz pierwszy przepis". Przepisy innych autorów pojawiają się na tej liście wyłącznie, gdy są publiczne i znajdują się w kolekcjach użytkownika.
+    - **Load more (zamiast paginacji):** Domyślnie ładowane jest **12 przepisów**. Pod listą widoczny jest przycisk **"Więcej"**, który doładowuje kolejne **12** i dopina je pod już widocznymi. Przycisk pokazuje stan ładowania (disabled + "Ładowanie…") i znika, gdy nie ma więcej wyników.
+    - **Reset kontekstu listy:** Zmiana filtrów/sortowania/wyszukiwania resetuje listę do pierwszych 12 wyników i ukrywa/pokazuje przycisk zależnie od `hasMore`.
 
 **8. Szczegóły Przepisu**
 - **Ścieżka:** `/recipes/:id`

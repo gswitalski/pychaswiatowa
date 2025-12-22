@@ -62,6 +62,46 @@ Public endpoints are available without authentication and must return **only** r
 
 ---
 
+#### `GET /public/recipes/feed`
+
+-   **Description**: Retrieve a "load more" friendly list of public recipes using cursor-based pagination (recommended for the `/explore` UI). Supports basic text search (MVP).
+-   **Query Parameters**:
+    -   `cursor` (optional, string): Opaque cursor returned by the previous response (`pageInfo.nextCursor`).
+    -   `limit` (optional, integer, default: 12): The number of items to return per batch. (UI uses 12 as the default batch size.)
+    -   `sort` (optional, string, default: `created_at.desc`): Sort order. Must be stable. e.g., `created_at.desc`, `name.asc`.
+    -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
+    -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "data": [
+            {
+              "id": 1,
+              "name": "Apple Pie",
+              "description": "A classic dessert.",
+              "servings": 6,
+              "is_termorobot": false,
+              "image_path": "path/to/image.jpg",
+              "category": { "id": 2, "name": "Dessert" },
+              "tags": ["sweet", "baking"],
+              "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
+              "created_at": "2023-10-27T10:00:00Z"
+            }
+          ],
+          "pageInfo": {
+            "hasMore": true,
+            "nextCursor": "opaque_cursor_value"
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (invalid cursor, `q` too short)
+    -   **Payload**: `{ "message": "Query must be at least 2 characters" }`
+
+---
+
 #### `GET /public/recipes/{id}`
 
 -   **Description**: Retrieve a single public recipe by its ID. Intended for public, shareable, SEO-friendly recipe pages (frontend can include a slug in the URL, but the API uses the numeric `id`).
@@ -142,6 +182,55 @@ Public endpoints are available without authentication and must return **only** r
             "currentPage": 1,
             "totalPages": 5,
             "totalItems": 100
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Payload**: `{ "message": "Authentication required" }`
+
+---
+
+#### `GET /recipes/feed`
+
+-   **Description**: Retrieve a "load more" friendly list of recipes for the authenticated user using cursor-based pagination (recommended for the `/my-recipies` UI).
+-   **Notes**:
+    - Reuses the same filtering and "view" semantics as `GET /recipes`.
+    - Response helper fields are identical (`is_owner`, `in_my_collections`).
+    - Intended to support appending results in the UI ("Load more") without classic page navigation.
+-   **Query Parameters**:
+    -   `cursor` (optional, string): Opaque cursor returned by the previous response (`pageInfo.nextCursor`).
+    -   `limit` (optional, integer, default: 12): The number of items to return per batch. (UI uses 12 as the default batch size.)
+    -   `sort` (optional, string): Sort order. Must be stable. e.g., `name.asc`, `created_at.desc`.
+    -   `view` (optional, string, default: `owned`): Determines which set of recipes is returned.
+        -   `owned`: Only recipes authored by the authenticated user.
+        -   `my_recipes`: Recipes authored by the authenticated user **plus** public recipes authored by others that are included in at least one collection owned by the authenticated user.
+    -   `filter[category_id]` (optional, integer): Filter by category ID.
+    -   `filter[tags]` (optional, string): Comma-separated list of tag names to filter by.
+    -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`).
+    -   `search` (optional, string): Full-text search across name, ingredients, and tags.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "data": [
+            {
+              "id": 1,
+              "name": "Apple Pie",
+              "servings": 6,
+              "is_termorobot": false,
+              "image_path": "path/to/image.jpg",
+              "visibility": "PUBLIC",
+              "is_owner": true,
+              "in_my_collections": false,
+              "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
+              "created_at": "2023-10-27T10:00:00Z"
+            }
+          ],
+          "pageInfo": {
+            "hasMore": true,
+            "nextCursor": "opaque_cursor_value"
           }
         }
         ```

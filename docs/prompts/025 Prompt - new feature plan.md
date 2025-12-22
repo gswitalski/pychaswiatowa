@@ -13,7 +13,16 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-chcę podczas edycji i tworzenia przepisu moć ustawić dodatkową flagę przepisu o nazwie 'Termorobot' aby oznaczyć te przpisy, które są przeznaczone na roboty tylu Thermomix, Lidlomix
+zarówno w widoku
+http://localhost:4200/my-recipies
+jak i 
+http://localhost:4200/explore
+
+czyli w komponencie
+pych-recipe-list
+
+nie chcę mieć paginaora tylko przycisk "wiecej", który pojawia się pod pierwszymi 12 przepisami załadowanymi domuyslnie i doładowuje kolejne 12  i znowu się pojawia pod ddoładowanymi (chyba, że nie ma więcej przepisów do załadowania)
+
 
 </nowa_funkcjonalnosc>
 
