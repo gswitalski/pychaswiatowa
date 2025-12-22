@@ -18,20 +18,15 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
-
 ### Zmienione
 
-- **Formularz przepisu (Dodaj/Edytuj)** (`/recipes/new`, `/recipes/:id/edit`)
-  - **Zmiana**: dodana kontrolka **„Termorobot (Thermomix/Lidlomix)”** jako opcjonalny toggle/checkbox, domyślnie wyłączona.
+- **Publiczny katalog przepisów (Explore) — `/explore`**  
+  **Co się zmieniło:** Zastąpiono `mat-paginator` przyciskiem **„Więcej”** pod siatką wyników. Domyślnie ładowane 12 przepisów; kliknięcie doładowuje kolejne 12 i dopina pod listą. Dodano stany: loading (disabled + „Ładowanie…”) i ukrycie przycisku, gdy `hasMore=false`. Zmiana frazy wyszukiwania resetuje listę do pierwszych 12.
 
-- **Szczegóły przepisu (uniwersalny widok)** (`/recipes/:id`, `/explore/recipes/:id`)
-  - **Zmiana**: jeśli flaga jest włączona, widoczny **badge/chip „Termorobot”** w metadanych.
+- **Lista Przepisów (Moje przepisy) — `/my-recipies` (alias: `/my-recipes`)**  
+  **Co się zmieniło:** Usunięto paginację na rzecz przycisku **„Więcej”** (analogicznie: 12 na start, dopinanie kolejnych 12, loading na przycisku, ukrycie gdy brak wyników). Zmiana filtrów/sortowania/wyszukiwania resetuje listę do pierwszych 12.
 
-- **Lista przepisów (Moje przepisy)** (`/my-recipies` / `/my-recipes`)
-  - **Zmiana**: dodany filtr (chip) **„Termorobot”** oraz badge/chip „Termorobot” na kartach przepisów.
 
-- **Karta przepisu (`RecipeCardComponent`)**
-  - **Zmiana**: karta pokazuje dodatkowy badge/chip „Termorobot” dla przepisów oznaczonych flagą.
 
 
 </views>
@@ -40,22 +35,15 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-### Zmienione
-
-- **US-003 – Dodawanie nowego przepisu**
-  - **Zmiana**: formularz tworzenia zawiera opcjonalną flagę **„Termorobot”** (checkbox/toggle), domyślnie wyłączoną.
-
-- **US-005 – Edycja istniejącego przepisu**
-  - **Zmiana**: możliwość włączenia/wyłączenia flagi **„Termorobot”** oraz odtwarzanie stanu po ponownym wejściu w edycję.
-
-- **US-007 – Przeglądanie listy wszystkich przepisów**
-  - **Zmiana**: dodany filtr listy po fladze **„Termorobot”** (tak/nie).
-
 ### Nowe
 
-- **US-029 – Oznaczenie przepisu jako "Termorobot" i jego widoczna identyfikacja**
-  - **Opis**: użytkownik może oznaczyć przepis jako „Termorobot” i widzi to oznaczenie na listach oraz w szczegółach.
-  - **Kryteria (skrót)**: toggle/checkbox w formularzu, domyślnie wyłączone, trwały zapis, badge/chip „Termorobot” na kartach/listach oraz w szczegółach, możliwość wyłączenia.
+- **US-030 — Przycisk „Więcej” do doładowywania list przepisów (zamiast paginatora)**  
+  **Co dodano:** Nowa historyjka opisująca zachowanie komponentu listy (`pych-recipe-list`) w widokach `/my-recipies` i `/explore`: start od 12 elementów, dopinanie kolejnych 12, stan ładowania na przycisku, ukrywanie gdy brak kolejnych wyników, reset po zmianie filtrów/sortowania/wyszukiwania, obsługa błędów poprzez Snackbar + możliwość ponowienia.
+
+### Zmienione
+
+- **US-018 — Wyszukiwanie publicznych przepisów (MVP: tylko tekst)**  
+  **Co się zmieniło:** Zamiast stronicowania doprecyzowano mechanizm „Więcej”: początkowo 12 wyników i doładowywanie kolejnych porcji przyciskiem.
 
 
 </user_stories>
