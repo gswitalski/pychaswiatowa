@@ -161,9 +161,12 @@ const PROFILE_SELECT_COLUMNS = 'id, username';
 
 /**
  * Retrieves public recipes with pagination, sorting, and optional search.
- * Supports optional authentication - when user is authenticated, includes collection information.
+ * Supports optional authentication - when user is authenticated, includes collection information
+ * and returns user's own recipes regardless of visibility.
  *
- * Security: Always filters for visibility='PUBLIC' and deleted_at IS NULL.
+ * Security:
+ * - For anonymous users: filters for visibility='PUBLIC' and deleted_at IS NULL
+ * - For authenticated users: filters for (visibility='PUBLIC' OR user_id=userId) and deleted_at IS NULL
  *
  * @param client - Service role Supabase client
  * @param query - Query parameters for filtering, sorting, and pagination
@@ -185,6 +188,7 @@ export async function getPublicRecipes(
         sort: `${query.sortField}.${query.sortDirection}`,
         hasSearch: !!query.q,
         isAuthenticated: userId !== null,
+        userId: userId ?? 'anonymous',
     });
 
     // Calculate offset for pagination
@@ -194,8 +198,23 @@ export async function getPublicRecipes(
     let dbQuery = client
         .from('recipe_details')
         .select(RECIPE_SELECT_COLUMNS, { count: 'exact' })
-        .eq('visibility', 'PUBLIC')
         .is('deleted_at', null);
+
+    // Apply visibility filter based on authentication status
+    if (userId !== null) {
+        // Authenticated user: show PUBLIC recipes OR user's own recipes (any visibility)
+        dbQuery = dbQuery.or(`visibility.eq.PUBLIC,user_id.eq.${userId}`);
+        logger.info('Applied authenticated user filter', {
+            userId,
+            filter: 'visibility=PUBLIC OR user_id=' + userId,
+        });
+    } else {
+        // Anonymous user: show only PUBLIC recipes
+        dbQuery = dbQuery.eq('visibility', 'PUBLIC');
+        logger.info('Applied anonymous user filter', {
+            filter: 'visibility=PUBLIC',
+        });
+    }
 
     // Apply search filter if provided
     if (query.q) {
@@ -488,9 +507,12 @@ export async function getPublicRecipeById(
 
 /**
  * Retrieves public recipes with cursor-based pagination, sorting, and optional search.
- * Supports optional authentication - when user is authenticated, includes collection information.
+ * Supports optional authentication - when user is authenticated, includes collection information
+ * and returns user's own recipes regardless of visibility.
  *
- * Security: Always filters for visibility='PUBLIC' and deleted_at IS NULL.
+ * Security:
+ * - For anonymous users: filters for visibility='PUBLIC' and deleted_at IS NULL
+ * - For authenticated users: filters for (visibility='PUBLIC' OR user_id=userId) and deleted_at IS NULL
  *
  * @param client - Service role Supabase client
  * @param query - Query parameters for filtering, sorting, and cursor pagination
@@ -510,21 +532,23 @@ export async function getPublicRecipesFeed(
         hasSearch: !!query.q,
         hasCursor: !!query.cursor,
         isAuthenticated: userId !== null,
+        userId: userId ?? 'anonymous',
     });
 
-    // Build filters hash for cursor validation
+    // Build filters hash for cursor validation (include userId to distinguish anonymous vs authenticated)
     const sortString = `${query.sortField}.${query.sortDirection}`;
     const filtersHash = await buildFiltersHash({
         sort: sortString,
         q: query.q,
         termorobot: query.termorobot,
+        userId: userId ?? undefined, // Include userId in hash to separate anonymous/authenticated cursors
     });
 
     // Decode cursor and validate consistency
     let offset = 0;
     if (query.cursor) {
         const cursorData = decodeCursor(query.cursor);
-        
+
         // Validate that cursor matches current query parameters
         validateCursorConsistency(
             cursorData,
@@ -532,9 +556,9 @@ export async function getPublicRecipesFeed(
             sortString,
             filtersHash
         );
-        
+
         offset = cursorData.offset;
-        
+
         logger.info('Cursor decoded successfully', {
             offset,
             cursorLimit: cursorData.limit,
@@ -546,8 +570,23 @@ export async function getPublicRecipesFeed(
     let dbQuery = client
         .from('recipe_details')
         .select(RECIPE_SELECT_COLUMNS, { count: 'estimated' })
-        .eq('visibility', 'PUBLIC')
         .is('deleted_at', null);
+
+    // Apply visibility filter based on authentication status
+    if (userId !== null) {
+        // Authenticated user: show PUBLIC recipes OR user's own recipes (any visibility)
+        dbQuery = dbQuery.or(`visibility.eq.PUBLIC,user_id.eq.${userId}`);
+        logger.info('Applied authenticated user filter', {
+            userId,
+            filter: 'visibility=PUBLIC OR user_id=' + userId,
+        });
+    } else {
+        // Anonymous user: show only PUBLIC recipes
+        dbQuery = dbQuery.eq('visibility', 'PUBLIC');
+        logger.info('Applied anonymous user filter', {
+            filter: 'visibility=PUBLIC',
+        });
+    }
 
     // Apply search filter if provided
     if (query.q) {
@@ -598,7 +637,7 @@ export async function getPublicRecipesFeed(
 
     // Determine if there are more results
     const hasMore = recipeRows.length > query.limit;
-    
+
     // Trim to actual limit (remove the +1 item)
     const recipesToReturn = hasMore ? recipeRows.slice(0, query.limit) : recipeRows;
 

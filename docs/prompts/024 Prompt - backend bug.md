@@ -11,39 +11,20 @@ Zapoznaj się z dokumentamu projektu
 
 
 <aktualne_zachowanie>
-endpoint PUT
+endpoint GET
+http://127.0.0.1:54331/functions/v1/public/recipes/feed?limit=12&sort=created_at.desc
 
-http://127.0.0.1:54331/functions/v1/recipes/3
+zwraca tylko publiczce przepisy
 
-
-
-
-
-
-{
-  "name": "Rosół",
-  "description": "Tradycyjna polska zupa, podstawa wielu dań. Idealny na niedzielny obiad.",
-  "category_id": 3,
-  "visibility": "PRIVATE",
-  "ingredients_raw": "# Mięso\r\n1 kg mięsa wołowego (np. mostek)\r\n500g mięsa drobiowego (skrzydełka, nóżki)\r\n# Warzywa\r\n2 marchewki\r\n1 pietruszka\r\n1 seler\r\n1 cebula\r\n1 por\r\n2 ząbki czosnku\r\n# Przyprawy\r\nliść laurowy\r\nziele angielskie\r\nsól, pieprz\r\nnatka pietruszki",
-  "steps_raw": "# Przygotowanie\r\nMięso umyj i wrzuć do dużego garnka z zimną wodą.\r\nGotuj na małym ogniu, zbierając szumowiny.\r\nWarzywa umyj, obierz i pokrój na większe kawałki.\r\nPo około godzinie dodaj warzywa i przyprawy.\r\nGotuj jeszcze przez 1,5-2 godziny na małym ogniu.\r\nPod koniec dodaj sól i pieprz do smaku.\r\nPrzecedź przez sito, mięso pokrój i dodaj z powrotem.\r\nPodawaj z makaronem i posiekaną natką pietruszki.",
-  "tags": [],
-  "servings": null,
-  "is_termorobot": true
-}
-
-nie zapisuje w bazie danych wartosci
-"is_termorobot": true
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-endpoin zwaca description takie jak było podane na wejści (nie zapisuje się w bazie)
+zwraca publiczce przepisy oraz moje (zalogowanego użytkownika) bez zwzgledu na vidzialność przepisu
 
 </oczekiwane_zachowanie>
-zapisuje w bazie danych wartosc
-"is_termorobot": true
+
 
 <implementation_rules>
 
