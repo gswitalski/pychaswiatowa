@@ -18,13 +18,10 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
-### Zmienione
 
-- **Publiczny katalog przepisów (Explore) — `/explore`**  
-  **Co się zmieniło:** Zastąpiono `mat-paginator` przyciskiem **„Więcej”** pod siatką wyników. Domyślnie ładowane 12 przepisów; kliknięcie doładowuje kolejne 12 i dopina pod listą. Dodano stany: loading (disabled + „Ładowanie…”) i ukrycie przycisku, gdy `hasMore=false`. Zmiana frazy wyszukiwania resetuje listę do pierwszych 12.
-
-- **Lista Przepisów (Moje przepisy) — `/my-recipies` (alias: `/my-recipes`)**  
-  **Co się zmieniło:** Usunięto paginację na rzecz przycisku **„Więcej”** (analogicznie: 12 na start, dopinanie kolejnych 12, loading na przycisku, ukrycie gdy brak wyników). Zmiana filtrów/sortowania/wyszukiwania resetuje listę do pierwszych 12.
+### Szczegóły Kolekcji (zmienione)
+- **Gdzie**: `/collections/:id`
+- **Co się zmieniło**: lista przepisów kolekcji **nie jest stronicowana w UI** — na wejściu ładowane są od razu wszystkie przepisy kolekcji (w ramach limitu technicznego API, jeśli dotyczy). Usunięto potrzebę „Więcej”/paginacji dla tego widoku; dodano wymagania dot. loadera, stanu pustego i błędów dostępu.
 
 
 
@@ -35,16 +32,14 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-### Nowe
-
-- **US-030 — Przycisk „Więcej” do doładowywania list przepisów (zamiast paginatora)**  
-  **Co dodano:** Nowa historyjka opisująca zachowanie komponentu listy (`pych-recipe-list`) w widokach `/my-recipies` i `/explore`: start od 12 elementów, dopinanie kolejnych 12, stan ładowania na przycisku, ukrywanie gdy brak kolejnych wyników, reset po zmianie filtrów/sortowania/wyszukiwania, obsługa błędów poprzez Snackbar + możliwość ponowienia.
-
-### Zmienione
-
-- **US-018 — Wyszukiwanie publicznych przepisów (MVP: tylko tekst)**  
-  **Co się zmieniło:** Zamiast stronicowania doprecyzowano mechanizm „Więcej”: początkowo 12 wyników i doładowywanie kolejnych porcji przyciskiem.
-
+### US-031 — Wyświetlanie wszystkich przepisów kolekcji bez paginacji (nowe)
+- **Opis**: użytkownik po wejściu w kolekcję widzi od razu pełną listę jej przepisów, bez doładowywania kolejnych porcji.
+- **Kluczowe kryteria**:
+  - Brak paginatora i brak przycisku „Więcej” w `/collections/:id`.
+  - Czytelny stan ładowania (np. skeleton listy/siatki).
+  - Stan pusty dla kolekcji bez przepisów + akcja powrotu (np. do `/collections`).
+  - Czytelne komunikaty dla `403`/`404`.
+  - Obsługa limitu technicznego API (jeśli backend ogranicza liczbę zwracanych elementów).
 
 </user_stories>
 

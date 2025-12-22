@@ -1,169 +1,246 @@
-# Plan implementacji widoku: Szczegóły Kolekcji
+# Plan implementacji widoku: Szczegóły Kolekcji (bez paginacji w UI)
 
 ## 1. Przegląd
 
-Widok "Szczegóły Kolekcji" ma na celu wyświetlenie użytkownikowi nazwy, opisu oraz listy przepisów przypisanych do wybranej kolekcji. Umożliwia on również usuwanie przepisów z danej kolekcji. Widok ten jest kluczowym elementem funkcjonalności zarządzania kolekcjami, pozwalając na przeglądanie tematycznych zbiorów przepisów.
+Widok **„Szczegóły Kolekcji”** (`/collections/:id`) prezentuje nazwę/opis kolekcji oraz **pełną listę przypisanych przepisów** ładowaną **jednorazowo** (bez paginacji i bez przycisku „Więcej” w UI). Użytkownik może również **usunąć przepis z tej kolekcji** z poziomu karty przepisu.
+
+Kluczowe wymagania (US-031 / PRD):
+- **Brak paginacji w UI** (brak paginatora i brak „Więcej”).
+- **Czytelny stan ładowania** (preferowany skeleton/loader).
+- **Stan pusty** dla kolekcji bez przepisów + akcja powrotu do `/collections`.
+- **Czytelne komunikaty** dla `403` / `404`.
+- **Obsługa limitu technicznego API**: jeśli backend ogranicza wynik, UI pokazuje informację, że lista może być niepełna.
 
 ## 2. Routing widoku
 
-Widok będzie dostępny pod następującą ścieżką z dynamicznym parametrem `id` kolekcji:
--   **Ścieżka:** `/collections/:id`
+- **Ścieżka:** `/collections/:id`
+- **Kontekst layoutu:** prywatny (z Sidebarem), zgodnie z App Shell.
+- **Ładowanie:** lazy loading `loadComponent` (standalone component).
 
 ## 3. Struktura komponentów
 
-Hierarchia komponentów dla tego widoku będzie następująca:
+Docelowa hierarchia (bez paginacji):
 
 ```
-CollectionDetailsPageComponent
+CollectionDetailsPageComponent (standalone, OnPush)
 |
-+-- CollectionHeaderComponent
++-- PageHeaderComponent (współdzielony)
 |
-+-- RecipeListComponent (Komponent współdzielony)
++-- CollectionHeaderComponent (standalone, prezentacyjny)
+|
++-- RecipeListComponent (współdzielony)  [tryb: "static" / bez paginacji]
     |
-    +-- RecipeCardComponent (Komponent współdzielony, powtarzany dla każdego przepisu)
-    |
-    +-- MatPaginatorComponent (Komponent Angular Material)
+    +-- RecipeCardComponent (współdzielony, powtarzany)
 ```
 
 ## 4. Szczegóły komponentów
 
-### `CollectionDetailsPageComponent` (Komponent-strona)
+### `CollectionDetailsPageComponent` (komponent-strona)
 
--   **Opis komponentu**: Główny kontener widoku. Odpowiada za pobranie `id` kolekcji z parametrów URL, komunikację z API w celu pobrania danych kolekcji i listy przepisów, zarządzanie stanem (ładowanie, błędy, paginacja) oraz obsługę akcji usuwania przepisu z kolekcji.
--   **Główne elementy**: Komponent będzie renderował `CollectionHeaderComponent` oraz `RecipeListComponent`, przekazując do nich odpowiednie dane. Będzie również zawierał logikę do wyświetlania wskaźników ładowania lub komunikatów o błędach.
--   **Obsługiwane zdarzenia**:
-    -   `onPageChange(event: PageEvent)`: Uruchamiane przez paginator; powoduje pobranie nowej strony przepisów.
-    -   `onRemoveRecipe(recipeId: number)`: Uruchamiane przez `RecipeListComponent`; inicjuje proces usuwania przepisu z kolekcji.
--   **Warunki walidacji**: Brak walidacji po stronie klienta. Komponent musi obsługiwać błędy API (np. 404, gdy kolekcja nie istnieje).
--   **Typy**: `CollectionDetailsViewModel`.
+- **Opis komponentu**: kontener widoku. Odpowiada za:
+    - pobranie `id` kolekcji z route params,
+    - wywołanie API `GET /collections/{id}` (jednorazowo),
+    - mapowanie DTO → VM,
+    - prezentację stanów: loading / error / empty / truncated,
+    - obsługę akcji „Usuń z kolekcji” (DELETE) i odświeżenie listy.
+- **Główne elementy**:
+    - `pych-page-header` z tytułem (nazwa kolekcji lub fallback),
+    - sekcja z `pych-collection-header` (nazwa + opis),
+    - sekcja z listą przepisów:
+        - skeleton/loader podczas pierwszego ładowania,
+        - empty state, gdy `recipes.length === 0`,
+        - `pych-recipe-list` w trybie **bez paginacji**,
+        - komunikat ostrzegawczy, gdy `recipes.pageInfo.truncated === true`.
+- **Obsługiwane zdarzenia**:
+    - `onRemoveRecipe(recipeId: number)`: potwierdzenie w dialogu → `DELETE /collections/{collectionId}/recipes/{recipeId}` → reload danych kolekcji.
+    - `navigateBack()`: powrót do listy kolekcji (`/collections`).
+    - (opcjonalnie) `retry()`: ponowienie ładowania po błędzie.
+- **Warunki walidacji (guard clauses)**:
+    - `id` z URL musi być liczbą całkowitą `> 0`; w przeciwnym razie stan błędu „Nieprawidłowy identyfikator kolekcji”.
+    - brak walidacji formularzy w tym widoku.
+    - **frontend nie waliduje uprawnień** (to rola API), ale mapuje `403/404` na czytelne komunikaty.
+- **Typy**:
+    - DTO: `CollectionDetailDto`, `RecipeListItemDto`, `CollectionRecipesPageInfoDto`
+    - VM: `CollectionDetailsViewModel`, `RecipeListItemViewModel` (jeśli `pych-recipe-list` operuje na VM)
+- **Propsy**: brak (komponent strony jest routowany).
 
-### `CollectionHeaderComponent` (Komponent prezentacyjny)
+### `CollectionHeaderComponent` (komponent prezentacyjny)
 
--   **Opis komponentu**: Prosty komponent odpowiedzialny wyłącznie za wyświetlanie nazwy i opisu kolekcji.
--   **Główne elementy**: Nagłówek `<h1>` lub `<h2>` na nazwę kolekcji oraz paragraf `<p>` na jej opis.
--   **Obsługiwane zdarzenia**: Brak.
--   **Warunki walidacji**: Brak.
--   **Typy**: `CollectionDetailsViewModel`.
--   **Propsy**:
-    -   `@Input() collectionData: Pick<CollectionDetailsViewModel, 'name' | 'description'>`
+- **Opis komponentu**: wyświetla nazwę i opis kolekcji.
+- **Główne elementy**:
+    - nagłówek (np. `<h1>`/`<h2>`) z nazwą,
+    - opis (`<p>`) lub placeholder „Brak opisu” (opcjonalnie, zależnie od UX).
+- **Obsługiwane zdarzenia**: brak.
+- **Warunki walidacji**: brak.
+- **Typy**: `Pick<CollectionDetailsViewModel, 'name' | 'description'>`.
+- **Propsy**:
+    - `@Input({ required: true }) collectionData: { name: string; description: string | null }`
 
-### `RecipeListComponent` (Komponent współdzielony, prezentacyjny)
+### `RecipeListComponent` (komponent współdzielony)
 
--   **Opis komponentu**: Współdzielony komponent do wyświetlania siatki przepisów. Musi zostać dostosowany, aby opcjonalnie renderować przycisk "Usuń z kolekcji" na każdej karcie przepisu.
--   **Główne elementy**: Pętla `@for` renderująca `RecipeCardComponent` dla każdego przepisu, `mat-paginator` do obsługi paginacji.
--   **Obsługiwane zdarzenia**:
-    -   `@Output() pageChange: EventEmitter<PageEvent>`: Emituje zmianę strony.
-    -   `@Output() removeRecipe: EventEmitter<number>`: Emituje ID przepisu do usunięcia.
--   **Warunki walidacji**: Brak.
--   **Typy**: `RecipeListItemDto[]`, `PaginationDetails`.
--   **Propsy**:
-    -   `@Input() recipes: RecipeListItemDto[]`
-    -   `@Input() pagination: PaginationDetails`
-    -   `@Input() isLoading: boolean`
-    -   `@Input() showRemoveAction: boolean`
+- **Opis komponentu**: współdzielona siatka kart przepisów. Dla `/collections/:id` musi wspierać tryb **„static”**:
+    - renderuje wszystkie elementy przekazane w `recipes`,
+    - **nie renderuje paginatora** i nie emituje `pageChange`,
+    - opcjonalnie pokazuje spinner/skeleton na czas reloadu po usunięciu (bez „white overlay”; zgodnie z zasadami: utrzymać poprzednie dane widoczne i np. obniżyć opacity kontenera).
+- **Główne elementy**:
+    - `@for` po `recipes` → `RecipeCardComponent`,
+    - brak `mat-paginator` w trybie „static”.
+- **Obsługiwane zdarzenia**:
+    - `@Output() removeRecipe: EventEmitter<number>` (gdy `showRemoveAction=true`).
+    - **Brak** `pageChange` w trybie „static” (lub nieużywany/wyłączony).
+- **Warunki walidacji**: brak.
+- **Typy**:
+    - wejście: `RecipeListItemViewModel[]` lub `RecipeListItemDto[]` (zgodnie z istniejącą implementacją komponentu),
+    - (opcjonalnie) `mode: 'static' | 'cursor' | 'page'` lub `enablePagination: boolean`.
+- **Propsy** (rekomendowane API komponentu dla tego widoku):
+    - `@Input({ required: true }) recipes: RecipeListItemViewModel[]`
+    - `@Input() isLoading: boolean`
+    - `@Input() showRemoveAction: boolean`
+    - `@Input() mode: 'static' | 'cursor' | 'page' = 'static'`  *(lub alternatywnie: `showPaginator=false`)*
 
-### `RecipeCardComponent` (Komponent współdzielony, prezentacyjny)
+### `RecipeCardComponent` (komponent współdzielony)
 
--   **Opis komponentu**: Wyświetla pojedynczą kartę przepisu z obrazkiem i nazwą. Zostanie rozszerzony o menu z akcją "Usuń z kolekcji".
--   **Główne elementy**: `mat-card`, `img` dla obrazka, `mat-card-title` dla nazwy, `mat-menu` dla dodatkowych akcji.
--   **Obsługiwane zdarzenia**:
-    -   `@Output() remove: EventEmitter<void>`: Emituje zdarzenie po kliknięciu opcji usunięcia.
--   **Warunki walidacji**: Brak.
--   **Typy**: `RecipeListItemDto`.
--   **Propsy**:
-    -   `@Input() recipe: RecipeListItemDto`
-    -   `@Input() showRemoveAction: boolean`
+- **Opis komponentu**: karta przepisu z miniaturą i nazwą. W kontekście kolekcji powinna umożliwić akcję „Usuń z kolekcji” (tylko gdy `showRemoveAction=true`).
+- **Główne elementy**:
+    - `mat-card`, miniatura, tytuł,
+    - menu akcji (`mat-menu`) z pozycją „Usuń z kolekcji”.
+- **Obsługiwane zdarzenia**:
+    - `@Output() remove: EventEmitter<void>` (emit po wybraniu akcji).
+- **Warunki walidacji**: brak.
+- **Typy**: VM/DTO pojedynczej karty (zależnie od aktualnego shared komponentu).
+- **Propsy**:
+    - `@Input({ required: true }) recipe: ...`
+    - `@Input() showRemoveAction: boolean`
 
 ## 5. Typy
 
-### `CollectionDetailsViewModel`
+### DTO wykorzystywane bezpośrednio
 
-Główny model widoku, reprezentujący cały stan strony.
+- **`CollectionDetailDto`**: `{ id, name, description, recipes: { data: RecipeListItemDto[]; pageInfo: CollectionRecipesPageInfoDto } }`
+- **`CollectionRecipesPageInfoDto`**:
+    - `limit: number`
+    - `returned: number`
+    - `truncated: boolean`
+- **`RecipeListItemDto`**: wykorzystywany do renderowania kart (nazwa, obrazek, kategoria, flagi, itp.).
+
+### `CollectionDetailsViewModel` (model widoku)
+
+Rekomendowany VM (wspiera brak paginacji i „limit techniczny”):
 
 ```typescript
 interface CollectionDetailsViewModel {
     id: number;
     name: string;
     description: string | null;
+
     recipes: RecipeListItemDto[];
-    pagination: PaginationDetails;
+    recipesPageInfo: CollectionRecipesPageInfoDto | null;
+
     isLoading: boolean;
-    error: string | null;
+    error: {
+        kind: 'invalid_id' | 'not_found' | 'forbidden' | 'server' | 'unknown';
+        message: string;
+    } | null;
 }
 ```
 
--   `id`: ID aktualnej kolekcji.
--   `name`: Nazwa kolekcji.
--   `description`: Opis kolekcji.
--   `recipes`: Lista przepisów dla bieżącej strony.
--   `pagination`: Obiekt z informacjami o paginacji (`currentPage`, `totalPages`, `totalItems`).
--   `isLoading`: Flaga informująca o stanie ładowania danych.
--   `error`: Komunikat błędu do wyświetlenia w UI.
-
-**Uwaga**: Zakłada się, że endpoint API `GET /collections/{id}` zwraca w ramach listy przepisów obiekty typu `RecipeListItemDto` (zawierające `id`, `name`, `image_path`), a nie `RecipeInCollectionDto`, aby umożliwić ponowne wykorzystanie `RecipeCardComponent`.
+Uwagi:
+- `recipesPageInfo.truncated === true` → UI pokazuje komunikat „Nie udało się załadować wszystkich przepisów (limit techniczny).”
+- Dla minimalizacji „flashowania” podczas reloadu po DELETE: aktualizacje wykonywać przez `state.update()` i nie zerować listy przepisów przed zakończeniem requestu (zgodnie z zasadami loading states).
 
 ## 6. Zarządzanie stanem
 
-Zarządzanie stanem odbędzie się lokalnie w `CollectionDetailsPageComponent` przy użyciu Angular Signals.
-
--   `state`: Główny sygnał (`signal`) przechowujący obiekt `CollectionDetailsViewModel`.
--   `collectionId`: Sygnał przechowujący ID z URL.
--   `currentPage`: Sygnał śledzący aktualny numer strony.
--   `effect`: Efekt będzie obserwował zmiany `collectionId` i `currentPage`, a następnie wywoływał serwis API w celu pobrania aktualnych danych i aktualizacji sygnału `state`.
+Stan lokalny w `CollectionDetailsPageComponent` z użyciem **Angular Signals**:
+- `collectionId = signal<number | null>(null)` (z route params)
+- `state = signal<CollectionDetailsViewModel>(initialState)`
+- `isLoading = computed(...)`, `hasData`, `isEmpty`, `truncationWarningVisible` (computed)
+- `effect()`:
+    - reaguje na zmianę `collectionId`,
+    - wywołuje `CollectionsApiService.getCollectionDetails(id, { limit })`,
+    - zapisuje wynik w `state.update()`.
 
 ## 7. Integracja API
 
-### Pobieranie danych kolekcji
--   **Endpoint**: `GET /collections/{id}`
--   **Parametry zapytania**: `page`, `limit`
--   **Typ odpowiedzi (DTO)**: `CollectionDetailDto`
--   **Akcja**: Wywoływane przy inicjalizacji komponentu i przy każdej zmianie strony. Odpowiedź z API jest mapowana na `CollectionDetailsViewModel` i zapisywana w stanie komponentu.
+### Pobieranie danych kolekcji (jednorazowo)
+
+- **Endpoint**: `GET /collections/{id}`
+- **Query params**:
+    - `limit` (opcjonalnie, np. `500` – limit techniczny)
+    - (opcjonalnie) `sort` (stabilny, np. `created_at.desc`)
+- **Typ odpowiedzi**: `CollectionDetailDto`
+- **Akcja frontendowa**:
+    - na wejściu w widok: request → render danych,
+    - przy `truncated=true`: render ostrzeżenia o możliwie niepełnym wyniku.
 
 ### Usuwanie przepisu z kolekcji
--   **Endpoint**: `DELETE /collections/{collectionId}/recipes/{recipeId}`
--   **Typ odpowiedzi**: `204 No Content`
--   **Akcja**: Wywoływane po potwierdzeniu przez użytkownika chęci usunięcia przepisu. Po pomyślnym usunięciu, dane dla bieżącej strony są odświeżane przez ponowne wywołanie `GET /collections/{id}`.
+
+- **Endpoint**: `DELETE /collections/{collectionId}/recipes/{recipeId}`
+- **Typ odpowiedzi**: `204 No Content`
+- **Akcja frontendowa**:
+    - otwarcie `ConfirmDialogComponent`,
+    - po sukcesie: snackbar + ponowne `GET /collections/{id}`,
+    - po błędzie: snackbar z komunikatem i bez zmian w liście.
+
+**Krytyczne (reguły projektu)**: frontend komunikuje się z Supabase wyłącznie przez `supabase.functions.invoke(...)` (Edge Functions), bez `supabase.from(...)`.
 
 ## 8. Interakcje użytkownika
 
--   **Wejście na stronę**: Użytkownik wchodzi na stronę, widzi wskaźnik ładowania, a następnie nagłówek kolekcji i pierwszą stronę przepisów.
--   **Zmiana strony**: Użytkownik klika na przycisk następnej/poprzedniej strony w paginatorze. Lista przepisów jest przykrywana wskaźnikiem ładowania i aktualizowana o nowe dane.
--   **Usuwanie przepisu**: Użytkownik klika na menu akcji na karcie przepisu i wybiera "Usuń z kolekcji". Pojawia się modal z prośbą o potwierdzenie. Po potwierdzeniu, przepis znika z listy, a użytkownik otrzymuje powiadomienie o sukcesie.
+- **Wejście na stronę**:
+    - loader/skeleton,
+    - po sukcesie: nazwa/opis + pełna lista przepisów,
+    - jeśli brak przepisów: empty state + akcja „Wróć do listy kolekcji”.
+- **Usuwanie przepisu z kolekcji**:
+    - klik „Usuń z kolekcji” na karcie,
+    - modal potwierdzenia,
+    - po potwierdzeniu: request DELETE,
+    - po sukcesie: snackbar + odświeżona lista,
+    - po błędzie: snackbar, lista bez zmian.
+- **Obsługa limitu technicznego**:
+    - gdy `truncated=true`: widoczna informacja (np. alert/karteczka informacyjna) nad listą.
+- **Powrót**:
+    - przycisk „Wróć do listy kolekcji” w stanie błędu i w empty state.
 
 ## 9. Warunki i walidacja
 
-W tym widoku nie występuje walidacja formularzy. Logika komponentu musi jednak poprawnie obsługiwać stany pochodzące z API:
--   Wyświetlanie wskaźnika ładowania (`isLoading: true`).
--   Wyświetlanie komunikatu o błędzie, jeśli API zwróci błąd (`error != null`).
--   Wyświetlanie komponentu "stanu pustego", jeśli kolekcja nie zawiera żadnych przepisów (`recipes.length === 0`).
+- **Param `id`**:
+    - musi być liczbą całkowitą `> 0`; inaczej error state i brak call do API.
+- **Brak paginacji w UI**:
+    - w widoku nie renderujemy paginatora,
+    - `pych-recipe-list` musi być uruchomiony w trybie bez paginacji lub zastąpiony prostą siatką kart.
+- **Loading states**:
+    - przy reload (np. po DELETE) nie czyścić listy przepisów „na pusto”; utrzymać poprzedni widok i sygnalizować ładowanie przez `opacity`/spinner (bez białych overlay).
 
 ## 10. Obsługa błędów
 
--   **Kolekcja nie znaleziona (404 Not Found)**: Jeśli API zwróci 404, komponent wyświetli komunikat "Nie znaleziono kolekcji" zamiast danych.
--   **Brak autoryzacji (401 Unauthorized)**: Globalny `HttpInterceptor` powinien przechwycić ten błąd i przekierować użytkownika do strony logowania.
--   **Błędy serwera (5xx)**: Komponent wyświetli ogólny komunikat o błędzie, np. "Wystąpił błąd. Spróbuj ponownie później."
--   **Błąd usunięcia przepisu**: Jeśli operacja `DELETE` się nie powiedzie, użytkownik zobaczy powiadomienie (np. `MatSnackBar`) z informacją o błędzie, a przepis pozostanie na liście.
+- **401 Unauthorized**: obsługa globalna (guard/interceptor), redirect do logowania.
+- **403 Forbidden**: komunikat „Nie masz dostępu do tej kolekcji.” + akcja powrotu do `/collections`.
+- **404 Not Found**: komunikat „Nie znaleziono kolekcji. Być może została usunięta.” + akcja powrotu.
+- **5xx / network / unknown**: komunikat ogólny + (opcjonalnie) przycisk „Spróbuj ponownie”.
+- **Błąd DELETE**: snackbar „Nie udało się usunąć przepisu z kolekcji.”
 
 ## 11. Kroki implementacji
 
-1.  **Modyfikacja komponentów współdzielonych**:
-    -   W `RecipeCardComponent` dodać `@Input() showRemoveAction: boolean` i warunkowe (`@if`) renderowanie menu (`mat-menu`) z opcją "Usuń z kolekcji". Dodać `@Output() remove`.
-    -   W `RecipeListComponent` dodać `@Input() showRemoveAction: boolean` i przekazać go do `RecipeCardComponent`. Dodać `@Output() removeRecipe` i obsłużyć propagację zdarzenia `remove` z karty.
-2.  **Stworzenie nowych komponentów**:
-    -   Wygenerować `CollectionDetailsPageComponent` (`ng g c pages/collections/collection-details --standalone`).
-    -   Wygenerować `CollectionHeaderComponent` (`ng g c pages/collections/collection-details/components/collection-header --standalone`).
-3.  **Implementacja `CollectionDetailsPageComponent`**:
-    -   Wstrzyknąć `ActivatedRoute` i serwis API.
-    -   Utworzyć sygnały do zarządzania stanem (`state`, `currentPage`, `collectionId`).
-    -   Zaimplementować logikę pobierania danych w oparciu o `effect`.
-    -   Dodać metody do obsługi zmiany strony i usuwania przepisu.
-    -   Stworzyć szablon HTML, który będzie renderował `CollectionHeaderComponent` i `RecipeListComponent` oraz obsługiwał stany ładowania i błędów.
-4.  **Implementacja `CollectionHeaderComponent`**:
-    -   Dodać `@Input()` do przyjmowania danych kolekcji.
-    -   Zaimplementować prosty szablon HTML do wyświetlania nazwy i opisu.
-5.  **Routing**:
-    -   W głównym pliku routingowym dodać ścieżkę `/collections/:id`, która będzie leniwie ładować `CollectionDetailsPageComponent`.
-6.  **Serwis API**:
-    -   Rozszerzyć istniejący `CollectionApiService` o metody `getCollectionDetails(id: number, page: number, limit: number)` oraz `removeRecipeFromCollection(collectionId: number, recipeId: number)`.
-7.  **Testowanie**:
-    -   Manualne przetestowanie wszystkich interakcji użytkownika i obsługi błędów.
+1. **Doprecyzuj kontrakt listy przepisów kolekcji**:
+    - upewnij się, że `GET /collections/{id}` zwraca `recipes: { data, pageInfo }` (a nie paginację stron),
+    - w razie rozbieżności: ujednolić mapping w frontendzie do `CollectionDetailDto`.
+2. **Zmień integrację w `CollectionsApiService.getCollectionDetails`**:
+    - usuń `page` z query params dla tego widoku,
+    - użyj `limit` (np. `500`) i ewentualnie `sort`.
+3. **Zmień stan widoku (`CollectionDetailsViewModel`)**:
+    - zastąp `pagination` polem `recipesPageInfo` (lub analogicznym),
+    - dodaj typowany `error.kind`.
+4. **Zmień `CollectionDetailsPageComponent`**:
+    - usuń `currentPage`, `onPageChange` oraz `pageSize` w kontekście UI paginacji,
+    - załaduj dane jednorazowo po zmianie `collectionId`,
+    - dodaj obsługę `truncated` (banner/alert),
+    - przy reloadach stosuj `state.update()` i nie czyść listy przed zakończeniem requestu.
+5. **Zmień `pych-recipe-list` (komponent współdzielony)**:
+    - dodaj tryb „static”/flagę `showPaginator=false`,
+    - upewnij się, że paginator nie renderuje się w `/collections/:id`.
+6. **Dodaj/uzupełnij UI stanu pustego i błędów**:
+    - empty state z akcją powrotu,
+    - osobne komunikaty dla `403`/`404`.
+7. **Zweryfikuj UX usuwania przepisu**:
+    - modal potwierdzenia,
+    - snackbar po sukcesie i po błędzie,
+    - odświeżenie listy bez paginacji.

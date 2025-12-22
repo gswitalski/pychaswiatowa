@@ -1,7 +1,17 @@
 import {
     RecipeListItemDto,
-    PaginationDetails,
+    CollectionRecipesPageInfoDto,
 } from '../../../../../../shared/contracts/types';
+
+/**
+ * Typy błędów dla widoku szczegółów kolekcji
+ */
+export type CollectionDetailsErrorKind = 
+    | 'invalid_id'
+    | 'not_found'
+    | 'forbidden'
+    | 'server'
+    | 'unknown';
 
 /**
  * Model widoku dla strony szczegółów kolekcji
@@ -15,12 +25,15 @@ export interface CollectionDetailsViewModel {
     description: string | null;
     /** Lista przepisów w kolekcji */
     recipes: RecipeListItemDto[];
-    /** Informacje o paginacji */
-    pagination: PaginationDetails;
+    /** Informacje o batch przepisów (bez paginacji UI) */
+    recipesPageInfo: CollectionRecipesPageInfoDto | null;
     /** Flaga stanu ładowania */
     isLoading: boolean;
-    /** Komunikat błędu */
-    error: string | null;
+    /** Strukturyzowany błąd */
+    error: {
+        kind: CollectionDetailsErrorKind;
+        message: string;
+    } | null;
 }
 
 /**
@@ -31,11 +44,7 @@ export const initialCollectionDetailsState: CollectionDetailsViewModel = {
     name: '',
     description: null,
     recipes: [],
-    pagination: {
-        currentPage: 1,
-        totalPages: 0,
-        totalItems: 0,
-    },
+    recipesPageInfo: null,
     isLoading: true,
     error: null,
 };

@@ -45,8 +45,32 @@
         max-width: 400px;
     }
 
-    button {
+    .error-actions {
+        display: flex;
+        gap: 12px;
         margin-top: 8px;
+    }
+}
+
+.truncation-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    margin: 24px 0;
+    background-color: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+    border-radius: 8px;
+
+    mat-icon {
+        flex-shrink: 0;
+        color: var(--mat-sys-on-tertiary-container);
+    }
+
+    span {
+        flex: 1;
+        font-size: 0.875rem;
+        line-height: 1.5;
     }
 }
 
@@ -99,7 +123,12 @@
 
     .hint {
         margin-top: 8px;
+        margin-bottom: 16px;
         font-size: 0.875rem;
+    }
+
+    button {
+        margin-top: 8px;
     }
 }
 
@@ -121,6 +150,18 @@
             height: 48px;
         }
     }
-}
 
+    .truncation-warning {
+        font-size: 0.8125rem;
+    }
+
+    .error-actions {
+        flex-direction: column;
+        width: 100%;
+
+        button {
+            width: 100%;
+        }
+    }
+}
 

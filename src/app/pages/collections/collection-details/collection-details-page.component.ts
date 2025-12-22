@@ -13,8 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { PageEvent } from '@angular/material/paginator';
-import { Subject, takeUntil, filter, switchMap } from 'rxjs';
+import { Subject, takeUntil, filter, switchMap, catchError, of } from 'rxjs';
 
 import { CollectionsApiService } from '../../../core/services/collections-api.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -30,6 +29,7 @@ import { CollectionHeaderComponent } from './components/collection-header/collec
 import {
     CollectionDetailsViewModel,
     initialCollectionDetailsState,
+    CollectionDetailsErrorKind,
 } from './models/collection-details.model';
 
 @Component({
@@ -57,17 +57,14 @@ export class CollectionDetailsPageComponent implements OnDestroy {
     private readonly dialog = inject(MatDialog);
     private readonly destroy$ = new Subject<void>();
 
-    /** Rozmiar strony dla paginacji */
-    private readonly pageSize = 12;
+    /** Limit techniczny dla batch recipes */
+    private readonly RECIPES_LIMIT = 500;
 
     /** Stan widoku */
     readonly state = signal<CollectionDetailsViewModel>(initialCollectionDetailsState);
 
     /** ID kolekcji z parametru URL */
     readonly collectionId = signal<number | null>(null);
-
-    /** Aktualna strona */
-    readonly currentPage = signal<number>(1);
 
     /** Computed signals */
     readonly isLoading = computed(() => this.state().isLoading);
@@ -77,13 +74,16 @@ export class CollectionDetailsPageComponent implements OnDestroy {
         description: this.state().description,
     }));
     readonly recipes = computed(() => this.state().recipes);
-    readonly pagination = computed(() => this.state().pagination);
+    readonly recipesPageInfo = computed(() => this.state().recipesPageInfo);
     readonly isEmpty = computed(
         () => !this.state().isLoading && this.state().recipes.length === 0 && !this.state().error
     );
     readonly hasData = computed(
         () => !this.state().isLoading && !this.state().error && this.state().id > 0
     );
+    readonly isTruncated = computed(() => this.state().recipesPageInfo?.truncated === true);
+    readonly totalRecipesCount = computed(() => this.state().recipesPageInfo?.returned ?? 0);
+    
     readonly recipeListItems = computed<RecipeListItemViewModel[]>(() =>
         this.state().recipes.map((recipe) => ({
             card: {
@@ -105,10 +105,9 @@ export class CollectionDetailsPageComponent implements OnDestroy {
         // Efekt nasłuchujący na zmiany parametru ID w URL
         effect(() => {
             const id = this.collectionId();
-            const page = this.currentPage();
 
             if (id !== null) {
-                this.loadCollectionDetails(id, page);
+                this.loadCollectionDetails(id);
             }
         });
 
@@ -117,11 +116,14 @@ export class CollectionDetailsPageComponent implements OnDestroy {
             const idParam = params.get('id');
             const id = idParam ? parseInt(idParam, 10) : null;
 
-            if (id === null || isNaN(id)) {
+            if (id === null || isNaN(id) || id <= 0) {
                 this.state.update((s) => ({
                     ...s,
                     isLoading: false,
-                    error: 'Nieprawidłowy identyfikator kolekcji',
+                    error: {
+                        kind: 'invalid_id',
+                        message: 'Nieprawidłowy identyfikator kolekcji.',
+                    },
                 }));
                 return;
             }
@@ -133,13 +135,6 @@ export class CollectionDetailsPageComponent implements OnDestroy {
     ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
-    }
-
-    /**
-     * Obsługuje zmianę strony w paginatorze
-     */
-    onPageChange(event: PageEvent): void {
-        this.currentPage.set(event.pageIndex + 1);
     }
 
     /**
@@ -170,6 +165,9 @@ export class CollectionDetailsPageComponent implements OnDestroy {
                     if (collectionId === null) {
                         throw new Error('Brak ID kolekcji');
                     }
+                    // Sygnalizuj reload (bez zerowania listy)
+                    this.state.update((s) => ({ ...s, isLoading: true }));
+                    
                     return this.collectionsApi.removeRecipeFromCollection(collectionId, recipeId);
                 }),
                 takeUntil(this.destroy$)
@@ -177,10 +175,12 @@ export class CollectionDetailsPageComponent implements OnDestroy {
             .subscribe({
                 next: () => {
                     this.showSuccess('Przepis został usunięty z kolekcji.');
-                    // Odśwież dane po usunięciu
-                    this.refreshCurrentPage();
+                    // Odśwież dane (utrzymując poprzednie przepisy widoczne do momentu załadowania)
+                    this.reloadCollectionDetails();
                 },
                 error: () => {
+                    // Wyłącz loading i przywróć stan
+                    this.state.update((s) => ({ ...s, isLoading: false }));
                     this.showError('Nie udało się usunąć przepisu z kolekcji.');
                 },
             });
@@ -194,60 +194,127 @@ export class CollectionDetailsPageComponent implements OnDestroy {
     }
 
     /**
-     * Ładuje szczegóły kolekcji z API
+     * Ponawia ładowanie kolekcji (retry)
      */
-    private loadCollectionDetails(id: number, page: number): void {
+    retry(): void {
+        const id = this.collectionId();
+        if (id !== null) {
+            this.loadCollectionDetails(id);
+        }
+    }
+
+    /**
+     * Ładuje szczegóły kolekcji z API (jednorazowo, bez paginacji)
+     */
+    private loadCollectionDetails(id: number): void {
         this.state.update((s) => ({ ...s, isLoading: true, error: null }));
 
         this.collectionsApi
-            .getCollectionDetails(id, page, this.pageSize)
-            .pipe(takeUntil(this.destroy$))
+            .getCollectionDetails(id, this.RECIPES_LIMIT)
+            .pipe(
+                catchError((err) => {
+                    const error = this.parseError(err);
+                    this.state.update((s) => ({
+                        ...s,
+                        isLoading: false,
+                        error,
+                    }));
+                    return of(null);
+                }),
+                takeUntil(this.destroy$)
+            )
             .subscribe({
                 next: (details) => {
-                    this.state.update((s) => ({
-                        ...s,
-                        id: details.id,
-                        name: details.name,
-                        description: details.description,
-                        recipes: details.recipes.data,
-                        pagination: details.recipes.pagination,
-                        isLoading: false,
-                        error: null,
-                    }));
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.state.update((s) => ({
-                        ...s,
-                        isLoading: false,
-                        error: errorMessage,
-                    }));
+                    if (details) {
+                        this.state.update((s) => ({
+                            ...s,
+                            id: details.id,
+                            name: details.name,
+                            description: details.description,
+                            recipes: details.recipes.data,
+                            recipesPageInfo: details.recipes.pageInfo,
+                            isLoading: false,
+                            error: null,
+                        }));
+                    }
                 },
             });
     }
 
     /**
-     * Odświeża dane dla bieżącej strony
+     * Przeładowuje kolekcję (używane po usunięciu przepisu)
+     * Utrzymuje poprzednie dane widoczne i używa state.update()
      */
-    private refreshCurrentPage(): void {
+    private reloadCollectionDetails(): void {
         const id = this.collectionId();
-        const page = this.currentPage();
+        if (id === null) return;
 
-        if (id !== null) {
-            this.loadCollectionDetails(id, page);
-        }
+        this.collectionsApi
+            .getCollectionDetails(id, this.RECIPES_LIMIT)
+            .pipe(
+                catchError((err) => {
+                    const error = this.parseError(err);
+                    this.state.update((s) => ({
+                        ...s,
+                        isLoading: false,
+                        error,
+                    }));
+                    return of(null);
+                }),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (details) => {
+                    if (details) {
+                        // Aktualizuj dane bez zerowania (state.update)
+                        this.state.update((s) => ({
+                            ...s,
+                            id: details.id,
+                            name: details.name,
+                            description: details.description,
+                            recipes: details.recipes.data,
+                            recipesPageInfo: details.recipes.pageInfo,
+                            isLoading: false,
+                            error: null,
+                        }));
+                    }
+                },
+            });
     }
 
     /**
-     * Generuje komunikat błędu na podstawie typu błędu
+     * Parsuje błąd z API i zwraca typowany error object
      */
-    private getErrorMessage(error: unknown): string {
+    private parseError(error: unknown): { kind: CollectionDetailsErrorKind; message: string } {
         if (error instanceof Error) {
-            if (error.message.includes('nie znaleziono') || error.message.includes('Not Found')) {
-                return 'Nie znaleziono kolekcji. Być może została usunięta.';
+            const msg = error.message.toLowerCase();
+            
+            if (msg.includes('nie znaleziono') || msg.includes('not found') || msg.includes('404')) {
+                return {
+                    kind: 'not_found',
+                    message: 'Nie znaleziono kolekcji. Być może została usunięta.',
+                };
+            }
+            
+            if (msg.includes('forbidden') || msg.includes('403') || msg.includes('brak dostępu')) {
+                return {
+                    kind: 'forbidden',
+                    message: 'Nie masz dostępu do tej kolekcji.',
+                };
+            }
+            
+            if (msg.includes('500') || msg.includes('internal') || msg.includes('server')) {
+                return {
+                    kind: 'server',
+                    message: 'Wystąpił błąd serwera. Spróbuj ponownie później.',
+                };
             }
         }
-        return 'Wystąpił błąd podczas ładowania kolekcji. Spróbuj ponownie później.';
+        
+        return {
+            kind: 'unknown',
+            message: 'Wystąpił nieoczekiwany błąd podczas ładowania kolekcji.',
+        };
     }
 
     /**

@@ -12,14 +12,21 @@
     }
 
     <!-- Stan błędu -->
-    @if (error(); as errorMessage) {
+    @if (error(); as errorObj) {
         <div class="error-container">
             <mat-icon class="error-icon">error_outline</mat-icon>
             <h2>Wystąpił błąd</h2>
-            <p>{{ errorMessage }}</p>
-            <button mat-flat-button color="primary" (click)="navigateBack()">
-                Wróć do listy kolekcji
-            </button>
+            <p>{{ errorObj.message }}</p>
+            <div class="error-actions">
+                <button mat-flat-button color="primary" (click)="navigateBack()">
+                    Wróć do listy kolekcji
+                </button>
+                @if (errorObj.kind === 'server' || errorObj.kind === 'unknown') {
+                    <button mat-stroked-button (click)="retry()">
+                        Spróbuj ponownie
+                    </button>
+                }
+            </div>
         </div>
     }
 
@@ -27,11 +34,22 @@
     @if (hasData()) {
         <pych-collection-header [collectionData]="collectionData()" />
 
+        <!-- Ostrzeżenie o truncacji -->
+        @if (isTruncated()) {
+            <div class="truncation-warning">
+                <mat-icon>info</mat-icon>
+                <span>
+                    Wyświetlono tylko część przepisów z powodu ograniczeń technicznych. 
+                    Niektóre przepisy mogą nie być widoczne.
+                </span>
+            </div>
+        }
+
         <section class="recipes-section">
             <h2 class="section-title">
                 Przepisy w kolekcji
-                @if (pagination().totalItems > 0) {
-                    <span class="recipes-count">({{ pagination().totalItems }})</span>
+                @if (totalRecipesCount() > 0) {
+                    <span class="recipes-count">({{ totalRecipesCount() }})</span>
                 }
             </h2>
 
@@ -41,20 +59,20 @@
                     <h3>Brak przepisów</h3>
                     <p>Ta kolekcja nie zawiera jeszcze żadnych przepisów.</p>
                     <p class="hint">Dodaj przepisy do kolekcji z poziomu strony przepisu.</p>
+                    <button mat-flat-button color="primary" (click)="navigateBack()">
+                        Wróć do listy kolekcji
+                    </button>
                 </div>
             } @else {
                 <pych-recipe-list
                     [recipes]="recipeListItems()"
                     [isLoading]="isLoading()"
                     [showRemoveAction]="true"
-                    [pagination]="pagination()"
-                    [pageSize]="12"
-                    (pageChange)="onPageChange($event)"
+                    [usePaginator]="false"
                     (removeRecipe)="onRemoveRecipe($event)"
                 />
             }
         </section>
     }
 </div>
-
 

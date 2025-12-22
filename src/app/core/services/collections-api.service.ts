@@ -103,17 +103,20 @@ export class CollectionsApiService {
     }
 
     /**
-     * Pobiera szczegóły kolekcji wraz z listą przepisów
+     * Pobiera szczegóły kolekcji wraz z pełną listą przepisów (batch, bez paginacji UI)
      * GET /collections/{id}
+     * @param id - ID kolekcji
+     * @param limit - Limit techniczny (domyślnie 500)
+     * @param sort - Pole sortowania (domyślnie 'created_at.desc')
      */
     getCollectionDetails(
         id: number,
-        page = 1,
-        limit = 12
+        limit = 500,
+        sort = 'created_at.desc'
     ): Observable<CollectionDetailDto> {
         const queryParams = new URLSearchParams();
-        queryParams.append('page', page.toString());
         queryParams.append('limit', limit.toString());
+        queryParams.append('sort', sort);
 
         return from(
             this.supabase.functions.invoke<CollectionDetailDto>(
