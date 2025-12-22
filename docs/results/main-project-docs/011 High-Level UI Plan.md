@@ -135,7 +135,13 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Główny cel:** Wyświetlanie przepisów przypisanych do konkretnej kolekcji.
 - **Kluczowe informacje do wyświetlenia:** Nazwa i opis kolekcji, lista zawartych w niej przepisów.
 - **Kluczowe komponenty widoku:** Lista przepisów (komponent współdzielony z Listą Przepisów), przycisk "Usuń z kolekcji" przy każdym przepisie.
-- **Względy UX, dostępności i bezpieczeństwa:** Spójna prezentacja przepisów z główną listą.
+- **Względy UX, dostępności i bezpieczeństwa:**
+    - Spójna prezentacja przepisów z główną listą.
+    - **Brak paginacji w UI:** lista przepisów kolekcji ładuje się i wyświetla od razu w całości (bez przycisku "Więcej" i bez paginatora).
+    - **Stan ładowania:** podczas pobierania danych widoczny jest czytelny loader/skeleton (np. dla siatki kart przepisów).
+    - **Stan pusty:** jeśli kolekcja nie ma przepisów, widoczny jest komunikat + akcja powrotu do listy kolekcji (`/collections`).
+    - **Błędy dostępu:** dla `404`/`403` pokazujemy komunikat i akcję powrotu do `/collections`.
+    - **Limit techniczny API (jeśli dotyczy):** jeśli backend ogranicza maksymalną liczbę zwracanych elementów, UI pokazuje czytelne ostrzeżenie o możliwie niepełnym wyniku.
 
 **13. Ustawienia Konta**
 - **Ścieżka:** `/settings`

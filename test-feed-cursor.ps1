@@ -7,7 +7,7 @@ Write-Host "Testing: GET with cursor (page 2)" -ForegroundColor Yellow
 try {
     $response = Invoke-WebRequest -Uri $uri -Headers @{"apikey"=$apiKey} -UseBasicParsing
     Write-Host "Status: $($response.StatusCode)" -ForegroundColor Green
-    
+
     $json = $response.Content | ConvertFrom-Json
     Write-Host "Recipes count: $($json.data.Count)" -ForegroundColor Cyan
     Write-Host "First recipe ID: $($json.data[0].id)" -ForegroundColor Cyan

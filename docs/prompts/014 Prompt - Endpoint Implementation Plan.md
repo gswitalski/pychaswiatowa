@@ -12,12 +12,10 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-</api_changes_description>
+### `GET /collections/{id}` (zmienione)
+- **Co się zmieniło**: endpoint nie opisuje już paginacji listy przepisów kolekcji. Zamiast tego zwraca listę w jednym batchu, z bezpiecznym limitem (`limit`, domyślnie 500) oraz `pageInfo.truncated`, aby UI mogło poinformować użytkownika, jeśli wynik został ucięty technicznie.
 
-aktualna implementacja:
-<current_implementation>
-brak
-</current_implementation>
+</api_changes_description>
 
 
 3. Related database resources:

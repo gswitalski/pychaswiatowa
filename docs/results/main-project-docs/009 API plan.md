@@ -501,10 +501,10 @@ Public endpoints are available without authentication and must return **only** r
 
 #### `GET /collections/{id}`
 
--   **Description**: Retrieve a single collection and a paginated list of its recipes.
+-   **Description**: Retrieve a single collection and a single-batch (non-UI-paginated) list of its recipes. Intended for the `/collections/:id` view, which loads all recipes at once.
 -   **Query Parameters**:
-    -   `page` (optional, integer, default: 1): The page number for recipe pagination.
-    -   `limit` (optional, integer, default: 20): The number of recipes per page.
+    -   `limit` (optional, integer, default: 500): Safety limit for the number of recipes returned in one response.
+    -   `sort` (optional, string, default: `created_at.desc`): Sort order for recipes. Must be stable. e.g., `created_at.desc`, `name.asc`.
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
@@ -517,14 +517,17 @@ Public endpoints are available without authentication and must return **only** r
             "data": [
               { "id": 1, "name": "Apple Pie" }
             ],
-            "pagination": {
-              "currentPage": 1,
-              "totalPages": 2,
-              "totalItems": 40
+            "pageInfo": {
+              "limit": 500,
+              "returned": 40,
+              "truncated": false
             }
           }
         }
         ```
+-   **Notes**:
+    - The UI for `/collections/:id` does not paginate; it renders the returned list in full.
+    - If `pageInfo.truncated = true`, the client should show a clear message that not all recipes could be loaded due to a technical limit.
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
     -   **Code**: `403 Forbidden`
