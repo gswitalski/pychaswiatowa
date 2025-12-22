@@ -29,21 +29,47 @@
             }
         </div>
 
-        @if (isLoading()) {
-            <div class="loading-indicator">
-                <mat-spinner diameter="32"></mat-spinner>
-            </div>
-        }
+        @if (useLoadMore()) {
+            <!-- Tryb "Load More" -->
+            @if (isLoadingMore()) {
+                <div class="loading-more-indicator">
+                    <mat-spinner diameter="32"></mat-spinner>
+                </div>
+            }
 
-        @if (pagination(); as pag) {
-            <mat-paginator
-                [length]="pag.totalItems"
-                [pageSize]="pageSize()"
-                [pageIndex]="pag.currentPage - 1"
-                [pageSizeOptions]="pageSizeOptions()"
-                (page)="onPageChange($event)"
-                showFirstLastButtons
-            />
+            @if (hasMore() && !isLoadingMore()) {
+                <div class="load-more-container">
+                    <button
+                        mat-flat-button
+                        color="primary"
+                        [disabled]="isLoadingMore() || isLoading()"
+                        (click)="onLoadMore()"
+                        class="load-more-button"
+                    >
+                        {{ isLoadingMore() ? loadingMoreLabel() : loadMoreLabel() }}
+                    </button>
+                </div>
+            }
+        } @else {
+            <!-- Tryb Paginator (domyślny) -->
+            @if (isLoading()) {
+                <div class="loading-indicator">
+                    <mat-spinner diameter="32"></mat-spinner>
+                </div>
+            }
+
+            @if (usePaginator()) {
+                @if (pagination(); as pag) {
+                    <mat-paginator
+                        [length]="pag.totalItems"
+                        [pageSize]="pageSize()"
+                        [pageIndex]="pag.currentPage - 1"
+                        [pageSizeOptions]="pageSizeOptions()"
+                        (page)="onPageChange($event)"
+                        showFirstLastButtons
+                    />
+                }
+            }
         }
     }
 </div>

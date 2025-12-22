@@ -8,12 +8,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PageEvent } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchError, of } from 'rxjs';
 
-import { PublicRecipesService, GetPublicRecipesParams } from '../../core/services/public-recipes.service';
+import { PublicRecipesService, GetPublicRecipesFeedParams } from '../../core/services/public-recipes.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PublicRecipesSearchComponent } from '../landing/components/public-recipes-search/public-recipes-search';
 import { RecipeCardData } from '../../shared/components/recipe-card/recipe-card';
@@ -52,6 +52,7 @@ export class ExplorePageComponent {
     private readonly router = inject(Router);
     private readonly publicRecipesService = inject(PublicRecipesService);
     private readonly authService = inject(AuthService);
+    private readonly snackBar = inject(MatSnackBar);
 
     /** Stan zapytania (synchronizowany z URL) */
     readonly queryState = signal<ExploreQueryState>({ ...DEFAULT_QUERY_STATE });
@@ -91,10 +92,10 @@ export class ExplorePageComponent {
         // Inicjalizacja stanu z URL query params
         this.initializeFromUrl();
 
-        // Effect reagujący na zmiany query state i pobierający dane
+        // Effect reagujący na zmiany query state i pobierający pierwszą porcję danych
         effect(() => {
             const query = this.queryState();
-            this.loadRecipes(query);
+            this.loadInitialRecipes(query);
         });
     }
 
@@ -119,16 +120,14 @@ export class ExplorePageComponent {
         const params = this.route.snapshot.queryParamMap;
 
         const q = params.get('q') || '';
-        const page = this.parsePositiveInt(params.get('page'), DEFAULT_QUERY_STATE.page);
         const limit = this.parsePositiveInt(params.get('limit'), DEFAULT_QUERY_STATE.limit);
         const sort = params.get('sort') || DEFAULT_QUERY_STATE.sort;
 
-        // Walidacja limitu - tylko dozwolone wartości
-        const validatedLimit = [12, 24, 48].includes(limit) ? limit : DEFAULT_QUERY_STATE.limit;
+        // Walidacja limitu - stała wartość 12 dla feed (nie eksponujemy zmiany w UI)
+        const validatedLimit = 12;
 
         this.queryState.set({
             q: q.trim(),
-            page: Math.max(1, page),
             limit: validatedLimit,
             sort: this.validateSort(sort),
         });
@@ -152,31 +151,92 @@ export class ExplorePageComponent {
     }
 
     /**
-     * Pobiera przepisy z API na podstawie query state.
+     * Pobiera pierwszą porcję przepisów z API (cursor-based).
+     * Wywoływana automatycznie przez effect przy zmianie queryState.
      */
-    private loadRecipes(query: ExploreQueryState): void {
+    private loadInitialRecipes(query: ExploreQueryState): void {
         // Walidacja: q musi mieć min. 2 znaki jeśli nie jest puste
         if (query.q.length === 1) {
             this.pageState.update(state => ({
                 ...state,
                 validationMessage: 'Wpisz co najmniej 2 znaki',
-                isLoading: false,
                 isInitialLoading: false,
             }));
             return;
         }
 
-        // Ustaw stan ładowania (bez czyszczenia recipes - "keep previous data visible")
+        // Reset listy i ustaw stan ładowania początkowego
         this.pageState.update(state => ({
             ...state,
-            isLoading: true,
+            items: [],
+            pageInfo: { hasMore: false, nextCursor: null },
+            isInitialLoading: true,
             errorMessage: null,
             validationMessage: null,
         }));
 
-        // Przygotuj parametry API (nie przekazuj q jeśli puste)
-        const params: GetPublicRecipesParams = {
-            page: query.page,
+        // Przygotuj parametry API (cursor undefined = pierwsza porcja)
+        const params: GetPublicRecipesFeedParams = {
+            cursor: undefined,
+            limit: query.limit,
+            sort: query.sort,
+        };
+
+        // Tylko wysyłaj q jeśli ma min. 2 znaki
+        if (query.q.length >= 2) {
+            params.q = query.q;
+        }
+
+        // Wywołaj API
+        this.publicRecipesService
+            .getPublicRecipesFeed(params)
+            .pipe(
+                catchError(error => {
+                    console.error('Błąd pobierania przepisów:', error);
+                    this.pageState.update(state => ({
+                        ...state,
+                        errorMessage: 'Wystąpił błąd podczas pobierania przepisów. Spróbuj ponownie.',
+                        isInitialLoading: false,
+                    }));
+                    return of(null);
+                })
+            )
+            .subscribe({
+                next: response => {
+                    if (response) {
+                        this.pageState.update(state => ({
+                            ...state,
+                            items: response.data,
+                            pageInfo: response.pageInfo,
+                            isInitialLoading: false,
+                            errorMessage: null,
+                        }));
+                    }
+                },
+            });
+    }
+
+    /**
+     * Doładowuje kolejną porcję przepisów (kliknięcie "Więcej").
+     */
+    onLoadMore(): void {
+        const state = this.pageState();
+        const query = this.queryState();
+
+        // Guard: jeśli już ładuje lub brak kolejnych danych, nie rób nic
+        if (state.isLoadingMore || !state.pageInfo.hasMore) {
+            return;
+        }
+
+        // Ustaw stan ładowania kolejnych danych (bez czyszczenia items)
+        this.pageState.update(s => ({
+            ...s,
+            isLoadingMore: true,
+        }));
+
+        // Przygotuj parametry API z cursorem
+        const params: GetPublicRecipesFeedParams = {
+            cursor: state.pageInfo.nextCursor ?? undefined,
             limit: query.limit,
             sort: query.sort,
         };
@@ -187,39 +247,36 @@ export class ExplorePageComponent {
 
         // Wywołaj API
         this.publicRecipesService
-            .getPublicRecipes(params)
+            .getPublicRecipesFeed(params)
             .pipe(
                 catchError(error => {
-                    console.error('Błąd pobierania przepisów:', error);
-                    return of({
-                        data: [],
-                        pagination: {
-                            currentPage: query.page,
-                            totalPages: 0,
-                            totalItems: 0,
-                        },
+                    console.error('Błąd doładowania przepisów:', error);
+                    this.pageState.update(s => ({
+                        ...s,
+                        isLoadingMore: false,
+                    }));
+                    // Pokaż snackbar z możliwością ponowienia
+                    this.snackBar.open(
+                        'Nie udało się doładować przepisów.',
+                        'Ponów',
+                        { duration: 5000 }
+                    ).onAction().subscribe(() => {
+                        this.onLoadMore();
                     });
+                    return of(null);
                 })
             )
             .subscribe({
                 next: response => {
-                    // Zapisz surowe DTO (zawierają dane autora)
-                    this.pageState.update(state => ({
-                        ...state,
-                        items: response.data,
-                        pagination: response.pagination,
-                        isLoading: false,
-                        isInitialLoading: false,
-                        errorMessage: null,
-                    }));
-                },
-                error: () => {
-                    this.pageState.update(state => ({
-                        ...state,
-                        errorMessage: 'Wystąpił błąd podczas pobierania przepisów. Spróbuj ponownie.',
-                        isLoading: false,
-                        isInitialLoading: false,
-                    }));
+                    if (response) {
+                        // Dopnij nowe wyniki do istniejącej listy
+                        this.pageState.update(s => ({
+                            ...s,
+                            items: [...s.items, ...response.data],
+                            pageInfo: response.pageInfo,
+                            isLoadingMore: false,
+                        }));
+                    }
                 },
             });
     }
@@ -252,15 +309,15 @@ export class ExplorePageComponent {
 
     /**
      * Obsługuje submit wyszukiwania.
+     * Resetuje listę do pierwszej porcji 12 elementów.
      */
     onSearchSubmit(query: string): void {
         const trimmedQuery = query.trim();
 
-        // Aktualizuj query state (reset strony do 1)
+        // Aktualizuj query state (automatycznie wywołuje effect i reset listy)
         this.queryState.update(state => ({
             ...state,
             q: trimmedQuery,
-            page: 1,
         }));
 
         // Aktualizuj URL
@@ -268,39 +325,20 @@ export class ExplorePageComponent {
     }
 
     /**
-     * Obsługuje zmianę strony w paginatorze.
-     */
-    onPageChange(event: PageEvent): void {
-        this.queryState.update(state => ({
-            ...state,
-            page: event.pageIndex + 1, // mat-paginator używa 0-based index
-            limit: event.pageSize,
-        }));
-
-        // Aktualizuj URL
-        this.updateUrl();
-
-        // Scroll do góry strony
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    /**
-     * Ponawia ostatnie zapytanie (po błędzie).
+     * Ponawia ostatnie zapytanie (po błędzie początkowego ładowania).
      */
     onRetry(): void {
         const query = this.queryState();
-        this.loadRecipes(query);
+        this.loadInitialRecipes(query);
     }
 
     /**
      * Aktualizuje URL query params na podstawie query state.
+     * Nie przechowujemy cursorów w URL (tylko q, sort, limit jeśli wspierane).
      */
     private updateUrl(): void {
         const query = this.queryState();
-        const queryParams: Record<string, string | number | null> = {
-            page: query.page > 1 ? query.page : null,
-            limit: query.limit !== DEFAULT_QUERY_STATE.limit ? query.limit : null,
-        };
+        const queryParams: Record<string, string | number | null> = {};
 
         // Dodaj q tylko jeśli nie jest puste
         if (query.q) {
@@ -311,6 +349,8 @@ export class ExplorePageComponent {
         if (query.sort !== DEFAULT_QUERY_STATE.sort) {
             queryParams['sort'] = query.sort;
         }
+
+        // Limit zawsze 12 w MVP feedu, więc nie dodajemy do URL
 
         this.router.navigate([], {
             relativeTo: this.route,

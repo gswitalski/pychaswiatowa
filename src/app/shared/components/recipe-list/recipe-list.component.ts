@@ -9,6 +9,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatButtonModule } from '@angular/material/button';
 
 import { PaginationDetails } from '../../../../../shared/contracts/types';
 import {
@@ -32,6 +33,7 @@ export interface RecipeListItemViewModel {
         EmptyStateComponent,
         MatProgressSpinnerModule,
         MatPaginatorModule,
+        MatButtonModule,
         NgTemplateOutlet,
     ],
     templateUrl: './recipe-list.component.html',
@@ -72,11 +74,36 @@ export class RecipeListComponent {
     @ContentChild('emptyState', { read: TemplateRef })
     emptyStateTemplate?: TemplateRef<unknown>;
 
+    // --- NOWE PROPSY DLA TRYBU "LOAD MORE" ---
+
+    /** Czy użyć trybu "load more" zamiast paginatora */
+    readonly useLoadMore = input<boolean>(false);
+
+    /** Czy jest więcej danych do załadowania (cursor-based pagination) */
+    readonly hasMore = input<boolean>(false);
+
+    /** Czy trwa doładowywanie kolejnych danych */
+    readonly isLoadingMore = input<boolean>(false);
+
+    /** Etykieta przycisku "Więcej" */
+    readonly loadMoreLabel = input<string>('Więcej');
+
+    /** Etykieta podczas ładowania kolejnych danych */
+    readonly loadingMoreLabel = input<string>('Ładowanie…');
+
+    /** Czy pokazywać paginator (domyślnie true dla kompatybilności wstecznej) */
+    readonly usePaginator = input<boolean>(true);
+
+    // --- EVENTY ---
+
     /** Event emitowany przy zmianie strony */
     readonly pageChange = output<PageEvent>();
 
     /** Event emitowany przy żądaniu usunięcia przepisu z kolekcji */
     readonly removeRecipe = output<number>();
+
+    /** Event emitowany przy kliknięciu "Więcej" (tryb load more) */
+    readonly loadMore = output<void>();
 
     /**
      * Obsługuje zmianę strony w paginatorze
@@ -90,5 +117,12 @@ export class RecipeListComponent {
      */
     onRemoveRecipe(recipeId: number): void {
         this.removeRecipe.emit(recipeId);
+    }
+
+    /**
+     * Obsługuje kliknięcie przycisku "Więcej"
+     */
+    onLoadMore(): void {
+        this.loadMore.emit();
     }
 }

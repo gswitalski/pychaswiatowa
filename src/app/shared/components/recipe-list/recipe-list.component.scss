@@ -41,3 +41,20 @@ mat-paginator {
     margin-top: 24px;
     background: transparent;
 }
+
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    padding: 32px 0;
+}
+
+.load-more-button {
+    min-width: 200px;
+    padding: 12px 32px;
+}
+
+.loading-more-indicator {
+    display: flex;
+    justify-content: center;
+    padding: 32px;
+}

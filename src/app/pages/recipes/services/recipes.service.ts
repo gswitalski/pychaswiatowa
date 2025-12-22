@@ -10,6 +10,7 @@ import {
     RecipeListItemDto,
     ImportRecipeCommand,
     UploadRecipeImageResponseDto,
+    CursorPaginatedResponseDto,
 } from '../../../../../shared/contracts/types';
 
 /**
@@ -22,6 +23,28 @@ export interface GetRecipesParams {
     limit?: number;
     /** Numer strony (zaczyna od 1) */
     page?: number;
+    /** Fraza do wyszukiwania w nazwie przepisu */
+    search?: string;
+    /** ID kategorii do filtrowania */
+    categoryId?: number | null;
+    /** Lista nazw tagów do filtrowania */
+    tags?: string[];
+    /** Widok: 'my_recipes' - moje przepisy + cudze z moich kolekcji, domyślnie wszystkie */
+    view?: 'my_recipes';
+    /** Filtr termorobot: true = tylko termorobot, false = bez termorobota, null/undefined = wszystkie */
+    termorobot?: boolean | null;
+}
+
+/**
+ * Parametry zapytania do pobierania feedu przepisów (cursor-based)
+ */
+export interface GetRecipesFeedParams {
+    /** Cursor do pobrania kolejnej strony (opcjonalny) */
+    cursor?: string;
+    /** Liczba elementów na stronie */
+    limit?: number;
+    /** Format: 'column.direction' np. 'created_at.desc' */
+    sort?: string;
     /** Fraza do wyszukiwania w nazwie przepisu */
     search?: string;
     /** ID kategorii do filtrowania */
@@ -121,6 +144,74 @@ export class RecipesService {
                 return response.data ?? {
                     data: [],
                     pagination: { currentPage: 1, totalPages: 0, totalItems: 0 },
+                };
+            })
+        );
+    }
+
+    /**
+     * Pobiera feed przepisów z cursor-based pagination.
+     * Wywołuje GET /functions/v1/recipes/feed z parametrami zapytania.
+     *
+     * @param params Parametry zapytania (cursor, limit, sort, search, filtry)
+     * @returns Observable z listą przepisów i metadanymi cursor pagination
+     */
+    getRecipesFeed(
+        params: GetRecipesFeedParams = {}
+    ): Observable<CursorPaginatedResponseDto<RecipeListItemDto>> {
+        // Build query parameters
+        const queryParams = new URLSearchParams();
+
+        if (params.cursor) {
+            queryParams.append('cursor', params.cursor);
+        }
+
+        if (params.limit) {
+            queryParams.append('limit', params.limit.toString());
+        }
+
+        if (params.sort) {
+            queryParams.append('sort', params.sort);
+        }
+
+        if (params.search) {
+            queryParams.append('search', params.search);
+        }
+
+        if (params.categoryId) {
+            queryParams.append('filter[category_id]', params.categoryId.toString());
+        }
+
+        if (params.tags && params.tags.length > 0) {
+            queryParams.append('filter[tags]', params.tags.join(','));
+        }
+
+        if (params.view) {
+            queryParams.append('view', params.view);
+        }
+
+        if (params.termorobot !== null && params.termorobot !== undefined) {
+            queryParams.append('filter[termorobot]', params.termorobot.toString());
+        }
+
+        const queryString = queryParams.toString();
+        const endpoint = queryString ? `recipes/feed?${queryString}` : 'recipes/feed';
+
+        return from(
+            this.supabase.functions.invoke<CursorPaginatedResponseDto<RecipeListItemDto>>(
+                endpoint,
+                {
+                    method: 'GET',
+                }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw new Error(response.error.message || 'Błąd pobierania przepisów');
+                }
+                return response.data ?? {
+                    data: [],
+                    pageInfo: { hasMore: false, nextCursor: null },
                 };
             })
         );

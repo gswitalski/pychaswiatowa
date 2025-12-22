@@ -11,9 +11,8 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { forkJoin } from 'rxjs';
+import { forkJoin, catchError, of } from 'rxjs';
 
 import { RecipesFiltersComponent } from './components/recipes-filters/recipes-filters.component';
 import {
@@ -22,30 +21,30 @@ import {
 } from '../../../shared/components/recipe-list/recipe-list.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
-import { RecipesService, GetRecipesParams } from '../services/recipes.service';
+import { RecipesService, GetRecipesFeedParams } from '../services/recipes.service';
 import { CategoriesService } from '../../../core/services/categories.service';
 import { TagsService } from '../../../core/services/tags.service';
 import {
     CategoryDto,
     RecipeListItemDto,
     TagDto,
+    CursorPageInfoDto,
 } from '../../../../../shared/contracts/types';
 import {
     DEFAULT_FILTERS,
     RecipesFiltersViewModel,
 } from './models/recipes-filters.model';
 
+/**
+ * Stan strony z przepisami używający cursor-based pagination
+ */
 interface RecipesPageState {
     recipes: RecipeListItemDto[];
-    pagination: {
-        currentPage: number;
-        totalPages: number;
-        totalItems: number;
-    };
+    pageInfo: CursorPageInfoDto;
     categories: CategoryDto[];
     tags: TagDto[];
-    isLoading: boolean;
     isInitialLoading: boolean;
+    isLoadingMore: boolean;
     error: string | null;
 }
 
@@ -56,7 +55,6 @@ interface RecipesPageState {
         RouterLink,
         MatButtonModule,
         MatIconModule,
-        MatPaginatorModule,
         MatSnackBarModule,
         RecipesFiltersComponent,
         RecipeListComponent,
@@ -74,33 +72,30 @@ export class RecipesListPageComponent implements OnInit {
     private readonly tagsService = inject(TagsService);
     private readonly snackBar = inject(MatSnackBar);
 
+    /** Stały rozmiar porcji dla feedu */
+    private readonly FEED_LIMIT = 12;
+
     /** Stan strony */
     private readonly state = signal<RecipesPageState>({
         recipes: [],
-        pagination: { currentPage: 1, totalPages: 0, totalItems: 0 },
+        pageInfo: { hasMore: false, nextCursor: null },
         categories: [],
         tags: [],
-        isLoading: false,
         isInitialLoading: true,
+        isLoadingMore: false,
         error: null,
     });
 
     /** Stan filtrów */
     readonly filters = signal<RecipesFiltersViewModel>(DEFAULT_FILTERS);
 
-    /** Stan paginacji */
-    readonly paginationState = signal<{ page: number; limit: number }>({
-        page: 1,
-        limit: 12,
-    });
-
     /** Computed signals */
     readonly recipes = computed(() => this.state().recipes);
-    readonly pagination = computed(() => this.state().pagination);
+    readonly pageInfo = computed(() => this.state().pageInfo);
     readonly categories = computed(() => this.state().categories);
     readonly tags = computed(() => this.state().tags);
-    readonly isLoading = computed(() => this.state().isLoading);
     readonly isInitialLoading = computed(() => this.state().isInitialLoading);
+    readonly isLoadingMore = computed(() => this.state().isLoadingMore);
     readonly error = computed(() => this.state().error);
     readonly recipeListItems = computed<RecipeListItemViewModel[]>(() =>
         this.recipes().map((recipe) => ({
@@ -116,23 +111,18 @@ export class RecipesListPageComponent implements OnInit {
         }))
     );
 
-    /** Opcje paginatora */
-    readonly pageSizeOptions = [6, 12, 24, 48];
-
     constructor() {
-        // Effect reagujący na zmiany filtrów i paginacji
+        // Effect reagujący na zmiany filtrów - resetuje listę i ładuje pierwszą porcję
         effect(() => {
             const currentFilters = this.filters();
-            const currentPagination = this.paginationState();
 
             // Nie wykonuj zapytania przy inicjalnym ładowaniu (obsługiwane przez ngOnInit)
-            // Użyj untracked żeby nie śledzić zmian w state
             const isInitial = untracked(() => this.state().isInitialLoading);
             if (isInitial) {
                 return;
             }
 
-            untracked(() => this.loadRecipes(currentFilters, currentPagination));
+            untracked(() => this.loadInitialRecipes(currentFilters));
         });
     }
 
@@ -180,8 +170,8 @@ export class RecipesListPageComponent implements OnInit {
                     isInitialLoading: false,
                 }));
 
-                // Teraz załaduj przepisy
-                this.loadRecipes(this.filters(), this.paginationState());
+                // Teraz załaduj pierwszą porcję przepisów
+                this.loadInitialRecipes(this.filters());
             },
             error: () => {
                 this.state.update((s) => ({
@@ -195,17 +185,21 @@ export class RecipesListPageComponent implements OnInit {
     }
 
     /**
-     * Ładuje przepisy z API
+     * Ładuje pierwszą porcję przepisów z API (cursor-based).
+     * Wywoływana automatycznie przez effect przy zmianie filtrów.
      */
-    private loadRecipes(
-        filters: RecipesFiltersViewModel,
-        pagination: { page: number; limit: number }
-    ): void {
-        this.state.update((s) => ({ ...s, isLoading: true, error: null }));
+    private loadInitialRecipes(filters: RecipesFiltersViewModel): void {
+        // Reset listy i ustaw stan początkowy
+        this.state.update((s) => ({
+            ...s,
+            recipes: [],
+            pageInfo: { hasMore: false, nextCursor: null },
+            error: null,
+        }));
 
-        const params: GetRecipesParams = {
-            page: pagination.page,
-            limit: pagination.limit,
+        const params: GetRecipesFeedParams = {
+            cursor: undefined, // Pierwsza porcja - brak cursora
+            limit: this.FEED_LIMIT,
             sort: `${filters.sortBy}.${filters.sortDirection}`,
             search: filters.searchQuery ?? undefined,
             categoryId: filters.categoryId,
@@ -214,43 +208,100 @@ export class RecipesListPageComponent implements OnInit {
             termorobot: filters.termorobot,
         };
 
-        this.recipesService.getRecipes(params).subscribe({
-            next: (response) => {
-                this.state.update((s) => ({
-                    ...s,
-                    recipes: response.data,
-                    pagination: response.pagination,
-                    isLoading: false,
-                }));
-            },
-            error: () => {
-                this.state.update((s) => ({
-                    ...s,
-                    isLoading: false,
-                    error: 'Nie udało się pobrać przepisów.',
-                }));
-                this.showError('Nie udało się pobrać przepisów. Spróbuj ponownie.');
-            },
-        });
+        this.recipesService.getRecipesFeed(params)
+            .pipe(
+                catchError(error => {
+                    console.error('Błąd pobierania przepisów:', error);
+                    this.state.update((s) => ({
+                        ...s,
+                        error: 'Nie udało się pobrać przepisów.',
+                    }));
+                    this.showError('Nie udało się pobrać przepisów. Spróbuj ponownie.');
+                    return of(null);
+                })
+            )
+            .subscribe({
+                next: (response) => {
+                    if (response) {
+                        this.state.update((s) => ({
+                            ...s,
+                            recipes: response.data,
+                            pageInfo: response.pageInfo,
+                        }));
+                    }
+                },
+            });
     }
 
     /**
-     * Obsługuje zmianę filtrów
+     * Doładowuje kolejną porcję przepisów (kliknięcie "Więcej").
+     */
+    onLoadMore(): void {
+        const currentState = this.state();
+        const currentFilters = this.filters();
+
+        // Guard: jeśli już ładuje lub brak kolejnych danych, nie rób nic
+        if (currentState.isLoadingMore || !currentState.pageInfo.hasMore) {
+            return;
+        }
+
+        // Ustaw stan ładowania kolejnych danych
+        this.state.update((s) => ({
+            ...s,
+            isLoadingMore: true,
+        }));
+
+        const params: GetRecipesFeedParams = {
+            cursor: currentState.pageInfo.nextCursor ?? undefined,
+            limit: this.FEED_LIMIT,
+            sort: `${currentFilters.sortBy}.${currentFilters.sortDirection}`,
+            search: currentFilters.searchQuery ?? undefined,
+            categoryId: currentFilters.categoryId,
+            tags: currentFilters.tags.length > 0 ? currentFilters.tags : undefined,
+            view: 'my_recipes',
+            termorobot: currentFilters.termorobot,
+        };
+
+        this.recipesService.getRecipesFeed(params)
+            .pipe(
+                catchError(error => {
+                    console.error('Błąd doładowania przepisów:', error);
+                    this.state.update((s) => ({
+                        ...s,
+                        isLoadingMore: false,
+                    }));
+                    // Pokaż snackbar z możliwością ponowienia
+                    this.snackBar.open(
+                        'Nie udało się doładować przepisów.',
+                        'Ponów',
+                        { duration: 5000 }
+                    ).onAction().subscribe(() => {
+                        this.onLoadMore();
+                    });
+                    return of(null);
+                })
+            )
+            .subscribe({
+                next: (response) => {
+                    if (response) {
+                        // Dopnij nowe wyniki do istniejącej listy
+                        this.state.update((s) => ({
+                            ...s,
+                            recipes: [...s.recipes, ...response.data],
+                            pageInfo: response.pageInfo,
+                            isLoadingMore: false,
+                        }));
+                    }
+                },
+            });
+    }
+
+    /**
+     * Obsługuje zmianę filtrów.
+     * Automatycznie wywoła effect i reset listy do pierwszej porcji.
      */
     onFiltersChange(newFilters: RecipesFiltersViewModel): void {
-        // Resetuj stronę na pierwszą przy zmianie filtrów
-        this.paginationState.update((p) => ({ ...p, page: 1 }));
         this.filters.set(newFilters);
-    }
-
-    /**
-     * Obsługuje zmianę strony
-     */
-    onPageChange(event: PageEvent): void {
-        this.paginationState.set({
-            page: event.pageIndex + 1,
-            limit: event.pageSize,
-        });
     }
 
     /**

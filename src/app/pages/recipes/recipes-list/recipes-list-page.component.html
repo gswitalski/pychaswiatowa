@@ -24,7 +24,7 @@
                 (filtersChange)="onFiltersChange($event)"
             />
 
-            @if (recipes().length === 0 && !isLoading()) {
+            @if (recipes().length === 0 && !isLoadingMore()) {
                 <pych-empty-state
                     icon="menu_book"
                     title="Brak przepisów"
@@ -38,20 +38,12 @@
             } @else {
                 <pych-recipe-list
                     [recipes]="recipeListItems()"
-                    [isLoading]="isLoading()"
+                    [useLoadMore]="true"
+                    [hasMore]="pageInfo().hasMore"
+                    [isLoadingMore]="isLoadingMore()"
+                    [usePaginator]="false"
+                    (loadMore)="onLoadMore()"
                 />
-
-                @if (pagination().totalItems > 0) {
-                    <mat-paginator
-                        [length]="pagination().totalItems"
-                        [pageSize]="paginationState().limit"
-                        [pageIndex]="paginationState().page - 1"
-                        [pageSizeOptions]="pageSizeOptions"
-                        (page)="onPageChange($event)"
-                        showFirstLastButtons
-                        aria-label="Wybierz stronę"
-                    />
-                }
             }
         </div>
     }

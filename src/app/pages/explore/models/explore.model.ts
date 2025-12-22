@@ -1,15 +1,13 @@
 import { RecipeCardData } from '../../../shared/components/recipe-card/recipe-card';
-import { PaginationDetails, PublicRecipeListItemDto } from '../../../../../shared/contracts/types';
+import { PublicRecipeListItemDto, CursorPageInfoDto } from '../../../../../shared/contracts/types';
 
 /**
  * Stan zapytania do API dla widoku Explore.
- * Reprezentuje parametry wyszukiwania i paginacji.
+ * Reprezentuje parametry wyszukiwania i sortowania (bez paginacji - używamy cursor).
  */
 export interface ExploreQueryState {
     /** Fraza wyszukiwania (może być pustym stringiem) */
     q: string;
-    /** Numer strony (>= 1) */
-    page: number;
     /** Rozmiar strony */
     limit: number;
     /** Sortowanie w formacie 'column.direction' */
@@ -19,16 +17,17 @@ export interface ExploreQueryState {
 /**
  * Stan strony Explore zawierający dane i stany UI.
  * Przechowuje surowe DTO aby móc wyliczać isOwnRecipe dynamicznie.
+ * Używa cursor-based pagination.
  */
 export interface ExplorePageState {
     /** Surowe dane przepisów z API (zawierają informacje o autorze) */
     items: PublicRecipeListItemDto[];
-    /** Informacje o paginacji */
-    pagination: PaginationDetails;
-    /** Czy trwa ładowanie danych */
-    isLoading: boolean;
-    /** Czy to pierwsze ładowanie (do wyświetlenia skeleton) */
+    /** Informacje o cursor pagination */
+    pageInfo: CursorPageInfoDto;
+    /** Czy trwa ładowanie początkowe danych */
     isInitialLoading: boolean;
+    /** Czy trwa doładowywanie kolejnych danych */
+    isLoadingMore: boolean;
     /** Komunikat błędu (jeśli wystąpił) */
     errorMessage: string | null;
     /** Komunikat walidacji (np. za krótkie q) */
@@ -49,7 +48,6 @@ export interface ExploreRecipeCardVm {
  */
 export const DEFAULT_QUERY_STATE: ExploreQueryState = {
     q: '',
-    page: 1,
     limit: 12,
     sort: 'created_at.desc',
 };
@@ -59,13 +57,12 @@ export const DEFAULT_QUERY_STATE: ExploreQueryState = {
  */
 export const DEFAULT_PAGE_STATE: ExplorePageState = {
     items: [],
-    pagination: {
-        currentPage: 1,
-        totalPages: 0,
-        totalItems: 0,
+    pageInfo: {
+        hasMore: false,
+        nextCursor: null,
     },
-    isLoading: false,
     isInitialLoading: true,
+    isLoadingMore: false,
     errorMessage: null,
     validationMessage: null,
 };

@@ -5,6 +5,7 @@ import {
     PublicRecipeListItemDto,
     PaginatedResponseDto,
     PublicRecipeDetailDto,
+    CursorPaginatedResponseDto,
 } from '../../../../shared/contracts/types';
 
 /**
@@ -17,6 +18,20 @@ export interface GetPublicRecipesParams {
     limit?: number;
     /** Numer strony (zaczyna od 1) */
     page?: number;
+    /** Fraza do wyszukiwania (min. 2 znaki) */
+    q?: string;
+}
+
+/**
+ * Parametry zapytania do pobierania feedu publicznych przepisów (cursor-based)
+ */
+export interface GetPublicRecipesFeedParams {
+    /** Cursor do pobrania kolejnej strony (opcjonalny) */
+    cursor?: string;
+    /** Liczba elementów na stronie */
+    limit?: number;
+    /** Format: 'column.direction' np. 'created_at.desc' */
+    sort?: string;
     /** Fraza do wyszukiwania (min. 2 znaki) */
     q?: string;
 }
@@ -84,6 +99,62 @@ export class PublicRecipesService {
                 return response.data ?? {
                     data: [],
                     pagination: { currentPage: 1, totalPages: 0, totalItems: 0 },
+                };
+            })
+        );
+    }
+
+    /**
+     * Pobiera feed publicznych przepisów z cursor-based pagination.
+     * Wywołuje GET /functions/v1/public/recipes/feed z parametrami zapytania.
+     *
+     * @param params Parametry zapytania (cursor, limit, sort, q)
+     * @returns Observable z listą publicznych przepisów i metadanymi cursor pagination
+     */
+    getPublicRecipesFeed(
+        params: GetPublicRecipesFeedParams = {}
+    ): Observable<CursorPaginatedResponseDto<PublicRecipeListItemDto>> {
+        // Budowanie parametrów zapytania
+        const queryParams = new URLSearchParams();
+
+        if (params.cursor) {
+            queryParams.append('cursor', params.cursor);
+        }
+
+        if (params.limit) {
+            queryParams.append('limit', params.limit.toString());
+        }
+
+        if (params.sort) {
+            queryParams.append('sort', params.sort);
+        }
+
+        // Tylko wysyłaj q jeśli ma co najmniej 2 znaki
+        if (params.q && params.q.length >= 2) {
+            queryParams.append('q', params.q);
+        }
+
+        const queryString = queryParams.toString();
+        const endpoint = queryString
+            ? `public/recipes/feed?${queryString}`
+            : 'public/recipes/feed';
+
+        return from(
+            this.supabase.functions.invoke<
+                CursorPaginatedResponseDto<PublicRecipeListItemDto>
+            >(endpoint, {
+                method: 'GET',
+            })
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw new Error(
+                        response.error.message || 'Błąd pobierania publicznych przepisów'
+                    );
+                }
+                return response.data ?? {
+                    data: [],
+                    pageInfo: { hasMore: false, nextCursor: null },
                 };
             })
         );
