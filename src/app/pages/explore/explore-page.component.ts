@@ -120,15 +120,11 @@ export class ExplorePageComponent {
         const params = this.route.snapshot.queryParamMap;
 
         const q = params.get('q') || '';
-        const limit = this.parsePositiveInt(params.get('limit'), DEFAULT_QUERY_STATE.limit);
         const sort = params.get('sort') || DEFAULT_QUERY_STATE.sort;
-
-        // Walidacja limitu - stała wartość 12 dla feed (nie eksponujemy zmiany w UI)
-        const validatedLimit = 12;
 
         this.queryState.set({
             q: q.trim(),
-            limit: validatedLimit,
+            limit: 12, // Stała wartość dla feed (nie eksponujemy zmiany w UI)
             sort: this.validateSort(sort),
         });
     }

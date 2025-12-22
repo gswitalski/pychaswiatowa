@@ -8,7 +8,7 @@ import { createServiceRoleClient, getOptionalAuthenticatedUser } from '../_share
 import { ApplicationError, handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { getPublicRecipes, getPublicRecipeById, getPublicRecipesFeed } from './public.service.ts';
-import { GetPublicRecipesQuery, GetPublicRecipeByIdParams } from './public.types.ts';
+import { GetPublicRecipesQuery, GetPublicRecipeByIdParams, GetPublicRecipesFeedQuery } from './public.types.ts';
 
 /**
  * Zod schema for validating query parameters for GET /public/recipes.
@@ -356,11 +356,21 @@ export async function handleGetPublicRecipesFeed(req: Request): Promise<Response
             hasCursor: validatedParams.cursor !== undefined,
         });
 
+        // Build query object for service (flatten sort structure)
+        const query: GetPublicRecipesFeedQuery = {
+            cursor: validatedParams.cursor,
+            limit: validatedParams.limit,
+            sortField: validatedParams.sort.field,
+            sortDirection: validatedParams.sort.direction,
+            q: validatedParams.q,
+            termorobot: validatedParams['filter[termorobot]'],
+        };
+
         // Create service role client for public access
         const client = createServiceRoleClient();
 
         // Fetch public recipes feed (with optional user context for collections)
-        const result = await getPublicRecipesFeed(client, validatedParams, userId);
+        const result = await getPublicRecipesFeed(client, query, userId);
 
         logger.info('GET /public/recipes/feed completed successfully', {
             recipesCount: result.data.length,

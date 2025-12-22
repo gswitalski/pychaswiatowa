@@ -287,10 +287,10 @@ export async function getRecipes(
         p_limit: limit,
         p_sort_field: validSortField,
         p_sort_direction: sortDirection,
-        p_category_id: categoryId ?? null,
-        p_tag_ids: tagIds,
-        p_search: search ?? null,
-        p_termorobot: termorobot ?? null,
+        p_category_id: categoryId ?? undefined,
+        p_tag_ids: tagIds ?? undefined,
+        p_search: search ?? undefined,
+        p_termorobot: termorobot ?? undefined,
     });
 
     if (error) {
@@ -408,7 +408,7 @@ export async function getRecipesFeed(
 
     if (cursor) {
         const cursorData = decodeCursor(cursor);
-        
+
         // Validate that cursor matches current query parameters
         validateCursorConsistency(
             cursorData,
@@ -416,7 +416,7 @@ export async function getRecipesFeed(
             sortString,
             filtersHash
         );
-        
+
         offset = cursorData.offset;
 
         // MVP: RPC uses page-based pagination, so offset must be aligned with limit
@@ -429,7 +429,7 @@ export async function getRecipesFeed(
 
         // Calculate page from offset
         page = Math.floor(offset / limit) + 1;
-        
+
         logger.info('Cursor decoded successfully', {
             offset,
             page,
@@ -469,10 +469,10 @@ export async function getRecipesFeed(
         p_limit: limit,
         p_sort_field: validSortField,
         p_sort_direction: sortDirection,
-        p_category_id: categoryId ?? null,
-        p_tag_ids: tagIds,
-        p_search: search ?? null,
-        p_termorobot: termorobot ?? null,
+        p_category_id: categoryId ?? undefined,
+        p_tag_ids: tagIds ?? undefined,
+        p_search: search ?? undefined,
+        p_termorobot: termorobot ?? undefined,
     });
 
     if (error) {
