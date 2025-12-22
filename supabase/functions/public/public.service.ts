@@ -6,7 +6,13 @@
 import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
-import { GetPublicRecipesQuery } from './public.types.ts';
+import { GetPublicRecipesQuery, GetPublicRecipesFeedQuery } from './public.types.ts';
+import {
+    decodeCursor,
+    buildFiltersHash,
+    createNextCursor,
+    validateCursorConsistency,
+} from '../_shared/cursor.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -80,6 +86,22 @@ export interface PaginationDetails {
     currentPage: number;
     totalPages: number;
     totalItems: number;
+}
+
+/**
+ * Cursor-based pagination metadata.
+ */
+export interface CursorPageInfo {
+    hasMore: boolean;
+    nextCursor: string | null;
+}
+
+/**
+ * Cursor-based paginated response wrapper.
+ */
+export interface CursorPaginatedResponse<T> {
+    data: T[];
+    pageInfo: CursorPageInfo;
 }
 
 /**
@@ -462,4 +484,257 @@ export async function getPublicRecipeById(
     });
 
     return recipeDto;
+}
+
+/**
+ * Retrieves public recipes with cursor-based pagination, sorting, and optional search.
+ * Supports optional authentication - when user is authenticated, includes collection information.
+ *
+ * Security: Always filters for visibility='PUBLIC' and deleted_at IS NULL.
+ *
+ * @param client - Service role Supabase client
+ * @param query - Query parameters for filtering, sorting, and cursor pagination
+ * @param userId - Optional authenticated user ID (null for anonymous)
+ * @returns Object containing recipe data and cursor-based pagination info
+ * @throws ApplicationError with VALIDATION_ERROR for invalid cursor
+ * @throws ApplicationError with INTERNAL_ERROR code for database errors
+ */
+export async function getPublicRecipesFeed(
+    client: TypedSupabaseClient,
+    query: GetPublicRecipesFeedQuery,
+    userId: string | null = null
+): Promise<CursorPaginatedResponse<PublicRecipeListItemDto>> {
+    logger.info('Fetching public recipes feed', {
+        limit: query.limit,
+        sort: `${query.sortField}.${query.sortDirection}`,
+        hasSearch: !!query.q,
+        hasCursor: !!query.cursor,
+        isAuthenticated: userId !== null,
+    });
+
+    // Build filters hash for cursor validation
+    const sortString = `${query.sortField}.${query.sortDirection}`;
+    const filtersHash = await buildFiltersHash({
+        sort: sortString,
+        q: query.q,
+        termorobot: query.termorobot,
+    });
+
+    // Decode cursor and validate consistency
+    let offset = 0;
+    if (query.cursor) {
+        const cursorData = decodeCursor(query.cursor);
+        
+        // Validate that cursor matches current query parameters
+        validateCursorConsistency(
+            cursorData,
+            query.limit,
+            sortString,
+            filtersHash
+        );
+        
+        offset = cursorData.offset;
+        
+        logger.info('Cursor decoded successfully', {
+            offset,
+            cursorLimit: cursorData.limit,
+            cursorSort: cursorData.sort,
+        });
+    }
+
+    // Build base query
+    let dbQuery = client
+        .from('recipe_details')
+        .select(RECIPE_SELECT_COLUMNS, { count: 'estimated' })
+        .eq('visibility', 'PUBLIC')
+        .is('deleted_at', null);
+
+    // Apply search filter if provided
+    if (query.q) {
+        // MVP: Search by name using ILIKE
+        // TODO: Implement full-text search with search_vector for better performance
+        dbQuery = dbQuery.ilike('name', `%${query.q}%`);
+    }
+
+    // Apply termorobot filter if provided
+    if (query.termorobot !== undefined) {
+        dbQuery = dbQuery.eq('is_termorobot', query.termorobot);
+    }
+
+    // Apply stable sorting (includes id as tie-breaker)
+    const ascending = query.sortDirection === 'asc';
+    dbQuery = dbQuery
+        .order(query.sortField, { ascending })
+        .order('id', { ascending }); // Stable sort tie-breaker
+
+    // Fetch limit+1 to determine if there are more results
+    const fetchLimit = query.limit + 1;
+    dbQuery = dbQuery.range(offset, offset + fetchLimit - 1);
+
+    // Execute query
+    const { data, error } = await dbQuery;
+
+    if (error) {
+        logger.error('Database error while fetching public recipes feed', {
+            errorCode: error.code,
+            errorMessage: error.message,
+            query,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch public recipes feed');
+    }
+
+    if (!data || data.length === 0) {
+        logger.info('No public recipes found in feed - returning empty array');
+        return {
+            data: [],
+            pageInfo: {
+                hasMore: false,
+                nextCursor: null,
+            },
+        };
+    }
+
+    const recipeRows = data as RecipeDetailsRow[];
+
+    // Determine if there are more results
+    const hasMore = recipeRows.length > query.limit;
+    
+    // Trim to actual limit (remove the +1 item)
+    const recipesToReturn = hasMore ? recipeRows.slice(0, query.limit) : recipeRows;
+
+    logger.info('Recipes fetched from database', {
+        fetchedCount: recipeRows.length,
+        returningCount: recipesToReturn.length,
+        hasMore,
+    });
+
+    // Extract unique user IDs from recipes
+    const uniqueUserIds = [...new Set(recipesToReturn.map((recipe) => recipe.user_id))];
+
+    logger.info('Fetching author profiles (bulk)', {
+        uniqueUserIdsCount: uniqueUserIds.length,
+    });
+
+    // Bulk fetch all author profiles
+    const { data: profilesData, error: profilesError } = await client
+        .from('profiles')
+        .select(PROFILE_SELECT_COLUMNS)
+        .in('id', uniqueUserIds);
+
+    if (profilesError) {
+        logger.error('Database error while fetching author profiles', {
+            errorCode: profilesError.code,
+            errorMessage: profilesError.message,
+            userIds: uniqueUserIds,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe authors');
+    }
+
+    if (!profilesData) {
+        logger.error('No profiles data returned for recipe authors', {
+            userIds: uniqueUserIds,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe authors');
+    }
+
+    // Build a map of profiles by user ID for efficient lookup
+    const profilesById = new Map<string, ProfileRow>(
+        (profilesData as ProfileRow[]).map((profile) => [profile.id, profile])
+    );
+
+    logger.info('Author profiles fetched successfully', {
+        profilesCount: profilesById.size,
+        expectedCount: uniqueUserIds.length,
+    });
+
+    // Check if all profiles were found
+    if (profilesById.size !== uniqueUserIds.length) {
+        const missingUserIds = uniqueUserIds.filter((id) => !profilesById.has(id));
+        logger.error('Some author profiles are missing', {
+            missingUserIds,
+            missingCount: missingUserIds.length,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Some recipe authors could not be found');
+    }
+
+    // If user is authenticated, fetch collection information for all recipes
+    let recipeIdsInCollections = new Set<number>();
+
+    if (userId !== null) {
+        const recipeIds = recipesToReturn.map(r => r.id);
+
+        logger.info('Checking if recipes are in user collections', {
+            userId,
+            recipeIdsCount: recipeIds.length,
+        });
+
+        // Query recipe_collections to find which recipes are in user's collections
+        const { data: collectionsData, error: collectionsError } = await client
+            .from('recipe_collections')
+            .select('recipe_id, collection_id, collections!inner(user_id)')
+            .in('recipe_id', recipeIds)
+            .eq('collections.user_id', userId);
+
+        if (collectionsError) {
+            logger.error('Error checking recipe collections', {
+                errorCode: collectionsError.code,
+                errorMessage: collectionsError.message,
+                userId,
+            });
+            // Don't fail the entire request - just assume no recipes in collections
+        } else if (collectionsData) {
+            recipeIdsInCollections = new Set(collectionsData.map((rc: any) => rc.recipe_id));
+            logger.info('Found recipes in user collections', {
+                count: recipeIdsInCollections.size,
+            });
+        }
+    }
+
+    // Map database records to DTOs
+    const recipes: PublicRecipeListItemDto[] = recipesToReturn.map((recipe) => {
+        const author = profilesById.get(recipe.user_id);
+
+        // This should never happen due to the check above, but TypeScript needs assurance
+        if (!author) {
+            throw new ApplicationError('INTERNAL_ERROR', `Author profile not found for user_id: ${recipe.user_id}`);
+        }
+
+        return {
+            id: recipe.id,
+            name: recipe.name,
+            description: recipe.description,
+            image_path: recipe.image_path,
+            category: recipe.category_id && recipe.category_name
+                ? { id: recipe.category_id, name: recipe.category_name }
+                : null,
+            tags: recipe.tags ? recipe.tags.map((tag) => tag.name) : [],
+            author: {
+                id: author.id,
+                username: author.username,
+            },
+            created_at: recipe.created_at,
+            in_my_collections: recipeIdsInCollections.has(recipe.id),
+            servings: recipe.servings,
+            is_termorobot: recipe.is_termorobot,
+        };
+    });
+
+    // Create next cursor if there are more results
+    const nextCursor = hasMore
+        ? createNextCursor(offset, recipesToReturn.length, query.limit, sortString, filtersHash)
+        : null;
+
+    logger.info('Public recipes feed fetched successfully', {
+        count: recipes.length,
+        hasMore,
+        nextOffset: hasMore ? offset + recipesToReturn.length : null,
+    });
+
+    return {
+        data: recipes,
+        pageInfo: {
+            hasMore,
+            nextCursor,
+        },
+    };
 }

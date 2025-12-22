@@ -5,13 +5,27 @@
  * Endpoints:
  *
  * GET /functions/v1/recipes
- * Returns a paginated list of recipes for the authenticated user.
+ * Returns a paginated list of recipes for the authenticated user (page-based).
  * Query Parameters:
  * - page (integer, default: 1) - Page number
  * - limit (integer, default: 20, max: 100) - Items per page
  * - sort (string, e.g., 'name.asc', 'created_at.desc') - Sort field and direction
+ * - view (string, default: 'owned') - 'owned' or 'my_recipes'
  * - filter[category_id] (integer) - Filter by category ID
  * - filter[tags] (string) - Comma-separated list of tag names
+ * - filter[termorobot] (boolean) - Filter by termorobot flag
+ * - search (string) - Full-text search query
+ *
+ * GET /functions/v1/recipes/feed
+ * Returns a cursor-paginated list of recipes for the authenticated user (for infinite scroll).
+ * Query Parameters:
+ * - cursor (string, optional) - Opaque cursor token from previous response
+ * - limit (integer, default: 12, max: 100) - Items per page
+ * - sort (string, default: 'created_at.desc') - Sort field and direction
+ * - view (string, default: 'owned') - 'owned' or 'my_recipes'
+ * - filter[category_id] (integer) - Filter by category ID
+ * - filter[tags] (string) - Comma-separated list of tag names
+ * - filter[termorobot] (boolean) - Filter by termorobot flag
  * - search (string) - Full-text search query
  *
  * GET /functions/v1/recipes/{id}

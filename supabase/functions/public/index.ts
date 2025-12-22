@@ -6,8 +6,15 @@
  * Provides anonymous access to public resources (no authentication required).
  *
  * Routes:
- * - GET /public/recipes - Returns paginated list of public recipes
+ * - GET /public/recipes - Returns paginated list of public recipes (page-based)
+ * - GET /public/recipes/feed - Returns cursor-paginated list of public recipes (for infinite scroll)
  * - GET /public/recipes/{id} - Returns full details of a single public recipe
+ *
+ * Cursor-based pagination example:
+ * 1. First request: GET /public/recipes/feed?limit=12
+ *    Response: { data: [...], pageInfo: { hasMore: true, nextCursor: "..." } }
+ * 2. Next request: GET /public/recipes/feed?limit=12&cursor=...
+ *    Response: { data: [...], pageInfo: { hasMore: false, nextCursor: null } }
  */
 
 import { publicRouter } from './public.handlers.ts';

@@ -12,30 +12,6 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-### Zmienione
-
-- **Public recipes – `GET /public/recipes`**
-  - **Zmiana**: dodane pole `is_termorobot` w obiekcie przepisu.
-  - **Zmiana**: dodany parametr `filter[termorobot]` (boolean) – API-ready.
-
-- **Public recipes – `GET /public/recipes/{id}`**
-  - **Zmiana**: dodane pole `is_termorobot` w odpowiedzi.
-
-- **Recipes – `GET /recipes`**
-  - **Zmiana**: dodane pole `is_termorobot` w obiektach listy.
-  - **Zmiana**: dodany parametr `filter[termorobot]` (boolean).
-
-- **Recipes – `POST /recipes`**
-  - **Zmiana**: request wspiera `is_termorobot` (boolean), a response zwraca `is_termorobot`.
-
-- **Recipes – `POST /recipes/import`**
-  - **Zmiana**: response zwraca `is_termorobot` (domyślnie `false`).
-
-- **Recipes – `PUT /recipes/{id}`**
-  - **Zmiana**: request wspiera `is_termorobot` (boolean).
-
-- **Walidacja**
-  - **Zmiana**: dodana reguła `recipes.is_termorobot`: optional boolean, default `false`.
 </api_changes_description>
 
 aktualna implementacja:

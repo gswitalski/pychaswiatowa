@@ -7,6 +7,12 @@ import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { Json } from '../_shared/database.types.ts';
+import {
+    decodeCursor,
+    buildFiltersHash,
+    createNextCursor,
+    validateCursorConsistency,
+} from '../_shared/cursor.ts';
 
 /**
  * Recipe visibility enum type.
@@ -50,6 +56,22 @@ export interface PaginationDetails {
 export interface PaginatedResponseDto<T> {
     data: T[];
     pagination: PaginationDetails;
+}
+
+/**
+ * Cursor-based pagination metadata.
+ */
+export interface CursorPageInfo {
+    hasMore: boolean;
+    nextCursor: string | null;
+}
+
+/**
+ * Cursor-based paginated response wrapper.
+ */
+export interface CursorPaginatedResponseDto<T> {
+    data: T[];
+    pageInfo: CursorPageInfo;
 }
 
 /**
@@ -114,6 +136,22 @@ export type RecipesView = 'owned' | 'my_recipes';
  */
 export interface GetRecipesOptions {
     page: number;
+    limit: number;
+    sortField: string;
+    sortDirection: 'asc' | 'desc';
+    view: RecipesView;
+    requesterUserId: string;
+    categoryId?: number;
+    tags?: string[];
+    search?: string;
+    termorobot?: boolean;
+}
+
+/**
+ * Options for querying recipes feed (cursor-based pagination).
+ */
+export interface GetRecipesFeedOptions {
+    cursor?: string;
     limit: number;
     sortField: string;
     sortDirection: 'asc' | 'desc';
@@ -301,6 +339,208 @@ export async function getRecipes(
             currentPage: page,
             totalPages,
             totalItems,
+        },
+    };
+}
+
+/**
+ * Fetches recipes with cursor-based pagination for the authenticated user.
+ * Supports all filters and views from getRecipes, but uses cursor instead of page number.
+ *
+ * MVP Implementation: Uses offset-based cursor that maps to RPC page parameter.
+ * Validates that offset is aligned with limit (offset % limit == 0).
+ *
+ * @param client - The authenticated Supabase client
+ * @param options - Options including cursor, limit, filters, and view
+ * @returns Cursor-based paginated response with recipe list items
+ * @throws ApplicationError with VALIDATION_ERROR for invalid cursor or offset alignment
+ * @throws ApplicationError with INTERNAL_ERROR for database errors
+ */
+export async function getRecipesFeed(
+    client: TypedSupabaseClient,
+    options: GetRecipesFeedOptions
+): Promise<CursorPaginatedResponseDto<RecipeListItemDto>> {
+    const {
+        cursor,
+        limit,
+        sortField,
+        sortDirection,
+        view,
+        requesterUserId,
+        categoryId,
+        tags,
+        search,
+        termorobot,
+    } = options;
+
+    logger.info('Fetching recipes feed', {
+        limit,
+        sortField,
+        sortDirection,
+        view,
+        requesterUserId,
+        hasCursor: !!cursor,
+        categoryId,
+        tagsCount: tags?.length ?? 0,
+        hasSearch: !!search,
+        termorobot,
+    });
+
+    // Validate sort field to prevent injection
+    const validSortField = ALLOWED_SORT_FIELDS.includes(sortField)
+        ? sortField
+        : DEFAULT_SORT_FIELD;
+
+    // Build filters hash for cursor validation
+    const sortString = `${validSortField}.${sortDirection}`;
+    const filtersHash = await buildFiltersHash({
+        sort: sortString,
+        view,
+        search,
+        categoryId,
+        tags: tags?.sort(), // Sort for deterministic hash
+        termorobot,
+    });
+
+    // Decode cursor and validate consistency
+    let offset = 0;
+    let page = 1;
+
+    if (cursor) {
+        const cursorData = decodeCursor(cursor);
+        
+        // Validate that cursor matches current query parameters
+        validateCursorConsistency(
+            cursorData,
+            limit,
+            sortString,
+            filtersHash
+        );
+        
+        offset = cursorData.offset;
+
+        // MVP: RPC uses page-based pagination, so offset must be aligned with limit
+        if (offset % limit !== 0) {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `Cursor is invalid: offset (${offset}) is not aligned with limit (${limit})`
+            );
+        }
+
+        // Calculate page from offset
+        page = Math.floor(offset / limit) + 1;
+        
+        logger.info('Cursor decoded successfully', {
+            offset,
+            page,
+            cursorLimit: cursorData.limit,
+            cursorSort: cursorData.sort,
+        });
+    }
+
+    // Resolve tag names to IDs if tags filter is provided
+    let tagIds: number[] | null = null;
+    if (tags && tags.length > 0) {
+        tagIds = await resolveTagNamesToIds(client, tags);
+        logger.debug('Resolved tag names to IDs', {
+            tagNames: tags,
+            tagIds,
+        });
+
+        // If user requested specific tags but none were found,
+        // return empty result immediately (no recipes can match)
+        if (tagIds.length === 0) {
+            logger.info('No matching tags found, returning empty result');
+            return {
+                data: [],
+                pageInfo: {
+                    hasMore: false,
+                    nextCursor: null,
+                },
+            };
+        }
+    }
+
+    // Call the RPC function to get recipes
+    const { data, error } = await client.rpc('get_recipes_list', {
+        p_user_id: requesterUserId,
+        p_view: view,
+        p_page: page,
+        p_limit: limit,
+        p_sort_field: validSortField,
+        p_sort_direction: sortDirection,
+        p_category_id: categoryId ?? null,
+        p_tag_ids: tagIds,
+        p_search: search ?? null,
+        p_termorobot: termorobot ?? null,
+    });
+
+    if (error) {
+        logger.error('RPC error while fetching recipes feed', {
+            errorCode: error.code,
+            errorMessage: error.message,
+            errorDetails: error.details,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipes feed');
+    }
+
+    // Handle empty results
+    if (!data || data.length === 0) {
+        logger.info('No recipes found in feed - returning empty array');
+        return {
+            data: [],
+            pageInfo: {
+                hasMore: false,
+                nextCursor: null,
+            },
+        };
+    }
+
+    // Extract total count from first row (all rows have the same total_count)
+    const totalItems = Number(data[0].total_count);
+    const returnedItems = data.length;
+
+    // Determine if there are more results
+    const hasMore = offset + returnedItems < totalItems;
+
+    logger.info('Recipes feed fetched successfully', {
+        totalItems,
+        returnedItems,
+        offset,
+        page,
+        hasMore,
+        view,
+    });
+
+    // Map the data to DTOs
+    const recipes: RecipeListItemDto[] = data.map((recipe) => ({
+        id: Number(recipe.id),
+        name: recipe.name,
+        image_path: recipe.image_path,
+        created_at: recipe.created_at,
+        visibility: recipe.visibility as RecipeVisibility,
+        is_owner: Boolean(recipe.is_owner),
+        in_my_collections: Boolean(recipe.in_my_collections),
+        author: {
+            id: recipe.author_id,
+            username: recipe.author_username,
+        },
+        category_id: recipe.category_id ? Number(recipe.category_id) : null,
+        category_name: recipe.category_name ?? null,
+        servings: recipe.servings ? Number(recipe.servings) : null,
+        is_termorobot: Boolean(recipe.is_termorobot),
+    }));
+
+    // Create next cursor if there are more results
+    const nextCursor = hasMore
+        ? createNextCursor(offset, returnedItems, limit, sortString, filtersHash)
+        : null;
+
+    return {
+        data: recipes,
+        pageInfo: {
+            hasMore,
+            nextCursor,
         },
     };
 }

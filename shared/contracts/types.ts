@@ -50,6 +50,25 @@ export interface PaginatedResponseDto<T> {
     pagination: PaginationDetails;
 }
 
+/**
+ * Defines the structure for cursor-based pagination metadata.
+ */
+export interface CursorPageInfoDto {
+    /** Indicates if there are more items available after the current page. */
+    hasMore: boolean;
+    /** Opaque cursor token for fetching the next page. Null if hasMore is false. */
+    nextCursor: string | null;
+}
+
+/**
+ * A generic wrapper for cursor-based paginated API responses.
+ * @template T The type of the data items in the response.
+ */
+export interface CursorPaginatedResponseDto<T> {
+    data: T[];
+    pageInfo: CursorPageInfoDto;
+}
+
 // #endregion
 
 // #region --- Recipes ---

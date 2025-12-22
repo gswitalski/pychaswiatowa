@@ -21,3 +21,15 @@ export interface GetPublicRecipesQuery {
 export interface GetPublicRecipeByIdParams {
     id: number;
 }
+
+/**
+ * Query parameters for fetching public recipes feed (cursor-based pagination).
+ */
+export interface GetPublicRecipesFeedQuery {
+    cursor?: string;
+    limit: number;
+    sortField: 'created_at' | 'name';
+    sortDirection: 'asc' | 'desc';
+    q?: string;
+    termorobot?: boolean;
+}

@@ -16,6 +16,7 @@ import {
     deleteRecipe,
     uploadRecipeImage,
     deleteRecipeImage,
+    getRecipesFeed,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
@@ -260,6 +261,91 @@ const getRecipesQuerySchema = z.object({
         .transform((val) => {
             if (!val || val.trim().length === 0) return undefined;
             return val.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+        }),
+    'filter[termorobot]': z
+        .string()
+        .optional()
+        .transform((val) => {
+            if (!val) return undefined;
+            const lowerVal = val.toLowerCase().trim();
+            if (lowerVal === 'true' || lowerVal === '1') return true;
+            if (lowerVal === 'false' || lowerVal === '0') return false;
+            throw new Error('filter[termorobot] must be true, false, 1, or 0');
+        }),
+    search: z
+        .string()
+        .optional()
+        .transform((val) => val?.trim() || undefined),
+});
+
+/**
+ * Schema for validating GET /recipes/feed query parameters.
+ * Uses cursor-based pagination and supports all filters from GET /recipes.
+ */
+const getRecipesFeedQuerySchema = z.object({
+    cursor: z.string().optional(),
+    limit: z
+        .string()
+        .optional()
+        .default('12')
+        .transform((val) => {
+            const parsed = parseInt(val, 10);
+            if (isNaN(parsed) || parsed < 1) {
+                throw new Error('Limit must be a positive integer');
+            }
+            if (parsed > MAX_LIMIT) {
+                throw new Error(`Limit cannot exceed ${MAX_LIMIT}`);
+            }
+            return parsed;
+        }),
+    sort: z
+        .string()
+        .optional()
+        .default('created_at.desc')
+        .transform((val) => {
+            const parts = val.split('.');
+            if (parts.length !== 2) {
+                throw new Error('Sort must be in format: {field}.{direction}');
+            }
+            const [field, direction] = parts;
+
+            // For recipes feed, allowed fields: name, created_at, updated_at
+            if (!['name', 'created_at', 'updated_at'].includes(field)) {
+                throw new Error('Sort field must be one of: name, created_at, updated_at');
+            }
+            if (!['asc', 'desc'].includes(direction)) {
+                throw new Error('Sort direction must be one of: asc, desc');
+            }
+
+            return {
+                field: field as 'name' | 'created_at' | 'updated_at',
+                direction: direction as 'asc' | 'desc',
+            };
+        }),
+    view: z
+        .enum(['owned', 'my_recipes'], {
+            invalid_type_error: 'View must be one of: owned, my_recipes',
+        })
+        .optional()
+        .default('owned'),
+    'filter[category_id]': z
+        .string()
+        .optional()
+        .transform((val) => {
+            if (!val) return undefined;
+            const parsed = parseInt(val, 10);
+            if (isNaN(parsed) || parsed < 1) {
+                throw new Error('Category ID must be a positive integer');
+            }
+            return parsed;
+        }),
+    'filter[tags]': z
+        .string()
+        .optional()
+        .transform((val) => {
+            if (!val || val.trim().length === 0) return undefined;
+            const tags = val.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+            return tags.length > 0 ? tags : undefined;
         }),
     'filter[termorobot]': z
         .string()
@@ -925,6 +1011,80 @@ export async function handleDeleteRecipeImage(
 }
 
 /**
+ * Handles GET /recipes/feed request.
+ * Returns cursor-based paginated list of recipes for the authenticated user.
+ * Supports all filters and views from GET /recipes, plus cursor-based pagination.
+ *
+ * @param req - The incoming HTTP request
+ * @returns Response with CursorPaginatedResponseDto<RecipeListItemDto> on success, or error response
+ */
+export async function handleGetRecipesFeed(req: Request): Promise<Response> {
+    try {
+        logger.info('Handling GET /recipes/feed request');
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Parse and validate query parameters
+        const url = new URL(req.url);
+        const rawParams = parseQueryParams(url);
+
+        const validationResult = getRecipesFeedQuerySchema.safeParse(rawParams);
+
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+
+            logger.warn('Invalid query parameters for GET /recipes/feed', {
+                errors: errorDetails,
+            });
+
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `Invalid input: ${errorDetails}`
+            );
+        }
+
+        const params = validationResult.data;
+
+        logger.info('Query parameters validated', {
+            userId: user.id,
+            view: params.view,
+            hasSearch: params.search !== undefined,
+            hasCursor: params.cursor !== undefined,
+            limit: params.limit,
+            sort: `${params.sort.field}.${params.sort.direction}`,
+        });
+
+        // Call the service to get recipes feed
+        const result = await getRecipesFeed(client, {
+            cursor: params.cursor,
+            limit: params.limit,
+            sortField: params.sort.field,
+            sortDirection: params.sort.direction,
+            view: params.view,
+            requesterUserId: user.id,
+            categoryId: params['filter[category_id]'],
+            tags: params['filter[tags]'],
+            search: params.search,
+            termorobot: params['filter[termorobot]'],
+        });
+
+        logger.info('GET /recipes/feed completed successfully', {
+            userId: user.id,
+            view: params.view,
+            recipesCount: result.data.length,
+            hasMore: result.pageInfo.hasMore,
+        });
+
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Extracts the recipe ID from a URL path if it matches /recipes/{id} pattern.
  * Returns null if the path doesn't match the pattern or is the base /recipes path.
  *
@@ -965,14 +1125,18 @@ export async function recipesRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
     const url = new URL(req.url);
 
+    // Check for /recipes/feed path first (before checking for recipe ID)
+    // CRITICAL: Must be checked before extracting recipe ID to avoid treating "feed" as an ID
+    const isFeed = url.pathname.match(/\/recipes\/feed\/?$/);
+
     // Check for /recipes/import path first (before checking for recipe ID)
     const isImport = isImportPath(url);
 
     // Check for /recipes/{id}/image path (must be checked before extracting simple recipe ID)
     const imageRecipeId = extractRecipeIdFromImagePath(url);
 
-    // Extract recipe ID from path (if present and not import path)
-    const recipeId = isImport ? null : extractRecipeIdFromPath(url);
+    // Extract recipe ID from path (if present and not import/feed path)
+    const recipeId = (isImport || isFeed) ? null : extractRecipeIdFromPath(url);
 
     // Handle CORS preflight request
     if (method === 'OPTIONS') {
@@ -988,6 +1152,11 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Route GET requests
     if (method === 'GET') {
+        // GET /recipes/feed - cursor-based pagination feed
+        if (isFeed) {
+            return handleGetRecipesFeed(req);
+        }
+
         // GET /recipes/import is not allowed
         if (isImport) {
             logger.warn('GET /recipes/import not allowed');
