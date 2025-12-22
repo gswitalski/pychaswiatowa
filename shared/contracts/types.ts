@@ -51,6 +51,18 @@ export interface PaginatedResponseDto<T> {
 }
 
 /**
+ * Defines the structure for collection recipes page info (batch response without UI pagination).
+ */
+export interface CollectionRecipesPageInfoDto {
+    /** Effective limit applied to the batch. */
+    limit: number;
+    /** Number of items actually returned in the data array. */
+    returned: number;
+    /** True if the collection contains more recipes than the limit (response was truncated). */
+    truncated: boolean;
+}
+
+/**
  * Defines the structure for cursor-based pagination metadata.
  */
 export interface CursorPageInfoDto {
@@ -258,11 +270,15 @@ export type CollectionListItemDto = Pick<
 export type RecipeInCollectionDto = Pick<Recipe, 'id' | 'name'>;
 
 /**
- * DTO for the detailed view of a single collection, including a paginated list of its recipes.
+ * DTO for the detailed view of a single collection, including a batch list of its recipes.
  * Uses RecipeListItemDto to allow displaying full recipe cards with images.
+ * Returns all recipes in one batch (no UI pagination) with truncated flag.
  */
 export type CollectionDetailDto = CollectionListItemDto & {
-    recipes: PaginatedResponseDto<RecipeListItemDto>;
+    recipes: {
+        data: RecipeListItemDto[];
+        pageInfo: CollectionRecipesPageInfoDto;
+    };
 };
 
 /**

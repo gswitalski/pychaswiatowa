@@ -10,7 +10,6 @@ import {
     CollectionListItemDto,
     CollectionDetailDto,
     RecipeListItemDto,
-    PaginationDetails,
     CreateCollectionCommand,
     UpdateCollectionCommand,
 } from './collections.types.ts';
@@ -28,7 +27,10 @@ const RECIPE_SELECT_COLUMNS = `
     image_path,
     created_at,
     visibility,
-    user_id
+    user_id,
+    category_id,
+    servings,
+    is_termorobot
 `;
 
 // #region --- Collection CRUD Operations ---
@@ -72,24 +74,32 @@ export async function getCollections(
 }
 
 /**
- * Retrieves a single collection by ID with paginated recipes.
+ * Retrieves a single collection by ID with batch of recipes (no UI pagination).
  *
  * @param client - The authenticated Supabase client
  * @param userId - The ID of the authenticated user
  * @param collectionId - The ID of the collection to retrieve
- * @param page - Page number (1-based)
- * @param limit - Number of recipes per page
- * @returns CollectionDetailDto with paginated recipes
+ * @param limit - Maximum number of recipes to return (1-500)
+ * @param sortField - Field to sort by ('created_at' or 'name')
+ * @param sortDirection - Sort direction ('asc' or 'desc')
+ * @returns CollectionDetailDto with batch of recipes and pageInfo
  * @throws ApplicationError with NOT_FOUND if collection doesn't exist or doesn't belong to user
  */
 export async function getCollectionById(
     client: TypedSupabaseClient,
     userId: string,
     collectionId: number,
-    page: number = 1,
-    limit: number = 20
+    limit: number = 500,
+    sortField: string = 'created_at',
+    sortDirection: 'asc' | 'desc' = 'desc'
 ): Promise<CollectionDetailDto> {
-    logger.info('Fetching collection by ID', { userId, collectionId, page, limit });
+    logger.info('Fetching collection by ID (batch mode)', { 
+        userId, 
+        collectionId, 
+        limit, 
+        sortField, 
+        sortDirection 
+    });
 
     // Fetch collection
     const { data: collection, error: collectionError } = await client
@@ -113,11 +123,13 @@ export async function getCollectionById(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch collection');
     }
 
-    // Get total count of recipes in collection
+    // Get total count of recipes in collection (only non-deleted)
+    // We need to count through recipes table to respect deleted_at
     const { count: totalItems, error: countError } = await client
         .from('recipe_collections')
-        .select('recipe_id', { count: 'exact', head: true })
-        .eq('collection_id', collectionId);
+        .select('recipe_id, recipes!inner(id)', { count: 'exact', head: true })
+        .eq('collection_id', collectionId)
+        .is('recipes.deleted_at', null);
 
     if (countError) {
         logger.error('Database error while counting recipes', {
@@ -128,19 +140,18 @@ export async function getCollectionById(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to count recipes in collection');
     }
 
-    const total = totalItems ?? 0;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const offset = (page - 1) * limit;
+    const totalCount = totalItems ?? 0;
 
-    // Fetch paginated recipes
+    // Fetch recipes in batch with sorting and limit
+    // Strategy: Get recipe_ids from recipe_collections, then fetch full recipe data with sorting
     const { data: recipeCollections, error: recipesError } = await client
         .from('recipe_collections')
         .select('recipe_id')
         .eq('collection_id', collectionId)
-        .range(offset, offset + limit - 1);
+        .range(0, limit - 1);
 
     if (recipesError) {
-        logger.error('Database error while fetching recipes from collection', {
+        logger.error('Database error while fetching recipe_collections', {
             collectionId,
             errorCode: recipesError.code,
             errorMessage: recipesError.message,
@@ -148,16 +159,21 @@ export async function getCollectionById(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipes from collection');
     }
 
-    // Fetch recipe details
+    // Fetch recipe details with sorting and deleted_at filter
     let recipes: RecipeListItemDto[] = [];
     if (recipeCollections && recipeCollections.length > 0) {
         const recipeIds = recipeCollections.map((rc) => rc.recipe_id);
+
+        // Build order configuration based on sortField and sortDirection
+        const ascending = sortDirection === 'asc';
 
         const { data: recipeData, error: recipeDetailsError } = await client
             .from('recipes')
             .select(RECIPE_SELECT_COLUMNS)
             .in('id', recipeIds)
-            .is('deleted_at', null);
+            .is('deleted_at', null)
+            .order(sortField, { ascending })
+            .order('id', { ascending }); // Tie-breaker for stable sorting
 
         if (recipeDetailsError) {
             logger.error('Database error while fetching recipe details', {
@@ -188,14 +204,45 @@ export async function getCollectionById(
             throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch author profiles');
         }
 
-        // Stwórz mapę profiles dla szybkiego dostępu
+        // Pobierz unikalne category_id (non-null)
+        const uniqueCategoryIds = [...new Set(
+            recipeData?.map((r: any) => r.category_id).filter((id: any) => id !== null) || []
+        )];
+
+        // Pobierz kategorie
+        let categoriesData: any[] = [];
+        if (uniqueCategoryIds.length > 0) {
+            const { data: cats, error: categoriesError } = await client
+                .from('categories')
+                .select('id, name')
+                .in('id', uniqueCategoryIds);
+
+            if (categoriesError) {
+                logger.error('Database error while fetching categories', {
+                    collectionId,
+                    categoryIds: uniqueCategoryIds,
+                    errorCode: categoriesError.code,
+                    errorMessage: categoriesError.message,
+                });
+                // Don't throw - categories are optional, continue with null names
+            } else {
+                categoriesData = cats || [];
+            }
+        }
+
+        // Stwórz mapy dla szybkiego dostępu
         const profilesMap = new Map(
             (profilesData || []).map((p: any) => [p.id, p])
+        );
+        const categoriesMap = new Map(
+            categoriesData.map((c: any) => [c.id, c.name])
         );
 
         // Mapujemy dane z bazy na RecipeListItemDto
         recipes = (recipeData ?? []).map((recipe: any) => {
             const profile = profilesMap.get(recipe.user_id);
+            const categoryName = recipe.category_id ? categoriesMap.get(recipe.category_id) || null : null;
+
             return {
                 id: recipe.id,
                 name: recipe.name,
@@ -208,21 +255,24 @@ export async function getCollectionById(
                     id: recipe.user_id,
                     username: profile?.username || 'Unknown',
                 },
+                category_id: recipe.category_id,
+                category_name: categoryName,
+                servings: recipe.servings,
+                is_termorobot: recipe.is_termorobot,
             };
         });
     }
 
-    const pagination: PaginationDetails = {
-        currentPage: page,
-        totalPages,
-        totalItems: total,
-    };
+    // Build pageInfo
+    const returned = recipes.length;
+    const truncated = totalCount > limit;
 
-    logger.info('Collection fetched successfully', {
+    logger.info('Collection fetched successfully (batch mode)', {
         userId,
         collectionId,
-        recipesCount: recipes.length,
-        totalItems: total,
+        returned,
+        totalCount,
+        truncated,
     });
 
     return {
@@ -231,7 +281,11 @@ export async function getCollectionById(
         description: collection.description,
         recipes: {
             data: recipes,
-            pagination,
+            pageInfo: {
+                limit,
+                returned,
+                truncated,
+            },
         },
     };
 }

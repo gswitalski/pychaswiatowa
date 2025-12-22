@@ -38,6 +38,12 @@ const paginationSchema = z.object({
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+/** Schema for collection batch query parameters (GET /collections/{id}) */
+const collectionBatchQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(500).default(500),
+    sort: z.string().regex(/^(created_at|name)\.(asc|desc)$/).default('created_at.desc'),
+});
+
 /** Schema for creating a new collection */
 const createCollectionSchema = z.object({
     name: z
@@ -206,7 +212,7 @@ async function handleCreateCollection(req: Request): Promise<Response> {
 
 /**
  * Handles GET /collections/{id} request.
- * Returns details of a single collection with paginated recipes.
+ * Returns details of a single collection with batch of recipes (no UI pagination).
  */
 async function handleGetCollectionById(req: Request, collectionId: number): Promise<Response> {
     try {
@@ -214,29 +220,37 @@ async function handleGetCollectionById(req: Request, collectionId: number): Prom
 
         const { client, user } = await getAuthenticatedContext(req);
 
-        // Parse pagination parameters
+        // Parse batch query parameters
         const queryParams = getQueryParams(req.url);
-        const paginationResult = paginationSchema.safeParse({
-            page: queryParams.get('page') ?? 1,
-            limit: queryParams.get('limit') ?? 20,
+        const queryResult = collectionBatchQuerySchema.safeParse({
+            limit: queryParams.get('limit') ?? 500,
+            sort: queryParams.get('sort') ?? 'created_at.desc',
         });
 
-        if (!paginationResult.success) {
-            return createValidationErrorResponse(paginationResult.error);
+        if (!queryResult.success) {
+            return createValidationErrorResponse(queryResult.error);
         }
 
-        const { page, limit } = paginationResult.data;
+        const { limit, sort } = queryResult.data;
+        
+        // Parse sort into field and direction
+        const [sortField, sortDirection] = sort.split('.') as [string, 'asc' | 'desc'];
+
         const collection: CollectionDetailDto = await getCollectionById(
             client,
             user.id,
             collectionId,
-            page,
-            limit
+            limit,
+            sortField,
+            sortDirection
         );
 
         logger.info('GET /collections/:id completed successfully', {
             userId: user.id,
             collectionId,
+            limit,
+            sort,
+            truncated: collection.recipes.pageInfo.truncated,
         });
 
         return createSuccessResponse(collection);

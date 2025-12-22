@@ -30,6 +30,10 @@ export interface RecipeListItemDto {
         id: string;
         username: string;
     };
+    category_id: number | null;
+    category_name: string | null;
+    servings: number | null;
+    is_termorobot: boolean;
 }
 
 /**
@@ -52,6 +56,7 @@ export interface PaginationDetails {
 
 /**
  * Paginated response structure for recipes in a collection.
+ * @deprecated Use CollectionRecipesPageInfoDto for batch responses instead.
  */
 export interface PaginatedRecipesDto {
     data: RecipeListItemDto[];
@@ -59,11 +64,26 @@ export interface PaginatedRecipesDto {
 }
 
 /**
+ * Page info for collection recipes batch response (no UI pagination).
+ */
+export interface CollectionRecipesPageInfoDto {
+    /** Effective limit applied to the batch. */
+    limit: number;
+    /** Number of items actually returned in the data array. */
+    returned: number;
+    /** True if the collection contains more recipes than the limit (response was truncated). */
+    truncated: boolean;
+}
+
+/**
  * DTO for the detailed view of a single collection.
- * Includes collection metadata and a paginated list of its recipes.
+ * Includes collection metadata and a batch list of its recipes (no UI pagination).
  */
 export interface CollectionDetailDto extends CollectionListItemDto {
-    recipes: PaginatedRecipesDto;
+    recipes: {
+        data: RecipeListItemDto[];
+        pageInfo: CollectionRecipesPageInfoDto;
+    };
 }
 
 // #endregion
