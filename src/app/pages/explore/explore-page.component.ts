@@ -69,12 +69,12 @@ export class ExplorePageComponent {
     /** Computed: lista kart przepisów z informacją o własności i kolekcjach */
     readonly recipeListItems = computed<RecipeListItemViewModel[]>(() => {
         const items = this.pageState().items;
-        const userId = this.currentUserId();
 
         return items.map((dto) => ({
             card: this.mapToRecipeCard(dto),
-            isOwnRecipe: userId !== null && dto.author.id === userId,
+            isOwnRecipe: dto.is_owner,
             inMyCollections: dto.in_my_collections,
+            visibility: dto.visibility,
         }));
     });
 

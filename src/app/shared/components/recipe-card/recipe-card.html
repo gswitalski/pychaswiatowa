@@ -35,6 +35,16 @@
                 }
             </div>
 
+            @if (shouldShowVisibilityIndicator()) {
+            <div
+                class="visibility-indicator"
+                [class.with-menu]="showRemoveAction()"
+                [matTooltip]="visibilityTooltip()"
+                [attr.aria-label]="visibilityAriaLabel()">
+                <mat-icon>{{ visibilityIconName() }}</mat-icon>
+            </div>
+            }
+
             @if (showRemoveAction()) {
             <button
                 mat-icon-button

@@ -108,6 +108,7 @@ export class RecipesListPageComponent implements OnInit {
             },
             isOwnRecipe: recipe.is_owner,
             inMyCollections: recipe.in_my_collections,
+            visibility: recipe.visibility,
         }))
     );
 

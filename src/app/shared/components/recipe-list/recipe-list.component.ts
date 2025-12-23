@@ -11,7 +11,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 
-import { PaginationDetails } from '../../../../../shared/contracts/types';
+import { PaginationDetails, RecipeVisibility } from '../../../../../shared/contracts/types';
 import {
     RecipeCardComponent,
     RecipeCardData,
@@ -23,6 +23,7 @@ export interface RecipeListItemViewModel {
     card: RecipeCardData;
     isOwnRecipe?: boolean;
     inMyCollections?: boolean;
+    visibility?: RecipeVisibility | null;
 }
 
 @Component({

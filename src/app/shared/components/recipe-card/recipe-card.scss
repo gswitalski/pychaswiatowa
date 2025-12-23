@@ -103,6 +103,32 @@
     }
 }
 
+.visibility-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    background-color: var(--mat-sys-surface);
+    opacity: 0.9;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+    &.with-menu {
+        right: 48px;
+    }
+
+    mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: var(--mat-sys-on-surface);
+    }
+}
+
 .card-menu-button {
     position: absolute;
     top: 8px;

@@ -24,6 +24,7 @@
                     [inMyCollections]="recipe.inMyCollections ?? false"
                     [routeType]="routeType()"
                     [isTermorobot]="recipe.card.isTermorobot ?? false"
+                    [visibility]="recipe.visibility ?? null"
                     (remove)="onRemoveRecipe(recipe.card.id)"
                 />
             }

@@ -12,7 +12,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import { RecipeVisibility } from '../../../../../shared/contracts/types';
 
 /**
  * Uogólniony interfejs dla karty przepisu.
@@ -50,6 +52,7 @@ export type RecipeCardRouteType = 'private' | 'public';
         MatButtonModule,
         MatMenuModule,
         MatChipsModule,
+        MatTooltipModule,
     ],
     templateUrl: './recipe-card.html',
     styleUrl: './recipe-card.scss',
@@ -78,6 +81,9 @@ export class RecipeCardComponent {
 
     /** Czy przepis jest przeznaczony dla termorobota (Thermomix/Lidlomix) */
     readonly isTermorobot = input<boolean>(false);
+
+    /** Widoczność przepisu (tylko dla przepisów własnych) */
+    readonly visibility = input<RecipeVisibility | null>(null);
 
     /** Event emitowany po kliknięciu opcji usunięcia */
     readonly remove = output<void>();
@@ -133,6 +139,55 @@ export class RecipeCardComponent {
         }
 
         return `/recipes/${recipe.id}`;
+    });
+
+    /**
+     * Computed: czy pokazać wskaźnik widoczności
+     * Pokazujemy tylko dla przepisów własnych z określonym visibility
+     */
+    readonly shouldShowVisibilityIndicator = computed(() => {
+        return this.isOwnRecipe() && this.visibility() != null;
+    });
+
+    /**
+     * Computed: nazwa ikony dla widoczności
+     */
+    readonly visibilityIconName = computed(() => {
+        const visibility = this.visibility();
+        switch (visibility) {
+            case 'PRIVATE':
+                return 'lock';
+            case 'SHARED':
+                return 'group';
+            case 'PUBLIC':
+                return 'public';
+            default:
+                return 'help';
+        }
+    });
+
+    /**
+     * Computed: tekst tooltipa dla widoczności
+     */
+    readonly visibilityTooltip = computed(() => {
+        const visibility = this.visibility();
+        switch (visibility) {
+            case 'PRIVATE':
+                return 'Prywatny';
+            case 'SHARED':
+                return 'Współdzielony';
+            case 'PUBLIC':
+                return 'Publiczny';
+            default:
+                return 'Nieznana';
+        }
+    });
+
+    /**
+     * Computed: aria-label dla wskaźnika widoczności
+     */
+    readonly visibilityAriaLabel = computed(() => {
+        return `Widoczność przepisu: ${this.visibilityTooltip()}`;
     });
 
     /**
