@@ -7,7 +7,7 @@ This document outlines the REST API for the PychaŚwiatowa application, based on
 The API exposes the following primary resources:
 
 -   **Recipes**: Corresponds to the `recipes` table. Represents a user's culinary recipe.
--   **Public Recipes**: Read-only access to recipes with `visibility = 'PUBLIC'` for anonymous users.
+-   **Public Recipes**: Read-only access to recipes for public routes. For anonymous users: only recipes with `visibility = 'PUBLIC'`. For authenticated users: may also include the user's own recipes with non-public `visibility` (e.g., `PRIVATE`, `SHARED`) as long as `is_owner = true`.
 -   **Categories**: Corresponds to the `categories` table. Represents a predefined recipe category.
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
 -   **Collections**: Corresponds to the `collections` table. Represents user-created collections of recipes.
@@ -15,7 +15,9 @@ The API exposes the following primary resources:
 ## 2. Endpoints
 
 Private endpoints are protected and require a valid JWT from Supabase Auth.
-Public endpoints are available without authentication and must return **only** recipes with `visibility = 'PUBLIC'` (and `deleted_at IS NULL`).
+Public endpoints are available without authentication:
+- For **anonymous** users, they must return **only** recipes with `visibility = 'PUBLIC'` (and `deleted_at IS NULL`).
+- For **authenticated** users, they may additionally include **the user's own** recipes with non-public `visibility` (e.g., `PRIVATE`, `SHARED`) but must never expose non-public recipes of other users.
 
 ---
 
@@ -23,7 +25,10 @@ Public endpoints are available without authentication and must return **only** r
 
 #### `GET /public/recipes`
 
--   **Description**: Retrieve a paginated list of public recipes for anonymous users. Supports basic text search (MVP).
+-   **Description**: Retrieve a paginated list of recipes for public routes. For anonymous users, the list contains only public recipes. For authenticated users, the list may also include their own recipes with non-public visibility.
+-   **Notes**:
+    - Public access is allowed without authentication, but the client MAY include an `Authorization: Bearer <JWT>` header.
+    - If the request is authenticated, the API returns the helper field `is_owner` and MAY include the user's own recipes with `visibility != 'PUBLIC'` (only when `is_owner = true`).
 -   **Query Parameters**:
     -   `page` (optional, integer, default: 1): The page number for pagination.
     -   `limit` (optional, integer, default: 20): The number of items per page.
@@ -43,10 +48,26 @@ Public endpoints are available without authentication and must return **only** r
               "servings": 6,
               "is_termorobot": false,
               "image_path": "path/to/image.jpg",
+              "visibility": "PUBLIC",
+              "is_owner": false,
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
               "created_at": "2023-10-27T10:00:00Z"
+            },
+            {
+              "id": 2,
+              "name": "My Private Soup",
+              "description": null,
+              "servings": 2,
+              "is_termorobot": false,
+              "image_path": null,
+              "visibility": "PRIVATE",
+              "is_owner": true,
+              "category": { "id": 1, "name": "Dinner" },
+              "tags": [],
+              "author": { "id": "me-uuid-...", "username": "me" },
+              "created_at": "2023-10-28T10:00:00Z"
             }
           ],
           "pagination": {
@@ -64,7 +85,10 @@ Public endpoints are available without authentication and must return **only** r
 
 #### `GET /public/recipes/feed`
 
--   **Description**: Retrieve a "load more" friendly list of public recipes using cursor-based pagination (recommended for the `/explore` UI). Supports basic text search (MVP).
+-   **Description**: Retrieve a "load more" friendly list of recipes for public routes using cursor-based pagination (recommended for the `/explore` UI). For anonymous users, the list contains only public recipes. For authenticated users, the list may also include their own recipes with non-public visibility.
+-   **Notes**:
+    - Public access is allowed without authentication, but the client MAY include an `Authorization: Bearer <JWT>` header.
+    - If the request is authenticated, the API returns the helper field `is_owner` and MAY include the user's own recipes with `visibility != 'PUBLIC'` (only when `is_owner = true`).
 -   **Query Parameters**:
     -   `cursor` (optional, string): Opaque cursor returned by the previous response (`pageInfo.nextCursor`).
     -   `limit` (optional, integer, default: 12): The number of items to return per batch. (UI uses 12 as the default batch size.)
@@ -84,10 +108,26 @@ Public endpoints are available without authentication and must return **only** r
               "servings": 6,
               "is_termorobot": false,
               "image_path": "path/to/image.jpg",
+              "visibility": "PUBLIC",
+              "is_owner": false,
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
               "created_at": "2023-10-27T10:00:00Z"
+            },
+            {
+              "id": 2,
+              "name": "My Shared Cake",
+              "description": null,
+              "servings": 8,
+              "is_termorobot": false,
+              "image_path": null,
+              "visibility": "SHARED",
+              "is_owner": true,
+              "category": { "id": 2, "name": "Dessert" },
+              "tags": [],
+              "author": { "id": "me-uuid-...", "username": "me" },
+              "created_at": "2023-10-28T10:00:00Z"
             }
           ],
           "pageInfo": {

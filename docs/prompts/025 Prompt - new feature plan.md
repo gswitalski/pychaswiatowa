@@ -12,8 +12,8 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-chę aby lista przepisów kolekcji nie była stronicowana - mają się ładować i wyświetlać od razu wszystkie przepisy klekcji gdy wejdę na ściezkę
-https://pychaswiatowa.web.app/collections/3
+
+jako zalogowany użytkownik dy mam wyświetlany  na liście przepisów mój przepis, to chcje wiecić jak jest jego widocznność za pomocą odpowiedniego znaczka z ikonka na karcie. 
 
 </nowa_funkcjonalnosc>
 
