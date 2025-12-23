@@ -12,8 +12,13 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-### `GET /collections/{id}` (zmienione)
-- **Co się zmieniło**: endpoint nie opisuje już paginacji listy przepisów kolekcji. Zamiast tego zwraca listę w jednym batchu, z bezpiecznym limitem (`limit`, domyślnie 500) oraz `pageInfo.truncated`, aby UI mogło poinformować użytkownika, jeśli wynik został ucięty technicznie.
+- **Zmienione**: **`GET /public/recipes`**
+    - Dodano do elementów listy pola: `visibility` oraz `is_owner` (true/false; wymaga uwierzytelnienia, inaczej `false`).
+    - Doprecyzowano zachowanie: dla gościa zwracane są wyłącznie przepisy `PUBLIC`, ale dla zalogowanego endpoint może zwrócić także jego własne przepisy o `visibility != PUBLIC` (np. `PRIVATE`, `SHARED`) — wyłącznie gdy `is_owner=true`.
+
+- **Zmienione**: **`GET /public/recipes/feed`**
+    - Dodano do elementów listy pola: `visibility` oraz `is_owner` (true/false; wymaga uwierzytelnienia, inaczej `false`).
+    - Doprecyzowano zachowanie: dla gościa zwracane są wyłącznie przepisy `PUBLIC`, ale dla zalogowanego endpoint może zwrócić także jego własne przepisy o `visibility != PUBLIC` (np. `PRIVATE`, `SHARED`) — wyłącznie gdy `is_owner=true`.
 
 </api_changes_description>
 

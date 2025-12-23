@@ -1,266 +1,325 @@
-# API Endpoints Implementation Plan: GET /public/recipes
+## API Endpoints Implementation Plan: `GET /public/recipes` oraz `GET /public/recipes/feed`
 
 ## 1. Przegląd punktu końcowego
-Celem endpointu `GET /public/recipes` jest udostępnienie **anonimowym użytkownikom** (bez JWT) listy przepisów o widoczności **PUBLIC**. Endpoint zwraca dane w formie stronicowanej (paginacja) oraz umożliwia:
-- podstawowe wyszukiwanie tekstowe (MVP)
-- sortowanie
 
-Zmiana względem poprzedniej wersji kontraktu:
-- w odpowiedzi listingu dodano `author` (id + username), aby frontend mógł oznaczyć „Twój przepis” porównując `author.id` z tożsamością użytkownika (np. z `/me`).
+Ten plan obejmuje dwa publiczne endpointy listujące przepisy dla tras publicznych:
 
-Wymagania domenowe wynikające ze schematu:
-- zwracać wyłącznie przepisy **nieusunięte** (soft delete): `deleted_at IS NULL`
-- zwracać wyłącznie przepisy publiczne: `visibility = 'PUBLIC'`
+- **`GET /public/recipes`**: paginacja stronami (page-based), używana np. do klasycznego listingu.
+- **`GET /public/recipes/feed`**: paginacja cursor-based („load more”), używana np. do infinite scroll.
 
-Wymagania wdrożeniowe (Supabase Edge Functions + TypeScript):
-- logika biznesowa w `*.service.ts`, walidacja i format odpowiedzi w `*.handlers.ts`, routing w `index.ts`
-- nie wykonywać zapytań do bazy w `index.ts`
+Kluczowa zmiana w kontrakcie (względem wcześniejszych wersji) dla **obu** endpointów:
+
+- **Dodano pola**: `visibility` oraz `is_owner` w elementach listy.
+- **Doprecyzowano zachowanie**:
+    - **gość (brak JWT)**: zwracamy wyłącznie przepisy `visibility = 'PUBLIC'`, a `is_owner` zawsze `false`.
+    - **zalogowany (poprawny JWT)**: zwracamy:
+        - wszystkie przepisy `visibility = 'PUBLIC'` (dowolnych autorów),
+        - **oraz** dodatkowo przepisy użytkownika (`user_id = authUserId`) o `visibility != 'PUBLIC'` (np. `PRIVATE`, `SHARED`) — i tylko dla nich `is_owner = true`.
+    - Endpointy **nigdy** nie mogą ujawnić niepublicznych przepisów innych użytkowników.
+
+Wymagania domenowe wynikające ze schematu (soft delete):
+
+- **Zawsze** filtrować `deleted_at IS NULL`.
+
+Wymagania wdrożeniowe (Supabase Edge Functions + TypeScript; zgodnie z `.cursor/rules/backend.mdc`):
+
+- `index.ts`: routing + obsługa błędów najwyższego poziomu (bez zapytań do DB).
+- `*.handlers.ts`: walidacja requestu (Zod), wywołanie serwisu, format odpowiedzi.
+- `*.service.ts`: logika biznesowa i zapytania do DB.
 
 ## 2. Szczegóły żądania
-- Metoda HTTP: **GET**
-- Struktura URL: **/public/recipes**
-  - Implementacyjnie w Supabase Edge Functions: zalecany katalog funkcji `supabase/functions/public/` z trasą wewnętrzną `/recipes` (tj. runtime URL: `/functions/v1/public/recipes`).
 
-### Parametry
-- Wymagane: **brak**
-- Opcjonalne:
-  - `page` (integer, domyślnie `1`): numer strony (>= 1)
-  - `limit` (integer, domyślnie `20`): liczba elementów na stronie (>= 1; zalecany max `100`)
-  - `sort` (string, domyślnie `created_at.desc`): sortowanie w formacie `{field}.{direction}`
-    - dozwolone pola: `created_at`, `name`
-    - dozwolone kierunki: `asc`, `desc`
-  - `q` (string): zapytanie wyszukiwania tekstowego
-    - jeśli podane: **min. 2 znaki** po trim
+### 2.1 `GET /public/recipes`
 
-### Nagłówki
-- `Authorization`: **niewymagany** (endpoint publiczny)
-- `Content-Type`: nie dotyczy (brak body)
+- **Metoda HTTP**: `GET`
+- **Struktura URL**: `/public/recipes`
+- **Supabase Edge Function runtime URL**: `/functions/v1/public/recipes`
+- **Request Body**: brak
+- **Nagłówki**:
+    - **Opcjonalne**: `Authorization: Bearer <JWT>`
+        - Jeśli nagłówek jest wysłany i token jest **niepoprawny/wygaśnięty** → zwrócić `401`.
+        - Jeśli nagłówka brak → traktować jak gościa.
+
+#### Parametry (query)
+
+- **Wymagane**: brak
+- **Opcjonalne**:
+    - `page` (integer, domyślnie `1`, min `1`)
+    - `limit` (integer, domyślnie `20`, min `1`, max `100`)
+    - `sort` (string, domyślnie `created_at.desc`)
+        - format: `<field>.<direction>`
+        - dozwolone `field`: `created_at`, `name`
+        - dozwolone `direction`: `asc`, `desc`
+    - `q` (string, opcjonalny)
+        - `trim`
+        - jeśli podany → **min 2 znaki**
+    - `filter[termorobot]` (boolean, opcjonalny): `true|false|1|0`
+
+### 2.2 `GET /public/recipes/feed`
+
+- **Metoda HTTP**: `GET`
+- **Struktura URL**: `/public/recipes/feed`
+- **Supabase Edge Function runtime URL**: `/functions/v1/public/recipes/feed`
+- **Request Body**: brak
+- **Nagłówki**:
+    - **Opcjonalne**: `Authorization: Bearer <JWT>` (jak wyżej)
+
+#### Parametry (query)
+
+- **Wymagane**: brak
+- **Opcjonalne**:
+    - `cursor` (string, opcjonalny): opaque cursor z poprzedniej odpowiedzi (`pageInfo.nextCursor`)
+    - `limit` (integer, domyślnie `12`, min `1`, max `100`)
+    - `sort` (string, domyślnie `created_at.desc`)
+        - format: `<field>.<direction>`
+        - dozwolone `field`: `created_at`, `name`
+        - dozwolone `direction`: `asc`, `desc`
+    - `q` (string, opcjonalny): jak wyżej (min 2 znaki, jeśli podany)
+    - `filter[termorobot]` (boolean, opcjonalny): `true|false|1|0`
 
 ## 3. Wykorzystywane typy
-### DTO (kontrakty)
-Zalecane jest dodanie/utrwalenie kontraktów w `shared/contracts/types.ts`, aby frontend i backend korzystały ze spójnych typów.
 
-- `PaginationDetails`
+### 3.1 DTO (kontrakt współdzielony)
+
+Zalecane jest utrzymywanie kontraktów w `shared/contracts/types.ts`, aby frontend i backend były spójne.
+
 - `PaginatedResponseDto<T>`
-- **Nowe**: `PublicRecipeListItemDto`
-  - `id: number`
-  - `name: string`
-  - `description: string | null`
-  - `image_path: string | null`
-  - `category: CategoryDto | null` (obiekt `{ id, name }`)
-  - `tags: string[]` (nazwy tagów)
-  - `author: ProfileDto` (obiekt `{ id, username }`)
-  - `created_at: string`
+- `CursorPaginatedResponseDto<T>`
+- `PublicRecipeListItemDto`
+- `CategoryDto`
+- `ProfileDto`
+- `RecipeVisibility`
 
-### Uwaga dot. spójności typów
-W projekcie występują dwa miejsca z definicją `PublicRecipeListItemDto`:
-- `shared/contracts/types.ts` (kontrakt frontend-backend)
-- `supabase/functions/public/public.service.ts` (lokalny DTO serwisu)
+### 3.2 Wymagane zmiany w DTO
 
-Należy je zaktualizować spójnie (dodanie `author`) lub docelowo wyrównać podejście (np. import wspólnych typów do Edge Functions, jeśli to jest przyjęty wzorzec w repo).
+W `shared/contracts/types.ts` należy zaktualizować `PublicRecipeListItemDto`, dodając:
 
-### Modele wejścia
-Endpoint nie ma body. Wejściem są query parametry, dla których zalecane jest wprowadzenie typu (opcjonalnie):
-- **Nowe**: `GetPublicRecipesQuery` (na potrzeby serwisu/handlera)
-  - `page: number`
-  - `limit: number`
-  - `sortField: 'created_at' | 'name'`
-  - `sortDirection: 'asc' | 'desc'`
-  - `q?: string`
+- `visibility: RecipeVisibility`
+- `is_owner: boolean`
+
+oraz utrzymać istniejące pola (w tym `in_my_collections`, które dla gościa powinno być zawsze `false`).
+
+Uwaga dot. repo: analogiczny DTO jest obecnie zdefiniowany lokalnie w `supabase/functions/public/public.service.ts` — plan zakłada spójne zaktualizowanie obu definicji albo ich ujednolicenie (jeśli repo przyjmie import wspólnych typów).
+
+### 3.3 Modele wejścia (dla serwisu)
+
+- `GetPublicRecipesQuery`
+- `GetPublicRecipesFeedQuery`
 
 ## 4. Szczegóły odpowiedzi
-### Sukces
-- Kod: **200 OK**
-- Payload (zgodnie z API planem):
+
+### 4.1 `GET /public/recipes` (sukces)
+
+- **200 OK**
+
+Payload:
 
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "name": "Apple Pie",
-      "description": "A classic dessert.",
-      "image_path": "path/to/image.jpg",
-      "category": { "id": 2, "name": "Dessert" },
-      "tags": ["sweet", "baking"],
-      "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
-      "created_at": "2023-10-27T10:00:00Z"
+    "data": [
+        {
+            "id": 1,
+            "name": "Apple Pie",
+            "description": "A classic dessert.",
+            "image_path": "path/to/image.jpg",
+            "visibility": "PUBLIC",
+            "is_owner": false,
+            "category": { "id": 2, "name": "Dessert" },
+            "tags": ["sweet", "baking"],
+            "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
+            "created_at": "2023-10-27T10:00:00Z",
+            "in_my_collections": false,
+            "servings": 6,
+            "is_termorobot": false
+        }
+    ],
+    "pagination": {
+        "currentPage": 1,
+        "totalPages": 5,
+        "totalItems": 100
     }
-  ],
-  "pagination": {
-    "currentPage": 1,
-    "totalPages": 5,
-    "totalItems": 100
-  }
 }
 ```
 
-### Błędy
-- `400 Bad Request`
-  - nieprawidłowe query parametry (np. `page` <= 0, `limit` <= 0, nieobsługiwane `sort`)
-  - `q` podane i krótsze niż 2 znaki
-- `500 Internal Server Error`
-  - błąd po stronie serwera (np. problem z konfiguracją Supabase env, błąd DB, błąd mapowania)
+### 4.2 `GET /public/recipes/feed` (sukces)
 
-Uwaga: `401` i `404` nie są typowe dla listy publicznej, ale `404` może być zwracane przez router dla nieobsługiwanych ścieżek w funkcji `public`.
+- **200 OK**
+
+Payload:
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Apple Pie",
+            "description": "A classic dessert.",
+            "image_path": "path/to/image.jpg",
+            "visibility": "PUBLIC",
+            "is_owner": false,
+            "category": { "id": 2, "name": "Dessert" },
+            "tags": ["sweet", "baking"],
+            "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
+            "created_at": "2023-10-27T10:00:00Z",
+            "in_my_collections": false,
+            "servings": 6,
+            "is_termorobot": false
+        }
+    ],
+    "pageInfo": {
+        "hasMore": true,
+        "nextCursor": "opaque_cursor_value"
+    }
+}
+```
+
+### 4.3 Błędy (oba endpointy)
+
+- **400 Bad Request**
+    - nieprawidłowe query parametry (`page`, `limit`, `sort`, `cursor`, `filter[termorobot]`)
+    - `q` podane i krótsze niż 2 znaki (po trim)
+    - `cursor` niezgodny z bieżącym zestawem parametrów (np. inny `sort/limit/filtry`) — dotyczy feed
+- **401 Unauthorized**
+    - wysłano `Authorization`, ale JWT jest niepoprawny/wygaśnięty
+- **404 Not Found**
+    - ścieżka nieobsługiwana przez router funkcji `public` (np. literówka w URL)
+- **500 Internal Server Error**
+    - błędy bazy / nieoczekiwane wyjątki / brak konfiguracji środowiska
 
 ## 5. Przepływ danych
-1. `index.ts` (funkcja `public`):
-   - loguje request (method + url)
-   - obsługuje CORS (OPTIONS)
-   - deleguje request do `publicRouter(req)`
-2. `public.handlers.ts`:
-   - parsuje query parametry z URL
-   - waliduje parametry przez Zod:
-     - `page`, `limit` z domyślnymi wartościami
-     - `sort` rozbijany na `field` i `direction` z allow-listą
-     - `q`: trim + minLength(2) jeśli zdefiniowane
-   - wywołuje `getPublicRecipes(client, options)`
-   - mapuje wynik do `PaginatedResponseDto<PublicRecipeListItemDto>`
-3. `public.service.ts`:
-   - wykonuje zapytanie do bazy z gwarancją filtrów:
-     - `visibility = 'PUBLIC'`
-     - `deleted_at IS NULL` (zapewnione w `recipe_details` view, ale filtr można dodać defensywnie, jeśli będzie użyta tabela `recipes`)
-   - oblicza paginację (`offset`, `limit`) i `count: 'exact'`
-   - mapuje rekordy do DTO:
-     - `category` budowane z `category_id` + `category_name`
-     - `tags` mapowane do `string[]` poprzez ekstrakcję `name` z JSONB `tags`
-     - `author`:
-       - pobrać `user_id` (autor przepisu) z widoku `recipe_details` w pierwszym zapytaniu (projekcja musi zawierać `user_id`)
-       - wykonać **drugie zapytanie** do `profiles` z użyciem `.in('id', uniqueUserIds)` (bulk fetch) i zmapować `user_id -> {id, username}`
-       - złożyć DTO w pamięci bez N+1 zapytań
 
-### Źródło danych
-Zalecane: korzystać z widoku `public.recipe_details` (agreguje tags/kolekcje i unika N+1).
+### 5.1 Routing (Edge Function `public`)
 
-### Uwaga dot. uprawnień (krytyczne)
-Z migracji `20251212130000_add_visibility_to_recipes.sql` wynika, że:
-- `grant select on public.recipe_details to authenticated;`
-- brak grantu dla `anon`
+- `supabase/functions/public/index.ts`:
+    - CORS i logowanie requestu
+    - delegacja do `publicRouter(req)`
+- `supabase/functions/public/public.handlers.ts`:
+    - rozpoznanie ścieżek:
+        - `/recipes/feed` **musi** być sprawdzane przed `/recipes/{id}` (żeby nie dopasować `feed` jako `{id}`)
+        - `/recipes`
 
-Dlatego istnieją dwie poprawne ścieżki implementacji:
-- **A (zalecana dla MVP, bez zmian w DB)**: Edge Function używa klienta Supabase z **service role key** (bypass RLS) i sama wymusza filtry `visibility = 'PUBLIC'`.
-- **B (bardziej „czyste” publicznie)**: dodać uprawnienia/polityki w DB tak, aby rola `anon` mogła wykonywać SELECT tylko dla `visibility='PUBLIC'` (i `deleted_at IS NULL`). Wtedy funkcja może używać anon key.
+### 5.2 Handler (`public.handlers.ts`)
 
-Plan poniżej zakłada wariant A (szybszy), z rekomendacją rozważenia wariantu B w przyszłości.
+W obu handlerach:
+
+- **Opcjonalne uwierzytelnienie**:
+    - `getOptionalAuthenticatedUser(req)`
+    - `userId = user?.id ?? null`
+- **Walidacja query (Zod)**:
+    - `page/limit` (dla listy stron)
+    - `cursor/limit` (dla feed)
+    - `sort` z allow-listą pól i kierunków
+    - `q` (trim; jeśli podany, min 2 znaki)
+    - `filter[termorobot]` (true/false/1/0)
+- Wywołanie serwisu:
+    - `getPublicRecipes(client, query, userId)`
+    - `getPublicRecipesFeed(client, query, userId)`
+- Zwrócenie odpowiedzi:
+    - `GET /public/recipes`: `200` z `PaginatedResponseDto<PublicRecipeListItemDto>`
+    - `GET /public/recipes/feed`: `200` z `CursorPaginatedResponseDto<PublicRecipeListItemDto>`
+
+### 5.3 Serwis (`public.service.ts`)
+
+Źródło danych: preferować `recipe_details` (agreguje kategorię i tagi; ogranicza N+1).
+
+Krytyczne reguły filtrowania:
+
+- **zawsze**: `deleted_at IS NULL`
+- **gość**: `visibility = 'PUBLIC'`
+- **zalogowany**: `(visibility = 'PUBLIC') OR (user_id = <authUserId>)`
+
+Mapowanie pól listy:
+
+- `visibility`: z wiersza `recipe_details.visibility`
+- `is_owner`:
+    - gdy `userId === null` → `false`
+    - w przeciwnym razie → `recipe.user_id === userId`
+- `in_my_collections`:
+    - gdy `userId === null` → `false`
+    - w przeciwnym razie → sprawdzić, czy przepis występuje w jakiejkolwiek kolekcji użytkownika (bulk query po `recipe_collections` + `collections.user_id`)
+- `author`:
+    - zebrać unikalne `user_id` z listy,
+    - pobrać profile przez jedno zapytanie `.in('id', uniqueUserIds)`,
+    - dołączyć `{ id, username }` bez N+1.
+
+Feed (cursor):
+
+- cursor jest opaque (np. base64url JSON) i musi zawierać sygnaturę zapytania (filters hash) tak, by odrzucać niezgodne kursory.
+- sort musi być stabilny: `ORDER BY <field> <dir>, id <dir>`.
 
 ## 6. Względy bezpieczeństwa
-- **Brak autoryzacji**: endpoint jest dostępny bez JWT.
-- **Ochrona przed wyciekiem danych** (przy użyciu service role):
-  - twardo wymusić `visibility='PUBLIC'`
-  - zwracać tylko pola z kontraktu (nie zwracać `user_id`, `updated_at`, `ingredients`, `steps`, itp.)
+
+- **Opcjonalne auth**:
+    - brak JWT → tryb publiczny (tylko `PUBLIC`)
+    - niepoprawny JWT (gdy wysłany) → `401`
+- **Service role a wyciek danych**:
+    - ponieważ funkcja używa service role (bypass RLS), wszystkie filtry dostępu muszą być wymuszone w serwisie:
+        - `deleted_at IS NULL`
+        - publiczny zakres widoczności (z uwzględnieniem „własnych” dla zalogowanego)
 - **Walidacja sortowania**:
-  - allow-lista pól i kierunków (zapobieganie wstrzyknięciom przez `order`)
-- **Walidacja paginacji**:
-  - `limit` z górnym limitem (np. max 100) by ograniczyć koszt
-- **CORS**:
-  - spójne nagłówki jak w innych funkcjach (`Access-Control-Allow-Origin: *`, tylko `GET, OPTIONS` dla tej funkcji)
-- **Rate limiting / throttling** (opcjonalnie):
-  - jeżeli endpoint ma być publicznie indeksowany, rozważyć prosty limit po IP na poziomie edge/proxy lub Supabase, aby ograniczyć scraping
+    - allow-lista pól i kierunków (zapobieganie nadużyciom)
+- **Limity**:
+    - `limit` max 100
+    - `q` min 2 (jeśli podany)
+- **Cache**:
+    - anon: można cache’ować krótko (`public, max-age=60`)
+    - authenticated: `no-store` (żeby nie cache’ować odpowiedzi zależnych od użytkownika)
 
 ## 7. Obsługa błędów
-### Scenariusze i kody
-- `200 OK`:
-  - poprawna odpowiedź z listą (także gdy `data` jest puste)
-- `400 Bad Request`:
-  - `q` podane i `trim(q).length < 2`
-  - nieprawidłowe formaty `page/limit/sort` (lub parametry spoza zakresu)
-- `404 Not Found`:
-  - brak dopasowania routingu wewnątrz funkcji `public` (np. `/public/anything-else`)
-- `500 Internal Server Error`:
-  - błąd konfiguracji (brak `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`)
-  - błąd zapytania do bazy
 
-### Rejestrowanie błędów
-- W projekcie nie ma obecnie zdefiniowanej tabeli „error logs” w DB planie/migracjach.
-- Stosować istniejący `logger` oraz spójny `ApplicationError`/`handleError` z `supabase/functions/_shared/errors.ts`.
-- (Opcjonalnie przyszłościowo) dodać tabelę `api_error_logs` i zapisywać wybrane błędy 5xx/4xx o wysokiej wartości diagnostycznej.
+- Używać spójnego mechanizmu `ApplicationError` + `handleError` z `supabase/functions/_shared/errors.ts`.
+- Logowanie:
+    - `info`: parametry requestu (bez danych wrażliwych)
+    - `warn`: walidacja i przypadki brzegowe
+    - `error`: błędy DB i nieoczekiwane wyjątki
 
-## 8. Rozważania dotyczące wydajności
-- **Źródło danych**: widok `recipe_details` (agregacje po stronie DB).
-- **Dodatkowe pobranie autora**:
-  - zalecane są **2 zapytania**: (1) lista przepisów z `user_id`, (2) lista profili dla unikalnych `user_id`
-  - unikać N+1 (pobierania profilu osobno dla każdego przepisu)
-- **Paginacja + count**:
-  - `count: 'exact'` jest kosztowny dla dużych tabel; dla MVP OK.
-  - w przyszłości rozważyć `estimated count` lub osobny licznik / „seek pagination”.
+Rejestrowanie błędów w tabeli (jeśli dotyczy):
+
+- W aktualnym DB planie nie ma tabeli logów błędów; standardem jest logowanie przez `logger`.
+- Opcjonalnie (po MVP) można wprowadzić tabelę np. `api_error_logs` dla błędów 5xx i wybranych 4xx.
+
+## 8. Wydajność
+
+- **List (page-based)**:
+    - `count: 'exact'` jest kosztowny, ale akceptowalny dla MVP.
+- **Feed (cursor-based)**:
+    - unikać `count(*)`; stosować `limit + 1` do ustalenia `hasMore`.
+- **Unikanie N+1**:
+    - profile autorów pobierać bulk (`profiles.in(id, ...)`)
+    - `in_my_collections` liczyć bulk (jedno zapytanie dla całej paczki)
 - **Wyszukiwanie**:
-  - preferować `search_vector` (GIN) zamiast `ILIKE` na dużych danych.
-  - wymaganie „q szuka po name, ingredients, tags” może wymagać dopracowania w SQL.
-
-### Zalecana strategia wyszukiwania (MVP)
-- Jeżeli istnieje `recipes.search_vector` obejmujący `name` + `ingredients`:
-  - użyć `textSearch('search_vector', q, { type: 'websearch' })` (lub SQL RPC)
-- Dla tagów:
-  - zalecane: dodać **RPC** `search_public_recipes(...)` agregujące tagi do tekstu wyszukiwania albo wykonujące JOIN na `tags` i filtr na `tags.name ILIKE`.
-  - alternatywa (mniej elegancka): filtrować po `tags` JSONB przez cast do tekstu (wymaga weryfikacji możliwości PostgREST i wpływu na wydajność).
+    - MVP może używać `ILIKE` (jak w aktualnym kodzie),
+    - docelowo (zgodnie z API planem) przejść na full-text (name + ingredients + tags) z użyciem indeksu GIN / RPC.
 
 ## 9. Kroki implementacji
-1. **Zweryfikować istniejące miejsce routingu**:
-   - endpoint jest już routowany w Edge Function `supabase/functions/public/` pod ścieżką runtime `/functions/v1/public/recipes`.
-   - zmiana dotyczy kontraktu odpowiedzi oraz mapowania danych (dodanie `author` w listingu).
 
-2. **Dodać klienta DB dla endpointów publicznych**:
-   - dodać w `supabase/functions/_shared/supabase-client.ts` helper `createServiceRoleClient()` (lub lokalnie w `public.service.ts`).
-   - wymagane env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
-
-3. **Routing** (`public.handlers.ts`):
-   - obsłużyć ścieżkę `/recipes` i metodę `GET`.
-   - dla pozostałych: `404` lub `405` z nagłówkiem `Allow`.
-
-4. **Walidacja query parametrów** (Zod):
-   - `page`: string -> int, domyślnie 1, min 1.
-   - `limit`: string -> int, domyślnie 20, min 1, max 100.
-   - `sort`: parse `{field}.{dir}`, allow-list.
-   - `q`: trim; jeśli zdefiniowane i < 2 -> `ApplicationError('VALIDATION_ERROR', 'Query must be at least 2 characters')`.
-
-5. **Implementacja serwisu** (`public.service.ts`):
-   - zapytanie do `recipe_details` z filtrami:
-     - `.eq('visibility', 'PUBLIC')`
-     - (opcjonalnie defensywnie) `.is('deleted_at', null)` jeśli wybierane z `recipes`.
-   - projekcja pól:
-     - dodać `user_id` do select, aby zbudować `author` w DTO
-     - docelowo: `id, user_id, name, description, image_path, category_id, category_name, tags, created_at`.
-   - paginacja: `.range(offset, offset+limit-1)` + `{ count: 'exact' }`.
-   - sort: `.order(field, { ascending })`.
-
-6. **Pobranie authorów (bulk)**:
-   - z wyników listy zebrać `uniqueUserIds` (np. `new Set(data.map(x => x.user_id))`)
-   - wykonać zapytanie do `profiles`:
-     - select: `id, username`
-     - filter: `.in('id', uniqueUserIds)`
-   - zbudować mapę `profilesById`
-   - podczas mapowania listy do DTO dołączyć `author: profilesById[user_id]`
-   - obsłużyć brak profilu (anomalia): zalecane traktować jako `500`, bo kontrakt wymaga `author`
-
-7. **Wyszukiwanie**:
-   - dodać filtr po `q`:
-     - wariant MVP szybki: `textSearch` po `search_vector` (name+ingredients)
-     - oraz (aby spełnić spec): dodać/wykorzystać RPC wyszukujące także po tagach.
-
-8. **Mapowanie do DTO**:
-   - `category`: `{ id: category_id, name: category_name }` lub `null`.
-   - `tags`: z JSONB `tags` wyciągnąć tylko `name` i zwrócić `string[]`.
-   - `author`: `{ id: user_id, username }` (z tabeli `profiles`)
-
-9. **Aktualizacja kontraktów typów**:
-   - zaktualizować `shared/contracts/types.ts` (`PublicRecipeListItemDto`) dodając `author: ProfileDto`
-   - zaktualizować `supabase/functions/public/public.service.ts` lokalny `PublicRecipeListItemDto` analogicznie (jeśli utrzymujemy lokalne DTO)
-   - upewnić się, że payload jest zgodny z API planem i wykorzystywanym frontendem
-
-10. **CORS i response headers**:
-   - jak w innych funkcjach: wspólne `corsHeaders` w `index.ts`.
-   - rozważyć `Cache-Control: public, max-age=60` (opcjonalnie, zależnie od wymagań świeżości danych).
-
-11. **Aktualizacja typów DB** (ważne dla spójności):
-   - `supabase/functions/_shared/database.types.ts` jest kopią i może być niezsynchronizowana; po implementacji public recipes i po migracjach `visibility`/`image_path` należy zaktualizować/generować typy (aby `recipe_details.visibility` i `recipes.visibility` były obecne w typach).
-
-12. **Testy (minimum)**:
-   - `GET /public/recipes` bez parametrów => `200`, domyślna paginacja.
-   - `GET /public/recipes?q=a` => `400`.
-   - `GET /public/recipes?q=ap` => `200`.
-   - w danych testowych upewnić się, że:
-     - `PRIVATE/SHARED` nie pojawiają się w wynikach
-     - rekordy z `deleted_at != null` nie pojawiają się w wynikach
-     - sortowanie działa dla `created_at` i `name`.
-     - **author** jest obecny dla każdego elementu listy (`author.id`, `author.username`)
+1. **Kontrakt DTO**
+    - Zaktualizować `shared/contracts/types.ts`:
+        - `PublicRecipeListItemDto`: dodać `visibility`, `is_owner`.
+2. **Walidacja requestu**
+    - Utrzymać/rozszerzyć Zod schematy w `supabase/functions/public/public.handlers.ts`:
+        - `q` min 2 (gdy podane),
+        - `sort` allow-list,
+        - `filter[termorobot]` parsing,
+        - `cursor` (dla feed).
+3. **Logika filtrowania anon vs zalogowany**
+    - W `public.service.ts` wymusić:
+        - anon: tylko `PUBLIC`
+        - zalogowany: `PUBLIC` lub `user_id = authUserId`
+        - zawsze `deleted_at IS NULL`
+4. **Rozszerzenie select i mapowania**
+    - Upewnić się, że lista (`recipe_details`) zwraca `visibility` (dopisać do select),
+    - Dodać mapowanie `visibility` i `is_owner` w DTO.
+5. **Cache-Control**
+    - anon: `public, max-age=60`
+    - authenticated: `no-store`
+6. **Testy smoke (manual/automatyczne)**
+    - anon:
+        - brak JWT → tylko `visibility=PUBLIC`, `is_owner=false`, `in_my_collections=false`
+    - zalogowany:
+        - z JWT → w wynikach mogą pojawić się własne `PRIVATE/SHARED` z `is_owner=true`
+        - niepubliczne cudze przepisy nie mogą się pojawić
+    - walidacja:
+        - `q=a` → `400`
+        - zły `cursor` / cursor niezgodny z parametrami → `400`
+        - niepoprawny JWT → `401`
