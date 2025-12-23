@@ -186,7 +186,13 @@ function createCachedResponse<T>(data: T, isAuthenticated: boolean, status = 200
 /**
  * Handles GET /public/recipes request.
  * Returns paginated list of public recipes with optional search and sorting.
- * Supports optional authentication - when authenticated, includes collection information.
+ * Supports optional authentication - when authenticated, includes collection information
+ * and returns user's own recipes regardless of visibility.
+ *
+ * Response includes:
+ * - visibility: recipe visibility setting (PUBLIC/SHARED/PRIVATE)
+ * - is_owner: true if authenticated user owns the recipe, false otherwise (always false for anonymous)
+ * - in_my_collections: true if recipe is in authenticated user's collections (always false for anonymous)
  *
  * @param req - The incoming HTTP request
  * @returns Response with PaginatedResponseDto<PublicRecipeListItemDto> on success, or error response
@@ -252,7 +258,7 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             isAuthenticated: userId !== null,
         });
 
-        return createSuccessResponse(result);
+        return createCachedResponse(result, userId !== null);
     } catch (error) {
         return handleError(error);
     }
@@ -306,7 +312,13 @@ export async function handleGetPublicRecipeById(recipeId: string): Promise<Respo
 /**
  * Handles GET /public/recipes/feed request.
  * Returns cursor-based paginated list of public recipes with optional search and sorting.
- * Supports optional authentication - when authenticated, includes collection information.
+ * Supports optional authentication - when authenticated, includes collection information
+ * and returns user's own recipes regardless of visibility.
+ *
+ * Response includes:
+ * - visibility: recipe visibility setting (PUBLIC/SHARED/PRIVATE)
+ * - is_owner: true if authenticated user owns the recipe, false otherwise (always false for anonymous)
+ * - in_my_collections: true if recipe is in authenticated user's collections (always false for anonymous)
  *
  * @param req - The incoming HTTP request
  * @returns Response with CursorPaginatedResponseDto<PublicRecipeListItemDto> on success, or error response

@@ -122,6 +122,8 @@ export interface PublicRecipeListItemDto {
     name: string;
     description: string | null;
     image_path: string | null;
+    visibility: RecipeVisibility;
+    is_owner: boolean;
     category: CategoryDto | null;
     tags: string[];
     author: ProfileDto;

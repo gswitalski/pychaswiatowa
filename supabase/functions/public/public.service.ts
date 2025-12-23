@@ -43,6 +43,11 @@ export type RecipeContentItem =
 export type RecipeContent = RecipeContentItem[];
 
 /**
+ * Recipe visibility enum.
+ */
+export type RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
+
+/**
  * DTO for a public recipe list item.
  */
 export interface PublicRecipeListItemDto {
@@ -50,6 +55,8 @@ export interface PublicRecipeListItemDto {
     name: string;
     description: string | null;
     image_path: string | null;
+    visibility: RecipeVisibility;
+    is_owner: boolean;
     category: CategoryDto | null;
     tags: string[];
     author: ProfileDto;
@@ -113,6 +120,7 @@ interface RecipeDetailsRow {
     name: string;
     description: string | null;
     image_path: string | null;
+    visibility: string;
     category_id: number | null;
     category_name: string | null;
     tags: Array<{ id: number; name: string }> | null;
@@ -151,7 +159,7 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, category_id, category_name, tags, created_at, servings, is_termorobot';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
 const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot';
@@ -357,6 +365,8 @@ export async function getPublicRecipes(
             name: recipe.name,
             description: recipe.description,
             image_path: recipe.image_path,
+            visibility: recipe.visibility as RecipeVisibility,
+            is_owner: userId !== null && recipe.user_id === userId,
             category: recipe.category_id && recipe.category_name
                 ? { id: recipe.category_id, name: recipe.category_name }
                 : null,
@@ -743,6 +753,8 @@ export async function getPublicRecipesFeed(
             name: recipe.name,
             description: recipe.description,
             image_path: recipe.image_path,
+            visibility: recipe.visibility as RecipeVisibility,
+            is_owner: userId !== null && recipe.user_id === userId,
             category: recipe.category_id && recipe.category_name
                 ? { id: recipe.category_id, name: recipe.category_name }
                 : null,
