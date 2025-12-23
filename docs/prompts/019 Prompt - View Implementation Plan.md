@@ -19,11 +19,14 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-### Szczegóły Kolekcji (zmienione)
-- **Gdzie**: `/collections/:id`
-- **Co się zmieniło**: lista przepisów kolekcji **nie jest stronicowana w UI** — na wejściu ładowane są od razu wszystkie przepisy kolekcji (w ramach limitu technicznego API, jeśli dotyczy). Usunięto potrzebę „Więcej”/paginacji dla tego widoku; dodano wymagania dot. loadera, stanu pustego i błędów dostępu.
+- **Zmienione**: **Publiczny katalog przepisów (Explore) `/explore`**
+    - Dodano regułę UI: dla `is_owner=true` karta przepisu pokazuje ikonkę widoczności na podstawie `visibility` + tooltip.
 
+- **Zmienione**: **Lista Przepisów (Moje przepisy) `/my-recipies`**
+    - Dodano regułę UI: dla `is_owner=true` karta przepisu pokazuje ikonkę widoczności na podstawie `visibility` + tooltip.
 
+- **Zmienione**: **Komponent `RecipeCardComponent`**
+    - Rozszerzono opis: karta może pokazywać ikonkę widoczności (tylko dla właściciela) oraz uwzględniono użycie komponentu także w `/explore`.
 
 
 </views>
@@ -32,14 +35,12 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-### US-031 — Wyświetlanie wszystkich przepisów kolekcji bez paginacji (nowe)
-- **Opis**: użytkownik po wejściu w kolekcję widzi od razu pełną listę jej przepisów, bez doładowywania kolejnych porcji.
-- **Kluczowe kryteria**:
-  - Brak paginatora i brak przycisku „Więcej” w `/collections/:id`.
-  - Czytelny stan ładowania (np. skeleton listy/siatki).
-  - Stan pusty dla kolekcji bez przepisów + akcja powrotu (np. do `/collections`).
-  - Czytelne komunikaty dla `403`/`404`.
-  - Obsługa limitu technicznego API (jeśli backend ogranicza liczbę zwracanych elementów).
+
+- **Nowe**: **US-032 — Podgląd widoczności mojego przepisu na liście (ikonka na karcie)**
+    - Na kartach przepisów w listach (np. `/my-recipies`, `/explore`) dla przepisu mojego autorstwa widoczna jest ikonka reprezentująca aktualną wartość `visibility` (`Prywatny` / `Współdzielony` / `Publiczny`) wraz z tooltipem.
+    - Ikonka jest wyłącznie informacyjna (brak zmiany widoczności z listy w MVP).
+    - Dla przepisów nie mojego autorstwa ikonka nie jest wyświetlana.
+
 
 </user_stories>
 
