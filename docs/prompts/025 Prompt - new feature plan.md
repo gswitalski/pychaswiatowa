@@ -12,8 +12,16 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
+aktualnie użytkownik rejestruje się podając email nazwę i hasło.
 
-jako zalogowany użytkownik dy mam wyświetlany  na liście przepisów mój przepis, to chcje wiecić jak jest jego widocznność za pomocą odpowiedniego znaczka z ikonka na karcie. 
+chce aby proces ten był rozszerzony:
+1. użytkownik podaje email, naze i hasło 
+2. system wysyłan a podany emoaui link weryfikacyjny
+3. system prezentuje komunikat o wysłaniu linka na adres
+4. użytkownik opwira maila i klika w link aktywacyjny
+5. system rejestruje fakt potwierdzenia emaila - teraz użytkownik może się już zalogować do systemu
+
+
 
 </nowa_funkcjonalnosc>
 

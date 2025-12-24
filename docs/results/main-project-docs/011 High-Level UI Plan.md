@@ -59,13 +59,39 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe informacje do wyświetlenia:** Formularz z polami na e-mail i hasło, komunikat o błędach, link do strony rejestracji.
 - **Kluczowe komponenty widoku:** `mat-card`, `mat-form-field`, `mat-input`, `mat-button`.
 - **Względy UX, dostępności i bezpieczeństwa:** Jasna komunikacja błędów walidacji. Pola formularza poprawnie oetykietowane.
+    - Jeśli użytkownik próbuje się zalogować, a konto nie ma potwierdzonego e-maila, widok pokazuje czytelny komunikat: „Potwierdź adres e-mail, aby się zalogować” oraz akcję „Wyślij link ponownie” (cooldown 60s).
 
 **5. Rejestracja**
 - **Ścieżka:** `/register`
 - **Główny cel:** Umożliwienie nowym użytkownikom założenia konta.
-- **Kluczowe informacje do wyświetlenia:** Formularz z polami na e-mail i hasło (wraz z potwierdzeniem), link do strony logowania.
+- **Kluczowe informacje do wyświetlenia:** Formularz z polami na: nazwa użytkownika, e-mail, hasło (wraz z potwierdzeniem), link do strony logowania.
 - **Kluczowe komponenty widoku:** `mat-card`, `mat-form-field`, `mat-input`, `mat-button`.
-- **Względy UX, dostępności i bezpieczeństwa:** Walidacja hasła po stronie klienta (np. minimalna długość).
+- **Względy UX, dostępności i bezpieczeństwa:** Walidacja hasła po stronie klienta (np. minimalna długość). Po poprawnej rejestracji użytkownik **nie jest automatycznie logowany** – przechodzi do widoku informującego o wysłaniu linku weryfikacyjnego.
+
+**5a. Rejestracja – wysłano link weryfikacyjny**
+- **Ścieżka:** `/register/verify-sent`
+- **Główny cel:** Potwierdzenie, że link aktywacyjny został wysłany, oraz umożliwienie ponownej wysyłki.
+- **Kluczowe informacje do wyświetlenia:** Komunikat „Wysłaliśmy link aktywacyjny na adres: {email}”, instrukcja „Sprawdź skrzynkę i spam”, akcje: „Wyślij ponownie” (cooldown 60s), „Zmień e-mail” (powrót do `/register` z uzupełnioną wartością).
+- **Kluczowe komponenty widoku:** `mat-card`, `mat-button`, `mat-progress-spinner` (w trakcie resend), komponent odliczania/cooldown.
+- **Względy UX, dostępności i bezpieczeństwa:** Nie ujawniać, czy e-mail istnieje w systemie w scenariuszach mogących prowadzić do enumeracji kont. Wyraźnie komunikować cooldown.
+
+**5b. Auth callback (techniczny) – obsługa kliknięcia w link z e-maila**
+- **Ścieżka:** `/auth/callback`
+- **Główny cel:** Obsłużenie przekierowania z Supabase po kliknięciu linku weryfikacyjnego i sfinalizowanie weryfikacji po stronie klienta.
+- **Zachowanie (happy path):** Jeśli przekierowanie zawiera kod/autoryzację, aplikacja finalizuje proces weryfikacji (np. wymiana kodu na sesję) i przekierowuje do widoku „E-mail potwierdzony”.
+- **Zachowanie (error path):** Jeśli link jest nieważny/wygasł, aplikacja przekierowuje do widoku „Link nieważny lub wygasł” z akcją wysłania nowego linku.
+- **Względy UX:** To jest widok „roboczy” (krótki loader + komunikat „Finalizujemy…”), bez Sidebara.
+
+**5c. E-mail potwierdzony**
+- **Ścieżka:** `/email-confirmed`
+- **Główny cel:** Jasne potwierdzenie zakończenia weryfikacji i przekierowanie do logowania.
+- **Kluczowe informacje do wyświetlenia:** Komunikat „Adres e-mail potwierdzony. Możesz się zalogować.” + przycisk „Przejdź do logowania”.
+- **Względy UX:** Bez auto-logowania (zgodnie z założeniem). Bez Sidebara.
+
+**5d. Link nieważny lub wygasł**
+- **Ścieżka:** `/email-confirmation-invalid`
+- **Główny cel:** Obsłużenie przypadków błędnego/wygasłego linku.
+- **Kluczowe informacje do wyświetlenia:** Komunikat „Link nieważny lub wygasł” + akcja „Wyślij nowy link” (cooldown 60s) + link do logowania/rejestracji.
 
 ### Widoki prywatne (dla zalogowanych)
 
@@ -153,12 +179,13 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 ## 3. Mapa podróży użytkownika
 
 Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dodaniu i zorganizowaniu pierwszego przepisu:
-1.  **Rejestracja i logowanie:** Użytkownik tworzy konto i jest automatycznie logowany, trafiając na **Dashboard**.
-2.  **Tworzenie przepisu:** Z Dashboardu lub widoku **Listy Przepisów** (który wyświetla stan pusty), użytkownik przechodzi do **Formularza Przepisu**.
-3.  **Wypełnianie danych:** Użytkownik dodaje wszystkie informacje o przepisie, w tym nazwę, składniki, kroki, kategorię i tagi.
-4.  **Zapis i przekierowanie:** Po zapisaniu, aplikacja przenosi go do widoku **Szczegółów Przepisu**, aby mógł zobaczyć efekt swojej pracy.
-5.  **Organizacja w kolekcji:** Na stronie szczegółów, za pomocą przycisku "Dodaj do kolekcji", użytkownik otwiera modal, w którym może stworzyć nową kolekcję (np. "Ulubione") i od razu przypisać do niej przepis.
-6.  **Weryfikacja:** Użytkownik może nawigować do widoku **Listy Kolekcji**, a następnie do **Szczegółów Kolekcji**, aby upewnić się, że jego przepis został poprawnie dodany.
+1.  **Rejestracja i potwierdzenie e-mail:** Użytkownik tworzy konto, po czym widzi ekran „Wysłaliśmy link aktywacyjny”. Następnie otwiera e-mail i klika link, a aplikacja potwierdza adres i pokazuje komunikat „Możesz się zalogować”.
+2.  **Logowanie:** Po potwierdzeniu e-mail użytkownik loguje się i trafia na **Dashboard**.
+3.  **Tworzenie przepisu:** Z Dashboardu lub widoku **Listy Przepisów** (który wyświetla stan pusty), użytkownik przechodzi do **Formularza Przepisu**.
+4.  **Wypełnianie danych:** Użytkownik dodaje wszystkie informacje o przepisie, w tym nazwę, składniki, kroki, kategorię i tagi.
+5.  **Zapis i przekierowanie:** Po zapisaniu, aplikacja przenosi go do widoku **Szczegółów Przepisu**, aby mógł zobaczyć efekt swojej pracy.
+6.  **Organizacja w kolekcji:** Na stronie szczegółów, za pomocą przycisku "Dodaj do kolekcji", użytkownik otwiera modal, w którym może stworzyć nową kolekcję (np. "Ulubione") i od razu przypisać do niej przepis.
+7.  **Weryfikacja:** Użytkownik może nawigować do widoku **Listy Kolekcji**, a następnie do **Szczegółów Kolekcji**, aby upewnić się, że jego przepis został poprawnie dodany.
 
 ## 4. Układ i struktura nawigacji
 

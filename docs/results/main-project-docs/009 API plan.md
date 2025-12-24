@@ -11,6 +11,7 @@ The API exposes the following primary resources:
 -   **Categories**: Corresponds to the `categories` table. Represents a predefined recipe category.
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
 -   **Collections**: Corresponds to the `collections` table. Represents user-created collections of recipes.
+-   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. This is provided by Supabase and consumed via the `supabase-js` client in the Angular app (no custom backend endpoints required for MVP).
 
 ## 2. Endpoints
 
@@ -18,6 +19,95 @@ Private endpoints are protected and require a valid JWT from Supabase Auth.
 Public endpoints are available without authentication:
 - For **anonymous** users, they must return **only** recipes with `visibility = 'PUBLIC'` (and `deleted_at IS NULL`).
 - For **authenticated** users, they may additionally include **the user's own** recipes with non-public `visibility` (e.g., `PRIVATE`, `SHARED`) but must never expose non-public recipes of other users.
+
+---
+
+### Authentication (Supabase Auth)
+
+> Notes:
+> - These endpoints are provided by Supabase Auth. In the Angular app we should prefer calling them via `supabase-js` to avoid dealing with low-level token/session details.
+> - Email verification is handled by Supabase. The project must be configured so that a newly created user must confirm their email before they can sign in.
+> - The frontend must expose a callback route used as `emailRedirectTo`, e.g. `/auth/callback`.
+
+#### `POST /auth/signup` (Supabase Auth)
+
+-   **Description**: Register a new user. Supabase sends a verification email to the provided address. The response session is typically `null` when email confirmations are enabled.
+-   **Request Payload**:
+    ```json
+    {
+      "email": "user@example.com",
+      "password": "********",
+      "data": {
+        "username": "jan.kowalski"
+      },
+      "emailRedirectTo": "https://app.example.com/auth/callback"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload** (example):
+        ```json
+        {
+          "user": {
+            "id": "uuid",
+            "email": "user@example.com"
+          },
+          "session": null,
+          "message": "Verification email sent"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (validation failed, weak password, email already exists)
+
+---
+
+#### `POST /auth/login` (Supabase Auth)
+
+-   **Description**: Sign in with email/password.
+-   **Request Payload**:
+    ```json
+    {
+      "email": "user@example.com",
+      "password": "********"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**: `{ "session": { "access_token": "...", "refresh_token": "..." }, "user": { "id": "uuid" } }`
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` - If email is not confirmed yet (the frontend should map this to: "Confirm your email" + "Resend link").
+    -   **Code**: `401 Unauthorized` - Wrong credentials.
+
+---
+
+#### `POST /auth/resend` (Supabase Auth)
+
+-   **Description**: Resend a verification email for a signup that has not been confirmed yet.
+-   **Request Payload**:
+    ```json
+    {
+      "type": "signup",
+      "email": "user@example.com",
+      "emailRedirectTo": "https://app.example.com/auth/callback"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**: `{ "message": "Verification email resent" }`
+-   **Error Response**:
+    -   **Code**: `429 Too Many Requests` (rate limit)
+
+---
+
+#### `GET /auth/callback` (Frontend route)
+
+-   **Description**: SPA callback route used after clicking the verification link. The route receives authorization data (e.g., `code`) from Supabase and the client finalizes the flow (e.g., exchange code for a session).
+-   **Query Parameters**:
+    -   `code` (optional, string): PKCE authorization code returned by Supabase.
+-   **Success Response**:
+    -   **Outcome**: Redirect to `/email-confirmed`.
+-   **Error Response**:
+    -   **Outcome**: Redirect to `/email-confirmation-invalid` and allow resending verification email.
 
 ---
 
