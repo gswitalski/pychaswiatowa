@@ -19,14 +19,23 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-- **Zmienione**: **Publiczny katalog przepisów (Explore) `/explore`**
-    - Dodano regułę UI: dla `is_owner=true` karta przepisu pokazuje ikonkę widoczności na podstawie `visibility` + tooltip.
+- **/register (ZMIENIONE)**
+    - **Co się zmieniło:** formularz rejestracji zawiera teraz: nazwa użytkownika, e-mail, hasło, potwierdzenie hasła. Po sukcesie przekierowuje do `/register/verify-sent` (zamiast auto-logowania).
 
-- **Zmienione**: **Lista Przepisów (Moje przepisy) `/my-recipies`**
-    - Dodano regułę UI: dla `is_owner=true` karta przepisu pokazuje ikonkę widoczności na podstawie `visibility` + tooltip.
+- **/register/verify-sent (NOWE)**
+    - Widok z potwierdzeniem wysyłki linku i akcjami: „Wyślij ponownie” (cooldown 60s) oraz „Zmień e-mail”.
 
-- **Zmienione**: **Komponent `RecipeCardComponent`**
-    - Rozszerzono opis: karta może pokazywać ikonkę widoczności (tylko dla właściciela) oraz uwzględniono użycie komponentu także w `/explore`.
+- **/auth/callback (NOWE, techniczny)**
+    - Trasa callback do obsługi kliknięcia w link z e-maila (wymiana kodu/ustalenie wyniku) i przekierowanie na sukces/błąd.
+
+- **/email-confirmed (NOWE)**
+    - Komunikat „Adres e-mail potwierdzony. Możesz się zalogować.” + CTA do `/login`.
+
+- **/email-confirmation-invalid (NOWE)**
+    - Komunikat „Link nieważny lub wygasł” + akcja „Wyślij nowy link”.
+
+- **/login (ZMIENIONE)**
+    - **Co się zmieniło:** w przypadku niepotwierdzonego e-maila widok pokazuje błąd + akcję „Wyślij link ponownie”.
 
 
 </views>
@@ -36,10 +45,18 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-- **Nowe**: **US-032 — Podgląd widoczności mojego przepisu na liście (ikonka na karcie)**
-    - Na kartach przepisów w listach (np. `/my-recipies`, `/explore`) dla przepisu mojego autorstwa widoczna jest ikonka reprezentująca aktualną wartość `visibility` (`Prywatny` / `Współdzielony` / `Publiczny`) wraz z tooltipem.
-    - Ikonka jest wyłącznie informacyjna (brak zmiany widoczności z listy w MVP).
-    - Dla przepisów nie mojego autorstwa ikonka nie jest wyświetlana.
+
+- **US-001 – Rejestracja nowego użytkownika (ZMIENIONE)**
+    - **Co się zmieniło:** usunięto auto-logowanie po rejestracji. Po rejestracji system wysyła e-mail weryfikacyjny i pokazuje ekran „Wysłaliśmy link aktywacyjny…”. Logowanie jest możliwe dopiero po potwierdzeniu e-maila.
+
+- **US-002 – Logowanie i wylogowywanie użytkownika (ZMIENIONE)**
+    - **Co się zmieniło:** jeśli e-mail nie jest potwierdzony, logowanie jest blokowane, a użytkownik widzi komunikat + akcję ponownej wysyłki linku.
+
+- **US-033 – Ponowna wysyłka linku weryfikacyjnego e-mail (NOWE)**
+    - Ekran „Wysłaliśmy link aktywacyjny…” udostępnia akcję „Wyślij ponownie” z cooldown 60s i limitami antynadużyciowymi.
+
+- **US-034 – Obsługa nieważnego lub wygasłego linku weryfikacyjnego (NOWE)**
+    - Dla nieważnego/wygasłego linku użytkownik widzi czytelny komunikat i może poprosić o nowy link.
 
 
 </user_stories>
@@ -165,4 +182,4 @@ Oto przykład tego, jak powinien wyglądać plik wyjściowy (treść jest do zas
 3. [...]
 ```
 
-Rozpocznij analizę i planowanie już teraz. Twój ostateczny wynik powinien składać się wyłącznie z planu wdrożenia w języku polskim w formacie markdown, który zapiszesz w pliku docs/results/impl-plans/views/{view-name}-view-implementation-plan.md i nie powinien powielać ani powtarzać żadnej pracy wykonanej w podziale implementacji.
+Rozpocznij analizę i planowanie już teraz. Twój ostateczny wynik powinien składać się wyłącznie z planu wdrożenia w języku polskim w formacie markdown, który zapiszesz w nowym pliku pliku docs/results/impl-plans/views/{feature-name}-view-implementation-plan.md i nie powinien powielać ani powtarzać żadnej pracy wykonanej w podziale implementacji.
