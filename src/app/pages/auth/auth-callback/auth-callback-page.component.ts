@@ -39,29 +39,52 @@ export class AuthCallbackPageComponent implements OnInit {
 
     private async processCallback(): Promise<void> {
         try {
-            // Pobierz code z query params (Supabase PKCE flow)
-            const code = this.route.snapshot.queryParamMap.get('code');
+            // Sprawdź czy Supabase zwrócił błąd w URL
+            const errorCode = this.route.snapshot.queryParamMap.get('error_code');
+            const errorDescription = this.route.snapshot.queryParamMap.get('error_description');
 
-            if (!code) {
-                // Brak kodu w URL - przekieruj na stronę błędu
+            if (errorCode || errorDescription) {
+                console.error('Auth callback error:', errorCode, errorDescription);
                 this.redirectToError();
                 return;
             }
 
-            // Wymień code na sesję
-            const result = await this.authService.exchangeCodeForSession(code);
+            // Pobierz code z query params (Supabase PKCE flow)
+            const code = this.route.snapshot.queryParamMap.get('code');
 
-            if (result.success) {
-                // Sukces - wyloguj użytkownika (zgodnie z wymaganiem "bez auto-logowania po rejestracji")
-                // i przekieruj na stronę sukcesu
-                await this.authService.signOut();
-                this.router.navigate(['/email-confirmed']);
-            } else {
-                this.redirectToError();
+            if (code) {
+                // PKCE flow - wymień code na sesję
+                const result = await this.authService.exchangeCodeForSession(code);
+
+                if (result.success) {
+                    await this.handleSuccess();
+                    return;
+                }
             }
+
+            // Jeśli nie ma code lub wymiana się nie powiodła,
+            // sprawdź czy Supabase automatycznie przetworzył URL (hash fragment)
+            // i utworzył sesję
+            const session = await this.authService.getSession();
+
+            if (session.data.session) {
+                // Sesja istnieje - e-mail został potwierdzony
+                await this.handleSuccess();
+                return;
+            }
+
+            // Brak sesji i brak code - błąd
+            this.redirectToError();
         } catch {
             this.redirectToError();
         }
+    }
+
+    private async handleSuccess(): Promise<void> {
+        // Wyloguj użytkownika (zgodnie z wymaganiem "bez auto-logowania po rejestracji")
+        // i przekieruj na stronę sukcesu
+        await this.authService.signOut();
+        this.router.navigate(['/email-confirmed']);
     }
 
     private redirectToError(): void {
