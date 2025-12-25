@@ -9,6 +9,8 @@
             @if (state().email; as email) {
                 <p class="message">
                     Wysłaliśmy link aktywacyjny na adres:
+                </p>
+                <p class="message">
                     <strong>{{ email }}</strong>
                 </p>
                 <p class="hint">
@@ -51,9 +53,12 @@
         </mat-card-actions>
 
         <mat-card-footer>
-            <a routerLink="/login" mat-button>
-                Masz już konto? Zaloguj się
-            </a>
+            <p class="footer-text">Masz już konto?</p>
+            <p class="footer-text">
+                <a routerLink="/login" mat-button>
+                    Zaloguj się
+                </a>
+            </p>
         </mat-card-footer>
     </mat-card>
 </div>

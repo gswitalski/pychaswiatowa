@@ -54,6 +54,10 @@ export class RegisterPageComponent {
                 callbackUrl
             );
 
+            // Wyloguj użytkownika - Supabase tworzy sesję po signUp, ale użytkownik
+            // nie powinien być zalogowany przed potwierdzeniem e-maila
+            await this.authService.signOut();
+
             // Po sukcesie rejestracji przekieruj na stronę potwierdzenia wysyłki linku
             this.router.navigate(['/register/verify-sent'], {
                 queryParams: { email: formData.email },
