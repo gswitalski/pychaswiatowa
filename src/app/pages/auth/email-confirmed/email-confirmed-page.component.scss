@@ -1,0 +1,54 @@
+.email-confirmed-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+    padding: 24px;
+}
+
+.confirmed-card {
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+
+    mat-card-header {
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 16px;
+
+        .success-icon {
+            font-size: 64px;
+            width: 64px;
+            height: 64px;
+            color: var(--mat-sys-primary);
+            margin-bottom: 16px;
+        }
+
+        .mat-mdc-card-header-text {
+            padding: 0;
+        }
+    }
+
+    mat-card-content {
+        .message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--mat-sys-on-surface-variant);
+            margin: 0;
+        }
+    }
+
+    mat-card-actions {
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px 16px;
+
+        .login-button {
+            min-width: 200px;
+            height: 48px;
+        }
+    }
+}
+
+
+

@@ -82,6 +82,49 @@ export const routes: Routes = [
                     ),
                 data: { breadcrumb: 'Ustawienia' },
             },
+            // Auth routes - dostępne również dla zalogowanych (sesja może istnieć przy niezweryfikowanym e-mailu)
+            {
+                path: 'register',
+                loadComponent: () =>
+                    import('./pages/register/register-page.component').then(
+                        (m) => m.RegisterPageComponent
+                    ),
+            },
+            {
+                path: 'register/verify-sent',
+                loadComponent: () =>
+                    import('./pages/auth/register-verify-sent/register-verify-sent-page.component').then(
+                        (m) => m.RegisterVerifySentPageComponent
+                    ),
+            },
+            {
+                path: 'login',
+                loadComponent: () =>
+                    import('./pages/login/login-page.component').then(
+                        (m) => m.LoginPageComponent
+                    ),
+            },
+            {
+                path: 'auth/callback',
+                loadComponent: () =>
+                    import('./pages/auth/auth-callback/auth-callback-page.component').then(
+                        (m) => m.AuthCallbackPageComponent
+                    ),
+            },
+            {
+                path: 'email-confirmed',
+                loadComponent: () =>
+                    import('./pages/auth/email-confirmed/email-confirmed-page.component').then(
+                        (m) => m.EmailConfirmedPageComponent
+                    ),
+            },
+            {
+                path: 'email-confirmation-invalid',
+                loadComponent: () =>
+                    import('./pages/auth/email-confirmation-invalid/email-confirmation-invalid-page.component').then(
+                        (m) => m.EmailConfirmationInvalidPageComponent
+                    ),
+            },
         ],
     },
     // Grupa tras dla gości - publiczne widoki w PublicLayout
@@ -136,10 +179,39 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'register/verify-sent',
+                loadComponent: () =>
+                    import('./pages/auth/register-verify-sent/register-verify-sent-page.component').then(
+                        (m) => m.RegisterVerifySentPageComponent
+                    ),
+            },
+            {
                 path: 'login',
                 loadComponent: () =>
                     import('./pages/login/login-page.component').then(
                         (m) => m.LoginPageComponent
+                    ),
+            },
+            // Email verification routes - dostępne również dla gości
+            {
+                path: 'auth/callback',
+                loadComponent: () =>
+                    import('./pages/auth/auth-callback/auth-callback-page.component').then(
+                        (m) => m.AuthCallbackPageComponent
+                    ),
+            },
+            {
+                path: 'email-confirmed',
+                loadComponent: () =>
+                    import('./pages/auth/email-confirmed/email-confirmed-page.component').then(
+                        (m) => m.EmailConfirmedPageComponent
+                    ),
+            },
+            {
+                path: 'email-confirmation-invalid',
+                loadComponent: () =>
+                    import('./pages/auth/email-confirmation-invalid/email-confirmation-invalid-page.component').then(
+                        (m) => m.EmailConfirmationInvalidPageComponent
                     ),
             },
         ],

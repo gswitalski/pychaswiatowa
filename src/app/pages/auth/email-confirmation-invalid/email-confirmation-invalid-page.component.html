@@ -1,0 +1,61 @@
+<div class="email-invalid-page">
+    <mat-card class="invalid-card">
+        <mat-card-header>
+            <mat-icon mat-card-avatar class="error-icon">error_outline</mat-icon>
+            <mat-card-title>Link nieważny lub wygasł</mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+            <p class="message">
+                Link aktywacyjny, którego użyłeś, jest nieważny lub wygasł.
+                Możesz poprosić o nowy link, podając swój adres e-mail.
+            </p>
+
+            @if (state().error; as error) {
+                <p class="error-message">{{ error }}</p>
+            }
+
+            <div class="resend-form">
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Adres e-mail</mat-label>
+                    <input
+                        matInput
+                        type="email"
+                        [formControl]="emailControl"
+                        placeholder="twoj@email.com"
+                    />
+                    @if (emailControl.invalid && emailControl.touched) {
+                        <mat-error>{{ getEmailErrorMessage() }}</mat-error>
+                    }
+                </mat-form-field>
+
+                <button
+                    mat-raised-button
+                    color="primary"
+                    [disabled]="isResendDisabled"
+                    (click)="resendVerification()"
+                    class="resend-button"
+                >
+                    @if (state().isResending) {
+                        <mat-spinner diameter="20"></mat-spinner>
+                    } @else if (state().cooldownRemainingSeconds > 0) {
+                        Wyślij nowy link ({{ state().cooldownRemainingSeconds }}s)
+                    } @else {
+                        Wyślij nowy link
+                    }
+                </button>
+            </div>
+        </mat-card-content>
+
+        <mat-card-footer>
+            <div class="footer-links">
+                <a routerLink="/login" mat-button>Zaloguj się</a>
+                <span class="separator">|</span>
+                <a routerLink="/register" mat-button>Zarejestruj się</a>
+            </div>
+        </mat-card-footer>
+    </mat-card>
+</div>
+
+
+

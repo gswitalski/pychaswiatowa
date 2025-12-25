@@ -22,6 +22,9 @@ export class RegisterPageComponent {
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 
+    /** Prefill email z queryParam (np. gdy użytkownik wraca z "Zmień e-mail") */
+    readonly prefillEmail = this.route.snapshot.queryParamMap.get('email') ?? '';
+
     state = signal<RegisterState>({
         isLoading: false,
         error: null,
@@ -35,21 +38,26 @@ export class RegisterPageComponent {
         this.state.update((s) => ({ ...s, isLoading: true, error: null }));
 
         try {
-            await this.authService.signUp({
-                email: formData.email,
-                password: formData.password,
-                options: {
-                    data: {
-                        username: formData.displayName,
+            // Callback URL dla linku weryfikacyjnego
+            const callbackUrl = `${window.location.origin}/auth/callback`;
+
+            await this.authService.signUp(
+                {
+                    email: formData.email,
+                    password: formData.password,
+                    options: {
+                        data: {
+                            username: formData.displayName,
+                        },
                     },
                 },
-            });
+                callbackUrl
+            );
 
-            // Get redirect URL from query params and validate it
-            const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
-            const safeRedirectUrl = this.validateRedirectUrl(redirectTo);
-            
-            this.router.navigateByUrl(safeRedirectUrl);
+            // Po sukcesie rejestracji przekieruj na stronę potwierdzenia wysyłki linku
+            this.router.navigate(['/register/verify-sent'], {
+                queryParams: { email: formData.email },
+            });
         } catch (error) {
             const apiError = this.parseError(error);
             this.state.update((s) => ({ ...s, error: apiError }));
@@ -83,36 +91,5 @@ export class RegisterPageComponent {
         };
 
         return errorMessages[message] ?? message;
-    }
-
-    /**
-     * Validates redirect URL to prevent open redirect vulnerabilities.
-     * Only allows relative paths within the application.
-     * 
-     * @param url - The URL to validate
-     * @returns Safe redirect URL or default '/dashboard'
-     */
-    private validateRedirectUrl(url: string | null): string {
-        // Default fallback
-        const defaultUrl = '/dashboard';
-
-        if (!url) {
-            return defaultUrl;
-        }
-
-        // Security checks: only allow relative paths
-        // Must start with '/' but not '//' (protocol-relative URL)
-        // Must not contain protocol (http:, https:, etc.)
-        const isValidRelativePath = 
-            url.startsWith('/') && 
-            !url.startsWith('//') && 
-            !url.includes('://');
-
-        if (!isValidRelativePath) {
-            console.warn('Invalid redirect URL detected, using default:', url);
-            return defaultUrl;
-        }
-
-        return url;
     }
 }

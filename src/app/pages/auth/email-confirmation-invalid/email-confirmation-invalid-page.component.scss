@@ -1,0 +1,85 @@
+.email-invalid-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+    padding: 24px;
+}
+
+.invalid-card {
+    max-width: 480px;
+    width: 100%;
+
+    mat-card-header {
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 16px;
+
+        .error-icon {
+            font-size: 64px;
+            width: 64px;
+            height: 64px;
+            color: var(--mat-sys-error);
+            margin-bottom: 16px;
+        }
+
+        .mat-mdc-card-header-text {
+            padding: 0;
+            text-align: center;
+        }
+    }
+
+    mat-card-content {
+        .message {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--mat-sys-on-surface-variant);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .error-message {
+            color: var(--mat-sys-error);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+    }
+
+    .resend-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .full-width {
+            width: 100%;
+        }
+
+        .resend-button {
+            height: 48px;
+
+            mat-spinner {
+                margin: 0 auto;
+            }
+        }
+    }
+
+    mat-card-footer {
+        padding: 16px;
+        border-top: 1px solid var(--mat-sys-outline-variant);
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+
+            .separator {
+                color: var(--mat-sys-outline-variant);
+            }
+        }
+    }
+}
+
+
+

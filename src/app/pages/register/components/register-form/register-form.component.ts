@@ -3,6 +3,7 @@ import {
     Component,
     EventEmitter,
     Input,
+    OnInit,
     Output,
 } from '@angular/core';
 import {
@@ -37,8 +38,10 @@ import { RegisterFormViewModel } from '../../../../../../shared/contracts/types'
     styleUrl: './register-form.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RegisterFormComponent {
+export class RegisterFormComponent implements OnInit {
     @Input() isLoading = false;
+    @Input() prefillEmail = '';
+
     @Output() registerSubmit = new EventEmitter<{
         email: string;
         displayName: string;
@@ -66,6 +69,12 @@ export class RegisterFormComponent {
         },
         { validators: this.passwordMatchValidator }
     );
+
+    ngOnInit(): void {
+        if (this.prefillEmail) {
+            this.form.controls.email.setValue(this.prefillEmail);
+        }
+    }
 
     private passwordMatchValidator(
         control: AbstractControl

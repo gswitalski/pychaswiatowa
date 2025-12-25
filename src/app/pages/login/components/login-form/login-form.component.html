@@ -11,6 +11,29 @@
             </div>
         }
 
+        @if (requiresEmailConfirmation) {
+            <div class="email-confirmation-section">
+                <p class="confirmation-hint">
+                    Nie dostałeś e-maila? Sprawdź folder SPAM lub wyślij ponownie.
+                </p>
+                <button
+                    mat-stroked-button
+                    color="primary"
+                    type="button"
+                    [disabled]="isResendDisabled"
+                    (click)="handleResend()"
+                >
+                    @if (isResending) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                    } @else if (resendCooldownSeconds > 0) {
+                        Wyślij link ponownie ({{ resendCooldownSeconds }}s)
+                    } @else {
+                        Wyślij link ponownie
+                    }
+                </button>
+            </div>
+        }
+
         <form [formGroup]="form" (ngSubmit)="submitForm()">
             <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Email</mat-label>

@@ -1,0 +1,21 @@
+<div class="auth-callback-page">
+    <mat-card class="callback-card">
+        <mat-card-content>
+            @if (state().isLoading) {
+                <div class="loading-container">
+                    <mat-spinner diameter="48"></mat-spinner>
+                    <p class="loading-text">Finalizujemy weryfikację…</p>
+                </div>
+            }
+
+            @if (state().error; as error) {
+                <div class="error-container">
+                    <p class="error-text">{{ error }}</p>
+                </div>
+            }
+        </mat-card-content>
+    </mat-card>
+</div>
+
+
+

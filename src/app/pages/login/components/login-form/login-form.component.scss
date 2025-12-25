@@ -43,6 +43,29 @@ form {
     font-size: 0.875rem;
 }
 
+.email-confirmation-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    background-color: var(--mat-sys-surface-container, #f5f5f5);
+    border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+    text-align: center;
+
+    .confirmation-hint {
+        font-size: 0.875rem;
+        color: var(--mat-sys-on-surface-variant);
+        margin-bottom: 12px;
+    }
+
+    button {
+        min-width: 180px;
+
+        mat-spinner {
+            display: inline-block;
+        }
+    }
+}
+
 .submit-button {
     margin-top: 1rem;
     height: 48px;

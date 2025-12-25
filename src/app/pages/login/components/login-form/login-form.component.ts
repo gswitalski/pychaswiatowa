@@ -5,14 +5,22 @@ import {
     Input,
     Output,
 } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+    FormControl,
+    FormGroup,
+    ReactiveFormsModule,
+    Validators,
+} from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { LoginFormViewModel, SignInRequestDto } from '../../../../../../shared/contracts/types';
+import {
+    LoginFormViewModel,
+    SignInRequestDto,
+} from '../../../../../../shared/contracts/types';
 
 @Component({
     selector: 'pych-login-form',
@@ -33,8 +41,12 @@ import { LoginFormViewModel, SignInRequestDto } from '../../../../../../shared/c
 export class LoginFormComponent {
     @Input() isLoading = false;
     @Input() apiError: string | null = null;
+    @Input() requiresEmailConfirmation = false;
+    @Input() resendCooldownSeconds = 0;
+    @Input() isResending = false;
 
     @Output() login = new EventEmitter<SignInRequestDto>();
+    @Output() resendVerification = new EventEmitter<string>();
 
     form = new FormGroup<LoginFormViewModel>({
         email: new FormControl('', {
@@ -47,12 +59,30 @@ export class LoginFormComponent {
         }),
     });
 
+    /** Czy przycisk resend jest wyłączony */
+    get isResendDisabled(): boolean {
+        return (
+            this.isResending ||
+            this.resendCooldownSeconds > 0 ||
+            !this.form.controls.email.valid
+        );
+    }
+
     submitForm(): void {
         if (this.form.valid) {
             const { email, password } = this.form.getRawValue();
             this.login.emit({ email, password });
         } else {
             this.form.markAllAsTouched();
+        }
+    }
+
+    handleResend(): void {
+        const emailControl = this.form.controls.email;
+        if (emailControl.valid) {
+            this.resendVerification.emit(emailControl.value);
+        } else {
+            emailControl.markAsTouched();
         }
     }
 

@@ -2,7 +2,11 @@
     <pych-login-form
         [isLoading]="state().isLoading"
         [apiError]="state().error"
+        [requiresEmailConfirmation]="state().requiresEmailConfirmation"
+        [resendCooldownSeconds]="state().cooldownRemainingSeconds"
+        [isResending]="state().isResending"
         (login)="handleLogin($event)"
+        (resendVerification)="handleResendVerification($event)"
     />
 </div>
 
