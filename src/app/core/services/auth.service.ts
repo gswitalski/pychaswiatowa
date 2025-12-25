@@ -87,7 +87,7 @@ export class AuthService {
             }
 
             return { success: true };
-        } catch (error) {
+        } catch {
             return {
                 success: false,
                 error: 'Nie udało się wysłać e-maila. Spróbuj ponownie później.',
@@ -113,7 +113,7 @@ export class AuthService {
             }
 
             return { success: true };
-        } catch (error) {
+        } catch {
             return {
                 success: false,
                 error: 'Nie udało się zweryfikować linku.',
