@@ -4,24 +4,24 @@
  * Integrates with OpenAI API for text extraction and recipe structuring.
  */
 
-import { ApplicationError } from '../_shared/errors.ts';
-import { logger } from '../_shared/logger.ts';
+import { ApplicationError } from "../_shared/errors.ts";
+import { logger } from "../_shared/logger.ts";
 import {
-    GenerateRecipeDraftParams,
-    LlmGenerationResult,
     AiRecipeDraftDto,
     AiRecipeDraftResponseDto,
-    MAX_TAGS_COUNT,
+    GenerateRecipeDraftParams,
+    LlmGenerationResult,
     MAX_RECIPE_NAME_LENGTH,
-} from './ai.types.ts';
+    MAX_TAGS_COUNT,
+} from "./ai.types.ts";
 
 // #region --- Constants ---
 
 /** OpenAI API endpoint */
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 /** Model to use for text generation */
-const OPENAI_MODEL = 'gpt-4o-mini';
+const OPENAI_MODEL = "gpt-4o-mini";
 
 /** Maximum tokens for response */
 const MAX_TOKENS = 2000;
@@ -41,49 +41,131 @@ const API_TIMEOUT_MS = 30_000;
  * Enforces single recipe validation and structured output.
  */
 function getSystemPrompt(language: string): string {
-    return `Jesteś asystentem do ekstrakcji i strukturyzacji przepisów kulinarnych. Twoje zadanie to:
+    return `Jesteś asystentem AI specjalizującym się w ekstrakcji i strukturyzacji przepisów kulinarnych. Twoje zadanie to przeanalizowanie podanej treści, określenie czy zawiera dokładnie jeden przepis kulinarny, a następnie wyekstrahowanie i ustrukturyzowanie go w standardowym formacie JSON.
 
-1. Przeanalizować podany tekst lub opis obrazu
-2. Określić, czy zawiera DOKŁADNIE JEDEN przepis kulinarny
-3. Jeśli tak - wyekstrahować i ustrukturyzować przepis
-4. Jeśli nie - zwrócić informację o błędzie z powodami
+Oto treść do przeanalizowania:
 
-KRYTYCZNE ZASADY:
-- Akceptuj TYLKO pojedynczy przepis
-- Odrzuć: wiele przepisów, listy zakupów, menu, reklamy, treści nie-kulinarne
-- Składniki i kroki muszą być niepuste
-- Odpowiadaj w języku: ${language}
+<input>
+{{INPUT}}
+</input>
 
-FORMAT ODPOWIEDZI (JSON):
+Język odpowiedzi:
+<language>
+${language}
+</language>
 
-Dla poprawnego przepisu:
+KRYTYCZNE ZASADY WALIDACJI:
+
+Akceptuj TYLKO treści zawierające DOKŁADNIE JEDEN kompletny przepis kulinarny.
+
+ODRZUĆ treści, które zawierają:
+- Wiele różnych przepisów w jednym tekście
+- Same listy zakupów bez instrukcji przygotowania
+- Menu restauracyjne lub karty dań
+- Reklamy produktów spożywczych
+- Treści niezwiązane z gotowaniem
+- Fragmenty przepisów bez składników LUB bez kroków
+- Puste lub nieczytelne treści
+
+ZASADY EKSTRAKCJI I STRUKTURYZACJI:
+
+1. NAZWA PRZEPISU:
+   - Wyekstrahuj lub wygeneruj krótką, opisową nazwę
+   - Jeśli brak tytułu, stwórz go na podstawie głównych składników
+
+2. OPIS:
+   - Wygeneruj krótki, przyjazny opis (1-3 zdania)
+   - Może być lekko dowcipny lub zawierać ciekawostkę
+   - Jeśli nie da się stworzyć sensownego opisu, użyj null
+
+3. SKŁADNIKI (ingredients_raw):
+   - Każdy składnik w osobnej linii (separator: \n)
+   - Sekcje/nagłówki poprzedź znakiem # (np. "# Ciasto", "# Krem")
+   - Przelicz wszystkie wagi na gramy: 1 kg → 1000 g, 5 dag → 50 g
+   - Objętości podawaj w mililitrach gdzie możliwe
+   - Oddzielaj jednostki od liczb spacją: "500 g", "200 ml"
+   - zawsze podawaj najpierw ilosc a potem nazwę składnika np "100 g mąki typ 450"
+   - Przeanalizuj kroki wykonania i posortuj składniki w kolejności ich użycia
+   - wykrywaj nagłówki w sekcji składników i przed nimi umieszczaj znak #
+   - Lista NIE MOŻE być pusta
+
+4. KROKI WYKONANIA (steps_raw):
+   - Każdy krok w osobnej linii (separator: \n)
+   - Sekcje/nagłówki poprzedź znakiem # (np. "# Przygotowanie ciasta")
+   - ZAWSZE używaj bezokoliczników: "Wymieszaj" → "Wymieszać", "Dodaj" → "Dodać"
+   - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
+   - wykrywaj nagłówki w sekcji kroków i przed nimi umieszczaj znak #
+   - Lista NIE MOŻE być pusta
+
+5. KATEGORIA (category_name):
+   - Wybierz JEDNĄ z: Śniadanie, Obiad, Kolacja, Deser, Przekąska, Napój, Zupa, Sałatka, Pieczywo
+   - Jeśli nie pasuje do żadnej, użyj null
+
+6. TAGI (tags):
+   - Generuj krótkie, opisowe tagi (np. "wegetariańskie", "szybkie", "włoskie")
+   - Maksymalnie 10 tagów
+   - Bez duplikatów
+   - Tablica może być pusta []
+
+OBSŁUGA NIECZYTELNYCH FORMATÓW:
+- Jeśli format źródłowy jest chaotyczny, samodzielnie zrekonstruuj logiczną strukturę
+- Napraw oczywiste błędy ortograficzne i formatowanie
+- Zgaduj intencje autora na podstawie kontekstu
+
+PROCES ANALIZY:
+
+Przed wygenerowaniem finalnej odpowiedzi, użyj tagów <scratchpad> do przemyślenia:
+
+<scratchpad>
+1. Czy treść zawiera dokładnie jeden przepis? (TAK/NIE)
+2. Czy są obecne składniki? (TAK/NIE)
+3. Czy są obecne kroki wykonania? (TAK/NIE)
+4. Jakie sekcje składników i kroków mogę wyodrębnić?
+5. Jaka kategoria najlepiej pasuje?
+6. Jakie tagi będą odpowiednie?
+7. Czy są jakieś ostrzeżenia lub problemy z jakością danych?
+</scratchpad>
+
+FORMAT ODPOWIEDZI JSON:
+
+Dla POPRAWNEGO przepisu:
+
+json
 {
   "is_valid_recipe": true,
   "draft": {
     "name": "Nazwa przepisu",
-    "description": "Krótki opis lub null",
-    "ingredients_raw": "Składnik 1\\nSkładnik 2\\n# Sekcja\\nSkładnik 3",
-    "steps_raw": "Krok 1\\nKrok 2\\n# Sekcja\\nKrok 3",
-    "category_name": "Obiad" lub null,
-    "tags": ["tag1", "tag2"]
+    "description": "Krótki, przyjazny opis lub null",
+    "ingredients_raw": "Składnik 1\nSkładnik 2\n# Sekcja opcjonalna\nSkładnik 3",
+    "steps_raw": "Krok 1\nKrok 2\n# Sekcja opcjonalna\nKrok 3",
+    "category_name": "Obiad",
+    "tags": ["tag1", "tag2", "tag3"]
   },
   "meta": {
     "confidence": 0.95,
-    "warnings": []
+    "warnings": ["Opcjonalne ostrzeżenia o jakości danych"]
   }
 }
 
-Dla niepoprawnej treści:
+
+Dla NIEPOPRAWNEJ treści:
+
+json
 {
   "is_valid_recipe": false,
-  "reasons": ["Powód 1", "Powód 2"]
+  "reasons": ["Szczegółowy powód 1", "Szczegółowy powód 2"]
 }
 
-FORMATOWANIE:
-- ingredients_raw i steps_raw: każdy element w nowej linii
-- Sekcje/nagłówki poprzedź znakiem #
-- Kategorie: Śniadanie, Obiad, Kolacja, Deser, Przekąska, Napój, Zupa, Sałatka, Pieczywo
-- Tagi: krótkie, bez duplikatów, max 10 tagów`;
+
+WAŻNE:
+- Odpowiadaj w języku określonym w zmiennej {{LANGUAGE}}
+- Używaj przyjaznego, naturalnego stylu w opisach
+- Sam przepis (składniki i kroki) ma być neutralny i profesjonalny
+- Zwracaj TYLKO poprawny JSON, bez dodatkowych komentarzy poza tagami scratchpad
+
+Rozpocznij analizę teraz.
+
+`;
 }
 
 /**
@@ -117,19 +199,31 @@ Zwróć odpowiedź w formacie JSON zgodnie z instrukcjami.`;
 
 /**
  * Calls OpenAI API with the given messages.
- * 
+ *
  * @param messages - Array of chat messages
  * @returns Parsed JSON response from the model
  * @throws ApplicationError on API or parsing errors
  */
 async function callOpenAI(
-    messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>
+    messages: Array<
+        {
+            role: string;
+            content:
+                | string
+                | Array<
+                    { type: string; text?: string; image_url?: { url: string } }
+                >;
+        }
+    >,
 ): Promise<unknown> {
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
 
     if (!apiKey) {
-        logger.error('OpenAI API key not configured');
-        throw new ApplicationError('INTERNAL_ERROR', 'AI service is not configured');
+        logger.error("OpenAI API key not configured");
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "AI service is not configured",
+        );
     }
 
     const controller = new AbortController();
@@ -137,17 +231,17 @@ async function callOpenAI(
 
     try {
         const response = await fetch(OPENAI_API_URL, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
                 model: OPENAI_MODEL,
                 messages,
                 max_tokens: MAX_TOKENS,
                 temperature: TEMPERATURE,
-                response_format: { type: 'json_object' },
+                response_format: { type: "json_object" },
             }),
             signal: controller.signal,
         });
@@ -156,34 +250,46 @@ async function callOpenAI(
 
         if (!response.ok) {
             const errorBody = await response.text();
-            logger.error('OpenAI API error', {
+            logger.error("OpenAI API error", {
                 status: response.status,
                 body: errorBody.substring(0, 500),
             });
 
             if (response.status === 429) {
-                throw new ApplicationError('TOO_MANY_REQUESTS', 'AI service rate limit exceeded. Please try again later.');
+                throw new ApplicationError(
+                    "TOO_MANY_REQUESTS",
+                    "AI service rate limit exceeded. Please try again later.",
+                );
             }
 
-            throw new ApplicationError('INTERNAL_ERROR', 'AI service temporarily unavailable');
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI service temporarily unavailable",
+            );
         }
 
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content;
 
         if (!content) {
-            logger.error('Empty response from OpenAI', { data });
-            throw new ApplicationError('INTERNAL_ERROR', 'AI service returned empty response');
+            logger.error("Empty response from OpenAI", { data });
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI service returned empty response",
+            );
         }
 
         // Parse JSON response
         try {
             return JSON.parse(content);
         } catch {
-            logger.error('Failed to parse OpenAI response as JSON', {
+            logger.error("Failed to parse OpenAI response as JSON", {
                 content: content.substring(0, 500),
             });
-            throw new ApplicationError('INTERNAL_ERROR', 'AI service returned invalid response format');
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI service returned invalid response format",
+            );
         }
     } catch (error) {
         clearTimeout(timeoutId);
@@ -192,15 +298,21 @@ async function callOpenAI(
             throw error;
         }
 
-        if (error instanceof Error && error.name === 'AbortError') {
-            logger.error('OpenAI API timeout');
-            throw new ApplicationError('INTERNAL_ERROR', 'AI service request timed out');
+        if (error instanceof Error && error.name === "AbortError") {
+            logger.error("OpenAI API timeout");
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI service request timed out",
+            );
         }
 
-        logger.error('OpenAI API request failed', {
-            error: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("OpenAI API request failed", {
+            error: error instanceof Error ? error.message : "Unknown error",
         });
-        throw new ApplicationError('INTERNAL_ERROR', 'Failed to connect to AI service');
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to connect to AI service",
+        );
     }
 }
 
@@ -213,7 +325,7 @@ async function callOpenAI(
  * - Trims strings
  * - Limits name length
  * - Deduplicates and limits tags
- * 
+ *
  * @param draft - Raw draft from LLM
  * @returns Normalized draft
  */
@@ -221,23 +333,23 @@ function normalizeDraft(draft: AiRecipeDraftDto): AiRecipeDraftDto {
     // Normalize name
     let name = draft.name.trim();
     if (name.length > MAX_RECIPE_NAME_LENGTH) {
-        name = name.substring(0, MAX_RECIPE_NAME_LENGTH - 3) + '...';
+        name = name.substring(0, MAX_RECIPE_NAME_LENGTH - 3) + "...";
     }
 
     // Normalize tags: trim, lowercase, deduplicate, limit count
     const seenTags = new Set<string>();
     const normalizedTags: string[] = [];
-    
+
     for (const tag of draft.tags) {
         const trimmed = tag.trim();
         if (!trimmed) continue;
-        
+
         const lower = trimmed.toLowerCase();
         if (seenTags.has(lower)) continue;
-        
+
         seenTags.add(lower);
         normalizedTags.push(trimmed);
-        
+
         if (normalizedTags.length >= MAX_TAGS_COUNT) break;
     }
 
@@ -253,7 +365,7 @@ function normalizeDraft(draft: AiRecipeDraftDto): AiRecipeDraftDto {
 
 /**
  * Validates that the draft has required content.
- * 
+ *
  * @param draft - Draft to validate
  * @returns Array of validation errors (empty if valid)
  */
@@ -261,15 +373,15 @@ function validateDraftContent(draft: AiRecipeDraftDto): string[] {
     const errors: string[] = [];
 
     if (!draft.name || draft.name.trim().length === 0) {
-        errors.push('Recipe name is missing');
+        errors.push("Recipe name is missing");
     }
 
     if (!draft.ingredients_raw || draft.ingredients_raw.trim().length === 0) {
-        errors.push('Recipe ingredients are missing');
+        errors.push("Recipe ingredients are missing");
     }
 
     if (!draft.steps_raw || draft.steps_raw.trim().length === 0) {
-        errors.push('Recipe steps are missing');
+        errors.push("Recipe steps are missing");
     }
 
     return errors;
@@ -281,17 +393,18 @@ function validateDraftContent(draft: AiRecipeDraftDto): string[] {
 
 /**
  * Generates a recipe draft from text or image using AI.
- * 
+ *
  * @param params - Generation parameters including source type and content
  * @returns LlmGenerationResult with either success data or failure reasons
  * @throws ApplicationError for infrastructure/configuration errors
  */
 export async function generateRecipeDraft(
-    params: GenerateRecipeDraftParams
+    params: GenerateRecipeDraftParams,
 ): Promise<LlmGenerationResult> {
-    const { userId, source, text, imageBytes, imageMimeType, language } = params;
+    const { userId, source, text, imageBytes, imageMimeType, language } =
+        params;
 
-    logger.info('Starting recipe draft generation', {
+    logger.info("Starting recipe draft generation", {
         userId,
         source,
         language,
@@ -301,32 +414,53 @@ export async function generateRecipeDraft(
 
     // Build messages for OpenAI
     const systemMessage = {
-        role: 'system',
+        role: "system",
         content: getSystemPrompt(language),
     };
 
-    let userMessage: { role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> };
+    let userMessage: {
+        role: string;
+        content:
+            | string
+            | Array<
+                { type: string; text?: string; image_url?: { url: string } }
+            >;
+    };
 
-    if (source === 'text' && text) {
+    if (source === "text" && text) {
         userMessage = {
-            role: 'user',
+            role: "user",
             content: getTextExtractionPrompt(text),
         };
-    } else if (source === 'image' && imageBytes && imageMimeType) {
+    } else if (source === "image" && imageBytes && imageMimeType) {
         // Convert image bytes to base64 data URL
-        const base64 = btoa(String.fromCharCode(...imageBytes));
+        // Process in chunks to avoid stack overflow for large images
+        const CHUNK_SIZE = 8192;
+        let binaryString = "";
+        for (let i = 0; i < imageBytes.length; i += CHUNK_SIZE) {
+            const chunk = imageBytes.slice(i, i + CHUNK_SIZE);
+            binaryString += String.fromCharCode(...chunk);
+        }
+        const base64 = btoa(binaryString);
         const dataUrl = `data:${imageMimeType};base64,${base64}`;
 
         userMessage = {
-            role: 'user',
+            role: "user",
             content: [
-                { type: 'text', text: getImageExtractionPrompt() },
-                { type: 'image_url', image_url: { url: dataUrl } },
+                { type: "text", text: getImageExtractionPrompt() },
+                { type: "image_url", image_url: { url: dataUrl } },
             ],
         };
     } else {
-        logger.error('Invalid source configuration', { source, hasText: !!text, hasImage: !!imageBytes });
-        throw new ApplicationError('INTERNAL_ERROR', 'Invalid source configuration');
+        logger.error("Invalid source configuration", {
+            source,
+            hasText: !!text,
+            hasImage: !!imageBytes,
+        });
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Invalid source configuration",
+        );
     }
 
     // Call OpenAI API
@@ -334,19 +468,23 @@ export async function generateRecipeDraft(
 
     // Check if response indicates invalid recipe
     if (
-        typeof llmResponse === 'object' &&
+        typeof llmResponse === "object" &&
         llmResponse !== null &&
-        'is_valid_recipe' in llmResponse &&
+        "is_valid_recipe" in llmResponse &&
         (llmResponse as { is_valid_recipe: boolean }).is_valid_recipe === false
     ) {
-        const errorResponse = llmResponse as { is_valid_recipe: false; reasons: string[] };
-        logger.info('LLM determined content is not a valid recipe', {
+        const errorResponse = llmResponse as {
+            is_valid_recipe: false;
+            reasons: string[];
+        };
+        logger.info("LLM determined content is not a valid recipe", {
             userId,
             reasons: errorResponse.reasons,
         });
         return {
             success: false,
-            reasons: errorResponse.reasons || ['Content does not appear to be a valid recipe'],
+            reasons: errorResponse.reasons ||
+                ["Content does not appear to be a valid recipe"],
         };
     }
 
@@ -358,14 +496,17 @@ export async function generateRecipeDraft(
     };
 
     if (!successResponse.draft) {
-        logger.error('LLM response missing draft field', { llmResponse });
-        throw new ApplicationError('INTERNAL_ERROR', 'AI service returned incomplete response');
+        logger.error("LLM response missing draft field", { llmResponse });
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "AI service returned incomplete response",
+        );
     }
 
     // Validate draft content
     const validationErrors = validateDraftContent(successResponse.draft);
     if (validationErrors.length > 0) {
-        logger.info('Draft validation failed', {
+        logger.info("Draft validation failed", {
             userId,
             errors: validationErrors,
         });
@@ -386,7 +527,7 @@ export async function generateRecipeDraft(
         },
     };
 
-    logger.info('Recipe draft generation completed', {
+    logger.info("Recipe draft generation completed", {
         userId,
         recipeName: result.draft.name,
         confidence: result.meta.confidence,
@@ -399,4 +540,3 @@ export async function generateRecipeDraft(
 }
 
 // #endregion
-

@@ -31,11 +31,14 @@ import { EditableListComponent } from '../../../shared/components/editable-list/
 
 import { CategoriesService } from '../../../core/services/categories.service';
 import { RecipesService } from '../services/recipes.service';
+import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
 import {
     RecipeDetailDto,
     CreateRecipeCommand,
     UpdateRecipeCommand,
     RecipeVisibility,
+    AiRecipeDraftDto,
+    CategoryDto,
 } from '../../../../../shared/contracts/types';
 
 export interface RecipeFormViewModel {
@@ -76,9 +79,16 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly categoriesService = inject(CategoriesService);
     private readonly recipesService = inject(RecipesService);
+    private readonly draftStateService = inject(RecipeDraftStateService);
 
     /** Signal indicating edit mode vs create mode */
     readonly isEditMode = signal<boolean>(false);
+
+    /** Flag indicating if form was prefilled from AI draft */
+    readonly isPrefilledFromDraft = signal<boolean>(false);
+
+    /** Pending draft to apply after categories are loaded */
+    private pendingDraft: AiRecipeDraftDto | null = null;
 
     /** Recipe ID when in edit mode */
     readonly recipeId = signal<number | null>(null);
@@ -154,6 +164,11 @@ export class RecipeFormPageComponent implements OnInit {
         this.loadCategories();
         this.checkEditMode();
 
+        // In create mode, check for AI draft to prefill
+        if (!this.isEditMode()) {
+            this.checkAndApplyDraft();
+        }
+
         // Subscribe to form status changes to update formValid signal
         this.form.statusChanges.subscribe(() => {
             this.formValid.set(this.form.valid);
@@ -190,7 +205,15 @@ export class RecipeFormPageComponent implements OnInit {
     }
 
     private loadCategories(): void {
-        this.categoriesService.loadCategories().subscribe();
+        this.categoriesService.loadCategories().subscribe({
+            next: () => {
+                // If there's a pending draft waiting for categories, apply it now
+                if (this.pendingDraft) {
+                    this.applyDraftCategoryMapping(this.pendingDraft);
+                    this.pendingDraft = null;
+                }
+            },
+        });
     }
 
     private checkEditMode(): void {
@@ -204,6 +227,113 @@ export class RecipeFormPageComponent implements OnInit {
                 this.loadRecipe(id);
             }
         }
+    }
+
+    /**
+     * Check if there's an AI draft available and apply it to the form.
+     * Only called in create mode.
+     */
+    private checkAndApplyDraft(): void {
+        const draftData = this.draftStateService.consumeDraft();
+
+        if (!draftData) {
+            return;
+        }
+
+        this.populateFormFromDraft(draftData.draft);
+        this.isPrefilledFromDraft.set(true);
+    }
+
+    /**
+     * Populate form fields from AI draft data.
+     * Category mapping is deferred until categories are loaded.
+     */
+    private populateFormFromDraft(draft: AiRecipeDraftDto): void {
+        // Set basic fields
+        this.form.patchValue({
+            name: draft.name || '',
+            description: draft.description || '',
+        });
+
+        // Parse and populate ingredients (split by newline)
+        this.ingredientsArray.clear();
+        if (draft.ingredients_raw && draft.ingredients_raw.trim().length > 0) {
+            const ingredients = draft.ingredients_raw
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => line.length > 0);
+
+            ingredients.forEach((ingredient) => {
+                this.ingredientsArray.push(
+                    this.fb.control(ingredient, { nonNullable: true })
+                );
+            });
+        }
+
+        // Parse and populate steps (split by newline)
+        this.stepsArray.clear();
+        if (draft.steps_raw && draft.steps_raw.trim().length > 0) {
+            const steps = draft.steps_raw
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => line.length > 0);
+
+            steps.forEach((step) => {
+                this.stepsArray.push(
+                    this.fb.control(step, { nonNullable: true })
+                );
+            });
+        }
+
+        // Populate tags (deduplicated)
+        this.tagsArray.clear();
+        if (draft.tags && draft.tags.length > 0) {
+            const uniqueTags = [...new Set(draft.tags)];
+            uniqueTags.forEach((tag) => {
+                this.tagsArray.push(
+                    this.fb.control(tag, { nonNullable: true })
+                );
+            });
+        }
+
+        // Category mapping - defer if categories not yet loaded
+        if (draft.category_name) {
+            const loadedCategories = this.categories();
+            if (loadedCategories && loadedCategories.length > 0) {
+                this.applyDraftCategoryMapping(draft);
+            } else {
+                // Store draft to apply category after categories load
+                this.pendingDraft = draft;
+            }
+        }
+    }
+
+    /**
+     * Map category_name from draft to category_id.
+     * Uses case-insensitive matching.
+     */
+    private applyDraftCategoryMapping(draft: AiRecipeDraftDto): void {
+        if (!draft.category_name) {
+            return;
+        }
+
+        const categoryName = draft.category_name.trim().toLowerCase();
+        const loadedCategories = this.categories();
+
+        if (!loadedCategories || loadedCategories.length === 0) {
+            return;
+        }
+
+        const matchedCategory = loadedCategories.find(
+            (cat: CategoryDto) => cat.name.trim().toLowerCase() === categoryName
+        );
+
+        if (matchedCategory) {
+            this.form.patchValue({
+                categoryId: matchedCategory.id,
+            });
+        }
+        // If no match found, categoryId remains null - user can select manually
     }
 
     private loadRecipe(id: number): void {

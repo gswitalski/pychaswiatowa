@@ -10,11 +10,32 @@ export const recipesRoutes: Routes = [
     },
     {
         path: 'new',
-        loadComponent: () =>
-            import('./recipe-form/recipe-form-page.component').then(
-                (m) => m.RecipeFormPageComponent
-            ),
-        data: { breadcrumb: 'Nowy przepis' },
+        children: [
+            {
+                path: '',
+                loadComponent: () =>
+                    import('./recipe-form/recipe-form-page.component').then(
+                        (m) => m.RecipeFormPageComponent
+                    ),
+                data: { breadcrumb: 'Nowy przepis' },
+            },
+            {
+                path: 'start',
+                loadComponent: () =>
+                    import('./recipe-new-start/recipe-new-start-page.component').then(
+                        (m) => m.RecipeNewStartPageComponent
+                    ),
+                data: { breadcrumb: 'Dodaj przepis' },
+            },
+            {
+                path: 'assist',
+                loadComponent: () =>
+                    import('./recipe-new-assist/recipe-new-assist-page.component').then(
+                        (m) => m.RecipeNewAssistPageComponent
+                    ),
+                data: { breadcrumb: 'Dodaj przepis (AI)' },
+            },
+        ],
     },
     {
         path: 'import',

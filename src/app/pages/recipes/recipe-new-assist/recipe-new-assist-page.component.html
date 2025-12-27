@@ -1,0 +1,143 @@
+<pych-page-header title="Dodaj przepis (AI)">
+    <button
+        mat-stroked-button
+        type="button"
+        (click)="onBack()"
+        [disabled]="isLoading()">
+        Wróć
+    </button>
+    <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        [disabled]="isLoading()"
+        (click)="onNext()">
+        @if (isLoading()) {
+        <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+        Dalej
+        <mat-icon>arrow_forward</mat-icon>
+        }
+    </button>
+</pych-page-header>
+
+<div class="recipe-new-assist-page" [class.loading]="isLoading()">
+    <mat-card class="input-card">
+        <mat-card-header>
+            <mat-card-title>Wybierz źródło przepisu</mat-card-title>
+            <mat-card-subtitle>
+                Wklej tekst przepisu lub zdjęcie, a AI pomoże Ci zaimportować dane
+            </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+            <!-- Source toggle -->
+            <div class="source-toggle-container">
+                <mat-button-toggle-group
+                    [value]="source()"
+                    (change)="onSourceChange($event.value)"
+                    [disabled]="isLoading()">
+                    <mat-button-toggle value="text">
+                        <mat-icon>text_fields</mat-icon>
+                        Tekst
+                    </mat-button-toggle>
+                    <mat-button-toggle value="image">
+                        <mat-icon>image</mat-icon>
+                        Obraz
+                    </mat-button-toggle>
+                </mat-button-toggle-group>
+            </div>
+
+            <!-- Text input -->
+            @if (source() === 'text') {
+            <div class="text-input-container">
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Tekst przepisu</mat-label>
+                    <textarea
+                        matInput
+                        [value]="text()"
+                        (input)="onTextChange($any($event.target).value)"
+                        [disabled]="isLoading()"
+                        placeholder="Wklej tutaj tekst przepisu..."
+                        rows="12"
+                        cdkTextareaAutosize
+                        cdkAutosizeMinRows="8"
+                        cdkAutosizeMaxRows="20"></textarea>
+                    <mat-hint>
+                        Wklej skopiowany tekst przepisu ze strony, książki lub innego źródła
+                    </mat-hint>
+                </mat-form-field>
+            </div>
+            }
+
+            <!-- Image paste area -->
+            @if (source() === 'image') {
+            <div class="image-input-container">
+                @if (!imagePreviewUrl()) {
+                <div
+                    #imagePasteArea
+                    class="image-paste-area"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Kliknij i wklej obraz używając Ctrl+V"
+                    (click)="focusImageArea()"
+                    [class.disabled]="isLoading()">
+                    <div class="paste-content">
+                        <mat-icon>content_paste</mat-icon>
+                        <p class="paste-title">Wklej obraz przepisu</p>
+                        <p class="paste-hint">
+                            Kliknij tutaj i użyj <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                        </p>
+                        <p class="paste-formats">
+                            Obsługiwane formaty: PNG, JPEG, WebP (max 10 MB)
+                        </p>
+                    </div>
+                </div>
+                } @else {
+                <div class="image-preview-container">
+                    <img
+                        [src]="imagePreviewUrl()"
+                        alt="Podgląd wklejonego obrazu"
+                        class="image-preview" />
+                    <button
+                        mat-mini-fab
+                        color="warn"
+                        class="remove-image-button"
+                        (click)="onRemoveImage()"
+                        [disabled]="isLoading()"
+                        aria-label="Usuń obraz">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+                }
+            </div>
+            }
+
+            <!-- Error messages -->
+            @if (errorMessage()) {
+            <div class="error-container">
+                <div class="error-message">
+                    <mat-icon>error</mat-icon>
+                    <span>{{ errorMessage() }}</span>
+                </div>
+                @if (unprocessableReasons().length > 0) {
+                <ul class="error-reasons">
+                    @for (reason of unprocessableReasons(); track reason) {
+                    <li>{{ reason }}</li>
+                    }
+                </ul>
+                }
+            </div>
+            }
+
+            <!-- Info hint -->
+            <div class="info-hint">
+                <mat-icon>info</mat-icon>
+                <p>
+                    Jeśli nie podasz żadnych danych, zostaniesz przekierowany do pustego formularza
+                </p>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>
+

@@ -1,0 +1,39 @@
+<pych-page-header title="Dodaj przepis">
+    <button
+        mat-stroked-button
+        type="button"
+        (click)="onCancel()">
+        Anuluj
+    </button>
+</pych-page-header>
+
+<div class="recipe-new-start-page">
+    <div class="options-container">
+        @for (option of options; track option.route) {
+        <mat-card
+            class="option-card"
+            appearance="outlined"
+            (click)="selectOption(option)"
+            (keydown.enter)="selectOption(option)"
+            (keydown.space)="selectOption(option)"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="option.title + ': ' + option.description">
+            <mat-card-content>
+                <div class="option-icon">
+                    <mat-icon>{{ option.icon }}</mat-icon>
+                </div>
+                <h2 class="option-title">{{ option.title }}</h2>
+                <p class="option-description">{{ option.description }}</p>
+            </mat-card-content>
+            <mat-card-actions>
+                <button mat-flat-button color="primary">
+                    Wybierz
+                    <mat-icon>arrow_forward</mat-icon>
+                </button>
+            </mat-card-actions>
+        </mat-card>
+        }
+    </div>
+</div>
+
