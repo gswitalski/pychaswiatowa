@@ -13,28 +13,7 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-aktualnie przycisk dodania nowego przepisu od razu przenosi użytkownika do formularza przepisu.
-
-chcę aby ten proces skłądał się z następujących kroków
-1. użytkownik wciska przycisk "Dodaj przepis"
-2. pojawia się formularz w którym użytkoenik może wkeić dodolny tekst (text-area) lub obrazek
-3. użytkownik klika w przycisk "dalej"
-4. Sysyem wykorzystując LLM API OpenAI przekształca tekst lub obrazek  i wstępnie wypełnia fomularz przepisu danymi:
- - tyuł
- - opis,
- - składniki
- - kroki
- - kategoria
- - tagi
-
- kategora i tagi ma być wniskowana na podstawie przepisu
-
- jeśli użytkowenik nie wprowadzi na pierwszym ekranie nic - to pojakia si pustyty formulsz.
-
- jesli użytkownik wprowadzi dane , które nie są pojedynczym przpisem - system dajke komunikat o błędzie i pozostaje na pierwszym formularzu
-
-aby sparsować odpowiedz z LLM-a LLM musi wygenerować odpowiedź w ustalonym formacie. rozważ wykorzystanie do tego istenijącej funkcji importowania pliku z tekstu
-
+w formularzu edycji przepisu chcę mieć koło pola ze zdjeciem przycisk z ikon AI . wciścienie przypcisku wygeneruje autoamtycznie zdjęcie potrawy z aktualnie edytowanego przepisu . zdjące ma być realistyczne na rustykalnym stole
 
 
 </nowa_funkcjonalnosc>

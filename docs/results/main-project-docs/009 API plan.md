@@ -540,6 +540,81 @@ Public endpoints are available without authentication:
 
 ---
 
+#### `POST /ai/recipes/image` (Supabase Edge Function)
+
+-   **Description**: Generate a **photorealistic** recipe image based on the **current recipe form state** (including unsaved edits). This endpoint returns an image preview (base64). The client applies it only after explicit confirmation, by uploading it via the existing `POST /recipes/{id}/image` endpoint.
+-   **Auth**: Required (`Authorization: Bearer <JWT>`).
+-   **Authorization (premium gating)**:
+    - The caller MUST have `app_role` claim set to `premium` or `admin`.
+    - If `app_role = user`, the endpoint MUST return `403 Forbidden`.
+-   **Notes**:
+    - Intended for the recipe edit form (AI icon button next to the image field).
+    - **Style contract (MVP)**: photorealistic, rustic wooden table, natural light, no people/hands, no text, no watermark.
+    - Output format is fixed for MVP: `image/webp`, recommended `1024x1024`.
+-   **Request Payload**:
+    ```json
+    {
+      "recipe": {
+        "id": 123,
+        "name": "Sernik klasyczny",
+        "description": "Kremowy sernik na spodzie z herbatników.",
+        "servings": 8,
+        "is_termorobot": false,
+        "category_name": "Deser",
+        "ingredients": [
+          { "type": "header", "content": "Masa" },
+          { "type": "item", "content": "twaróg" }
+        ],
+        "steps": [
+          { "type": "item", "content": "Wymieszaj składniki." }
+        ],
+        "tags": ["wypieki", "sernik"]
+      },
+      "output": {
+        "mime_type": "image/webp",
+        "width": 1024,
+        "height": 1024
+      },
+      "language": "pl",
+      "output_format": "pycha_recipe_image_v1"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "image": {
+            "mime_type": "image/webp",
+            "data_base64": "UklGRiQAAABXRUJQVlA4..."
+          },
+          "meta": {
+            "style_contract": {
+              "photorealistic": true,
+              "rustic_table": true,
+              "natural_light": true,
+              "no_people": true,
+              "no_text": true,
+              "no_watermark": true
+            },
+            "warnings": []
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (invalid payload)
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden` (not premium/admin)
+        -   **Payload** (example):
+            ```json
+            {
+              "message": "Premium feature. Upgrade required."
+            }
+            ```
+    -   **Code**: `422 Unprocessable Entity` (insufficient information to generate a single dish image)
+
+---
+
 #### `GET /recipes/{id}`
 
 -   **Description**: Retrieve a single recipe by its ID.
