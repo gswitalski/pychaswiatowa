@@ -28,6 +28,10 @@ Public endpoints are available without authentication:
 > - These endpoints are provided by Supabase Auth. In the Angular app we should prefer calling them via `supabase-js` to avoid dealing with low-level token/session details.
 > - Email verification is handled by Supabase. The project must be configured so that a newly created user must confirm their email before they can sign in.
 > - The frontend must expose a callback route used as `emailRedirectTo`, e.g. `/auth/callback`.
+> - **Application roles (RBAC – preparation):** the access token JWT MUST include a custom claim with the user's **application role** (recommended claim name: `app_role`) with allowed values: `user | premium | admin`.
+>   - The claim name `app_role` is intentionally chosen to avoid confusion with Supabase/PostgREST's built-in `role` claim (e.g., `authenticated`).
+>   - The role is set server-side (default `user` on signup). The client MUST NOT be able to set or change the role.
+>   - In the MVP, the role is primarily used by the frontend to prepare for feature gating. Future endpoints may enforce RBAC using this claim.
 
 #### `POST /auth/signup` (Supabase Auth)
 
@@ -43,6 +47,9 @@ Public endpoints are available without authentication:
       "emailRedirectTo": "https://app.example.com/auth/callback"
     }
     ```
+-   **Role behavior (server-side)**:
+    - A newly created user is assigned the default application role: `user`.
+    - The client must not send `app_role` as part of the signup payload.
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload** (example):
@@ -74,6 +81,8 @@ Public endpoints are available without authentication:
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**: `{ "session": { "access_token": "...", "refresh_token": "..." }, "user": { "id": "uuid" } }`
+    -   **JWT requirements**:
+        - The `access_token` JWT MUST include `app_role` claim (`user | premium | admin`).
 -   **Error Response**:
     -   **Code**: `400 Bad Request` - If email is not confirmed yet (the frontend should map this to: "Confirm your email" + "Resend link").
     -   **Code**: `401 Unauthorized` - Wrong credentials.
@@ -838,7 +847,8 @@ Public endpoints are available without authentication:
         ```json
         {
           "id": "a1b2c3d4-...",
-          "username": "john.doe"
+          "username": "john.doe",
+          "app_role": "user"
         }
         ```
 -   **Error Response**:
@@ -848,6 +858,10 @@ Public endpoints are available without authentication:
 
 -   **Authentication**: The API will use JWT (JSON Web Tokens) provided by Supabase Authentication. The client is responsible for obtaining the JWT upon user login/signup and including it in the `Authorization` header for all subsequent requests (e.g., `Authorization: Bearer <YOUR_JWT>`).
 -   **Authorization**: Authorization is enforced using PostgreSQL's Row Level Security (RLS) policies, configured in Supabase. These policies ensure that users can only access and modify their own data (`recipes`, `tags`, `collections`, etc.). The API layer will rely on the database to enforce these rules, returning `403 Forbidden` or `404 Not Found` for unauthorized access attempts.
+-   **Application Roles (RBAC – preparation)**:
+    - JWT MUST include `app_role` claim: `user | premium | admin`.
+    - Future premium/admin features SHOULD enforce access using RLS / policies that can read JWT claims (e.g., via `auth.jwt()` in PostgreSQL).
+    - In MVP, no endpoints are additionally restricted by `app_role` yet (foundation only).
 
 ## 4. Validation and Business Logic
 

@@ -9,6 +9,12 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 2.  **Globalny Topbar (Góra):** Zawiera stałą główną nawigację (zakładki) **Moja Pycha** (`/dashboard`) i **Odkrywaj przepisy** (`/explore`) z wyróżnieniem aktywnej pozycji, stałą ikonę/akcję globalnego wyszukiwania (Omnibox, np. jako overlay) oraz profil użytkownika. Breadcrumbs są wyświetlane jako element orientacyjny na głębszych trasach (np. wewnątrz kolekcji).
 3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
 
+### Role i uprawnienia (RBAC – przygotowanie)
+
+- **Założenie:** aplikacja w przyszłości będzie udostępniać wybrane funkcje tylko użytkownikom o określonej roli.
+- **Źródło prawdy w UI:** rola aplikacyjna jest odczytywana z JWT (custom claim, np. `app_role`) po zalogowaniu i trzymana w stanie sesji (np. w `AuthService`).
+- **Wdrożenie funkcji premium/admin:** będzie realizowane podczas implementacji konkretnych funkcjonalności (np. ukrycie/disabled/guard) – na tym etapie dokument opisuje tylko fundament.
+
 ## 2. Lista widoków
 
 ### Widoki publiczne
@@ -175,6 +181,12 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe informacje do wyświetlenia:** Formularz zmiany nazwy użytkownika, formularz zmiany hasła.
 - **Kluczowe komponenty widoku:** `mat-form-field`, `mat-input`, `mat-button`.
 - **Względy UX, dostępności i bezpieczeństwa:** Jasne zasady walidacji haseł.
+
+**14. Brak dostępu (403)**
+- **Ścieżka:** `/forbidden` (lub inna ustalona, publicznie dostępna ścieżka techniczna)
+- **Główny cel:** Prezentacja czytelnego komunikatu, gdy użytkownik jest zalogowany, ale nie ma uprawnień do danej funkcji (przyszłościowo: role premium/admin).
+- **Kluczowe informacje do wyświetlenia:** Komunikat „Brak dostępu”, krótkie wyjaśnienie, akcje: „Wróć” / „Przejdź do Moja Pycha”.
+- **Względy UX, dostępności i bezpieczeństwa:** Widok nie ujawnia szczegółów zasobów ani reguł uprawnień. Może być używany przez guardy/obsługę błędów `403`.
 
 ## 3. Mapa podróży użytkownika
 

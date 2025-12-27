@@ -12,15 +12,20 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-aktualnie użytkownik rejestruje się podając email nazwę i hasło.
+chce udostepniac w przyszłosci niektóre funkcje systemu tylko użytkownikom o okeslonej roli.
+dlatego potrzebuje dla każdego użytkownka móc zapisac jego rol
 
-chce aby proces ten był rozszerzony:
-1. użytkownik podaje email, naze i hasło 
-2. system wysyłan a podany emoaui link weryfikacyjny
-3. system prezentuje komunikat o wysłaniu linka na adres
-4. użytkownik opwira maila i klika w link aktywacyjny
-5. system rejestruje fakt potwierdzenia emaila - teraz użytkownik może się już zalogować do systemu
+na początek be miał takie role:
+user - domyslna rola dla użytkownika zaraz po założeniu
+premium - użytkownik z dostepem do funkcji premium
+admin - użytkownik z dostepem do wszystkichh w tym funkcji administracyjnych
 
+jeden użytkownik może mieć tylko jedną rolę
+
+
+nie chce nadawać teraz roli z poziomu aplikacji - mogę to robić bezpośrednio w bazie danncyh.
+
+teraz cchę tylko móc odczytać roleuzalogowanego uzytkownika aby przydzielic mu dostep do wybranych funkcjonalności.
 
 
 </nowa_funkcjonalnosc>
@@ -67,7 +72,7 @@ W każdym rozdziale umieść odpowiednio opisy historyjek, widoków i endpointó
 
 
 UWAGA:
-Zanim przystapisz do pracy zadaj mi kilka pytań uszczegóławiających moje wymagania co do nowej funkcjonalności oraz twoje rekomenacje co do oddpoiwiedzi. 
+Zanim przystapisz do pracy, ale po zapoznaniu się zdokumentami projektu, zadaj mi kilka pytań uszczegóławiających moje wymagania co do nowej funkcjonalności oraz twoje rekomenacje co do oddpoiwiedzi. 
 pytania zadaj w formacie
 1. {Treść pyutania pierwszego}
 Moja rekomendacja:
