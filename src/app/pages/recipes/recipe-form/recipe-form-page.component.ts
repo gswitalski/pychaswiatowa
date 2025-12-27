@@ -632,6 +632,9 @@ export class RecipeFormPageComponent implements OnInit {
             // Update dialog with success
             dialogRef.componentInstance.setSuccess(dataUrl);
 
+        // Generowanie zakończone – odblokuj upload, aby można było zastosować obraz
+        this.aiGenerating.set(false);
+
             // Wait for dialog result
             const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
 
