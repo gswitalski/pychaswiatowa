@@ -19,13 +19,11 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-- **Nowe**
-    - **`/recipes/new/start` — Dodaj przepis (Kreator – wybór trybu)**: ekran wyboru „Pusty formularz” vs „Z tekstu/zdjęcia (AI)”.
-    - **`/recipes/new/assist` — Dodaj przepis (Kreator – AI z tekstu/zdjęcia)**: ekran wklejania danych wejściowych (tryb albo tekst, albo obraz), przycisk „Dalej”, walidacja i obsługa błędów.
-
 - **Zmienione**
-    - **Widok listy przepisów (`/my-recipies`) — Header**: zamiast split button („Ręcznie | Import”) opisano przycisk „Dodaj przepis” otwierający kreator oraz akcję pomocniczą „Import”.
-    - **Mapa podróży użytkownika**: krok tworzenia przepisu uwzględnia przejście przez kreator i opcjonalne wstępne wypełnienie formularza przez AI.
+    - **9. Formularz Przepisu (Dodaj/Edytuj)**: dodano przycisk z ikoną AI przy sekcji zdjęcia (widoczny/aktywny tylko dla roli `premium`/`admin`) oraz przepływ: generowanie → modal podglądu → „Zastosuj/Odrzuć” + Snackbar „Cofnij”.
+
+- **Nowe**
+    - **9a. Modal: Podgląd wygenerowanego zdjęcia (AI)**: modal/dialog prezentujący wynik generowania i wymuszający potwierdzenie przed zastąpieniem zdjęcia.
 
 
 
@@ -39,11 +37,12 @@ Najpierw przejrzyj następujące informacje:
 
 
 - **Nowe**
-    - **US-036 — Asystowane dodawanie przepisu z tekstu lub obrazu (AI)**: nowy flow „kreatora” (wybór trybu → wklejenie tekstu/obrazu → wstępne wypełnienie formularza). Zawiera walidację „pojedynczego przepisu”, fallback do pustego formularza przy braku wejścia oraz obsługę błędów i stanów ładowania.
+    - **US-037: Generowanie zdjęcia przepisu (AI) w edycji – tylko premium**
+        - Dodano historyjkę opisującą przycisk AI przy polu zdjęcia, generowanie na podstawie aktualnego stanu formularza (także niezapisane zmiany), podgląd oraz świadome „Zastosuj/Odrzuć”.
+        - Dodano kontrakt stylu: realistyczne, rustykalny drewniany stół, naturalne światło, brak ludzi/rąk, brak tekstu, brak watermarków.
 
 - **Zmienione**
-    - **Granice produktu (sekcja 4 w PRD)**: doprecyzowano, że AI/LLM nadal jest poza zakresem MVP w większości zastosowań, ale dodano **wyjątek** dla asystowanego dodawania przepisu z tekstu/obrazu (AI prefill).
-    - **Wymagania funkcjonalne (sekcja 3.2 w PRD)**: dodano pozycję „Asystowane dodawanie (AI)” opisującą nowe zachowanie.
+    - **3.2. Zarządzanie przepisami (CRUD) – Aktualizacja (Update)**: dodano punkt o generowaniu zdjęcia AI jako funkcji dostępnej dla `premium` (lub `admin`).
 
 
 </user_stories>
