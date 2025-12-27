@@ -545,14 +545,14 @@ export async function generateRecipeDraft(
 
 // #region --- Recipe Image Generation ---
 
-/** OpenAI DALL-E API endpoint */
-const DALLE_API_URL = "https://api.openai.com/v1/images/generations";
+/** OpenAI Images API endpoint */
+const IMAGES_API_URL = "https://api.openai.com/v1/images/generations";
 
-/** DALL-E model to use */
-const DALLE_MODEL = "dall-e-3";
+/** Image generation model to use (gpt-image-1 for webp output support) */
+const IMAGE_MODEL = "gpt-image-1";
 
-/** Timeout for DALL-E API calls in milliseconds */
-const DALLE_API_TIMEOUT_MS = 60_000;
+/** Timeout for Image API calls in milliseconds */
+const IMAGE_API_TIMEOUT_MS = 60_000;
 
 /**
  * Style contract constants - these define the visual style guidelines
@@ -624,12 +624,12 @@ function validateRecipeForImageGeneration(
 }
 
 /**
- * Builds the DALL-E prompt for generating a recipe image.
+ * Builds the image generation prompt for OpenAI Images API.
  * Follows the style contract guidelines.
  *
  * @param recipe - Recipe data
  * @param language - Output language
- * @returns Prompt string for DALL-E
+ * @returns Prompt string for image generation
  */
 function buildImagePrompt(
     recipe: GenerateRecipeImageParams["recipe"],
@@ -674,13 +674,14 @@ The image should look like it belongs in a premium cookbook or food magazine.`;
 }
 
 /**
- * Calls OpenAI DALL-E API to generate an image.
+ * Calls OpenAI Images API to generate an image.
+ * Uses gpt-image-1 model with webp output format (MVP configuration).
  *
  * @param prompt - The image generation prompt
- * @returns Base64 encoded PNG image data
+ * @returns Base64 encoded webp image data
  * @throws ApplicationError on API or processing errors
  */
-async function callDalleAPI(prompt: string): Promise<string> {
+async function callImageAPI(prompt: string): Promise<string> {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
 
     if (!apiKey) {
@@ -692,22 +693,23 @@ async function callDalleAPI(prompt: string): Promise<string> {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), DALLE_API_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), IMAGE_API_TIMEOUT_MS);
 
     try {
-        const response = await fetch(DALLE_API_URL, {
+        const response = await fetch(IMAGES_API_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                model: DALLE_MODEL,
+                model: IMAGE_MODEL,
                 prompt: prompt,
                 n: 1,
                 size: "1024x1024",
-                quality: "standard",
-                response_format: "b64_json",
+                output_format: "webp",
+                background: "auto",
+                quality: "auto",
             }),
             signal: controller.signal,
         });
@@ -716,7 +718,7 @@ async function callDalleAPI(prompt: string): Promise<string> {
 
         if (!response.ok) {
             const errorBody = await response.text();
-            logger.error("DALL-E API error", {
+            logger.error("Image API error", {
                 status: response.status,
                 body: errorBody.substring(0, 500),
             });
@@ -743,10 +745,11 @@ async function callDalleAPI(prompt: string): Promise<string> {
         }
 
         const data = await response.json();
+        // gpt-image-1 returns b64_json in data[0].b64_json
         const imageData = data.data?.[0]?.b64_json;
 
         if (!imageData) {
-            logger.error("Empty image response from DALL-E", { data });
+            logger.error("Empty image response from Image API", { data });
             throw new ApplicationError(
                 "INTERNAL_ERROR",
                 "AI image service returned empty response",
@@ -762,14 +765,14 @@ async function callDalleAPI(prompt: string): Promise<string> {
         }
 
         if (error instanceof Error && error.name === "AbortError") {
-            logger.error("DALL-E API timeout");
+            logger.error("Image API timeout");
             throw new ApplicationError(
                 "INTERNAL_ERROR",
                 "AI image service request timed out",
             );
         }
 
-        logger.error("DALL-E API request failed", {
+        logger.error("Image API request failed", {
             error: error instanceof Error ? error.message : "Unknown error",
         });
         throw new ApplicationError(
@@ -826,8 +829,8 @@ export async function generateRecipeImage(
         promptLength: prompt.length,
     });
 
-    // Step 3: Call DALL-E API
-    const imageBase64 = await callDalleAPI(prompt);
+    // Step 3: Call OpenAI Images API (gpt-image-1 with webp output)
+    const imageBase64 = await callImageAPI(prompt);
 
     logger.info("Recipe image generated successfully", {
         userId,
@@ -835,13 +838,12 @@ export async function generateRecipeImage(
         imageSize: imageBase64.length,
     });
 
-    // Step 4: Return successful result
-    // Note: DALL-E 3 returns PNG format. Future: add webp conversion.
+    // Step 4: Return successful result (webp format from gpt-image-1)
     return {
         success: true,
         data: {
             image: {
-                mime_type: "image/png",
+                mime_type: "image/webp",
                 data_base64: imageBase64,
             },
             meta: {

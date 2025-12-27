@@ -75,12 +75,12 @@ supabase secrets list
 - Implementacja zawiera timeout 30s i obsługę rate limiting (429)
 
 #### AI Recipe Image (`/ai/recipes/image`) - Premium Feature
-- Endpoint używa modelu `dall-e-3` do generacji obrazów
+- Endpoint używa modelu `gpt-image-1` do generacji obrazów
 - **UWAGA**: Generacja obrazów jest droższa niż generacja tekstu
-- Koszt: ~$0.04-0.08 za obraz (1024x1024, standard quality)
+- Koszt: sprawdź aktualne ceny na [OpenAI Pricing](https://openai.com/pricing)
 - Implementacja zawiera timeout 60s i obsługę rate limiting (429)
 - Dostępne tylko dla użytkowników z `app_role: premium` lub `admin`
-- Zwraca obraz w formacie PNG (base64)
+- Zwraca obraz w formacie WebP (base64, 1024x1024)
 
 ## Uwagi
 

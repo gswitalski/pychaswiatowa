@@ -46,8 +46,8 @@ export const MAX_RECIPE_CONTENT_ITEMS = 200;
 /** Maximum total payload size for recipe image request (characters) */
 export const MAX_IMAGE_REQUEST_PAYLOAD_SIZE = 40_000;
 
-/** Allowed output MIME types for recipe image (MVP supports webp, png fallback for DALL-E) */
-export const ALLOWED_IMAGE_OUTPUT_MIME_TYPES = ['image/webp', 'image/png'] as const;
+/** Allowed output MIME types for recipe image (MVP: only webp via gpt-image-1) */
+export const ALLOWED_IMAGE_OUTPUT_MIME_TYPES = ['image/webp'] as const;
 export type AllowedImageOutputMimeType = typeof ALLOWED_IMAGE_OUTPUT_MIME_TYPES[number];
 
 /** Fixed output dimensions for recipe image (MVP) */
