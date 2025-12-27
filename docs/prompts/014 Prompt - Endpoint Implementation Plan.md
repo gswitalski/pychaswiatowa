@@ -12,10 +12,10 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-
 - **Nowe**
-    - **Resource**: „AI Recipe Draft (Supabase Edge Function)” — draft do prefillu formularza, bez persystencji.
-    - **Endpoint**: **`POST /ai/recipes/draft`** (Supabase Edge Function) — generuje draft przepisu z tekstu albo obrazu (OCR + LLM), zwraca JSON z polami do prefillu (`name`, `description`, `ingredients_raw`, `steps_raw`, `category_name`, `tags`) oraz obsługuje błąd walidacji „to nie jest pojedynczy przepis” (`422`).
+    - **POST `/ai/recipes/image` (Supabase Edge Function)**:
+        - Generuje zdjęcie na podstawie bieżących danych formularza i zwraca podgląd jako `image/webp` w `data_base64`.
+        - Autoryzacja: wymagane JWT, a funkcja dostępna tylko dla `app_role = premium | admin` (dla `user` zwraca `403`).
 
 
 </api_changes_description>
