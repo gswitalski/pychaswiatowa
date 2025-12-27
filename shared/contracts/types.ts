@@ -501,3 +501,95 @@ export interface AiRecipeDraftUnprocessableEntityDto {
 }
 
 // #endregion
+
+// #region --- AI Recipe Image Generation ---
+
+/**
+ * Allowed output MIME types for AI recipe image generation.
+ */
+export type AiRecipeImageMimeType = 'image/webp' | 'image/png';
+
+/**
+ * Recipe content item for image generation request.
+ */
+export interface AiRecipeImageContentItem {
+    type: 'header' | 'item';
+    content: string;
+}
+
+/**
+ * Recipe data for AI image generation request.
+ */
+export interface AiRecipeImageRecipeDto {
+    id: number;
+    name: string;
+    description?: string | null;
+    servings?: number | null;
+    is_termorobot?: boolean;
+    category_name?: string | null;
+    ingredients: AiRecipeImageContentItem[];
+    steps: AiRecipeImageContentItem[];
+    tags?: string[];
+}
+
+/**
+ * Output configuration for AI image generation request.
+ */
+export interface AiRecipeImageOutputDto {
+    mime_type: AiRecipeImageMimeType;
+    width: 1024;
+    height: 1024;
+}
+
+/**
+ * Request DTO for AI recipe image generation endpoint.
+ */
+export interface AiRecipeImageRequestDto {
+    recipe: AiRecipeImageRecipeDto;
+    output: AiRecipeImageOutputDto;
+    language?: string;
+    output_format: 'pycha_recipe_image_v1';
+}
+
+/**
+ * Style contract metadata for generated image.
+ * Confirms adherence to agreed visual style guidelines.
+ */
+export interface AiRecipeImageStyleContractDto {
+    photorealistic: boolean;
+    rustic_table: boolean;
+    natural_light: boolean;
+    no_people: boolean;
+    no_text: boolean;
+    no_watermark: boolean;
+}
+
+/**
+ * Meta information for image generation response.
+ */
+export interface AiRecipeImageMetaDto {
+    style_contract: AiRecipeImageStyleContractDto;
+    warnings: string[];
+}
+
+/**
+ * Response DTO for successful AI recipe image generation.
+ */
+export interface AiRecipeImageResponseDto {
+    image: {
+        mime_type: AiRecipeImageMimeType;
+        data_base64: string;
+    };
+    meta: AiRecipeImageMetaDto;
+}
+
+/**
+ * Response DTO for 422 Unprocessable Entity errors in image generation.
+ * Returned when the recipe data is insufficient to generate a sensible dish image.
+ */
+export interface AiRecipeImageUnprocessableEntityDto {
+    message: string;
+    reasons: string[];
+}
+
+// #endregion

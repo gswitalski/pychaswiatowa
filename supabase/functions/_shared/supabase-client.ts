@@ -72,6 +72,29 @@ export async function getAuthenticatedContext(req: Request): Promise<{
 }
 
 /**
+ * Creates an authenticated Supabase client using a JWT token directly.
+ * Useful when the token has already been extracted from the request.
+ *
+ * @param token - The JWT token string (without "Bearer " prefix)
+ * @returns An authenticated Supabase client
+ * @throws ApplicationError with INTERNAL_ERROR code if configuration is missing
+ */
+export function getSupabaseClientWithAuth(token: string): TypedSupabaseClient {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Missing Supabase configuration');
+    }
+
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        global: {
+            headers: { Authorization: `Bearer ${token}` },
+        },
+    });
+}
+
+/**
  * Creates a Supabase client with service role key for bypassing RLS.
  * Use ONLY for public endpoints or admin operations where RLS needs to be bypassed.
  *

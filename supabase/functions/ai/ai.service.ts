@@ -10,6 +10,8 @@ import {
     AiRecipeDraftDto,
     AiRecipeDraftResponseDto,
     GenerateRecipeDraftParams,
+    GenerateRecipeImageParams,
+    ImageGenerationResult,
     LlmGenerationResult,
     MAX_RECIPE_NAME_LENGTH,
     MAX_TAGS_COUNT,
@@ -536,6 +538,317 @@ export async function generateRecipeDraft(
     return {
         success: true,
         data: result,
+    };
+}
+
+// #endregion
+
+// #region --- Recipe Image Generation ---
+
+/** OpenAI DALL-E API endpoint */
+const DALLE_API_URL = "https://api.openai.com/v1/images/generations";
+
+/** DALL-E model to use */
+const DALLE_MODEL = "dall-e-3";
+
+/** Timeout for DALL-E API calls in milliseconds */
+const DALLE_API_TIMEOUT_MS = 60_000;
+
+/**
+ * Style contract constants - these define the visual style guidelines
+ * that the generated image must adhere to.
+ */
+const IMAGE_STYLE_CONTRACT = {
+    photorealistic: true,
+    rustic_table: true,
+    natural_light: true,
+    no_people: true,
+    no_text: true,
+    no_watermark: true,
+} as const;
+
+/**
+ * Builds a condensed description of ingredients for the prompt.
+ * Limits to key ingredients to reduce token usage.
+ *
+ * @param ingredients - Array of ingredient content items
+ * @returns Condensed ingredient description
+ */
+function buildIngredientsSummary(
+    ingredients: Array<{ type: string; content: string }>,
+): string {
+    const items = ingredients
+        .filter((i) => i.type === "item")
+        .map((i) => i.content)
+        .slice(0, 10); // Limit to 10 key ingredients
+
+    return items.join(", ");
+}
+
+/**
+ * Validates if recipe has enough information to generate a sensible image.
+ * Returns array of reasons if insufficient, empty array if valid.
+ *
+ * @param recipe - Recipe data to validate
+ * @returns Array of validation failure reasons
+ */
+function validateRecipeForImageGeneration(
+    recipe: GenerateRecipeImageParams["recipe"],
+): string[] {
+    const reasons: string[] = [];
+
+    // Check recipe name
+    if (!recipe.name || recipe.name.trim().length < 3) {
+        reasons.push("Recipe name is too short or missing");
+    }
+
+    // Check ingredients - need at least some actual items
+    const ingredientItems = recipe.ingredients.filter((i) => i.type === "item");
+    if (ingredientItems.length === 0) {
+        reasons.push("Recipe has no ingredient items (only headers)");
+    }
+
+    // Check steps - need at least one step
+    const stepItems = recipe.steps.filter((s) => s.type === "item");
+    if (stepItems.length === 0) {
+        reasons.push("Recipe has no preparation steps");
+    }
+
+    // Check if name is too generic
+    const genericNames = ["przepis", "recipe", "danie", "dish", "jedzenie", "food"];
+    if (genericNames.includes(recipe.name.toLowerCase().trim())) {
+        reasons.push("Recipe name is too generic to generate a specific dish image");
+    }
+
+    return reasons;
+}
+
+/**
+ * Builds the DALL-E prompt for generating a recipe image.
+ * Follows the style contract guidelines.
+ *
+ * @param recipe - Recipe data
+ * @param language - Output language
+ * @returns Prompt string for DALL-E
+ */
+function buildImagePrompt(
+    recipe: GenerateRecipeImageParams["recipe"],
+    _language: string,
+): string {
+    const ingredientsSummary = buildIngredientsSummary(recipe.ingredients);
+
+    // Build dish description
+    let dishDescription = recipe.name;
+    if (recipe.description) {
+        dishDescription += `. ${recipe.description}`;
+    }
+    if (recipe.category_name) {
+        dishDescription += ` (${recipe.category_name})`;
+    }
+
+    // Add termorobot context if applicable
+    const cookingMethod = recipe.is_termorobot
+        ? "prepared using a kitchen robot (Thermomix-style)"
+        : "";
+
+    // Build the prompt with style contract requirements
+    const prompt = `Professional food photography of ${dishDescription}.
+
+Main ingredients visible: ${ingredientsSummary}.
+${cookingMethod}
+
+STYLE REQUIREMENTS (MUST FOLLOW):
+- Photorealistic, high-quality food photography
+- Served on a rustic wooden table with natural textures
+- Soft, natural daylight illumination from the side
+- Shallow depth of field, dish in sharp focus
+- NO people, NO hands, NO human body parts visible
+- NO text, NO labels, NO watermarks, NO logos
+- NO artificial overlays or graphic elements
+- Clean, appetizing presentation
+- Shot from a 45-degree angle, slightly above
+
+The image should look like it belongs in a premium cookbook or food magazine.`;
+
+    return prompt;
+}
+
+/**
+ * Calls OpenAI DALL-E API to generate an image.
+ *
+ * @param prompt - The image generation prompt
+ * @returns Base64 encoded PNG image data
+ * @throws ApplicationError on API or processing errors
+ */
+async function callDalleAPI(prompt: string): Promise<string> {
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+
+    if (!apiKey) {
+        logger.error("OpenAI API key not configured");
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "AI image service is not configured",
+        );
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DALLE_API_TIMEOUT_MS);
+
+    try {
+        const response = await fetch(DALLE_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model: DALLE_MODEL,
+                prompt: prompt,
+                n: 1,
+                size: "1024x1024",
+                quality: "standard",
+                response_format: "b64_json",
+            }),
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            logger.error("DALL-E API error", {
+                status: response.status,
+                body: errorBody.substring(0, 500),
+            });
+
+            if (response.status === 429) {
+                throw new ApplicationError(
+                    "TOO_MANY_REQUESTS",
+                    "AI image service rate limit exceeded. Please try again later.",
+                );
+            }
+
+            if (response.status === 400) {
+                // Content policy violation or bad request
+                throw new ApplicationError(
+                    "VALIDATION_ERROR",
+                    "Image generation request was rejected. The recipe content may violate content policies.",
+                );
+            }
+
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI image service temporarily unavailable",
+            );
+        }
+
+        const data = await response.json();
+        const imageData = data.data?.[0]?.b64_json;
+
+        if (!imageData) {
+            logger.error("Empty image response from DALL-E", { data });
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI image service returned empty response",
+            );
+        }
+
+        return imageData;
+    } catch (error) {
+        clearTimeout(timeoutId);
+
+        if (error instanceof ApplicationError) {
+            throw error;
+        }
+
+        if (error instanceof Error && error.name === "AbortError") {
+            logger.error("DALL-E API timeout");
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI image service request timed out",
+            );
+        }
+
+        logger.error("DALL-E API request failed", {
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to connect to AI image service",
+        );
+    }
+}
+
+/**
+ * Generates a preview image of a recipe dish using AI.
+ *
+ * This is a premium feature that creates a photorealistic image
+ * of the dish described by the recipe data.
+ *
+ * @param params - Generation parameters including recipe data
+ * @returns ImageGenerationResult with either success data or failure reasons
+ * @throws ApplicationError for infrastructure/configuration errors
+ */
+export async function generateRecipeImage(
+    params: GenerateRecipeImageParams,
+): Promise<ImageGenerationResult> {
+    const { userId, recipe, language } = params;
+
+    logger.info("Starting recipe image generation", {
+        userId,
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        language,
+        ingredientsCount: recipe.ingredients.length,
+        stepsCount: recipe.steps.length,
+    });
+
+    // Step 1: Validate recipe has enough information
+    const validationErrors = validateRecipeForImageGeneration(recipe);
+    if (validationErrors.length > 0) {
+        logger.info("Recipe validation failed for image generation", {
+            userId,
+            recipeId: recipe.id,
+            reasons: validationErrors,
+        });
+        return {
+            success: false,
+            reasons: validationErrors,
+        };
+    }
+
+    // Step 2: Build the prompt
+    const prompt = buildImagePrompt(recipe, language);
+
+    logger.debug("Built image generation prompt", {
+        userId,
+        recipeId: recipe.id,
+        promptLength: prompt.length,
+    });
+
+    // Step 3: Call DALL-E API
+    const imageBase64 = await callDalleAPI(prompt);
+
+    logger.info("Recipe image generated successfully", {
+        userId,
+        recipeId: recipe.id,
+        imageSize: imageBase64.length,
+    });
+
+    // Step 4: Return successful result
+    // Note: DALL-E 3 returns PNG format. Future: add webp conversion.
+    return {
+        success: true,
+        data: {
+            image: {
+                mime_type: "image/png",
+                data_base64: imageBase64,
+            },
+            meta: {
+                style_contract: IMAGE_STYLE_CONTRACT,
+                warnings: [],
+            },
+        },
     };
 }
 

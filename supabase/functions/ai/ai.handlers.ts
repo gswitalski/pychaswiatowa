@@ -5,15 +5,20 @@
  */
 
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
+import { getAuthenticatedContext, getSupabaseClientWithAuth } from '../_shared/supabase-client.ts';
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
-import { generateRecipeDraft } from './ai.service.ts';
+import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
+import { generateRecipeDraft, generateRecipeImage } from './ai.service.ts';
 import {
     AiRecipeDraftRequestSchema,
     AiRecipeDraftResponseDto,
     AiRecipeDraftUnprocessableEntityDto,
+    AiRecipeImageRequestSchema,
+    AiRecipeImageResponseDto,
+    AiRecipeImageUnprocessableEntityDto,
     MAX_IMAGE_SIZE_BYTES,
+    MAX_IMAGE_REQUEST_PAYLOAD_SIZE,
 } from './ai.types.ts';
 
 // #region --- Response Helpers ---
@@ -86,13 +91,55 @@ function createPayloadTooLargeResponse(message: string): Response {
 }
 
 /**
- * Creates a 422 Unprocessable Entity response.
+ * Creates a 422 Unprocessable Entity response for recipe draft.
  */
 function createUnprocessableEntityResponse(data: AiRecipeDraftUnprocessableEntityDto): Response {
     return new Response(JSON.stringify(data), {
         status: 422,
         headers: { 'Content-Type': 'application/json' },
     });
+}
+
+/**
+ * Creates a 422 Unprocessable Entity response for recipe image.
+ */
+function createImageUnprocessableEntityResponse(data: AiRecipeImageUnprocessableEntityDto): Response {
+    return new Response(JSON.stringify(data), {
+        status: 422,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}
+
+/**
+ * Creates a 403 Forbidden response for premium gating.
+ */
+function createForbiddenPremiumResponse(): Response {
+    return new Response(
+        JSON.stringify({
+            code: 'FORBIDDEN',
+            message: 'Premium feature. Upgrade required.',
+        }),
+        {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+        }
+    );
+}
+
+/**
+ * Creates a 404 Not Found response.
+ */
+function createNotFoundResponse(message: string): Response {
+    return new Response(
+        JSON.stringify({
+            code: 'NOT_FOUND',
+            message,
+        }),
+        {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' },
+        }
+    );
 }
 
 /**
@@ -302,6 +349,164 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
     }
 }
 
+/**
+ * Handles POST /ai/recipes/image request.
+ * Generates a preview image of a recipe dish using AI.
+ * 
+ * Premium feature - requires app_role of 'premium' or 'admin'.
+ *
+ * @param req - The incoming HTTP request
+ * @returns Response with generated image (base64) or error
+ */
+async function handlePostAiRecipesImage(req: Request): Promise<Response> {
+    const startTime = Date.now();
+
+    try {
+        logger.info('Handling POST /ai/recipes/image request');
+
+        // Step 1: Authenticate user (JWT verification)
+        const { user } = await getAuthenticatedContext(req);
+
+        logger.info('User authenticated for AI recipe image', {
+            userId: user.id,
+        });
+
+        // Step 2: Premium gating - verify app_role
+        const token = extractAuthToken(req);
+        const jwtPayload = extractAndValidateAppRole(token);
+
+        if (jwtPayload.app_role === 'user') {
+            logger.warn('Non-premium user attempted to access recipe image generation', {
+                userId: user.id,
+                appRole: jwtPayload.app_role,
+            });
+            return createForbiddenPremiumResponse();
+        }
+
+        logger.info('Premium access verified', {
+            userId: user.id,
+            appRole: jwtPayload.app_role,
+        });
+
+        // Step 3: Parse request body
+        let body: unknown;
+        let rawBodyString: string;
+        try {
+            rawBodyString = await req.text();
+            
+            // Check payload size limit (DoS protection)
+            if (rawBodyString.length > MAX_IMAGE_REQUEST_PAYLOAD_SIZE) {
+                logger.warn('Request payload too large', {
+                    userId: user.id,
+                    size: rawBodyString.length,
+                    maxSize: MAX_IMAGE_REQUEST_PAYLOAD_SIZE,
+                });
+                return createPayloadTooLargeResponse(
+                    `Request payload exceeds maximum allowed size of ${MAX_IMAGE_REQUEST_PAYLOAD_SIZE} characters`
+                );
+            }
+            
+            body = JSON.parse(rawBodyString);
+        } catch {
+            logger.warn('Invalid JSON in request body', { userId: user.id });
+            return new Response(
+                JSON.stringify({
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid JSON in request body',
+                }),
+                {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            );
+        }
+
+        // Step 4: Validate request body with Zod schema
+        const validationResult = AiRecipeImageRequestSchema.safeParse(body);
+
+        if (!validationResult.success) {
+            logger.warn('Request validation failed', {
+                userId: user.id,
+                errors: validationResult.error.errors,
+            });
+            return createValidationErrorResponse(validationResult.error);
+        }
+
+        const requestData = validationResult.data;
+
+        // Step 5: Ownership check - verify recipe belongs to user (via RLS)
+        const supabase = getSupabaseClientWithAuth(token);
+        const { data: recipeExists, error: recipeError } = await supabase
+            .from('recipes')
+            .select('id')
+            .eq('id', requestData.recipe.id)
+            .is('deleted_at', null)
+            .single();
+
+        if (recipeError || !recipeExists) {
+            logger.warn('Recipe not found or not owned by user', {
+                userId: user.id,
+                recipeId: requestData.recipe.id,
+                error: recipeError?.message,
+            });
+            return createNotFoundResponse(
+                'Recipe not found or you do not have access to it'
+            );
+        }
+
+        logger.info('Recipe ownership verified', {
+            userId: user.id,
+            recipeId: requestData.recipe.id,
+        });
+
+        // Step 6: Call service to generate recipe image
+        const result = await generateRecipeImage({
+            userId: user.id,
+            recipe: requestData.recipe,
+            language: requestData.language,
+        });
+
+        const duration = Date.now() - startTime;
+
+        // Step 7: Handle service result
+        if (!result.success) {
+            logger.warn('Recipe image generation failed - insufficient information', {
+                userId: user.id,
+                recipeId: requestData.recipe.id,
+                reasons: result.reasons,
+                duration,
+            });
+            return createImageUnprocessableEntityResponse({
+                message: 'Insufficient information to generate a sensible dish image',
+                reasons: result.reasons,
+            });
+        }
+
+        logger.info('Recipe image generated successfully', {
+            userId: user.id,
+            recipeId: requestData.recipe.id,
+            duration,
+        });
+
+        return createSuccessResponse<AiRecipeImageResponseDto>(result.data);
+    } catch (error) {
+        const duration = Date.now() - startTime;
+
+        // Handle rate limiting errors
+        if (error instanceof ApplicationError && error.code === 'TOO_MANY_REQUESTS') {
+            logger.warn('Rate limit exceeded for image generation', { duration });
+            return createTooManyRequestsResponse(error.message, 60);
+        }
+
+        logger.error('Error in handlePostAiRecipesImage', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            duration,
+        });
+
+        return handleError(error);
+    }
+}
+
 // #endregion
 
 // #region --- Router ---
@@ -312,12 +517,21 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
  *
  * Supported routes:
  * - POST /ai/recipes/draft - Generate recipe draft from text or image
+ * - POST /ai/recipes/image - Generate preview image of a recipe dish (premium)
  */
 export async function aiRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
     const path = getPathFromUrl(req.url);
 
     logger.debug('Routing AI request', { method, path });
+
+    // Route: POST /ai/recipes/image (check first - more specific path)
+    if (path === '/recipes/image' || path === '/recipes/image/') {
+        if (method === 'POST') {
+            return handlePostAiRecipesImage(req);
+        }
+        return createMethodNotAllowedResponse(['POST']);
+    }
 
     // Route: POST /ai/recipes/draft
     if (path === '/recipes/draft' || path === '/recipes/draft/') {

@@ -25,8 +25,34 @@ export const MAX_RECIPE_NAME_LENGTH = 150;
 /** Allowed image MIME types */
 export const ALLOWED_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 
-/** Required output format */
+/** Required output format for recipe draft */
 export const REQUIRED_OUTPUT_FORMAT = 'pycha_recipe_draft_v1' as const;
+
+/** Required output format for recipe image generation */
+export const REQUIRED_IMAGE_OUTPUT_FORMAT = 'pycha_recipe_image_v1' as const;
+
+/** Maximum description length for recipe image generation */
+export const MAX_RECIPE_DESCRIPTION_LENGTH = 500;
+
+/** Maximum category name length */
+export const MAX_CATEGORY_NAME_LENGTH = 50;
+
+/** Maximum tag name length */
+export const MAX_TAG_NAME_LENGTH = 50;
+
+/** Maximum number of ingredients/steps (protection against cost abuse) */
+export const MAX_RECIPE_CONTENT_ITEMS = 200;
+
+/** Maximum total payload size for recipe image request (characters) */
+export const MAX_IMAGE_REQUEST_PAYLOAD_SIZE = 40_000;
+
+/** Allowed output MIME types for recipe image (MVP supports webp, png fallback for DALL-E) */
+export const ALLOWED_IMAGE_OUTPUT_MIME_TYPES = ['image/webp', 'image/png'] as const;
+export type AllowedImageOutputMimeType = typeof ALLOWED_IMAGE_OUTPUT_MIME_TYPES[number];
+
+/** Fixed output dimensions for recipe image (MVP) */
+export const IMAGE_OUTPUT_WIDTH = 1024;
+export const IMAGE_OUTPUT_HEIGHT = 1024;
 
 // #endregion
 
@@ -175,6 +201,146 @@ export interface GenerateRecipeDraftParams {
  */
 export type LlmGenerationResult = 
     | { success: true; data: AiRecipeDraftResponseDto }
+    | { success: false; reasons: string[] };
+
+// #endregion
+
+// #region --- Recipe Image Generation Types ---
+
+/**
+ * Schema for recipe content item (ingredient or step).
+ */
+const RecipeContentItemSchema = z.object({
+    type: z.enum(['header', 'item']),
+    content: z.string().min(1, 'Content cannot be empty after trim').transform(s => s.trim()),
+});
+
+/**
+ * Schema for recipe data in image generation request.
+ */
+const AiRecipeImageRecipeSchema = z.object({
+    id: z.number().int().positive('Recipe ID must be a positive integer'),
+    name: z.string()
+        .min(1, 'Recipe name is required')
+        .max(MAX_RECIPE_NAME_LENGTH, `Recipe name cannot exceed ${MAX_RECIPE_NAME_LENGTH} characters`)
+        .transform(s => s.trim()),
+    description: z.string()
+        .max(MAX_RECIPE_DESCRIPTION_LENGTH, `Description cannot exceed ${MAX_RECIPE_DESCRIPTION_LENGTH} characters`)
+        .nullable()
+        .optional()
+        .transform(s => s?.trim() || null),
+    servings: z.number()
+        .int()
+        .min(1, 'Servings must be at least 1')
+        .max(99, 'Servings cannot exceed 99')
+        .nullable()
+        .optional(),
+    is_termorobot: z.boolean().optional().default(false),
+    category_name: z.string()
+        .min(1)
+        .max(MAX_CATEGORY_NAME_LENGTH, `Category name cannot exceed ${MAX_CATEGORY_NAME_LENGTH} characters`)
+        .nullable()
+        .optional()
+        .transform(s => s?.trim() || null),
+    ingredients: z.array(RecipeContentItemSchema)
+        .min(1, 'Recipe must have at least one ingredient')
+        .max(MAX_RECIPE_CONTENT_ITEMS, `Ingredients list cannot exceed ${MAX_RECIPE_CONTENT_ITEMS} items`),
+    steps: z.array(RecipeContentItemSchema)
+        .min(1, 'Recipe must have at least one step')
+        .max(MAX_RECIPE_CONTENT_ITEMS, `Steps list cannot exceed ${MAX_RECIPE_CONTENT_ITEMS} items`),
+    tags: z.array(z.string().transform(s => s.trim()))
+        .max(MAX_TAGS_COUNT, `Tags list cannot exceed ${MAX_TAGS_COUNT} items`)
+        .optional()
+        .default([]),
+});
+
+/**
+ * Schema for output configuration in image generation request.
+ */
+const AiRecipeImageOutputSchema = z.object({
+    mime_type: z.enum(ALLOWED_IMAGE_OUTPUT_MIME_TYPES, {
+        errorMap: () => ({ message: `Supported formats: ${ALLOWED_IMAGE_OUTPUT_MIME_TYPES.join(', ')}` }),
+    }),
+    width: z.literal(IMAGE_OUTPUT_WIDTH, {
+        errorMap: () => ({ message: `Width must be ${IMAGE_OUTPUT_WIDTH} in MVP` }),
+    }),
+    height: z.literal(IMAGE_OUTPUT_HEIGHT, {
+        errorMap: () => ({ message: `Height must be ${IMAGE_OUTPUT_HEIGHT} in MVP` }),
+    }),
+});
+
+/**
+ * Main request schema for POST /ai/recipes/image endpoint.
+ */
+export const AiRecipeImageRequestSchema = z.object({
+    recipe: AiRecipeImageRecipeSchema,
+    output: AiRecipeImageOutputSchema,
+    language: z.string().optional().default('pl'),
+    output_format: z.literal(REQUIRED_IMAGE_OUTPUT_FORMAT, {
+        errorMap: () => ({ message: `output_format must be "${REQUIRED_IMAGE_OUTPUT_FORMAT}"` }),
+    }),
+});
+
+/** Type for recipe image generation request body */
+export type AiRecipeImageRequest = z.infer<typeof AiRecipeImageRequestSchema>;
+
+/** Type for recipe data in image generation request */
+export type AiRecipeImageRecipeData = z.infer<typeof AiRecipeImageRecipeSchema>;
+
+/**
+ * Style contract metadata for generated image.
+ * Confirms adherence to agreed visual style guidelines.
+ */
+export interface AiRecipeImageStyleContract {
+    photorealistic: boolean;
+    rustic_table: boolean;
+    natural_light: boolean;
+    no_people: boolean;
+    no_text: boolean;
+    no_watermark: boolean;
+}
+
+/**
+ * Meta information for image generation response.
+ */
+export interface AiRecipeImageMeta {
+    style_contract: AiRecipeImageStyleContract;
+    warnings: string[];
+}
+
+/**
+ * Response DTO for successful image generation.
+ */
+export interface AiRecipeImageResponseDto {
+    image: {
+        mime_type: AllowedImageOutputMimeType;
+        data_base64: string;
+    };
+    meta: AiRecipeImageMeta;
+}
+
+/**
+ * Response DTO for 422 Unprocessable Entity (insufficient info for image).
+ */
+export interface AiRecipeImageUnprocessableEntityDto {
+    message: string;
+    reasons: string[];
+}
+
+/**
+ * Parameters for the generateRecipeImage service function.
+ */
+export interface GenerateRecipeImageParams {
+    userId: string;
+    recipe: AiRecipeImageRecipeData;
+    language: string;
+}
+
+/**
+ * Result from image generation - either success or validation failure.
+ */
+export type ImageGenerationResult =
+    | { success: true; data: AiRecipeImageResponseDto }
     | { success: false; reasons: string[] };
 
 // #endregion

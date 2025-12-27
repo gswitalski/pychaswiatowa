@@ -69,9 +69,18 @@ supabase secrets list
 
 ### Limity i koszty
 
+#### AI Recipe Draft (`/ai/recipes/draft`)
 - Endpoint używa modelu `gpt-4o-mini` (ekonomiczny, szybki)
 - Zalecany limit budżetu w OpenAI Dashboard
 - Implementacja zawiera timeout 30s i obsługę rate limiting (429)
+
+#### AI Recipe Image (`/ai/recipes/image`) - Premium Feature
+- Endpoint używa modelu `dall-e-3` do generacji obrazów
+- **UWAGA**: Generacja obrazów jest droższa niż generacja tekstu
+- Koszt: ~$0.04-0.08 za obraz (1024x1024, standard quality)
+- Implementacja zawiera timeout 60s i obsługę rate limiting (429)
+- Dostępne tylko dla użytkowników z `app_role: premium` lub `admin`
+- Zwraca obraz w formacie PNG (base64)
 
 ## Uwagi
 
