@@ -179,13 +179,14 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - W trakcie generowania widoczny jest loader, a akcje w modalu są zablokowane.
         - Po sukcesie użytkownik widzi podgląd oraz akcje: **„Zastosuj”** (ustawia jako główne zdjęcie) i **„Odrzuć”** (zamyka modal bez zmian).
         - Po „Zastosuj” zdjęcie zostaje ustawione w formularzu i traktowane jak standardowa zmiana zdjęcia (Snackbar z akcją **„Cofnij”** do czasu zapisu).
+        - Technicznie (MVP): generowanie korzysta z modelu **`gpt-image-1.5`** i zwraca podgląd jako **`image/webp` 1024×1024** z ustawieniami `background=auto`, `quality=auto`, `n=1`.
 
 **9a. Modal: Podgląd wygenerowanego zdjęcia (AI)**
 - **Ścieżka:** (modal/dialog) w kontekście `/recipes/:id/edit`
 - **Główny cel:** Pokazać rezultat generowania zdjęcia AI i wymusić świadomą decyzję użytkownika przed zastąpieniem zdjęcia.
 - **Kluczowe informacje do wyświetlenia:** Podgląd wygenerowanego zdjęcia, krótka notatka o stylu („Realistyczne, rustykalny stół, naturalne światło”), komunikaty błędów.
 - **Akcje:** „Zastosuj”, „Odrzuć”, (opcjonalnie) „Wygeneruj ponownie”.
-- **Względy UX:** Brak automatycznego nadpisania istniejącego zdjęcia; czytelne stany: `loading` / `success` / `error`.
+- **Względy UX:** Brak automatycznego nadpisania istniejącego zdjęcia; czytelne stany: `loading` / `success` / `error`. Akcja „Wygeneruj ponownie” oznacza ponowne wywołanie generowania (kolejna próba), nadal w trybie `n=1`.
 
 **10. Import Przepisu**
 - **Ścieżka:** `/recipes/import`

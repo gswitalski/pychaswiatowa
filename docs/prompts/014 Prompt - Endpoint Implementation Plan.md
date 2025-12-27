@@ -12,10 +12,11 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-- **Nowe**
+- **Zmienione**
     - **POST `/ai/recipes/image` (Supabase Edge Function)**:
-        - Generuje zdjęcie na podstawie bieżących danych formularza i zwraca podgląd jako `image/webp` w `data_base64`.
-        - Autoryzacja: wymagane JWT, a funkcja dostępna tylko dla `app_role = premium | admin` (dla `user` zwraca `403`).
+        - Zmieniono model generowania z `dall-e-3` na **`gpt-image-1.5`** (OpenAI Images API `POST /v1/images/generations`).
+        - Doprecyzowano parametry wyjścia (MVP): **`image/webp` 1024×1024**, `background=auto`, `quality=auto`, `n=1`, `stream=false`.
+        - **Kontrakt endpointu bez zmian**: nadal zwracany jest podgląd jako base64 (`image.data_base64`).
 
 
 </api_changes_description>

@@ -551,6 +551,16 @@ Public endpoints are available without authentication:
     - Intended for the recipe edit form (AI icon button next to the image field).
     - **Style contract (MVP)**: photorealistic, rustic wooden table, natural light, no people/hands, no text, no watermark.
     - Output format is fixed for MVP: `image/webp`, recommended `1024x1024`.
+    - **Image model (MVP)**: OpenAI Images API (`POST /v1/images/generations`) using model `gpt-image-1.5`.
+    - **OpenAI parameters (MVP)**:
+        - `model`: `gpt-image-1.5`
+        - `n`: `1`
+        - `size`: `1024x1024`
+        - `output_format`: `webp`
+        - `background`: `auto`
+        - `quality`: `auto`
+        - `stream`: `false`
+      The OpenAI response is base64 (`b64_json`) and is returned by this endpoint as `image.data_base64`.
 -   **Request Payload**:
     ```json
     {
