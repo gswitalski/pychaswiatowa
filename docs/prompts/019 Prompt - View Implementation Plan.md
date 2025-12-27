@@ -20,10 +20,10 @@ Najpierw przejrzyj następujące informacje:
 <views>
 
 - **Zmienione**
-    - **9. Formularz Przepisu (Dodaj/Edytuj)**: dodano przycisk z ikoną AI przy sekcji zdjęcia (widoczny/aktywny tylko dla roli `premium`/`admin`) oraz przepływ: generowanie → modal podglądu → „Zastosuj/Odrzuć” + Snackbar „Cofnij”.
-
-- **Nowe**
-    - **9a. Modal: Podgląd wygenerowanego zdjęcia (AI)**: modal/dialog prezentujący wynik generowania i wymuszający potwierdzenie przed zastąpieniem zdjęcia.
+    - **9. Formularz Przepisu (Dodaj/Edytuj)**:
+        - Doprecyzowano parametry techniczne generowania (model i format wyjściowy) bez zmian w przepływie UX.
+    - **9a. Modal: Podgląd wygenerowanego zdjęcia (AI)**:
+        - Doprecyzowano, że akcja „Wygeneruj ponownie” oznacza kolejną próbę (ponowne wywołanie generowania), nadal w trybie `n=1`.
 
 
 
@@ -35,14 +35,12 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-
-- **Nowe**
-    - **US-037: Generowanie zdjęcia przepisu (AI) w edycji – tylko premium**
-        - Dodano historyjkę opisującą przycisk AI przy polu zdjęcia, generowanie na podstawie aktualnego stanu formularza (także niezapisane zmiany), podgląd oraz świadome „Zastosuj/Odrzuć”.
-        - Dodano kontrakt stylu: realistyczne, rustykalny drewniany stół, naturalne światło, brak ludzi/rąk, brak tekstu, brak watermarków.
-
 - **Zmienione**
-    - **3.2. Zarządzanie przepisami (CRUD) – Aktualizacja (Update)**: dodano punkt o generowaniu zdjęcia AI jako funkcji dostępnej dla `premium` (lub `admin`).
+    - **3.2. Zarządzanie przepisami (CRUD) – Generowanie zdjęcia (AI, premium)**:
+        - Doprecyzowano parametry techniczne generowania: model **`gpt-image-1.5`**, format **`image/webp` 1024×1024**, `background=auto`, `quality=auto`, `n=1`.
+    - **US-037: Generowanie zdjęcia przepisu (AI) w edycji – tylko premium**
+        - Dodano kryterium techniczne: model **`gpt-image-1.5`** oraz parametry wyjścia (jak wyżej).
+
 
 
 </user_stories>

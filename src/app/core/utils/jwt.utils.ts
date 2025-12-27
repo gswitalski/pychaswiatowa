@@ -17,7 +17,7 @@ export interface JwtAppRoleExtractionResult {
 /**
  * Decodes the payload section of a JWT token (base64url encoded).
  * Does NOT verify signature - assumes token is already validated by Supabase.
- * 
+ *
  * @param token - JWT access token string
  * @returns Decoded payload object or null if decode fails
  */
@@ -25,18 +25,18 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
     try {
         // JWT format: header.payload.signature
         const parts = token.split('.');
-        
+
         if (parts.length !== 3) {
             console.warn('[JWT] Invalid JWT format: expected 3 parts');
             return null;
         }
 
         const payload = parts[1];
-        
+
         // Base64url decode: replace chars and add padding if needed
         const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
         const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
-        
+
         // Decode base64 to string, then parse JSON
         const jsonPayload = atob(padded);
         return JSON.parse(jsonPayload) as Record<string, unknown>;
@@ -49,13 +49,13 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
 /**
  * Extracts and validates app_role from JWT payload.
  * Applies safe fallback to 'user' if claim is missing or invalid.
- * 
+ *
  * @param token - JWT access token string
  * @returns Extraction result with app_role and fallback metadata
  */
 export function extractAppRoleFromJwt(token: string): JwtAppRoleExtractionResult {
     const payload = decodeJwtPayload(token);
-    
+
     // Fallback if decode failed
     if (!payload) {
         console.warn('[JWT] Cannot extract app_role: decode failed, using fallback "user"');
@@ -69,7 +69,7 @@ export function extractAppRoleFromJwt(token: string): JwtAppRoleExtractionResult
     // Supabase stores raw_app_meta_data as 'app_metadata' in JWT
     // app_role can be either directly in payload or nested in app_metadata
     let rawAppRole = payload['app_role'];
-    
+
     // If not found directly, check app_metadata (Supabase's raw_app_meta_data)
     if (!rawAppRole && payload['app_metadata']) {
         const appMetadata = payload['app_metadata'] as Record<string, unknown>;
@@ -89,7 +89,7 @@ export function extractAppRoleFromJwt(token: string): JwtAppRoleExtractionResult
 
     // Validate app_role value
     const validRoles: AppRole[] = ['user', 'premium', 'admin'];
-    
+
     if (typeof rawAppRole === 'string' && validRoles.includes(rawAppRole as AppRole)) {
         // Valid role found
         return {

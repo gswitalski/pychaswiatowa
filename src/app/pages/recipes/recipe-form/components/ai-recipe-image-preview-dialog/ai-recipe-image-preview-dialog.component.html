@@ -28,8 +28,8 @@
         <!-- Success state -->
         <div class="success-container">
             <div class="image-preview">
-                <img 
-                    [src]="imageDataUrl()" 
+                <img
+                    [src]="imageDataUrl()"
                     alt="Wygenerowane zdjęcie przepisu"
                     class="generated-image"
                 />
@@ -45,7 +45,7 @@
 <mat-dialog-actions align="end">
     @if (isError()) {
         <!-- Error state: only close button -->
-        <button 
+        <button
             mat-stroked-button
             type="button"
             (click)="onCancel()"
@@ -54,7 +54,7 @@
         </button>
     } @else {
         <!-- Loading/Success state: reject and apply buttons -->
-        <button 
+        <button
             mat-stroked-button
             type="button"
             [disabled]="actionsDisabled()"
@@ -62,7 +62,7 @@
         >
             Odrzuć
         </button>
-        <button 
+        <button
             mat-flat-button
             color="primary"
             type="button"
