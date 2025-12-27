@@ -12,6 +12,7 @@ The API exposes the following primary resources:
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
 -   **Collections**: Corresponds to the `collections` table. Represents user-created collections of recipes.
 -   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. This is provided by Supabase and consumed via the `supabase-js` client in the Angular app (no custom backend endpoints required for MVP).
+-   **AI Recipe Draft (Supabase Edge Function)**: Generates a structured "recipe draft" from either pasted text or a pasted image (OCR + LLM), to prefill the recipe form. The draft is returned to the client and is **not persisted** until the user explicitly saves the recipe via the standard `POST /recipes`.
 
 ## 2. Endpoints
 
@@ -469,6 +470,73 @@ Public endpoints are available without authentication:
     -   **Code**: `400 Bad Request` - If the text is empty or has an invalid format that prevents parsing.
     -   **Payload**: `{ "message": "Invalid recipe format. A title (#) is required." }`
     -   **Code**: `401 Unauthorized`
+
+---
+
+### AI
+
+#### `POST /ai/recipes/draft` (Supabase Edge Function)
+
+-   **Description**: Generate a structured recipe draft from either a raw text paste or a pasted image (OCR + LLM). This endpoint does **not** create a recipe record. The client uses the returned draft to prefill the `/recipes/new` form, where the user can review and edit before saving.
+-   **Auth**: Required (`Authorization: Bearer <JWT>`).
+-   **Notes**:
+    - The frontend MUST NOT call this endpoint when both text and image are empty. In that case it should open an empty recipe form (`/recipes/new`) directly.
+    - The endpoint enforces "single recipe" validation. If the input looks like multiple recipes or unrelated content, it returns a validation error and the UI stays on the input step.
+    - Category handling: the draft may include `category_name` which the client maps to the predefined categories list. If no match exists, the client should leave `category_id` empty and prompt the user to choose.
+    - Rate limiting SHOULD be enforced per user to control costs (implementation detail of the Edge Function).
+-   **Request Payload**:
+    ```json
+    {
+      "source": "text",
+      "text": "…pasted recipe text…",
+      "language": "pl",
+      "output_format": "pycha_recipe_draft_v1"
+    }
+    ```
+    or
+    ```json
+    {
+      "source": "image",
+      "image": {
+        "mime_type": "image/png",
+        "data_base64": "iVBORw0KGgoAAA..."
+      },
+      "language": "pl",
+      "output_format": "pycha_recipe_draft_v1"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "draft": {
+            "name": "Sernik klasyczny",
+            "description": "Kremowy sernik na spodzie z herbatników.",
+            "ingredients_raw": "# Składniki\n- twaróg\n- jajka\n- cukier",
+            "steps_raw": "# Kroki\n1. Wymieszaj składniki.\n2. Upiecz.",
+            "category_name": "Deser",
+            "tags": ["wypieki", "sernik"]
+          },
+          "meta": {
+            "confidence": 0.82,
+            "warnings": []
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (invalid payload, missing required fields for the chosen `source`)
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `413 Payload Too Large` (image too large)
+    -   **Code**: `422 Unprocessable Entity` (input is not a single recipe)
+        -   **Payload** (example):
+            ```json
+            {
+              "message": "Input does not describe a single recipe.",
+              "reasons": ["Missing steps", "Looks like multiple recipes"]
+            }
+            ```
+    -   **Code**: `429 Too Many Requests` (rate limit exceeded)
 
 ---
 

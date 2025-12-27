@@ -12,20 +12,29 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-chce udostepniac w przyszłosci niektóre funkcje systemu tylko użytkownikom o okeslonej roli.
-dlatego potrzebuje dla każdego użytkownka móc zapisac jego rol
 
-na początek be miał takie role:
-user - domyslna rola dla użytkownika zaraz po założeniu
-premium - użytkownik z dostepem do funkcji premium
-admin - użytkownik z dostepem do wszystkichh w tym funkcji administracyjnych
+aktualnie przycisk dodania nowego przepisu od razu przenosi użytkownika do formularza przepisu.
 
-jeden użytkownik może mieć tylko jedną rolę
+chcę aby ten proces skłądał się z następujących kroków
+1. użytkownik wciska przycisk "Dodaj przepis"
+2. pojawia się formularz w którym użytkoenik może wkeić dodolny tekst (text-area) lub obrazek
+3. użytkownik klika w przycisk "dalej"
+4. Sysyem wykorzystując LLM API OpenAI przekształca tekst lub obrazek  i wstępnie wypełnia fomularz przepisu danymi:
+ - tyuł
+ - opis,
+ - składniki
+ - kroki
+ - kategoria
+ - tagi
 
+ kategora i tagi ma być wniskowana na podstawie przepisu
 
-nie chce nadawać teraz roli z poziomu aplikacji - mogę to robić bezpośrednio w bazie danncyh.
+ jeśli użytkowenik nie wprowadzi na pierwszym ekranie nic - to pojakia si pustyty formulsz.
 
-teraz cchę tylko móc odczytać roleuzalogowanego uzytkownika aby przydzielic mu dostep do wybranych funkcjonalności.
+ jesli użytkownik wprowadzi dane , które nie są pojedynczym przpisem - system dajke komunikat o błędzie i pozostaje na pierwszym formularzu
+
+aby sparsować odpowiedz z LLM-a LLM musi wygenerować odpowiedź w ustalonym formacie. rozważ wykorzystanie do tego istenijącej funkcji importowania pliku z tekstu
+
 
 
 </nowa_funkcjonalnosc>

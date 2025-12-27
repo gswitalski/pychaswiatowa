@@ -112,7 +112,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 **7. Lista Przepisów (Moje przepisy)**
 - **Ścieżka:** `/my-recipies` (alias: `/my-recipes`)
 - **Główny cel:** Przeglądanie, wyszukiwanie i filtrowanie biblioteki przepisów użytkownika: jego własnych przepisów oraz publicznych przepisów innych autorów zapisanych w co najmniej jednej jego kolekcji.
-- **Header:** Tytuł "Twoje Przepisy", Przycisk "Dodaj Przepis" (Split Button: "Ręcznie" | "Import").
+- **Header:** Tytuł "Twoje Przepisy", przycisk "Dodaj przepis" (otwiera kreator: „Pusty formularz” | „Z tekstu/zdjęcia (AI)”) oraz akcja pomocnicza "Import" prowadząca do `/recipes/import`.
 - **Kluczowe informacje do wyświetlenia:** Siatka przepisów (zdjęcie, nazwa), pasek filtrów (Chips) pod nagłówkiem (np. "Moje" / "W moich kolekcjach", **"Termorobot"**), przycisk "Więcej" do doładowywania kolejnych wyników. Dla przepisów nie mojego autorstwa widoczny chip/etykieta "W moich kolekcjach". Dla przepisów oznaczonych "Termorobot" widoczny dodatkowy badge/chip "Termorobot" na karcie. Dla przepisów mojego autorstwa (`is_owner=true`) na karcie widoczna jest również ikonka widoczności odpowiadająca polu `visibility` z tooltipem (`Prywatny` / `Współdzielony` / `Publiczny`).
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-card`, `mat-chip-list`, `mat-button` ("Więcej"), komponent "stanu pustego" z akcją.
 - **Względy UX, dostępności i bezpieczeństwa:** Dynamiczne odświeżanie listy. Wskaźniki ładowania (Skeletons). Obsługa stanu pustego z wezwaniem do akcji "Utwórz pierwszy przepis". Przepisy innych autorów pojawiają się na tej liście wyłącznie, gdy są publiczne i znajdują się w kolekcjach użytkownika.
@@ -130,6 +130,32 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, **badge/chip "Termorobot" (jeśli ustawione)**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji. Dla zalogowanego nie-autora przyciski "Edytuj" i "Usuń" nie są wyświetlane (również gdy wejście nastąpiło z listy `/my-recipies`).
+
+**8a. Dodaj przepis (Kreator – wybór trybu)**
+- **Ścieżka:** `/recipes/new/start`
+- **Główny cel:** Umożliwienie użytkownikowi szybkiego wyboru sposobu dodania przepisu (pusty formularz vs. asysta AI).
+- **Header:** Tytuł "Dodaj przepis". Akcje: "Anuluj".
+- **Kluczowe informacje do wyświetlenia:** Dwie czytelne opcje (np. karty/przyciski):
+    - „Pusty formularz” (nawigacja do `/recipes/new`)
+    - „Z tekstu/zdjęcia (AI)” (nawigacja do `/recipes/new/assist`)
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-card` / `mat-button`, krótkie opisy opcji.
+- **Względy UX, dostępności i bezpieczeństwa:** Opcje mają jasne opisy („wstępnie uzupełnimy pola”, „zawsze możesz poprawić”), duże obszary klikalne i poprawną nawigację klawiaturą.
+
+**8b. Dodaj przepis (Kreator – AI z tekstu/zdjęcia)**
+- **Ścieżka:** `/recipes/new/assist`
+- **Główny cel:** Pozwolić użytkownikowi wkleić tekst lub obraz przepisu i przejść do wstępnie wypełnionego formularza.
+- **Header:** Tytuł "Dodaj przepis (AI)". Akcje: "Wróć", "Dalej".
+- **Kluczowe informacje do wyświetlenia:**
+    - Przełącznik źródła: „Tekst” / „Obraz” (tryb **albo-albo**).
+    - Dla „Tekst”: `textarea` do wklejenia treści.
+    - Dla „Obraz”: strefa wklejenia obrazu ze schowka (Ctrl+V) z podglądem i akcją „Usuń obraz”.
+    - Komunikaty błędów w miejscu + Snackbar.
+- **Zachowanie:**
+    - Jeśli wejście jest puste (brak tekstu i brak obrazu), kliknięcie „Dalej” przenosi do pustego formularza `/recipes/new`.
+    - Jeśli wejście jest niepuste, „Dalej” uruchamia przetwarzanie AI (loader, `disabled`), a po sukcesie przenosi do `/recipes/new` z wstępnie wypełnionymi polami (draft w stanie aplikacji).
+    - Jeśli AI zwróci błąd „to nie jest pojedynczy przepis”, widok zostaje na `/recipes/new/assist` i pokazuje czytelny komunikat + krótką podpowiedź.
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-button`, `mat-form-field` (textarea), dedykowany komponent do wklejania obrazu (clipboard paste) + podgląd.
+- **Względy UX, dostępności i bezpieczeństwa:** Jasne stany ładowania, brak auto-nawigacji przy błędach, komunikaty bez ujawniania danych technicznych. Wszelkie klucze i integracja z LLM wyłącznie po stronie backendu (Edge Function).
 
 **9. Formularz Przepisu (Dodaj/Edytuj)**
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
@@ -193,8 +219,10 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dodaniu i zorganizowaniu pierwszego przepisu:
 1.  **Rejestracja i potwierdzenie e-mail:** Użytkownik tworzy konto, po czym widzi ekran „Wysłaliśmy link aktywacyjny”. Następnie otwiera e-mail i klika link, a aplikacja potwierdza adres i pokazuje komunikat „Możesz się zalogować”.
 2.  **Logowanie:** Po potwierdzeniu e-mail użytkownik loguje się i trafia na **Dashboard**.
-3.  **Tworzenie przepisu:** Z Dashboardu lub widoku **Listy Przepisów** (który wyświetla stan pusty), użytkownik przechodzi do **Formularza Przepisu**.
-4.  **Wypełnianie danych:** Użytkownik dodaje wszystkie informacje o przepisie, w tym nazwę, składniki, kroki, kategorię i tagi.
+3.  **Tworzenie przepisu:** Z Dashboardu lub widoku **Listy Przepisów** (który wyświetla stan pusty), użytkownik klika „Dodaj przepis” i trafia do **Kreatora**. Następnie wybiera:
+    - **Pusty formularz** (przejście do formularza tworzenia),
+    - albo **Z tekstu/zdjęcia (AI)** (wklejenie danych i automatyczne wstępne wypełnienie formularza).
+4.  **Wypełnianie danych:** Użytkownik uzupełnia lub poprawia informacje o przepisie, w tym nazwę, składniki, kroki, kategorię i tagi.
 5.  **Zapis i przekierowanie:** Po zapisaniu, aplikacja przenosi go do widoku **Szczegółów Przepisu**, aby mógł zobaczyć efekt swojej pracy.
 6.  **Organizacja w kolekcji:** Na stronie szczegółów, za pomocą przycisku "Dodaj do kolekcji", użytkownik otwiera modal, w którym może stworzyć nową kolekcję (np. "Ulubione") i od razu przypisać do niej przepis.
 7.  **Weryfikacja:** Użytkownik może nawigować do widoku **Listy Kolekcji**, a następnie do **Szczegółów Kolekcji**, aby upewnić się, że jego przepis został poprawnie dodany.
