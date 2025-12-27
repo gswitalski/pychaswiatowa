@@ -66,7 +66,15 @@ export function extractAppRoleFromJwt(token: string): JwtAppRoleExtractionResult
         };
     }
 
-    const rawAppRole = payload['app_role'];
+    // Supabase stores raw_app_meta_data as 'app_metadata' in JWT
+    // app_role can be either directly in payload or nested in app_metadata
+    let rawAppRole = payload['app_role'];
+    
+    // If not found directly, check app_metadata (Supabase's raw_app_meta_data)
+    if (!rawAppRole && payload['app_metadata']) {
+        const appMetadata = payload['app_metadata'] as Record<string, unknown>;
+        rawAppRole = appMetadata['app_role'];
+    }
 
     // Fallback if claim is missing
     if (!rawAppRole) {

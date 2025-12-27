@@ -51,13 +51,31 @@
 
         <mat-card class="form-section">
             <mat-card-header>
-                <mat-card-title>Zdjęcie</mat-card-title>
+                <div class="form-section-header">
+                    <mat-card-title>Zdjęcie</mat-card-title>
+                    @if (isAiImageButtonVisible()) {
+                        <button
+                            mat-icon-button
+                            type="button"
+                            class="ai-image-button"
+                            [disabled]="isAiImageButtonDisabled()"
+                            [matTooltip]="recipeId() ? 'Wygeneruj zdjęcie za pomocą AI' : 'Zapisz przepis, aby wygenerować zdjęcie AI'"
+                            (click)="onGenerateAiImage()"
+                            aria-label="Wygeneruj zdjęcie za pomocą AI">
+                            @if (aiGenerating()) {
+                                <mat-spinner diameter="20"></mat-spinner>
+                            } @else {
+                                <mat-icon>auto_awesome</mat-icon>
+                            }
+                        </button>
+                    }
+                </div>
             </mat-card-header>
             <mat-card-content>
                 <pych-recipe-image-upload
                     [recipeId]="recipeId()"
                     [currentImageUrl]="currentImageUrl()"
-                    [disabled]="saving()"
+                    [disabled]="saving() || aiGenerating()"
                     (imageEvent)="onImageEvent($event)" />
             </mat-card-content>
         </mat-card>

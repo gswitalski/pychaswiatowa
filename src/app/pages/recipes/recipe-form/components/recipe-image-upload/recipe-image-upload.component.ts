@@ -467,4 +467,18 @@ export class RecipeImageUploadComponent implements OnInit {
     get isDragover(): boolean {
         return this.uiState() === 'dragover';
     }
+
+    /**
+     * Apply an external file (e.g., from AI image generation).
+     * Uses the same processing and upload flow as paste/drop.
+     * 
+     * @param file The file to apply (must pass validation)
+     */
+    public applyExternalFile(file: File): void {
+        if (this.disabled) {
+            return;
+        }
+
+        this.processFile(file);
+    }
 }

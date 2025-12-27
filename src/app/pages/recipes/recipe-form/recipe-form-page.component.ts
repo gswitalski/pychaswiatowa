@@ -5,6 +5,7 @@ import {
     inject,
     signal,
     computed,
+    ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -22,16 +23,31 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { RecipeBasicInfoFormComponent } from './components/recipe-basic-info-form/recipe-basic-info-form.component';
 import { RecipeImageUploadComponent, RecipeImageEvent } from './components/recipe-image-upload/recipe-image-upload.component';
 import { RecipeCategorizationFormComponent } from './components/recipe-categorization-form/recipe-categorization-form.component';
 import { EditableListComponent } from '../../../shared/components/editable-list/editable-list.component';
+import { 
+    AiRecipeImagePreviewDialogComponent, 
+    AiRecipeImageDialogData, 
+    AiRecipeImageDialogResult 
+} from './components/ai-recipe-image-preview-dialog/ai-recipe-image-preview-dialog.component';
 
 import { CategoriesService } from '../../../core/services/categories.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { RecipesService } from '../services/recipes.service';
 import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
+import { 
+    AiRecipeImageService, 
+    AiImageValidationError, 
+    AiImageRateLimitError, 
+    AiImagePremiumRequiredError 
+} from '../services/ai-recipe-image.service';
 import {
     RecipeDetailDto,
     CreateRecipeCommand,
@@ -39,6 +55,8 @@ import {
     RecipeVisibility,
     AiRecipeDraftDto,
     CategoryDto,
+    AiRecipeImageRequestDto,
+    AiRecipeImageContentItem,
 } from '../../../../../shared/contracts/types';
 
 export interface RecipeFormViewModel {
@@ -63,6 +81,7 @@ export interface RecipeFormViewModel {
         MatButtonModule,
         MatProgressSpinnerModule,
         MatIconModule,
+        MatTooltipModule,
         PageHeaderComponent,
         RecipeBasicInfoFormComponent,
         RecipeImageUploadComponent,
@@ -77,9 +96,17 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
+    private readonly dialog = inject(MatDialog);
+    private readonly snackBar = inject(MatSnackBar);
     private readonly categoriesService = inject(CategoriesService);
+    private readonly authService = inject(AuthService);
     private readonly recipesService = inject(RecipesService);
     private readonly draftStateService = inject(RecipeDraftStateService);
+    private readonly aiRecipeImageService = inject(AiRecipeImageService);
+
+    /** Reference to RecipeImageUploadComponent for applying AI-generated images */
+    @ViewChild(RecipeImageUploadComponent) 
+    private imageUploadComponent!: RecipeImageUploadComponent;
 
     /** Signal indicating edit mode vs create mode */
     readonly isEditMode = signal<boolean>(false);
@@ -101,6 +128,9 @@ export class RecipeFormPageComponent implements OnInit {
 
     /** Image uploading state (for blocking save button) */
     readonly imageUploading = signal<boolean>(false);
+
+    /** AI image generation in progress */
+    readonly aiGenerating = signal<boolean>(false);
 
     /** Error message */
     readonly error = signal<string | null>(null);
@@ -127,8 +157,25 @@ export class RecipeFormPageComponent implements OnInit {
         const formInvalid = !this.formValid();
         const saving = this.saving();
         const imageUploading = this.imageUploading();
+        const aiGenerating = this.aiGenerating();
 
-        return formInvalid || saving || imageUploading;
+        return formInvalid || saving || imageUploading || aiGenerating;
+    });
+
+    /** Computed: is AI image button visible (premium/admin only) */
+    readonly isAiImageButtonVisible = computed(() => {
+        const role = this.authService.appRole();
+        return role === 'premium' || role === 'admin';
+    });
+
+    /** Computed: is AI image button disabled */
+    readonly isAiImageButtonDisabled = computed(() => {
+        // Only available in edit mode
+        if (!this.recipeId()) {
+            return true;
+        }
+        // Disabled during saving, image uploading, or AI generation
+        return this.saving() || this.imageUploading() || this.aiGenerating();
     });
 
     /** Main form group */
@@ -539,6 +586,202 @@ export class RecipeFormPageComponent implements OnInit {
                 this.saving.set(false);
             },
         });
+    }
+
+    /**
+     * Handle AI image generation button click.
+     * Opens dialog and starts image generation.
+     */
+    async onGenerateAiImage(): Promise<void> {
+        // Precondition: must be in edit mode
+        if (!this.recipeId()) {
+            return;
+        }
+
+        // Validate minimum form data for AI generation
+        const validationError = this.validateFormForAiImage();
+        if (validationError) {
+            this.snackBar.open(validationError, undefined, { duration: 4000 });
+            return;
+        }
+
+        // Open dialog in loading state
+        const dialogData: AiRecipeImageDialogData = {
+            recipeName: this.form.controls.name.value,
+        };
+
+        const dialogRef = this.dialog.open(AiRecipeImagePreviewDialogComponent, {
+            data: dialogData,
+            disableClose: true,
+            width: '560px',
+            maxWidth: '95vw',
+        });
+
+        this.aiGenerating.set(true);
+
+        try {
+            // Build request from form data
+            const request = this.buildAiImageRequest();
+
+            // Call AI service
+            const response = await this.aiRecipeImageService.generateImage(request);
+
+            // Build data URL for preview
+            const dataUrl = `data:${response.image.mime_type};base64,${response.image.data_base64}`;
+
+            // Update dialog with success
+            dialogRef.componentInstance.setSuccess(dataUrl);
+
+            // Wait for dialog result
+            const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
+
+            if (result?.action === 'applied') {
+                // Convert base64 to File and apply
+                this.applyAiGeneratedImage(response.image.data_base64, response.image.mime_type);
+            }
+        } catch (error) {
+            // Handle specific error types
+            const { message, reasons } = this.mapAiImageError(error);
+            dialogRef.componentInstance.setError(message, reasons);
+
+            // Wait for dialog to close
+            await dialogRef.afterClosed().toPromise();
+        } finally {
+            this.aiGenerating.set(false);
+        }
+    }
+
+    /**
+     * Validate form has minimum data required for AI image generation.
+     * Returns error message if invalid, null if valid.
+     */
+    private validateFormForAiImage(): string | null {
+        const formValue = this.form.getRawValue();
+
+        if (!formValue.name || formValue.name.trim().length === 0) {
+            return 'Uzupełnij nazwę przepisu przed wygenerowaniem zdjęcia.';
+        }
+
+        if (!formValue.ingredients || formValue.ingredients.length === 0) {
+            return 'Dodaj przynajmniej jeden składnik przed wygenerowaniem zdjęcia.';
+        }
+
+        if (!formValue.steps || formValue.steps.length === 0) {
+            return 'Dodaj przynajmniej jeden krok przed wygenerowaniem zdjęcia.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Build AI image request DTO from current form values.
+     */
+    private buildAiImageRequest(): AiRecipeImageRequestDto {
+        const formValue = this.form.getRawValue();
+        const recipeId = this.recipeId()!;
+
+        // Map category ID to category name
+        let categoryName: string | null = null;
+        if (formValue.categoryId) {
+            const category = this.categories()?.find(c => c.id === formValue.categoryId);
+            categoryName = category?.name ?? null;
+        }
+
+        // Map ingredients to content items
+        const ingredients: AiRecipeImageContentItem[] = formValue.ingredients.map(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('#')) {
+                return { type: 'header' as const, content: trimmed.replace(/^#+\s*/, '') };
+            }
+            return { type: 'item' as const, content: trimmed };
+        });
+
+        // Map steps to content items
+        const steps: AiRecipeImageContentItem[] = formValue.steps.map(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('#')) {
+                return { type: 'header' as const, content: trimmed.replace(/^#+\s*/, '') };
+            }
+            return { type: 'item' as const, content: trimmed };
+        });
+
+        return {
+            recipe: {
+                id: recipeId,
+                name: formValue.name,
+                description: formValue.description || null,
+                servings: formValue.servings ?? null,
+                is_termorobot: formValue.isTermorobot,
+                category_name: categoryName,
+                ingredients,
+                steps,
+                tags: formValue.tags,
+            },
+            output: {
+                mime_type: 'image/png',
+                width: 1024,
+                height: 1024,
+            },
+            output_format: 'pycha_recipe_image_v1',
+        };
+    }
+
+    /**
+     * Convert base64 image to File and apply to image upload component.
+     */
+    private applyAiGeneratedImage(base64Data: string, mimeType: string): void {
+        // Decode base64 to binary
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // Create Blob and File
+        const blob = new Blob([bytes], { type: mimeType });
+        const extension = mimeType === 'image/png' ? 'png' : 'webp';
+        const file = new File([blob], `ai-recipe-image.${extension}`, { type: mimeType });
+
+        // Apply to image upload component
+        this.imageUploadComponent.applyExternalFile(file);
+    }
+
+    /**
+     * Map AI image generation error to user-friendly message.
+     */
+    private mapAiImageError(error: unknown): { message: string; reasons: string[] } {
+        if (error instanceof AiImageValidationError) {
+            return {
+                message: error.message,
+                reasons: error.reasons,
+            };
+        }
+
+        if (error instanceof AiImageRateLimitError) {
+            return {
+                message: error.message,
+                reasons: [],
+            };
+        }
+
+        if (error instanceof AiImagePremiumRequiredError) {
+            return {
+                message: error.message,
+                reasons: [],
+            };
+        }
+
+        if (error instanceof Error) {
+            return {
+                message: error.message,
+                reasons: [],
+            };
+        }
+
+        return {
+            message: 'Nie udało się wygenerować zdjęcia. Spróbuj ponownie.',
+            reasons: [],
+        };
     }
 
     onCancel(): void {
