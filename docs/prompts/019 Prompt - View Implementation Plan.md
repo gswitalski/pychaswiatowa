@@ -19,23 +19,14 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-- **/register (ZMIENIONE)**
-    - **Co się zmieniło:** formularz rejestracji zawiera teraz: nazwa użytkownika, e-mail, hasło, potwierdzenie hasła. Po sukcesie przekierowuje do `/register/verify-sent` (zamiast auto-logowania).
 
-- **/register/verify-sent (NOWE)**
-    - Widok z potwierdzeniem wysyłki linku i akcjami: „Wyślij ponownie” (cooldown 60s) oraz „Zmień e-mail”.
+- **Nowe: Widok „Brak dostępu (403)”**
+    - **Ścieżka:** `/forbidden` (techniczny widok pomocniczy)
+    - **Cel:** czytelny komunikat o braku uprawnień (przyszłościowo: premium/admin), bez ujawniania szczegółów zasobów/reguł.
 
-- **/auth/callback (NOWE, techniczny)**
-    - Trasa callback do obsługi kliknięcia w link z e-maila (wymiana kodu/ustalenie wyniku) i przekierowanie na sukces/błąd.
-
-- **/email-confirmed (NOWE)**
-    - Komunikat „Adres e-mail potwierdzony. Możesz się zalogować.” + CTA do `/login`.
-
-- **/email-confirmation-invalid (NOWE)**
-    - Komunikat „Link nieważny lub wygasł” + akcja „Wyślij nowy link”.
-
-- **/login (ZMIENIONE)**
-    - **Co się zmieniło:** w przypadku niepotwierdzonego e-maila widok pokazuje błąd + akcję „Wyślij link ponownie”.
+- **Zmiana (przekrojowa, bez nowego flow produktowego):** przygotowanie UI do odczytu roli
+    - Rola aplikacyjna jest odczytywana z JWT (claim `app_role`) i może być później użyta przez guardy / warstwę UI do gated features.
+    - Na tym etapie nie wprowadzamy reguł „ukryj/disabled/tooltip” – będzie to realizowane przy wdrażaniu konkretnych funkcji premium/admin.
 
 
 </views>
@@ -45,18 +36,6 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-
-- **US-001 – Rejestracja nowego użytkownika (ZMIENIONE)**
-    - **Co się zmieniło:** usunięto auto-logowanie po rejestracji. Po rejestracji system wysyła e-mail weryfikacyjny i pokazuje ekran „Wysłaliśmy link aktywacyjny…”. Logowanie jest możliwe dopiero po potwierdzeniu e-maila.
-
-- **US-002 – Logowanie i wylogowywanie użytkownika (ZMIENIONE)**
-    - **Co się zmieniło:** jeśli e-mail nie jest potwierdzony, logowanie jest blokowane, a użytkownik widzi komunikat + akcję ponownej wysyłki linku.
-
-- **US-033 – Ponowna wysyłka linku weryfikacyjnego e-mail (NOWE)**
-    - Ekran „Wysłaliśmy link aktywacyjny…” udostępnia akcję „Wyślij ponownie” z cooldown 60s i limitami antynadużyciowymi.
-
-- **US-034 – Obsługa nieważnego lub wygasłego linku weryfikacyjnego (NOWE)**
-    - Dla nieważnego/wygasłego linku użytkownik widzi czytelny komunikat i może poprosić o nowy link.
 
 
 </user_stories>

@@ -1,7 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { AuthResponse, AuthError } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
-import { SignUpRequestDto } from '../../../../shared/contracts/types';
+import { SignUpRequestDto, AppRole } from '../../../../shared/contracts/types';
+import { extractAppRoleFromJwt } from '../utils/jwt.utils';
 
 /** Cooldown w sekundach dla ponownego wysłania linku weryfikacyjnego */
 export const RESEND_COOLDOWN_SECONDS = 60;
@@ -11,11 +12,32 @@ export interface ResendVerificationResult {
     error?: string;
 }
 
+/**
+ * ViewModel for auth session state
+ */
+export interface AuthSessionViewModel {
+    isAuthenticated: boolean;
+    userId: string | null;
+    appRole: AppRole;
+}
+
 @Injectable({
     providedIn: 'root',
 })
 export class AuthService {
     private readonly supabase = inject(SupabaseService);
+
+    /** Signal indicating if user is authenticated */
+    readonly isAuthenticated = signal<boolean>(false);
+
+    /** Signal with current user's ID (null if not authenticated) */
+    readonly userId = signal<string | null>(null);
+
+    /** Signal with current user's app role */
+    readonly appRole = signal<AppRole>('user');
+
+    /** Flag to prevent multiple initializations */
+    private initialized = false;
 
     async signUp(
         credentials: SignUpRequestDto,
@@ -118,6 +140,57 @@ export class AuthService {
                 success: false,
                 error: 'Nie udało się zweryfikować linku.',
             };
+        }
+    }
+
+    /**
+     * Initialize auth state by reading current session and subscribing to auth changes.
+     * Should be called once at app startup (via APP_INITIALIZER).
+     */
+    async initAuthState(): Promise<void> {
+        if (this.initialized) {
+            console.warn('[AuthService] initAuthState called multiple times, ignoring');
+            return;
+        }
+
+        this.initialized = true;
+
+        // Read initial session
+        const { data: { session } } = await this.supabase.auth.getSession();
+        this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
+
+        // Subscribe to auth state changes (login, logout, token refresh)
+        this.supabase.auth.onAuthStateChange((_event, session) => {
+            this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
+        });
+    }
+
+    /**
+     * Update auth signals based on session state.
+     * Extracts app_role from JWT access token.
+     */
+    private updateAuthState(accessToken: string | null, userId: string | null): void {
+        if (!accessToken || !userId) {
+            // User is not authenticated
+            this.isAuthenticated.set(false);
+            this.userId.set(null);
+            this.appRole.set('user'); // Safe fallback
+            return;
+        }
+
+        // User is authenticated - extract role from JWT
+        const roleResult = extractAppRoleFromJwt(accessToken);
+
+        this.isAuthenticated.set(true);
+        this.userId.set(userId);
+        this.appRole.set(roleResult.appRole);
+
+        // Log diagnostics if fallback was used
+        if (roleResult.isFallback) {
+            console.warn(
+                `[AuthService] app_role fallback applied: ${roleResult.reason}`,
+                { rawAppRole: roleResult.rawAppRole, fallbackRole: roleResult.appRole }
+            );
         }
     }
 

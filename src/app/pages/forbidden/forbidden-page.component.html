@@ -1,0 +1,53 @@
+<div class="forbidden-page">
+    <pych-page-header 
+        [title]="'Brak dostępu'" 
+        [subtitle]="'Nie masz uprawnień do wyświetlenia tej strony.'" 
+    />
+
+    <div class="forbidden-page__content">
+        <pych-empty-state 
+            [icon]="'lock'" 
+            [title]="'Brak dostępu'"
+            [description]="'Jeśli uważasz, że to błąd — spróbuj ponownie lub skontaktuj się z administratorem.'"
+        >
+            <div class="forbidden-page__actions">
+                <button 
+                    mat-stroked-button 
+                    (click)="onBackClick()"
+                    class="forbidden-page__action-button"
+                >
+                    Wróć
+                </button>
+
+                <button 
+                    mat-stroked-button 
+                    (click)="onExploreClick()"
+                    class="forbidden-page__action-button"
+                >
+                    Przejdź do Odkrywaj
+                </button>
+
+                @if (isAuthenticated()) {
+                    <button 
+                        mat-raised-button 
+                        color="primary"
+                        (click)="onDashboardClick()"
+                        class="forbidden-page__action-button"
+                    >
+                        Przejdź do Moja Pycha
+                    </button>
+                } @else {
+                    <button 
+                        mat-raised-button 
+                        color="primary"
+                        (click)="onLoginClick()"
+                        class="forbidden-page__action-button"
+                    >
+                        Zaloguj się
+                    </button>
+                }
+            </div>
+        </pych-empty-state>
+    </div>
+</div>
+

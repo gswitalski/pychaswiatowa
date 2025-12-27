@@ -125,6 +125,14 @@ export const routes: Routes = [
                         (m) => m.EmailConfirmationInvalidPageComponent
                     ),
             },
+            // Technical error page - no guard required
+            {
+                path: 'forbidden',
+                loadComponent: () =>
+                    import('./pages/forbidden/forbidden-page.component').then(
+                        (m) => m.ForbiddenPageComponent
+                    ),
+            },
         ],
     },
     // Grupa tras dla gości - publiczne widoki w PublicLayout
@@ -212,6 +220,14 @@ export const routes: Routes = [
                 loadComponent: () =>
                     import('./pages/auth/email-confirmation-invalid/email-confirmation-invalid-page.component').then(
                         (m) => m.EmailConfirmationInvalidPageComponent
+                    ),
+            },
+            // Technical error page - no guard required
+            {
+                path: 'forbidden',
+                loadComponent: () =>
+                    import('./pages/forbidden/forbidden-page.component').then(
+                        (m) => m.ForbiddenPageComponent
                     ),
             },
         ],
