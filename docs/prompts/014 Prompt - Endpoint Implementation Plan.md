@@ -12,12 +12,11 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-- **Zmiana: JWT zawiera rolę aplikacyjną**
-    - JWT (access token) powinien zawierać custom claim `app_role` o wartościach: `user | premium | admin`.
-    - Domyślne ustawienie roli `user` odbywa się po stronie serwera/bazy (klient nie wysyła roli w signup).
 
-- **Zmiana: `GET /me` zwraca rolę aplikacyjną**
-    - Rozszerzono payload o pole `app_role`, aby App Shell mógł (opcjonalnie) bootstrapować rolę także z API, jeśli jest to wygodne diagnostycznie lub pod przyszłe scenariusze.
+- **Nowe**
+    - **Resource**: „AI Recipe Draft (Supabase Edge Function)” — draft do prefillu formularza, bez persystencji.
+    - **Endpoint**: **`POST /ai/recipes/draft`** (Supabase Edge Function) — generuje draft przepisu z tekstu albo obrazu (OCR + LLM), zwraca JSON z polami do prefillu (`name`, `description`, `ingredients_raw`, `steps_raw`, `category_name`, `tags`) oraz obsługuje błąd walidacji „to nie jest pojedynczy przepis” (`422`).
+
 
 </api_changes_description>
 
