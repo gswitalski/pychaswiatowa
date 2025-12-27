@@ -2,21 +2,17 @@
 
 > **Plik docelowy**: `docs/results/impl-plans/endpoints/ai-recipes-image-api-implementation-plan.md`  
 > **Warstwa**: Supabase Edge Function (TypeScript / Deno)  
-> **Routing Supabase**: `/functions/v1/ai` + routing wewnętrzny do `/recipes/image`
+> **Routing Supabase**: `/functions/v1/ai` + routing wewnętrzny do `/recipes/image`  
+> **Zmiana w tym planie**: migracja generowania obrazu z `dall-e-3` na **`gpt-image-1.5`** (OpenAI Images API `POST /v1/images/generations`) + doprecyzowanie parametrów wyjścia MVP
 
 ## 1. Przegląd punktu końcowego
 
-Endpoint `POST /ai/recipes/image` generuje **podgląd zdjęcia potrawy** (AI image preview) na podstawie **aktualnego stanu formularza przepisu** (w tym niesave’owanych zmian).
+Endpoint `POST /ai/recipes/image` generuje **podgląd zdjęcia potrawy** na podstawie **aktualnego stanu formularza przepisu** (w tym niezapisanych zmian).
 
-**Co zwraca**:
-- obraz jako base64 w polu `image.data_base64`
-- format obrazu w MVP: `image/webp` (rekomendowane `1024x1024`)
-- metadane `meta.style_contract` potwierdzające „kontrakt stylu” (fotorealistyczny, rustykalny stół, naturalne światło, brak ludzi/tekstu/wodnych znaków)
-
-**Krytyczne założenia biznesowe**:
-- Endpoint **nie zapisuje** nic do DB ani Storage. To jest tylko „preview”.
-- Użytkownik „aplikuje” obraz dopiero przez istniejący endpoint uploadu (np. `POST /recipes/{id}/image`).
-- Endpoint jest **chroniony JWT** oraz **zabroniony dla `app_role=user`** (premium-gating).
+- **Co zwraca**: obraz jako base64 w polu `image.data_base64` (MVP: `image/webp`, `1024x1024`) oraz `meta.style_contract` potwierdzające kontrakt stylu.
+- **Czego nie robi**: nie zapisuje nic do DB ani Supabase Storage — to jest wyłącznie „preview”.
+- **Jak obraz jest „aplikowany”**: dopiero po akceptacji użytkownika, przez istniejący endpoint uploadu (np. `POST /recipes/{id}/image`).
+- **Ograniczenia dostępu**: wymaga JWT + premium gating (`app_role` w JWT: tylko `premium` lub `admin`).
 
 ## 2. Szczegóły żądania
 
@@ -30,14 +26,12 @@ Endpoint `POST /ai/recipes/image` generuje **podgląd zdjęcia potrawy** (AI ima
 
 ### Parametry
 
-- Wymagane:
-    - brak query params i path params (poza routingiem wewnętrznym `/recipes/image`)
-- Opcjonalne:
-    - brak
+- Wymagane: brak (poza routingiem wewnętrznym `/recipes/image`)
+- Opcjonalne: brak
 
 ### Request Body
 
-Wymagane (wg API plan):
+Wymagane (wg `docs/results/main-project-docs/009 API plan.md`):
 
 ```json
 {
@@ -53,7 +47,7 @@ Wymagane (wg API plan):
       { "type": "item", "content": "twaróg" }
     ],
     "steps": [
-      { "type": "item", "content": "Wymieszać składniki." }
+      { "type": "item", "content": "Wymieszaj składniki." }
     ],
     "tags": ["wypieki", "sernik"]
   },
@@ -67,51 +61,52 @@ Wymagane (wg API plan):
 }
 ```
 
-### Walidacja wejścia (Zod) – zasady
+### Walidacja wejścia (Zod) – zasady (MVP)
 
-Walidacja ma być wykonana w handlerze (Zod), a logika generacji w serwisie:
+Walidacja jest wykonywana w handlerze (Zod), logika generacji w serwisie:
 
-- `output_format` musi być dokładnie `"pycha_recipe_image_v1"` (w przeciwnym razie `400`).
-- `recipe.id`: liczba dodatnia (integer).
-- `recipe.name`: 1–150 znaków po `trim()`.
-- `recipe.description`: `string | null` (z limitem długości, np. 0–500; jeśli > limit → `400`).
-- `recipe.servings`: `number | null` (1–99) lub null.
-- `recipe.is_termorobot`: boolean (opcjonalny, domyślnie `false`).
-- `recipe.category_name`: `string | null` (opcjonalnie; limit np. 1–50).
+- `output_format`: literal `"pycha_recipe_image_v1"` (inaczej `400`).
+- `recipe.id`: `int > 0`.
+- `recipe.name`: `trim()`, 1–150 znaków.
+- `recipe.description`: `string | null`, `trim()`, max 500 znaków.
+- `recipe.servings`: `int 1–99 | null`.
+- `recipe.is_termorobot`: `boolean` (opcjonalne, domyślnie `false`).
+- `recipe.category_name`: `string | null`, `trim()`, max 50 znaków.
 - `recipe.ingredients` i `recipe.steps`:
-    - muszą być tablicami
-    - minimum 1 element każda
-    - każdy element ma `type: 'header' | 'item'` oraz `content: string` (niepusty po `trim()`)
-    - limit ilości elementów (np. max 200 per lista) – ochrona kosztów
-- `recipe.tags`: tablica stringów (trim), deduplikacja case-insensitive, limit (np. max 20).
-- `output`:
-    - `mime_type` tylko `"image/webp"` (MVP)
-    - `width` i `height` tylko `1024` (MVP)
-    - jeśli klient wyśle inne wartości: `400` (lub ignorować i wymuszać MVP; decyzja musi być spójna i udokumentowana w kodzie)
-- „Limit rozmiaru payloadu” (ochrona kosztów): ograniczyć łączną długość zserializowanych pól wejściowych (np. 20–40k znaków po zbudowaniu promptu) – przekroczenie: `400`.
+    - tablice, min 1 element, max 200 elementów,
+    - każdy element: `type: 'header' | 'item'` oraz `content: string` (po `trim()`, niepusty).
+- `recipe.tags`: tablica stringów, `trim()`, max 20 (zalecane: deduplikacja case-insensitive w serwisie/pomocniku).
+- `output` (MVP):
+    - `mime_type`: **tylko** `"image/webp"`,
+    - `width`: literal `1024`,
+    - `height`: literal `1024`.
+- Limit rozmiaru payloadu (ochrona kosztów/DoS): max 40k znaków dla surowego JSON body (`400` lub `413` zależnie od konwencji w odpowiedziach).
 
 ## 3. Wykorzystywane typy
 
-### Frontend/Shared kontrakty (spójność FE/BE)
+### Kontrakty FE/Shared
 
-W `shared/contracts/types.ts` istnieją już typy dla AI draft. Dla image endpointu zalecane jest dodanie (lub potwierdzenie istniejących) kontraktów:
+W `shared/contracts/types.ts` istnieją już typy zgodne z API planem:
 
-- `AiRecipeImageRequestDto` (request)
-- `AiRecipeImageResponseDto` (response)
-- `AiRecipeImageUnprocessableEntityDto` (opcjonalnie; jeśli utrzymujemy 422 ze stałym payloadem)
+- `AiRecipeImageRequestDto`
+- `AiRecipeImageResponseDto`
+- `AiRecipeImageUnprocessableEntityDto`
 
-Zgodność z API planem:
+Kluczowe stałe kontraktu:
+
 - `output_format: 'pycha_recipe_image_v1'`
 - `output.mime_type: 'image/webp'`
+- `output.width/height: 1024`
 
-### Backend (typy lokalne w funkcji)
+### Backend (Edge Function)
 
-W `supabase/functions/ai/ai.types.ts` dodać:
-- Zod schema dla requestu `AiRecipeImageRequestSchema`
-- Zod schema dla response `AiRecipeImageResponseSchema` (opcjonalnie; pomocne do sanity-check)
-- typy serwisu, np.:
-    - `GenerateRecipeImageParams`
-    - `GenerateRecipeImageResult` (success/failure z powodami dla 422)
+W `supabase/functions/ai/ai.types.ts` powinny być utrzymywane:
+
+- `AiRecipeImageRequestSchema` (Zod) i typ `AiRecipeImageRequest`
+- `AiRecipeImageResponseDto`, `AiRecipeImageUnprocessableEntityDto`
+- `GenerateRecipeImageParams` oraz wynik `ImageGenerationResult`
+
+W ramach tej zmiany należy **zaktualizować stałe/komentarze** tak, by odpowiadały nowemu modelowi i wyjściu MVP (webp-only), jeżeli obecnie dopuszczają np. `image/png`.
 
 ## 4. Szczegóły odpowiedzi
 
@@ -137,158 +132,132 @@ W `supabase/functions/ai/ai.types.ts` dodać:
 }
 ```
 
-### Błędy (wg API plan)
+### Błędy
 
 - `400 Bad Request`
     - invalid JSON
-    - walidacja Zod (brak/typy pól, zły `output_format`, złe `output.*`)
-    - zbyt duży payload wejściowy (koszt/DoS)
+    - walidacja Zod (braki pól, złe typy, zły `output_format`, nieobsługiwane `output.*`)
+    - przekroczenie limitów rozmiaru wejścia / limitów list (ochrona kosztów)
 - `401 Unauthorized`
-    - brak/nieprawidłowy JWT (Supabase Auth)
+    - brak/nieprawidłowy JWT
 - `403 Forbidden`
     - `app_role=user` (premium gating)
     - payload: `{ "message": "Premium feature. Upgrade required." }`
+- `404 Not Found`
+    - przepis `recipe.id` nie istnieje, jest soft-deleted (`deleted_at != null`) albo nie należy do użytkownika (weryfikacja przez RLS)
 - `422 Unprocessable Entity`
-    - „insufficient information” do wygenerowania sensownego zdjęcia jednego dania (np. zbyt ogólny opis, brak składników/kroków, sprzeczne dane)
-    - payload: `{ "message": "...", "reasons": ["..."] }` (zalecane, analogicznie do draft)
-- `429 Too Many Requests` (zalecane – kontrola kosztów)
+    - niewystarczające informacje do wygenerowania sensownego zdjęcia jednego dania
+    - payload: `{ "message": "...", "reasons": ["..."] }`
+- `429 Too Many Requests`
     - rate limit per user
 - `500 Internal Server Error`
-    - błąd providera obrazów / timeout / błąd konwersji do webp / nieoczekiwany błąd
+    - błąd providera / timeout / błąd przetworzenia odpowiedzi
 
 ## 5. Przepływ danych
 
 ### Struktura funkcji (zgodna z zasadami projektu)
 
-Funkcja już istnieje jako `supabase/functions/ai/`:
+Aktualna struktura (już istnieje):
 
 ```
 supabase/functions/ai/
-    index.ts
-    ai.handlers.ts
-    ai.service.ts
-    ai.types.ts
+    index.ts          # routing + top-level error handling
+    ai.handlers.ts    # walidacja requestu + autoryzacja + format odpowiedzi
+    ai.service.ts     # logika biznesowa i integracje z AI providerami
+    ai.types.ts       # schematy Zod + typy DTO
 ```
-
-Zalecenie utrzymania czytelności przy dodaniu nowego endpointu:
-- **Opcja A (szybka)**: dopisać nowy handler + serwis w tych samych plikach (`ai.handlers.ts`, `ai.service.ts`).
-- **Opcja B (rekomendowana)**: rozbić na dodatkowe moduły w tym samym katalogu, np.:
-    - `ai-image.handlers.ts` (walidacja i formatowanie odpowiedzi)
-    - `ai-image.service.ts` (generacja obrazu)
-    - router w `ai.handlers.ts` deleguje do nowych plików.
 
 ### Happy path (krok po kroku)
 
-1. `index.ts` przyjmuje request i deleguje do `aiRouter(req)`.
-2. Router rozpoznaje ścieżkę `POST /recipes/image` i wywołuje `handlePostAiRecipesImage(req)`.
+1. `index.ts` przyjmuje request i deleguje do `aiRouter(req)` oraz dodaje CORS.
+2. Router rozpoznaje `POST /recipes/image` i wywołuje `handlePostAiRecipesImage(req)`.
 3. Handler:
-    - `getAuthenticatedContext(req)` → weryfikuje JWT (`401` gdy brak/invalid).
-    - wyciąga token z `Authorization` i odczytuje `app_role` przez `_shared/auth.ts`:
-        - `extractAndValidateAppRole(...)`
-        - jeśli `app_role === 'user'` → zwraca `403` z payloadem premium.
-4. (Zalecane) Ownership-check `recipe.id`:
-    - `select id from recipes where id = :id and deleted_at is null` przez klienta z JWT
-    - jeśli brak rekordu (RLS lub nieistniejący) → traktować jako `404` (lub `400`; decyzja musi być spójna).
-5. Handler parsuje `await req.json()`:
-    - jeśli błąd parsowania → `400`.
-6. Handler waliduje request Zod:
-    - jeśli błąd walidacji → `400`.
-7. Handler woła serwis `generateRecipeImage({...})`.
-8. Serwis:
-    - buduje prompt „opis zdjęcia” na podstawie `recipe` + kontraktu stylu
-    - wykonuje wywołanie do providera generacji obrazów (OpenAI lub inny) z timeoutem
-    - wymusza brak tekstu, brak ludzi, brak watermark
-    - zapewnia wynik w `image/webp`:
-        - preferowane: provider zwraca webp base64
-        - jeśli provider zwraca PNG/JPEG: serwis konwertuje do webp (np. biblioteka Deno/WASM) albo zwraca `500` z jasnym logiem (MVP decyzja)
-9. Handler zwraca `200` z `{ image, meta }`.
+    - weryfikuje JWT przez `_shared/auth.ts` (`401`),
+    - wyciąga `app_role` z JWT i blokuje `user` (`403`),
+    - parsuje body + limit rozmiaru (`400`/`413`),
+    - waliduje body Zod (`400`),
+    - weryfikuje własność i istnienie przepisu przez Supabase client z tokenem użytkownika (`select id from recipes where id = :id and deleted_at is null`) → `404` jeśli brak.
+4. Handler wywołuje serwis `generateRecipeImage({ userId, recipe, language })`.
+5. Serwis:
+    - weryfikuje, czy dane przepisu są „wystarczające” do obrazka (w przeciwnym razie zwraca `success:false` → handler mapuje na `422`),
+    - buduje prompt zgodny z kontraktem stylu,
+    - wywołuje OpenAI Images API `POST /v1/images/generations` z modelem `gpt-image-1.5` i parametrami MVP:
+        - `model`: `gpt-image-1.5`
+        - `n`: `1`
+        - `size`: `1024x1024`
+        - `output_format`: `webp`
+        - `background`: `auto`
+        - `quality`: `auto`
+        - `stream`: `false`
+    - odbiera `b64_json` i zwraca `image.data_base64` + `meta.style_contract` + `warnings`.
+6. Handler zwraca `200`.
 
 ## 6. Względy bezpieczeństwa
 
-- **Uwierzytelnienie**: wymagane; używać `getAuthenticatedContext(req)` (bez service role).
-- **Autoryzacja premium**:
-    - `app_role` musi być `premium | admin`
-    - weryfikacja claimu w JWT (po stronie Edge Function) + ewentualnie dodatkowe zabezpieczenia po stronie DB w przyszłości
+- **Uwierzytelnienie**: wymagane; używać kontekstu użytkownika (bez service role) — minimalizuje ryzyko obejścia RLS.
+- **Premium gating**: `app_role` z JWT musi być `premium | admin`; `user` → `403`.
 - **Ochrona kosztów i nadużyć**:
-    - rate limiting per user (`429`)
-    - limity długości pól i liczby elementów `ingredients/steps`
-    - timeouty na providerze
-- **Bezpieczne logowanie**:
-    - nie logować pełnych treści `ingredients/steps` ani całego promptu
-    - logować tylko metadane: `userId`, `recipeId`, `inputSizes`, `durationMs`, `statusCode`, `provider`
-- **Sekrety**:
-    - klucze providerów tylko z `Deno.env`, nigdy w response
-- **Treści wrażliwe**:
-    - wejście to dane użytkownika; endpoint nie powinien odsyłać żadnych danych z DB poza ewentualnym „istnieje/nie istnieje”
+    - rate limiting per user (`429`),
+    - limity: rozmiar body, liczba elementów w `ingredients/steps`, liczba tagów,
+    - timeouty dla requestów do OpenAI,
+    - brak logowania promptu oraz pełnych list składników/kroków (logować tylko metadane).
+- **Sekrety**: `OPENAI_API_KEY` tylko z `Deno.env`, nigdy w odpowiedzi.
 
 ## 7. Obsługa błędów
 
 ### Mapowanie kodów HTTP
 
-- `400`: walidacja requestu / nieprawidłowy `output_format` / nieobsługiwane `output.*`
+- `400`: walidacja requestu / invalid JSON / nieobsługiwane parametry output w MVP
 - `401`: brak/invalid JWT
-- `403`: `app_role=user` (premium gating) – payload zgodny z API planem
-- `404` (opcjonalnie, jeśli robimy ownership-check): `recipe.id` nie należy do usera lub jest usunięty (soft delete)
-- `422`: zbyt mało informacji / nie da się wygenerować „jednego dania” w sposób sensowny
+- `403`: brak uprawnień premium (`app_role=user`)
+- `404`: recipe not found / soft-deleted / brak dostępu (RLS)
+- `422`: niewystarczające dane do „jednego dania”
 - `429`: rate limit
-- `500`: błąd providera / konwersji / timeout / błąd nieoczekiwany
+- `500`: błąd integracji OpenAI / timeout / nieoczekiwany błąd
 
 ### Rejestrowanie błędów w tabeli błędów (jeśli dotyczy)
 
-W aktualnym schemacie DB (wg `docs/results/main-project-docs/008 DB Plan.md`) nie ma tabeli do logów AI. W MVP:
+W `docs/results/main-project-docs/008 DB Plan.md` nie ma tabeli do logów AI, więc w MVP:
+
 - logować przez `logger` (Edge Function logs)
 
-Jeśli chcemy kontrolować koszty i stabilność:
-- dodać tabelę np. `ai_request_logs` (lub `ai_image_generation_logs`) z RLS i minimalnym zestawem pól (bez promptu i bez base64).
+Opcjonalnie (poza MVP), jeśli potrzebujecie audytu kosztów i limitów:
+
+- dodać tabelę np. `ai_image_generation_logs` (bez promptu i bez base64; tylko metadane: `user_id`, `recipe_id`, `created_at`, `status`, `duration_ms`, `provider`, `error_code`).
 
 ## 8. Wydajność
 
-- **Stały rozmiar outputu** (MVP): `1024x1024 webp` – stabilny koszt.
-- **Minimalizacja promptu**:
-    - zamiast wysyłać pełne listy, można budować „skondensowany opis” (np. top N składników + 3–7 kluczowych kroków), żeby zmniejszyć tokeny.
-- **Timeouty**:
-    - wywołanie do providera obrazów powinno mieć timeout (np. 30–60s zależnie od SLA)
-- **Rate limiting**:
-    - per user (np. 5 obrazów / 10 min; premium może mieć wyższy limit)
+- **Stały rozmiar outputu (MVP)**: `1024x1024 webp` → stabilne koszty i przewidywalny transfer.
+- **Minimalizacja promptu**: budować „skondensowany opis” (np. top N składników), zamiast wklejać pełne listy.
+- **Timeouty**: sensowny timeout (np. 60s) z mapowaniem na `500` + log.
+- **Rate limiting**: per user (np. X obrazów / Y minut; osobne progi dla `premium` i `admin`).
 
 ## 9. Kroki implementacji
 
-1. **Routing**:
-    - w `supabase/functions/ai/ai.handlers.ts` dodać route:
-        - `POST /ai/recipes/image` → `handlePostAiRecipesImage`
-2. **Typy i walidacja**:
-    - w `supabase/functions/ai/ai.types.ts` dodać `AiRecipeImageRequestSchema` (+ stałe: dozwolone wymiary/mime)
-3. **Premium gating**:
-    - w handlerze:
-        - odczytać `Authorization`
-        - wyciągnąć `app_role` (`_shared/auth.ts`)
-        - dla `user` zwrócić `403` z payloadem premium
-4. **Ownership-check (zalecane)**:
-    - prosty `select` po `recipes.id` (RLS zapewni własność)
-    - `deleted_at IS NULL` (soft delete)
-5. **Serwis generacji obrazu**:
-    - dodać `generateRecipeImage(...)` (w `ai.service.ts` albo w osobnym pliku)
-    - implementacja:
-        - budowa promptu zgodnego z kontraktem stylu
-        - call do providera obrazów
-        - zwrot base64 webp + `meta.style_contract` + `warnings`
-6. **Obsługa 422**:
-    - zdefiniować kryteria „insufficient information” i mapować do `422` (z `reasons`)
-7. **Rate limiting (zalecane)**:
-    - dodać mechanizm limitów per user (DB lub KV)
-    - mapować do `429` (z `Retry-After` jeśli możliwe)
-8. **Dokumentacja i konfiguracja**:
-    - dopisać wymagane ENV (`OPENAI_API_KEY` + ewentualne modele/endpointy) do `ENV_SETUP.md`
-9. **Testowanie lokalne**:
+1. **Zaktualizować integrację OpenAI w `supabase/functions/ai/ai.service.ts`**:
+    - zastąpić `dall-e-3` → `gpt-image-1.5`,
+    - w request body ustawić parametry MVP: `output_format: 'webp'`, `background: 'auto'`, `quality: 'auto'`, `n:1`, `size:'1024x1024'`, `stream:false`,
+    - utrzymać odpowiedź jako `b64_json` i mapować na `image.data_base64`.
+2. **Doprecyzować kontrakt outputu w `supabase/functions/ai/ai.types.ts`**:
+    - w MVP wymusić `output.mime_type = 'image/webp'` (jeśli obecnie dopuszcza `png`, zdecydować: usunąć z `ALLOWED_IMAGE_OUTPUT_MIME_TYPES` lub jasno opisać, że `png` to tylko przyszły fallback).
+3. **Upewnić się, że handler utrzymuje wymagania bezpieczeństwa** (`supabase/functions/ai/ai.handlers.ts`):
+    - JWT (`401`), premium gating (`403`), limit payloadu (`400`/`413`), ownership-check + `deleted_at is null` (`404`).
+4. **Obsłużyć scenariusze 422**:
+    - kryteria „insufficient information” w serwisie, mapowanie do `422` z `reasons` w handlerze.
+5. **Rate limiting**:
+    - potwierdzić/ustawić limity (per user) oraz mapowanie do `429` (opcjonalnie z `Retry-After`).
+6. **Konfiguracja środowiska**:
+    - upewnić się, że `OPENAI_API_KEY` jest opisany w `ENV_SETUP.md` / dokumentacji wdrożeniowej.
+7. **Testowanie lokalne**:
     - `supabase functions serve ai`
     - `POST http://localhost:54331/functions/v1/ai/recipes/image`
     - przypadki:
-        - premium/admin (200)
-        - user (403)
-        - brak Authorization (401)
-        - zły `output_format` (400)
-        - brak wymaganych pól (400)
-        - „za mało informacji” (422)
-        - rate limit (429)
+        - premium/admin → `200`
+        - user → `403`
+        - brak Authorization → `401`
+        - zły `output_format` / zły `output.*` → `400`
+        - recipe nie istnieje / soft-deleted / brak dostępu → `404`
+        - insufficient info → `422`
+        - rate limit → `429`
 
 
