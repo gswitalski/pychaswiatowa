@@ -6,7 +6,8 @@
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import { handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
-import { getMeProfile, ProfileDto } from './me.service.ts';
+import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
+import { getMeProfile, type MeDto } from './me.service.ts';
 
 /**
  * Creates a successful JSON response with the given data.
@@ -20,22 +21,45 @@ function createSuccessResponse<T>(data: T, status = 200): Response {
 
 /**
  * Handles GET /me request.
- * Returns the authenticated user's minimal profile data (id and username).
+ * Returns the authenticated user's minimal profile data (id, username, app_role).
  *
  * @param req - The incoming HTTP request
- * @returns Response with ProfileDto on success, or error response
+ * @returns Response with MeDto on success, or error response
  */
 export async function handleGetMe(req: Request): Promise<Response> {
     try {
         logger.info('Handling GET /me request');
 
+        // Extract and validate the JWT token
+        const token = extractAuthToken(req);
+
+        // Extract and validate app_role from JWT
+        const jwtPayload = extractAndValidateAppRole(token);
+
         // Get authenticated context (client + user)
+        // This also verifies the JWT signature via Supabase
         const { client, user } = await getAuthenticatedContext(req);
 
-        // Fetch profile from service layer
-        const profile: ProfileDto = await getMeProfile(client, user.id);
+        // Verify that the user ID from JWT matches the authenticated user
+        if (user.id !== jwtPayload.sub) {
+            logger.warn('User ID mismatch between JWT and authenticated user', {
+                jwtSub: jwtPayload.sub,
+                authenticatedUserId: user.id,
+            });
+            throw new Error('User ID mismatch');
+        }
 
-        logger.info('GET /me completed successfully', { userId: user.id });
+        // Fetch profile from service layer
+        const profile: MeDto = await getMeProfile(
+            client,
+            user.id,
+            jwtPayload.app_role
+        );
+
+        logger.info('GET /me completed successfully', {
+            userId: user.id,
+            appRole: jwtPayload.app_role,
+        });
 
         return createSuccessResponse(profile);
     } catch (error) {

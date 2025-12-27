@@ -7,14 +7,16 @@
 import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
+import { type AppRole } from '../_shared/auth.ts';
 
 /**
- * Profile DTO type for API responses.
- * Matches the ProfileDto defined in shared/contracts/types.ts
+ * Me DTO type for API responses.
+ * Matches the MeDto defined in shared/contracts/types.ts
  */
-export interface ProfileDto {
+export interface MeDto {
     id: string;
     username: string;
+    app_role: AppRole;
 }
 
 /** Columns to select for minimal profile queries. */
@@ -27,15 +29,17 @@ const PROFILE_SELECT_COLUMNS = 'id, username';
  *
  * @param client - The authenticated Supabase client
  * @param userId - The user's unique identifier (from JWT)
- * @returns The user's minimal profile data as ProfileDto
+ * @param appRole - The user's application role (from JWT custom claim)
+ * @returns The user's minimal profile data as MeDto
  * @throws ApplicationError with NOT_FOUND code if profile doesn't exist
  * @throws ApplicationError with INTERNAL_ERROR code for database errors
  */
 export async function getMeProfile(
     client: TypedSupabaseClient,
-    userId: string
-): Promise<ProfileDto> {
-    logger.info('Fetching minimal profile for /me', { userId });
+    userId: string,
+    appRole: AppRole
+): Promise<MeDto> {
+    logger.info('Fetching minimal profile for /me', { userId, appRole });
 
     const { data, error } = await client
         .from('profiles')
@@ -71,10 +75,12 @@ export async function getMeProfile(
     logger.info('Profile fetched successfully for /me', {
         userId,
         username: data.username,
+        appRole,
     });
 
     return {
         id: data.id,
         username: data.username ?? '',
+        app_role: appRole,
     };
 }

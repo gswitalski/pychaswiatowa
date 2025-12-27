@@ -12,13 +12,12 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-- **Zmienione**: **`GET /public/recipes`**
-    - Dodano do elementów listy pola: `visibility` oraz `is_owner` (true/false; wymaga uwierzytelnienia, inaczej `false`).
-    - Doprecyzowano zachowanie: dla gościa zwracane są wyłącznie przepisy `PUBLIC`, ale dla zalogowanego endpoint może zwrócić także jego własne przepisy o `visibility != PUBLIC` (np. `PRIVATE`, `SHARED`) — wyłącznie gdy `is_owner=true`.
+- **Zmiana: JWT zawiera rolę aplikacyjną**
+    - JWT (access token) powinien zawierać custom claim `app_role` o wartościach: `user | premium | admin`.
+    - Domyślne ustawienie roli `user` odbywa się po stronie serwera/bazy (klient nie wysyła roli w signup).
 
-- **Zmienione**: **`GET /public/recipes/feed`**
-    - Dodano do elementów listy pola: `visibility` oraz `is_owner` (true/false; wymaga uwierzytelnienia, inaczej `false`).
-    - Doprecyzowano zachowanie: dla gościa zwracane są wyłącznie przepisy `PUBLIC`, ale dla zalogowanego endpoint może zwrócić także jego własne przepisy o `visibility != PUBLIC` (np. `PRIVATE`, `SHARED`) — wyłącznie gdy `is_owner=true`.
+- **Zmiana: `GET /me` zwraca rolę aplikacyjną**
+    - Rozszerzono payload o pole `app_role`, aby App Shell mógł (opcjonalnie) bootstrapować rolę także z API, jeśli jest to wygodne diagnostycznie lub pod przyszłe scenariusze.
 
 </api_changes_description>
 

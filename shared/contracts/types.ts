@@ -347,6 +347,22 @@ export interface GlobalSearchResponseDto {
     collections: SearchCollectionDto[];
 }
 
+/**
+ * Application role enum for RBAC.
+ * Defines access levels for users across the application.
+ */
+export type AppRole = 'user' | 'premium' | 'admin';
+
+/**
+ * DTO for /me endpoint response.
+ * Contains minimal user identity data for App Shell bootstrap.
+ */
+export interface MeDto {
+    id: string;
+    username: string;
+    app_role: AppRole;
+}
+
 // #endregion
 
 // #region --- Auth ---
