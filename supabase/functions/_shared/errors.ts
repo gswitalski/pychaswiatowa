@@ -9,6 +9,9 @@ export type ErrorCode =
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'CONFLICT'
+    | 'PAYLOAD_TOO_LARGE'
+    | 'UNPROCESSABLE_ENTITY'
+    | 'TOO_MANY_REQUESTS'
     | 'INTERNAL_ERROR';
 
 /**
@@ -36,6 +39,9 @@ export class ApplicationError extends Error {
             UNAUTHORIZED: 401,
             FORBIDDEN: 403,
             CONFLICT: 409,
+            PAYLOAD_TOO_LARGE: 413,
+            UNPROCESSABLE_ENTITY: 422,
+            TOO_MANY_REQUESTS: 429,
             INTERNAL_ERROR: 500,
         };
         return statusMap[code];

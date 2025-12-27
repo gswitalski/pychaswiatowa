@@ -415,3 +415,89 @@ export interface ApiError {
 }
 
 // #endregion
+
+// #region --- AI Recipe Draft ---
+
+/**
+ * Source type for AI recipe draft generation.
+ */
+export type AiRecipeDraftSource = 'text' | 'image';
+
+/**
+ * Allowed MIME types for image source.
+ */
+export type AiRecipeDraftImageMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
+
+/**
+ * DTO for image data in AI recipe draft request.
+ */
+export interface AiRecipeDraftImageDto {
+    mime_type: AiRecipeDraftImageMimeType;
+    data_base64: string;
+}
+
+/**
+ * Request DTO for AI recipe draft generation endpoint.
+ * Supports two variants: text source or image source.
+ */
+export type AiRecipeDraftRequestDto =
+    | {
+          source: 'text';
+          text: string;
+          output_format: 'pycha_recipe_draft_v1';
+          language?: string;
+      }
+    | {
+          source: 'image';
+          image: AiRecipeDraftImageDto;
+          output_format: 'pycha_recipe_draft_v1';
+          language?: string;
+      };
+
+/**
+ * DTO for generated recipe draft.
+ * Contains structured data ready for pre-filling the recipe creation form.
+ */
+export interface AiRecipeDraftDto {
+    /** Recipe name (max 150 characters) */
+    name: string;
+    /** Optional recipe description */
+    description: string | null;
+    /** Raw ingredients text (newline-separated, # for headers) */
+    ingredients_raw: string;
+    /** Raw steps text (newline-separated, # for headers) */
+    steps_raw: string;
+    /** Suggested category name (if recognized) */
+    category_name: string | null;
+    /** Suggested tags (deduplicated, max 20) */
+    tags: string[];
+}
+
+/**
+ * Meta information about AI draft generation.
+ */
+export interface AiRecipeDraftMetaDto {
+    /** Confidence score (0-1) of the extraction */
+    confidence: number;
+    /** Warnings about potential issues with the extraction */
+    warnings: string[];
+}
+
+/**
+ * Response DTO for successful AI recipe draft generation.
+ */
+export interface AiRecipeDraftResponseDto {
+    draft: AiRecipeDraftDto;
+    meta: AiRecipeDraftMetaDto;
+}
+
+/**
+ * Response DTO for 422 Unprocessable Entity errors.
+ * Returned when the input does not describe a valid single recipe.
+ */
+export interface AiRecipeDraftUnprocessableEntityDto {
+    message: string;
+    reasons: string[];
+}
+
+// #endregion
