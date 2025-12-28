@@ -11,17 +11,31 @@ Zapoznaj się z dokumentamu projektu
 
 
 <aktualne_zachowanie>
-endpoint GET
-http://127.0.0.1:54331/functions/v1/public/recipes/feed?limit=12&sort=created_at.desc
+na produkcji endpoint 
 
-zwraca tylko publiczce przepisy
+https://fxgonghylivohevdrdnt.supabase.co/functions/v1/ai/recipes/draft
+
+zwraca  CORS ERROR
+
+
+payload
+{
+  "source": "text",
+  "text": "Ogórki konserwowe z curry siostry Anastazji – przepis na smakowite przetwory\nLiczba porcji: ok. 3-4 słoiki po 500 ml.\n\nCzas przygotowania: 30-40 minut (łącznie z pasteryzacją).\n\nStopień trudności: łatwy.\n\nSkładniki:\n\n1 kg ogórków gruntowych,\n\n2-3 łodygi zielonego selera (pokrojone na kawałki po 3–4 cm),\n\n1-1,5 łyżeczki ziaren gorczycy (ok. 5–7 g),\n\n1 średnia cebula (ok. 100 g).\n\nZalewa:\n\n750 ml wody,\n\n125 ml octu 10 procent,\n\n250 g cukru,\n\n7 g soli (ok. 1/2 łyżki stołowej),\n\n2 łyżeczki przyprawy curry (ok. 4–5 g).\n\nLepsze niż kiszone? Ogórki po watykańsku to hit wśród przetworów\nLepsze niż kiszone? Ogórki po watykańsku to hit wśród przetworów\nJak zrobić ogórki konserwowe siostry Anastazji?\nSposób przygotowania:\n\nNa początku ogórki dokładnie umyj, opcjonalnie obierz. Większe ogórki przekrój wzdłuż na 2 lub 4 części.\n\nNa dno wyparzonych słoików (najlepiej 500 ml) włóż po kawałku łodygi selera, kilku ziarnach gorczycy, 1-2 plasterki cebuli.\n\nNapełnij słoiki ogórkami ciasno, ale nie zgniataj ich.\n\nPrzygotuj zalewę: zagotuj wodę, ocet, cukier, sól i curry, mieszaj do całkowitego rozpuszczenia składników.\n\nGorącą zalewą oblej ogórki w słoikach.\n\nSzczelnie zakręć i pasteryzuj przez ok. 3 minuty od momentu zagotowania wody.\n\nGotowe ogórki konserwowe z curry przechowuj w chłodnym, ciemnym miejscu. Najlepsze są po kilku tygodniach macerowania, gdy przejdą smakiem.",
+  "output_format": "pycha_recipe_draft_v1",
+  "language": "pl"
+}
+
+
+
+
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-zwraca publiczce przepisy oraz moje (zalogowanego użytkownika) bez zwzgledu na vidzialność przepisu
+endpoint zwraca draft przepisu obrobiony przez ai (open ai api)
 
 </oczekiwane_zachowanie>
 

@@ -84,6 +84,7 @@ export class AiRecipeDraftService {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${session.access_token}`,
+                    apikey: environment.supabase.anonKey,
                 },
                 body: JSON.stringify(request),
             });
