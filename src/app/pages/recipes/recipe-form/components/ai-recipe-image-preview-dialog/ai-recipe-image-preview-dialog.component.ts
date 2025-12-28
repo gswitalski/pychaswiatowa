@@ -22,7 +22,7 @@ export interface AiRecipeImageDialogData {
  * Result returned when dialog closes.
  */
 export interface AiRecipeImageDialogResult {
-    action: 'applied' | 'rejected' | 'cancelled';
+    action: 'applied' | 'rejected' | 'cancelled' | 'regenerate';
 }
 
 /**
@@ -106,6 +106,16 @@ export class AiRecipeImagePreviewDialogComponent {
     }
 
     /**
+     * Reset dialog to loading state for regeneration.
+     */
+    setLoading(): void {
+        this.imageDataUrl.set(null);
+        this.errorMessage.set(null);
+        this.errorReasons.set([]);
+        this.state.set('loading');
+    }
+
+    /**
      * Handle "Odrzuć" (Reject) button click.
      */
     onReject(): void {
@@ -126,6 +136,15 @@ export class AiRecipeImagePreviewDialogComponent {
      */
     onCancel(): void {
         const result: AiRecipeImageDialogResult = { action: 'cancelled' };
+        this.dialogRef.close(result);
+    }
+
+    /**
+     * Handle "Wygeneruj ponownie" (Regenerate) button click.
+     * Closes dialog with regenerate action, parent will handle re-calling the API.
+     */
+    onRegenerate(): void {
+        const result: AiRecipeImageDialogResult = { action: 'regenerate' };
         this.dialogRef.close(result);
     }
 }

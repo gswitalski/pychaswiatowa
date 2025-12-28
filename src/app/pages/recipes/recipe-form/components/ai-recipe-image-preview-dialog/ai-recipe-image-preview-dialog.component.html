@@ -43,17 +43,8 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    @if (isError()) {
-        <!-- Error state: only close button -->
-        <button
-            mat-stroked-button
-            type="button"
-            (click)="onCancel()"
-        >
-            Zamknij
-        </button>
-    } @else {
-        <!-- Loading/Success state: reject and apply buttons -->
+    @if (isLoading()) {
+        <!-- Loading state: only reject button -->
         <button
             mat-stroked-button
             type="button"
@@ -61,6 +52,40 @@
             (click)="onReject()"
         >
             Odrzuć
+        </button>
+    } @else if (isError()) {
+        <!-- Error state: regenerate and close buttons -->
+        <button
+            mat-stroked-button
+            type="button"
+            (click)="onRegenerate()"
+        >
+            Wygeneruj ponownie
+        </button>
+        <button
+            mat-stroked-button
+            type="button"
+            (click)="onCancel()"
+        >
+            Zamknij
+        </button>
+    } @else if (isSuccess()) {
+        <!-- Success state: reject, regenerate and apply buttons -->
+        <button
+            mat-stroked-button
+            type="button"
+            [disabled]="actionsDisabled()"
+            (click)="onReject()"
+        >
+            Odrzuć
+        </button>
+        <button
+            mat-stroked-button
+            type="button"
+            [disabled]="actionsDisabled()"
+            (click)="onRegenerate()"
+        >
+            Wygeneruj ponownie
         </button>
         <button
             mat-flat-button

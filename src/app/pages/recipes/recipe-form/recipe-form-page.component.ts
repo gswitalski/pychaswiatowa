@@ -591,6 +591,7 @@ export class RecipeFormPageComponent implements OnInit {
     /**
      * Handle AI image generation button click.
      * Opens dialog and starts image generation.
+     * Supports regeneration loop - user can request new image without closing dialog.
      */
     async onGenerateAiImage(): Promise<void> {
         // Precondition: must be in edit mode
@@ -605,53 +606,70 @@ export class RecipeFormPageComponent implements OnInit {
             return;
         }
 
-        // Open dialog in loading state
-        const dialogData: AiRecipeImageDialogData = {
-            recipeName: this.form.controls.name.value,
-        };
-
-        const dialogRef = this.dialog.open(AiRecipeImagePreviewDialogComponent, {
-            data: dialogData,
+        // Dialog configuration
+        const dialogConfig = {
+            data: { recipeName: this.form.controls.name.value } as AiRecipeImageDialogData,
             disableClose: true,
             width: '560px',
             maxWidth: '95vw',
-        });
+        };
 
-        this.aiGenerating.set(true);
+        // Start generation loop - supports regeneration requests
+        let shouldRegenerate = true;
 
-        try {
-            // Build request from form data
-            const request = this.buildAiImageRequest();
+        while (shouldRegenerate) {
+            shouldRegenerate = false;
 
-            // Call AI service
-            const response = await this.aiRecipeImageService.generateImage(request);
+            // Open dialog in loading state
+            const dialogRef = this.dialog.open(AiRecipeImagePreviewDialogComponent, dialogConfig);
+            this.aiGenerating.set(true);
 
-            // Build data URL for preview
-            const dataUrl = `data:${response.image.mime_type};base64,${response.image.data_base64}`;
+            try {
+                // Build request from current form data (may have changed since last generation)
+                const request = this.buildAiImageRequest();
 
-            // Update dialog with success
-            dialogRef.componentInstance.setSuccess(dataUrl);
+                // Call AI service
+                const response = await this.aiRecipeImageService.generateImage(request);
 
-        // Generowanie zakończone – odblokuj upload, aby można było zastosować obraz
-        this.aiGenerating.set(false);
+                // Build data URL for preview
+                const dataUrl = `data:${response.image.mime_type};base64,${response.image.data_base64}`;
 
-            // Wait for dialog result
-            const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
+                // Update dialog with success
+                dialogRef.componentInstance.setSuccess(dataUrl);
 
-            if (result?.action === 'applied') {
-                // Convert base64 to File and apply
-                this.applyAiGeneratedImage(response.image.data_base64, response.image.mime_type);
+                // Generation complete - unblock upload to allow applying image
+                this.aiGenerating.set(false);
+
+                // Wait for dialog result
+                const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
+
+                if (result?.action === 'applied') {
+                    // Convert base64 to File and apply
+                    this.applyAiGeneratedImage(response.image.data_base64, response.image.mime_type);
+                } else if (result?.action === 'regenerate') {
+                    // User requested regeneration - loop will reopen dialog
+                    shouldRegenerate = true;
+                }
+            } catch (error) {
+                // Handle specific error types
+                const { message, reasons } = this.mapAiImageError(error);
+                dialogRef.componentInstance.setError(message, reasons);
+
+                // Generation failed - unblock UI
+                this.aiGenerating.set(false);
+
+                // Wait for dialog result
+                const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
+
+                if (result?.action === 'regenerate') {
+                    // User requested regeneration after error - loop will reopen dialog
+                    shouldRegenerate = true;
+                }
             }
-        } catch (error) {
-            // Handle specific error types
-            const { message, reasons } = this.mapAiImageError(error);
-            dialogRef.componentInstance.setError(message, reasons);
-
-            // Wait for dialog to close
-            await dialogRef.afterClosed().toPromise();
-        } finally {
-            this.aiGenerating.set(false);
         }
+
+        // Ensure aiGenerating is false when exiting
+        this.aiGenerating.set(false);
     }
 
     /**
@@ -721,10 +739,11 @@ export class RecipeFormPageComponent implements OnInit {
                 tags: formValue.tags,
             },
             output: {
-                mime_type: 'image/png',
+                mime_type: 'image/webp',
                 width: 1024,
                 height: 1024,
             },
+            language: 'pl',
             output_format: 'pycha_recipe_image_v1',
         };
     }
@@ -740,9 +759,24 @@ export class RecipeFormPageComponent implements OnInit {
             bytes[i] = binaryString.charCodeAt(i);
         }
 
+        // Determine file extension based on MIME type
+        let extension: string;
+        switch (mimeType) {
+            case 'image/webp':
+                extension = 'webp';
+                break;
+            case 'image/png':
+                extension = 'png';
+                break;
+            case 'image/jpeg':
+                extension = 'jpg';
+                break;
+            default:
+                extension = 'webp';
+        }
+
         // Create Blob and File
         const blob = new Blob([bytes], { type: mimeType });
-        const extension = mimeType === 'image/png' ? 'png' : 'webp';
         const file = new File([blob], `ai-recipe-image.${extension}`, { type: mimeType });
 
         // Apply to image upload component

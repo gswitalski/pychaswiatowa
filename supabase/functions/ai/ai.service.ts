@@ -549,7 +549,7 @@ export async function generateRecipeDraft(
 const IMAGES_API_URL = "https://api.openai.com/v1/images/generations";
 
 /** Image generation model to use (gpt-image-1 for webp output support) */
-const IMAGE_MODEL = "gpt-image-1";
+const IMAGE_MODEL = "gpt-image-1.5";
 
 /** Timeout for Image API calls in milliseconds */
 const IMAGE_API_TIMEOUT_MS = 60_000;
