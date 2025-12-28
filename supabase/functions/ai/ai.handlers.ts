@@ -9,6 +9,7 @@ import { getAuthenticatedContext, getSupabaseClientWithAuth } from '../_shared/s
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 import { generateRecipeDraft, generateRecipeImage } from './ai.service.ts';
 import {
     AiRecipeDraftRequestSchema,
@@ -25,16 +26,21 @@ import {
 
 /**
  * Creates a successful JSON response with the given data.
+ * Includes CORS headers for cross-origin requests.
  */
 function createSuccessResponse<T>(data: T, status = 200): Response {
     return new Response(JSON.stringify(data), {
         status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+        },
     });
 }
 
 /**
  * Creates a validation error response (400 Bad Request).
+ * Includes CORS headers for cross-origin requests.
  */
 function createValidationErrorResponse(errors: z.ZodError): Response {
     const errorMessages = errors.errors.map((e) => ({
@@ -50,13 +56,17 @@ function createValidationErrorResponse(errors: z.ZodError): Response {
         }),
         {
             status: 400,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders,
+            },
         }
     );
 }
 
 /**
  * Creates a 405 Method Not Allowed response.
+ * Includes CORS headers for cross-origin requests.
  */
 function createMethodNotAllowedResponse(allowedMethods: string[]): Response {
     return new Response(
@@ -68,7 +78,8 @@ function createMethodNotAllowedResponse(allowedMethods: string[]): Response {
             status: 405,
             headers: {
                 'Content-Type': 'application/json',
-                Allow: allowedMethods.join(', '),
+                'Allow': allowedMethods.join(', '),
+                ...corsHeaders,
             },
         }
     );
@@ -76,6 +87,7 @@ function createMethodNotAllowedResponse(allowedMethods: string[]): Response {
 
 /**
  * Creates a 413 Payload Too Large response.
+ * Includes CORS headers for cross-origin requests.
  */
 function createPayloadTooLargeResponse(message: string): Response {
     return new Response(
@@ -85,33 +97,45 @@ function createPayloadTooLargeResponse(message: string): Response {
         }),
         {
             status: 413,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders,
+            },
         }
     );
 }
 
 /**
  * Creates a 422 Unprocessable Entity response for recipe draft.
+ * Includes CORS headers for cross-origin requests.
  */
 function createUnprocessableEntityResponse(data: AiRecipeDraftUnprocessableEntityDto): Response {
     return new Response(JSON.stringify(data), {
         status: 422,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+        },
     });
 }
 
 /**
  * Creates a 422 Unprocessable Entity response for recipe image.
+ * Includes CORS headers for cross-origin requests.
  */
 function createImageUnprocessableEntityResponse(data: AiRecipeImageUnprocessableEntityDto): Response {
     return new Response(JSON.stringify(data), {
         status: 422,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+        },
     });
 }
 
 /**
  * Creates a 403 Forbidden response for premium gating.
+ * Includes CORS headers for cross-origin requests.
  */
 function createForbiddenPremiumResponse(): Response {
     return new Response(
@@ -121,13 +145,17 @@ function createForbiddenPremiumResponse(): Response {
         }),
         {
             status: 403,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders,
+            },
         }
     );
 }
 
 /**
  * Creates a 404 Not Found response.
+ * Includes CORS headers for cross-origin requests.
  */
 function createNotFoundResponse(message: string): Response {
     return new Response(
@@ -137,16 +165,23 @@ function createNotFoundResponse(message: string): Response {
         }),
         {
             status: 404,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders,
+            },
         }
     );
 }
 
 /**
  * Creates a 429 Too Many Requests response.
+ * Includes CORS headers for cross-origin requests.
  */
 function createTooManyRequestsResponse(message: string, retryAfterSeconds?: number): Response {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...corsHeaders,
+    };
     if (retryAfterSeconds) {
         headers['Retry-After'] = String(retryAfterSeconds);
     }
@@ -242,7 +277,10 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 }),
                 {
                     status: 400,
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...corsHeaders,
+                    },
                 }
             );
         }
@@ -416,7 +454,10 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                 }),
                 {
                     status: 400,
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...corsHeaders,
+                    },
                 }
             );
         }
@@ -550,7 +591,10 @@ export async function aiRouter(req: Request): Promise<Response> {
         }),
         {
             status: 404,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders,
+            },
         }
     );
 }
