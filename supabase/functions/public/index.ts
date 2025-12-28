@@ -43,8 +43,19 @@ function addCorsHeaders(response: Response, addCacheHeaders = false): Response {
         newHeaders.set(key, value);
     });
 
-    // Add cache headers for successful responses on public endpoints
-    if (addCacheHeaders && response.status === 200) {
+    // Preserve cache semantics set by handlers (e.g., no-store for requests z JWT).
+    const hasCacheControl = newHeaders.has('Cache-Control');
+
+    // Ensure caches do not mix authenticated/anon responses.
+    const existingVary = newHeaders.get('Vary');
+    if (!existingVary) {
+        newHeaders.set('Vary', 'Authorization');
+    } else if (!existingVary.split(',').map((v) => v.trim().toLowerCase()).includes('authorization')) {
+        newHeaders.set('Vary', `${existingVary}, Authorization`);
+    }
+
+    // Add public cache only when handler did not override it.
+    if (addCacheHeaders && response.status === 200 && !hasCacheControl) {
         newHeaders.set('Cache-Control', 'public, max-age=60');
     }
 
