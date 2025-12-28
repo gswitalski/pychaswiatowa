@@ -3,8 +3,6 @@
  * These errors are used throughout the Edge Functions for consistent error handling.
  */
 
-import { corsHeaders } from './cors.ts';
-
 export type ErrorCode =
     | 'VALIDATION_ERROR'
     | 'NOT_FOUND'
@@ -62,22 +60,17 @@ export class ApplicationError extends Error {
 
 /**
  * Creates an HTTP Response object from an ApplicationError.
- * Includes CORS headers for cross-origin requests.
  */
 export function createErrorResponse(error: ApplicationError): Response {
     return new Response(JSON.stringify(error.toJSON()), {
         status: error.statusCode,
-        headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders,
-        },
+        headers: { 'Content-Type': 'application/json' },
     });
 }
 
 /**
  * Handles any error and returns an appropriate HTTP Response.
  * ApplicationErrors are handled gracefully, while unknown errors result in 500.
- * All responses include CORS headers.
  */
 export function handleError(error: unknown): Response {
     if (error instanceof ApplicationError) {
@@ -93,10 +86,7 @@ export function handleError(error: unknown): Response {
         }),
         {
             status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders,
-            },
+            headers: { 'Content-Type': 'application/json' },
         }
     );
 }
