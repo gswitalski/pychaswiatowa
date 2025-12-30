@@ -5,7 +5,7 @@
  * Routes:
  * - GET / - Get user's plan
  * - POST /recipes - Add recipe to plan
- * - DELETE /recipes/{id} - Remove recipe from plan (future)
+ * - DELETE /recipes/{id} - Remove recipe from plan
  */
 
 import { logger } from '../_shared/logger.ts';

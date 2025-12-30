@@ -91,3 +91,42 @@ Content-Type: application/json
 
 {invalid json}
 
+###############################################################################
+### DELETE /plan/recipes/{recipeId} - Remove recipe from plan
+###############################################################################
+
+### DELETE-1. SUCCESS: Remove recipe from plan (run POST-1 first)
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+Authorization: Bearer {{token}}
+
+### DELETE-2. NOT FOUND: Recipe not in plan (already removed or never added)
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+Authorization: Bearer {{token}}
+
+### DELETE-3. NOT FOUND: Non-existent recipe ID
+DELETE {{baseUrl}}/plan/recipes/999999
+Authorization: Bearer {{token}}
+
+### DELETE-4. VALIDATION ERROR: Invalid recipeId (string)
+DELETE {{baseUrl}}/plan/recipes/abc
+Authorization: Bearer {{token}}
+
+### DELETE-5. VALIDATION ERROR: Negative recipeId
+DELETE {{baseUrl}}/plan/recipes/-1
+Authorization: Bearer {{token}}
+
+### DELETE-6. VALIDATION ERROR: Zero recipeId
+DELETE {{baseUrl}}/plan/recipes/0
+Authorization: Bearer {{token}}
+
+### DELETE-7. VALIDATION ERROR: Decimal recipeId
+DELETE {{baseUrl}}/plan/recipes/1.5
+Authorization: Bearer {{token}}
+
+### DELETE-8. UNAUTHORIZED: Missing Authorization header
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+
+### DELETE-9. UNAUTHORIZED: Invalid token
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+Authorization: Bearer invalid_token_here
+

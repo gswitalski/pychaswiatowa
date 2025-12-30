@@ -6,7 +6,7 @@ import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import { AddRecipeToPlanSchema } from './plan.types.ts';
-import { addRecipeToPlan, getPlan } from './plan.service.ts';
+import { addRecipeToPlan, getPlan, removeRecipeFromPlan } from './plan.service.ts';
 
 /**
  * Main router for /plan endpoints
@@ -27,6 +27,13 @@ export async function planRouter(req: Request): Promise<Response> {
     // Route: POST /recipes
     if (path === '/recipes' && method === 'POST') {
         return await handlePostPlanRecipes(req);
+    }
+
+    // Route: DELETE /recipes/{recipeId}
+    const deleteRecipeMatch = path.match(/^\/recipes\/([^/]+)$/);
+    if (deleteRecipeMatch && method === 'DELETE') {
+        const recipeIdParam = deleteRecipeMatch[1];
+        return await handleDeletePlanRecipe(req, recipeIdParam);
     }
 
     // No matching route
@@ -106,5 +113,58 @@ export async function handlePostPlanRecipes(req: Request): Promise<Response> {
             headers: { 'Content-Type': 'application/json' },
         }
     );
+}
+
+/**
+ * Handler for DELETE /plan/recipes/{recipeId}
+ * Removes a recipe from user's plan
+ */
+export async function handleDeletePlanRecipe(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    // 1. Authenticate user
+    const { client, user } = await getAuthenticatedContext(req);
+
+    logger.info(
+        `[handleDeletePlanRecipe] User ${user.id} attempting to remove recipe ${recipeIdParam} from plan`
+    );
+
+    // 2. Validate and parse recipeId from path parameter
+    const recipeId = Number.parseInt(recipeIdParam, 10);
+
+    // Guard clauses for validation
+    if (!Number.isFinite(recipeId)) {
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'recipeId must be a valid number'
+        );
+    }
+
+    if (!Number.isInteger(recipeId)) {
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'recipeId must be an integer'
+        );
+    }
+
+    if (recipeId <= 0) {
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'recipeId must be a positive integer'
+        );
+    }
+
+    // 3. Call service to remove recipe from plan
+    await removeRecipeFromPlan(client, user.id, recipeId);
+
+    logger.info(
+        `[handleDeletePlanRecipe] Recipe ${recipeId} removed from plan for user ${user.id}`
+    );
+
+    // 4. Return success response (204 No Content)
+    return new Response(null, {
+        status: 204,
+    });
 }
 

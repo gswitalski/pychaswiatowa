@@ -92,6 +92,31 @@ Dodaje przepis do planu użytkownika.
 - `422 Unprocessable Entity` - przekroczony limit 50 przepisów
 - `500 Internal Server Error` - błąd serwera
 
+### `DELETE /plan/recipes/{recipeId}`
+Usuwa przepis z planu użytkownika.
+
+**Request:**
+- Method: `DELETE`
+- Path: `/functions/v1/plan/recipes/{recipeId}`
+- Headers:
+  - `Authorization: Bearer <JWT>` (required)
+- Path Parameters:
+  - `recipeId` - ID przepisu do usunięcia (liczba całkowita dodatnia)
+
+**Response:**
+- `204 No Content` - przepis został pomyślnie usunięty z planu (brak body)
+
+**Error Responses:**
+- `400 Bad Request` - niepoprawny `recipeId` (nie-liczba, ujemna, zero)
+- `401 Unauthorized` - brak lub nieprawidłowy JWT
+- `404 Not Found` - przepis nie jest w planie użytkownika
+- `500 Internal Server Error` - błąd serwera
+
+**Business Rules:**
+- Użytkownik może usunąć tylko przepisy ze swojego planu
+- Próba usunięcia przepisu, który nie jest w planie, zwraca `404`
+- Operacja jest idempotentna - ponowna próba usunięcia tego samego przepisu zwraca `404`
+
 ## Business Rules
 
 1. **Unikalność**: Użytkownik nie może dodać tego samego przepisu dwa razy
@@ -186,6 +211,12 @@ plan/
 - **Indexes**: Optimized for both writes and sorted reads
 - **Atomicity**: Limit enforcement via database trigger (prevents race conditions)
 
+### DELETE /plan/recipes/{recipeId}
+- **Queries per request**: 1
+  - 1× plan_recipes delete with RETURNING (uses user context, RLS enforced)
+- **Indexes**: `PRIMARY KEY (user_id, recipe_id)` ensures efficient deletion
+- **Performance**: Single-query operation, very fast (< 10ms typical)
+
 ## Testing
 
 See [TESTING.md](./TESTING.md) for comprehensive test scenarios and examples.
@@ -204,11 +235,14 @@ curl -X POST http://localhost:54331/functions/v1/plan/recipes \
   -H "Authorization: Bearer <YOUR_JWT>" \
   -H "Content-Type: application/json" \
   -d '{"recipe_id": 1}'
+
+# Remove recipe from plan
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
+  -H "Authorization: Bearer <YOUR_JWT>"
 ```
 
 ## Future Endpoints (Not implemented yet)
 
-- `DELETE /plan/recipes/{id}` - Remove recipe from plan
 - `DELETE /plan` - Clear entire plan
 - `GET /plan/export` - Export plan as shopping list
 

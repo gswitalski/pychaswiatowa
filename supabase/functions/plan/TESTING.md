@@ -466,6 +466,232 @@ curl -X POST http://localhost:54331/functions/v1/plan/recipes \
 }
 ```
 
+---
+
+## Test Scenarios: DELETE /plan/recipes/{recipeId}
+
+### Setup: Add test recipe to plan
+
+First, add a recipe to plan to test deletion:
+```bash
+curl -X POST http://localhost:54331/functions/v1/plan/recipes \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"recipe_id": 1}'
+```
+
+### Scenario DELETE-1: ✅ Remove recipe from plan (SUCCESS)
+
+**Setup:** Recipe with ID 1 is in user's plan.
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `204 No Content`
+- Body: empty (no content)
+
+**Verify:**
+```sql
+-- Recipe should be removed from plan
+SELECT * FROM plan_recipes WHERE user_id = auth.uid() AND recipe_id = 1;
+-- Should return 0 rows
+```
+
+### Scenario DELETE-2: ❌ Remove recipe not in plan (NOT FOUND)
+
+**Setup:** Recipe with ID 123 is NOT in user's plan.
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/123 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `404 Not Found`
+- Body:
+```json
+{
+  "code": "NOT_FOUND",
+  "message": "Recipe not found in plan"
+}
+```
+
+**Note:** This is the expected behavior for idempotency - trying to delete the same recipe twice also returns 404.
+
+### Scenario DELETE-3: ❌ Remove recipe with invalid ID - string (VALIDATION ERROR)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/abc \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `400 Bad Request`
+- Body:
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "recipeId must be a valid number"
+}
+```
+
+### Scenario DELETE-4: ❌ Remove recipe with negative ID (VALIDATION ERROR)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/-1 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `400 Bad Request`
+- Body:
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "recipeId must be a positive integer"
+}
+```
+
+### Scenario DELETE-5: ❌ Remove recipe with zero ID (VALIDATION ERROR)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/0 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `400 Bad Request`
+- Body:
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "recipeId must be a positive integer"
+}
+```
+
+### Scenario DELETE-6: ❌ Remove recipe with decimal ID (VALIDATION ERROR)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1.5 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `400 Bad Request`
+- Body:
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "recipeId must be an integer"
+}
+```
+
+**Note:** `Number.parseInt("1.5", 10)` returns `1`, but `Number.isInteger(1.5)` catches this.
+
+### Scenario DELETE-7: ❌ Missing Authorization header (UNAUTHORIZED)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1
+```
+
+**Expected Response:**
+- Status: `401 Unauthorized`
+- Body:
+```json
+{
+  "code": "UNAUTHORIZED",
+  "message": "Missing Authorization header"
+}
+```
+
+### Scenario DELETE-8: ❌ Invalid JWT token (UNAUTHORIZED)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
+  -H "Authorization: Bearer invalid_token_here"
+```
+
+**Expected Response:**
+- Status: `401 Unauthorized`
+- Body:
+```json
+{
+  "code": "UNAUTHORIZED",
+  "message": "Invalid token"
+}
+```
+
+### Scenario DELETE-9: ✅ Idempotency test (NOT FOUND on second delete)
+
+**Setup:**
+1. Add recipe to plan
+2. Delete it successfully (204)
+3. Try deleting again
+
+**Request 1:** (First delete)
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response 1:**
+- Status: `204 No Content`
+
+**Request 2:** (Second delete - same recipe)
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response 2:**
+- Status: `404 Not Found`
+- Body:
+```json
+{
+  "code": "NOT_FOUND",
+  "message": "Recipe not found in plan"
+}
+```
+
+**Verify:** This demonstrates that DELETE is idempotent - the first call removes the recipe, subsequent calls indicate it's not in the plan.
+
+### Scenario DELETE-10: ✅ Cannot delete from another user's plan (NOT FOUND)
+
+**Setup:**
+- User A adds recipe 1 to their plan
+- User B tries to delete recipe 1 from User A's plan
+
+**Request:** (as User B)
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
+  -H "Authorization: Bearer <USER_B_JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `404 Not Found`
+- Body:
+```json
+{
+  "code": "NOT_FOUND",
+  "message": "Recipe not found in plan"
+}
+```
+
+**Note:** RLS prevents User B from deleting from User A's plan. The operation returns 404 (not 403) to avoid information leakage about what's in other users' plans.
+
+---
+
 ## Verification Queries
 
 ### GET /plan verification
@@ -512,6 +738,26 @@ WHERE user_id = auth.uid()
 -- Count total items in plan
 SELECT COUNT(*) FROM plan_recipes 
 WHERE user_id = auth.uid();
+```
+
+### DELETE /plan/recipes/{recipeId} verification
+
+```sql
+-- Verify recipe was removed from plan
+SELECT * FROM plan_recipes 
+WHERE user_id = auth.uid() 
+  AND recipe_id = <RECIPE_ID>;
+-- Should return 0 rows after successful deletion
+
+-- Count remaining items in plan
+SELECT COUNT(*) FROM plan_recipes 
+WHERE user_id = auth.uid();
+
+-- Check deletion was isolated to specific recipe
+SELECT recipe_id FROM plan_recipes 
+WHERE user_id = auth.uid()
+ORDER BY added_at DESC;
+-- Should show all recipes except the deleted one
 ```
 
 ## Clean up

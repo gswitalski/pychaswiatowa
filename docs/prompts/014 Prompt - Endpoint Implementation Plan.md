@@ -13,7 +13,7 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-- `GET /plan` – pobranie listy planu (najnowsze pierwsze) + meta (limit 50).
+`DELETE /plan/recipes/{recipeId}` – usunięcie pojedynczego przepisu z planu.
 
 </api_changes_description>
 

@@ -265,3 +265,58 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
     };
 }
 
+/**
+ * Removes a recipe from user's plan.
+ * 
+ * Business rules:
+ * - Recipe must be in user's plan to be removed
+ * - Uses user-context client to enforce RLS (user can only remove from their own plan)
+ * 
+ * @param client - The authenticated Supabase client (user context)
+ * @param userId - The ID of the authenticated user (for logging)
+ * @param recipeId - The ID of the recipe to remove
+ * @throws ApplicationError
+ * - NOT_FOUND: Recipe is not in user's plan
+ * - INTERNAL_ERROR: Database operation failed
+ */
+export async function removeRecipeFromPlan(
+    client: TypedSupabaseClient,
+    userId: string,
+    recipeId: number
+): Promise<void> {
+    // Execute DELETE with RETURNING to check if row was deleted
+    // RLS ensures user can only delete from their own plan (user_id = auth.uid())
+    const { data, error } = await client
+        .from('plan_recipes')
+        .delete()
+        .eq('recipe_id', recipeId)
+        .select('recipe_id');
+
+    if (error) {
+        logger.error(
+            `[removeRecipeFromPlan] Failed to remove recipe ${recipeId} from plan for user ${userId}`,
+            error
+        );
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to remove recipe from plan'
+        );
+    }
+
+    // Check if any rows were deleted
+    // If 0 rows deleted, recipe was not in user's plan
+    if (!data || data.length === 0) {
+        logger.warn(
+            `[removeRecipeFromPlan] Recipe ${recipeId} not found in plan for user ${userId}`
+        );
+        throw new ApplicationError(
+            'NOT_FOUND',
+            'Recipe not found in plan'
+        );
+    }
+
+    logger.info(
+        `[removeRecipeFromPlan] Recipe ${recipeId} removed from plan for user ${userId}`
+    );
+}
+
