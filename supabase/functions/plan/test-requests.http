@@ -1,11 +1,30 @@
-### Test POST /plan/recipes Endpoint
+### Test Plan Endpoints
 ### Use REST Client extension in VS Code to execute these requests
 
 @baseUrl = http://localhost:54331/functions/v1
 @token = YOUR_JWT_TOKEN_HERE
 @recipeId = 1
 
-### 1. SUCCESS: Add recipe to plan
+###############################################################################
+### GET /plan - Get user's plan
+###############################################################################
+
+### GET-1. SUCCESS: Get user's plan
+GET {{baseUrl}}/plan
+Authorization: Bearer {{token}}
+
+### GET-2. UNAUTHORIZED: Missing Authorization header
+GET {{baseUrl}}/plan
+
+### GET-3. UNAUTHORIZED: Invalid token
+GET {{baseUrl}}/plan
+Authorization: Bearer invalid_token_here
+
+###############################################################################
+### POST /plan/recipes - Add recipe to plan
+###############################################################################
+
+### POST-1. SUCCESS: Add recipe to plan
 POST {{baseUrl}}/plan/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -14,7 +33,7 @@ Content-Type: application/json
   "recipe_id": {{recipeId}}
 }
 
-### 2. CONFLICT: Add duplicate recipe
+### POST-2. CONFLICT: Add duplicate recipe
 POST {{baseUrl}}/plan/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -23,7 +42,7 @@ Content-Type: application/json
   "recipe_id": {{recipeId}}
 }
 
-### 3. NOT FOUND: Non-existent recipe
+### POST-3. NOT FOUND: Non-existent recipe
 POST {{baseUrl}}/plan/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -32,7 +51,7 @@ Content-Type: application/json
   "recipe_id": 999999
 }
 
-### 4. VALIDATION ERROR: Invalid recipe_id (string)
+### POST-4. VALIDATION ERROR: Invalid recipe_id (string)
 POST {{baseUrl}}/plan/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -41,7 +60,7 @@ Content-Type: application/json
   "recipe_id": "invalid"
 }
 
-### 5. VALIDATION ERROR: Negative recipe_id
+### POST-5. VALIDATION ERROR: Negative recipe_id
 POST {{baseUrl}}/plan/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -50,14 +69,14 @@ Content-Type: application/json
   "recipe_id": -5
 }
 
-### 6. VALIDATION ERROR: Missing recipe_id
+### POST-6. VALIDATION ERROR: Missing recipe_id
 POST {{baseUrl}}/plan/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {}
 
-### 7. UNAUTHORIZED: Missing Authorization header
+### POST-7. UNAUTHORIZED: Missing Authorization header
 POST {{baseUrl}}/plan/recipes
 Content-Type: application/json
 
@@ -65,7 +84,7 @@ Content-Type: application/json
   "recipe_id": 1
 }
 
-### 8. VALIDATION ERROR: Invalid JSON
+### POST-8. VALIDATION ERROR: Invalid JSON
 POST {{baseUrl}}/plan/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json

@@ -3,8 +3,8 @@
  * Main router for "My Plan" resource endpoints
  * 
  * Routes:
+ * - GET / - Get user's plan
  * - POST /recipes - Add recipe to plan
- * - GET / - Get user's plan (future)
  * - DELETE /recipes/{id} - Remove recipe from plan (future)
  */
 

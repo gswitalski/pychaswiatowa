@@ -4,6 +4,61 @@ Edge Function dla zasobu "Mój plan" - lista przepisów zaplanowanych przez uży
 
 ## Endpoints
 
+### `GET /plan`
+Pobiera listę przepisów w planie użytkownika.
+
+**Request:**
+- Method: `GET`
+- Path: `/functions/v1/plan`
+- Headers:
+  - `Authorization: Bearer <JWT>` (required)
+
+**Response:**
+- `200 OK`:
+```json
+{
+  "data": [
+    {
+      "recipe_id": 123,
+      "added_at": "2023-10-30T10:00:00Z",
+      "recipe": {
+        "id": 123,
+        "name": "Apple Pie",
+        "image_path": "recipe-images/user-id/123/cover.webp"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "limit": 50
+  }
+}
+```
+
+**Response (empty plan):**
+- `200 OK`:
+```json
+{
+  "data": [],
+  "meta": {
+    "total": 0,
+    "limit": 50
+  }
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - brak lub nieprawidłowy JWT
+- `500 Internal Server Error` - błąd serwera
+
+**Business Rules:**
+1. **Kolejność**: Przepisy są sortowane od najnowszych (`added_at DESC`)
+2. **Limit**: Maksymalnie 50 elementów (twardy limit techniczny)
+3. **Filtrowanie**:
+   - Ukryte są przepisy usunięte (`deleted_at != null`)
+   - Ukryte są przepisy niepubliczne należące do innych użytkowników
+4. **Total**: `meta.total` pokazuje liczbę rzeczywiście zwróconych przepisów (po filtrowaniu)
+
 ### `POST /plan/recipes`
 Dodaje przepis do planu użytkownika.
 
@@ -118,6 +173,13 @@ plan/
 
 ## Performance
 
+### GET /plan
+- **Queries per request**: 1
+  - 1× plan_recipes read with join to recipes (uses service role + application-level filtering)
+- **Indexes**: `idx_plan_recipes_user_id_added_at` for efficient sorted reads
+- **Limit**: Hard limit of 50 items prevents performance issues
+
+### POST /plan/recipes
 - **Queries per request**: 2
   - 1× recipe read (access check, uses service role)
   - 1× plan_recipes insert (uses user context, RLS enforced)
@@ -133,6 +195,10 @@ Quick test:
 # Start function
 supabase functions serve plan
 
+# Get user's plan
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <YOUR_JWT>"
+
 # Add recipe to plan
 curl -X POST http://localhost:54331/functions/v1/plan/recipes \
   -H "Authorization: Bearer <YOUR_JWT>" \
@@ -142,7 +208,6 @@ curl -X POST http://localhost:54331/functions/v1/plan/recipes \
 
 ## Future Endpoints (Not implemented yet)
 
-- `GET /plan` - Get user's plan with recipe details
 - `DELETE /plan/recipes/{id}` - Remove recipe from plan
 - `DELETE /plan` - Clear entire plan
 - `GET /plan/export` - Export plan as shopping list

@@ -5,7 +5,7 @@
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { TypedSupabaseClient, createServiceRoleClient } from '../_shared/supabase-client.ts';
-import type { RecipeAccessInfo } from './plan.types.ts';
+import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan.types.ts';
 
 /**
  * Adds a recipe to user's plan.
@@ -153,5 +153,115 @@ async function insertRecipeToPlan(
             'Failed to add recipe to plan'
         );
     }
+}
+
+/**
+ * Retrieves user's plan list with recipe details.
+ * 
+ * Business rules:
+ * - Returns only recipes that are:
+ *   - Not soft-deleted (deleted_at IS NULL)
+ *   - Either owned by user OR public
+ * - Sorted by added_at DESC (newest first)
+ * - Limited to 50 items
+ * 
+ * @param userId - The ID of the authenticated user
+ * @returns GetPlanResponseDto with data and meta
+ * @throws ApplicationError on database errors
+ */
+export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
+    const supabase = createServiceRoleClient();
+
+    // Query plan_recipes with join to recipes
+    // Filter: user's plan + not deleted + (owner OR public)
+    const { data, error } = await supabase
+        .from('plan_recipes')
+        .select(
+            `
+            recipe_id,
+            added_at,
+            recipes:recipe_id (
+                id,
+                name,
+                image_path,
+                user_id,
+                visibility,
+                deleted_at
+            )
+        `
+        )
+        .eq('user_id', userId)
+        .order('added_at', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        logger.error(`[getPlan] Failed to fetch plan for user ${userId}`, error);
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to fetch plan'
+        );
+    }
+
+    // Type assertion for the joined data
+    const planRows = data as unknown as PlanRecipeRow[];
+
+    // Filter out inaccessible recipes (soft-deleted or non-public non-owned)
+    const accessibleItems = planRows.filter((row) => {
+        const recipe = row.recipes;
+
+        // Recipe must exist (shouldn't happen with foreign key, but defensive)
+        if (!recipe) {
+            logger.warn(
+                `[getPlan] Plan item recipe_id=${row.recipe_id} has no recipe data (orphaned?)`
+            );
+            return false;
+        }
+
+        // Filter out soft-deleted recipes
+        if (recipe.deleted_at !== null) {
+            logger.info(
+                `[getPlan] Hiding soft-deleted recipe ${recipe.id} from plan`
+            );
+            return false;
+        }
+
+        // Filter out recipes user doesn't have access to
+        const isOwner = recipe.user_id === userId;
+        const isPublic = recipe.visibility === 'PUBLIC';
+
+        if (!isOwner && !isPublic) {
+            logger.info(
+                `[getPlan] Hiding non-accessible recipe ${recipe.id} from plan (not owner, not public)`
+            );
+            return false;
+        }
+
+        return true;
+    });
+
+    // Map to DTO format
+    const planItems = accessibleItems.map((row) => ({
+        recipe_id: row.recipe_id,
+        added_at: row.added_at,
+        recipe: {
+            id: row.recipes.id,
+            name: row.recipes.name,
+            image_path: row.recipes.image_path,
+        },
+    }));
+
+    const total = planItems.length;
+
+    logger.info(
+        `[getPlan] User ${userId} plan: ${total} accessible items (filtered from ${planRows.length} total)`
+    );
+
+    return {
+        data: planItems,
+        meta: {
+            total,
+            limit: 50,
+        },
+    };
 }
 

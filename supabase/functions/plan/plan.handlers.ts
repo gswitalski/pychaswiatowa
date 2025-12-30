@@ -6,7 +6,7 @@ import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import { AddRecipeToPlanSchema } from './plan.types.ts';
-import { addRecipeToPlan } from './plan.service.ts';
+import { addRecipeToPlan, getPlan } from './plan.service.ts';
 
 /**
  * Main router for /plan endpoints
@@ -19,6 +19,11 @@ export async function planRouter(req: Request): Promise<Response> {
     const pathMatch = url.pathname.match(/^\/plan(.*)$/);
     const path = pathMatch ? pathMatch[1] : url.pathname;
 
+    // Route: GET / or GET '' (root of /plan)
+    if ((path === '' || path === '/') && method === 'GET') {
+        return await handleGetPlan(req);
+    }
+
     // Route: POST /recipes
     if (path === '/recipes' && method === 'POST') {
         return await handlePostPlanRecipes(req);
@@ -26,6 +31,30 @@ export async function planRouter(req: Request): Promise<Response> {
 
     // No matching route
     throw new ApplicationError('NOT_FOUND', 'Endpoint not found');
+}
+
+/**
+ * Handler for GET /plan
+ * Returns user's plan list with recipe details
+ */
+export async function handleGetPlan(req: Request): Promise<Response> {
+    // 1. Authenticate user
+    const { user } = await getAuthenticatedContext(req);
+
+    logger.info(`[handleGetPlan] User ${user.id} fetching plan`);
+
+    // 2. Call service to get plan
+    const planResponse = await getPlan(user.id);
+
+    logger.info(
+        `[handleGetPlan] Returned ${planResponse.data.length} items for user ${user.id}`
+    );
+
+    // 3. Return success response
+    return new Response(JSON.stringify(planResponse), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+    });
 }
 
 /**

@@ -1,4 +1,4 @@
-# Testing Guide: POST /plan/recipes
+# Testing Guide: Plan Endpoints
 
 ## Prerequisites
 
@@ -23,7 +23,207 @@ supabase functions serve plan
    - Email: `test@pychaswiatowa.pl`
    - Password: `554G5rjnbdAanGR`
 
-## Test Scenarios
+---
+
+## Test Scenarios: GET /plan
+
+### Scenario GET-1: ✅ Get empty plan (SUCCESS)
+
+**Context:** User has no recipes in plan yet.
+
+**Request:**
+```bash
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `200 OK`
+- Body:
+```json
+{
+  "data": [],
+  "meta": {
+    "total": 0,
+    "limit": 50
+  }
+}
+```
+
+### Scenario GET-2: ✅ Get plan with recipes (SUCCESS)
+
+**Setup:** Add 3 recipes to plan first (using POST /plan/recipes):
+- Recipe A (your own, added first)
+- Recipe B (public from another user, added second)
+- Recipe C (your own, added third)
+
+**Request:**
+```bash
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `200 OK`
+- Body structure:
+```json
+{
+  "data": [
+    {
+      "recipe_id": <RECIPE_C_ID>,
+      "added_at": "2023-10-30T12:00:00Z",
+      "recipe": {
+        "id": <RECIPE_C_ID>,
+        "name": "Recipe C Name",
+        "image_path": "recipe-images/..."
+      }
+    },
+    {
+      "recipe_id": <RECIPE_B_ID>,
+      "added_at": "2023-10-30T11:00:00Z",
+      "recipe": {
+        "id": <RECIPE_B_ID>,
+        "name": "Recipe B Name",
+        "image_path": "recipe-images/..."
+      }
+    },
+    {
+      "recipe_id": <RECIPE_A_ID>,
+      "added_at": "2023-10-30T10:00:00Z",
+      "recipe": {
+        "id": <RECIPE_A_ID>,
+        "name": "Recipe A Name",
+        "image_path": null
+      }
+    }
+  ],
+  "meta": {
+    "total": 3,
+    "limit": 50
+  }
+}
+```
+
+**Verify:**
+- Recipes are sorted by `added_at` DESC (newest first: C, B, A)
+- Each item contains `recipe_id`, `added_at`, and nested `recipe` object
+
+### Scenario GET-3: ✅ Soft-deleted recipe is hidden (SUCCESS)
+
+**Setup:**
+1. Add Recipe D to plan
+2. Soft-delete Recipe D:
+```sql
+UPDATE recipes SET deleted_at = now() WHERE id = <RECIPE_D_ID>;
+```
+
+**Request:**
+```bash
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `200 OK`
+- Recipe D is NOT in the returned list
+- `meta.total` does not include Recipe D
+- Database still has the plan_recipes entry, but API filters it out
+
+**Verify:**
+```sql
+-- Verify soft-deleted recipe is still in plan_recipes
+SELECT * FROM plan_recipes WHERE recipe_id = <RECIPE_D_ID>;
+
+-- But not returned by API (use service to verify filtering logic)
+```
+
+### Scenario GET-4: ✅ Non-public recipe from another user is hidden (SUCCESS)
+
+**Setup:**
+1. Add public Recipe E from User2 to your plan (success)
+2. User2 changes Recipe E visibility to PRIVATE:
+```sql
+UPDATE recipes 
+SET visibility = 'PRIVATE' 
+WHERE id = <RECIPE_E_ID>;
+```
+
+**Request:**
+```bash
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `200 OK`
+- Recipe E is NOT in the returned list (filtered out by access rules)
+- `meta.total` does not include Recipe E
+- Your own recipes are still visible regardless of visibility
+
+**Verify:**
+```sql
+-- Verify recipe is still in plan_recipes
+SELECT * FROM plan_recipes WHERE recipe_id = <RECIPE_E_ID>;
+
+-- Verify recipe is now PRIVATE
+SELECT id, name, visibility, user_id FROM recipes WHERE id = <RECIPE_E_ID>;
+```
+
+### Scenario GET-5: ✅ Plan with 50 items (limit) (SUCCESS)
+
+**Setup:** Add 50 recipes to plan.
+
+**Request:**
+```bash
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `200 OK`
+- `data` array has 50 items
+- `meta.total` is 50
+- `meta.limit` is 50
+- Items are sorted by `added_at DESC`
+
+### Scenario GET-6: ❌ Missing Authorization header (UNAUTHORIZED)
+
+**Request:**
+```bash
+curl -X GET http://localhost:54331/functions/v1/plan
+```
+
+**Expected Response:**
+- Status: `401 Unauthorized`
+- Body:
+```json
+{
+  "code": "UNAUTHORIZED",
+  "message": "Missing Authorization header"
+}
+```
+
+### Scenario GET-7: ❌ Invalid JWT token (UNAUTHORIZED)
+
+**Request:**
+```bash
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer invalid_token_here"
+```
+
+**Expected Response:**
+- Status: `401 Unauthorized`
+- Body:
+```json
+{
+  "code": "UNAUTHORIZED",
+  "message": "Invalid token"
+}
+```
+
+---
+
+## Test Scenarios: POST /plan/recipes
 
 ### Setup: Create test recipes
 
@@ -268,30 +468,50 @@ curl -X POST http://localhost:54331/functions/v1/plan/recipes \
 
 ## Verification Queries
 
-After successful additions, verify the data in the database:
+### GET /plan verification
 
 ```sql
--- Check plan_recipes table
+-- Check raw plan_recipes data
 SELECT * FROM plan_recipes 
 WHERE user_id = auth.uid() 
 ORDER BY added_at DESC;
 
--- Count items in plan
-SELECT COUNT(*) FROM plan_recipes 
-WHERE user_id = auth.uid();
-
--- View plan with recipe details
+-- View plan with recipe details (simulates API query)
 SELECT 
+    pr.recipe_id,
     pr.added_at,
     r.id,
     r.name,
     r.image_path,
+    r.user_id,
     r.visibility,
     r.deleted_at
 FROM plan_recipes pr
 JOIN recipes r ON r.id = pr.recipe_id
 WHERE pr.user_id = auth.uid()
-ORDER BY pr.added_at DESC;
+ORDER BY pr.added_at DESC
+LIMIT 50;
+
+-- Count accessible items (after filtering)
+SELECT COUNT(*) 
+FROM plan_recipes pr
+JOIN recipes r ON r.id = pr.recipe_id
+WHERE pr.user_id = auth.uid()
+  AND r.deleted_at IS NULL
+  AND (r.user_id = auth.uid() OR r.visibility = 'PUBLIC');
+```
+
+### POST /plan/recipes verification
+
+```sql
+-- Check if recipe was added
+SELECT * FROM plan_recipes 
+WHERE user_id = auth.uid() 
+  AND recipe_id = <RECIPE_ID>;
+
+-- Count total items in plan
+SELECT COUNT(*) FROM plan_recipes 
+WHERE user_id = auth.uid();
 ```
 
 ## Clean up
