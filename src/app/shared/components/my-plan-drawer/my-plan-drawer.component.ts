@@ -21,7 +21,7 @@ import { PlanListItemDto, ApiError } from '../../../../../shared/contracts/types
 /**
  * Drawer "Mój plan" - globalny panel wysuwany z prawej strony.
  * Wyświetla listę przepisów w planie użytkownika.
- * 
+ *
  * Funkcjonalności:
  * - Przegląd listy przepisów (od najnowszych)
  * - Usunięcie pojedynczej pozycji
@@ -177,8 +177,8 @@ export class MyPlanDrawerComponent {
         if (err.status === 401) {
             this.snackBar.open('Sesja wygasła. Zaloguj się ponownie.', 'OK', { duration: 5000 });
             this.myPlanService.closeDrawer();
-            this.router.navigate(['/login'], { 
-                queryParams: { returnUrl: this.router.url } 
+            this.router.navigate(['/login'], {
+                queryParams: { returnUrl: this.router.url }
             });
             return;
         }

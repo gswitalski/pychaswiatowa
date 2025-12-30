@@ -1,4 +1,4 @@
-<div 
+<div
     class="my-plan-drawer"
     role="region"
     aria-label="Panel Mój plan"
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Content -->
-    <div 
+    <div
         class="my-plan-drawer__content"
         [attr.aria-busy]="isLoading() || isRefreshing()"
         aria-live="polite"
@@ -66,7 +66,7 @@
 
         <!-- List -->
         @else {
-            <div 
+            <div
                 class="my-plan-drawer__list-container"
                 [class.my-plan-drawer__list-container--refreshing]="isRefreshing()"
                 [class.my-plan-drawer__list-container--clearing]="isClearing()"
@@ -93,7 +93,7 @@
                                 </span>
                                 <div class="my-plan-drawer__item-action">
                                     @if (isDeletingRecipe(item.recipe_id)) {
-                                        <mat-spinner 
+                                        <mat-spinner
                                             diameter="24"
                                             [attr.aria-label]="'Usuwanie przepisu ' + item.recipe.name"
                                         ></mat-spinner>

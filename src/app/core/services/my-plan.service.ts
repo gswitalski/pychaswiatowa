@@ -48,13 +48,13 @@ const PLAN_CACHE_TTL_MS = 60_000;
 /**
  * Serwis zarządzający "Moim planem" użytkownika.
  * Odpowiada za komunikację z API planu oraz stan drawer'a.
- * 
+ *
  * Jest jedynym źródłem prawdy dla:
  * - otwarcia/zamknięcia drawer'a
  * - danych planu (lista + meta)
  * - stanów ładowania/odświeżania
  * - stanów mutacji (clear/remove)
- * 
+ *
  * Zgodnie z architekturą: używa TYLKO supabase.functions.invoke(),
  * NIGDY bezpośrednio supabase.from().
  */
@@ -94,7 +94,7 @@ export class MyPlanService {
      */
     readonly items = computed(() => {
         const items = [...this.planState().items];
-        return items.sort((a, b) => 
+        return items.sort((a, b) =>
             new Date(b.added_at).getTime() - new Date(a.added_at).getTime()
         );
     });
@@ -142,9 +142,9 @@ export class MyPlanService {
                 }
                 if (!response.data) {
                     // Pusty plan to poprawny stan
-                    const emptyPlan: GetPlanResponseDto = { 
-                        data: [], 
-                        meta: { total: 0, limit: 50 } 
+                    const emptyPlan: GetPlanResponseDto = {
+                        data: [],
+                        meta: { total: 0, limit: 50 }
                     };
                     return emptyPlan;
                 }
@@ -160,7 +160,7 @@ export class MyPlanService {
      */
     prefetchPlan(): void {
         const state = this.planState();
-        
+
         // Nie prefetch jeśli już ładujemy
         if (state.isLoading || state.isRefreshing) {
             return;
@@ -168,7 +168,7 @@ export class MyPlanService {
 
         // Ustaw loading tylko jeśli nie mamy danych
         const hasData = state.lastLoadedAt !== null;
-        
+
         this.planState.update(s => ({
             ...s,
             isLoading: !hasData,
@@ -204,14 +204,14 @@ export class MyPlanService {
      */
     loadPlanIfNeeded(force = false): void {
         const state = this.planState();
-        
+
         // Nie ładuj jeśli już ładujemy
         if (state.isLoading || state.isRefreshing) {
             return;
         }
 
         // Sprawdź TTL
-        const isStale = state.lastLoadedAt === null || 
+        const isStale = state.lastLoadedAt === null ||
             Date.now() - state.lastLoadedAt > PLAN_CACHE_TTL_MS;
 
         if (!force && !isStale) {
@@ -219,7 +219,7 @@ export class MyPlanService {
         }
 
         const hasData = state.lastLoadedAt !== null;
-        
+
         this.planState.update(s => ({
             ...s,
             isLoading: !hasData,
@@ -259,7 +259,7 @@ export class MyPlanService {
     /**
      * Dodaje przepis do planu użytkownika
      * POST /plan/recipes
-     * 
+     *
      * @param command - komenda z recipe_id
      * @throws Error z czytelnym komunikatem (status w ApiError)
      */
@@ -296,7 +296,7 @@ export class MyPlanService {
     /**
      * Usuwa przepis z planu użytkownika
      * DELETE /plan/recipes/{recipeId}
-     * 
+     *
      * Aktualizuje stan mutacji (deletingRecipeIds) i lokalny stan planu po sukcesie.
      */
     removeFromPlan(recipeId: number): Observable<void> {
@@ -348,7 +348,7 @@ export class MyPlanService {
     /**
      * Usuwa wszystkie przepisy z planu użytkownika
      * DELETE /plan
-     * 
+     *
      * Aktualizuje stan mutacji (isClearing) i lokalny stan planu po sukcesie.
      */
     clearPlan(): Observable<void> {

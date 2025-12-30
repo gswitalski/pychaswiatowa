@@ -3,7 +3,7 @@
     bottom: 24px;
     right: 24px;
     z-index: 100;
-    
+
     // Animacja wejścia
     animation: fab-enter 0.2s ease-out;
 
@@ -43,7 +43,7 @@
     .my-plan-fab {
         bottom: 16px;
         right: 16px;
-        
+
         // Na mobile chowamy label i pokazujemy tylko ikonę z badge
         &__label {
             display: none;
