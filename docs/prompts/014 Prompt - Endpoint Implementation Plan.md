@@ -13,7 +13,7 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-    - `POST /plan/recipes` – dodanie przepisu do planu (409 dla duplikatu, 422 dla przekroczenia limitu).
+- `GET /plan` – pobranie listy planu (najnowsze pierwsze) + meta (limit 50).
 
 </api_changes_description>
 
