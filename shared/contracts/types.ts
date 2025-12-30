@@ -416,6 +416,43 @@ export interface ApiError {
 
 // #endregion
 
+// #region --- Plan (My Plan) ---
+
+/**
+ * Command model for adding a recipe to user's plan.
+ */
+export type AddRecipeToPlanCommand = {
+    recipe_id: number;
+};
+
+/**
+ * DTO for a single item in user's plan list.
+ * Minimal recipe data for display in plan view.
+ */
+export interface PlanListItemDto {
+    recipe_id: number;
+    added_at: string;
+    recipe: {
+        id: number;
+        name: string;
+        image_path: string | null;
+    };
+}
+
+/**
+ * Response DTO for GET /plan endpoint.
+ * Returns user's plan list with metadata.
+ */
+export interface GetPlanResponseDto {
+    data: PlanListItemDto[];
+    meta: {
+        total: number;
+        limit: 50;
+    };
+}
+
+// #endregion
+
 // #region --- AI Recipe Draft ---
 
 /**
