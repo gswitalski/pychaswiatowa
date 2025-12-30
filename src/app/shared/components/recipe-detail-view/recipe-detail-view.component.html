@@ -58,6 +58,35 @@
                     >
                         <mat-icon>bookmark_add</mat-icon>
                     </button>
+                    @if (!recipe()!.in_my_plan && !isAddingToPlan()) {
+                        <button
+                            mat-icon-button
+                            matTooltip="Dodaj do planu"
+                            aria-label="Dodaj do planu"
+                            (click)="onAddToPlan()"
+                        >
+                            <mat-icon>playlist_add</mat-icon>
+                        </button>
+                    }
+                    @if (isAddingToPlan()) {
+                        <button
+                            mat-icon-button
+                            disabled
+                            aria-label="Dodawanie do planu..."
+                        >
+                            <mat-spinner diameter="24"></mat-spinner>
+                        </button>
+                    }
+                    @if (recipe()!.in_my_plan && !isAddingToPlan()) {
+                        <button
+                            mat-icon-button
+                            matTooltip="Zobacz listę zakupów"
+                            aria-label="Zobacz listę zakupów"
+                            (click)="onOpenPlan()"
+                        >
+                            <mat-icon>check_circle</mat-icon>
+                        </button>
+                    }
                     <button
                         mat-icon-button
                         matTooltip="Edytuj przepis"
@@ -86,6 +115,38 @@
                         <mat-icon>bookmark_add</mat-icon>
                         Dodaj do kolekcji
                     </button>
+                    @if (!recipe()!.in_my_plan && !isAddingToPlan()) {
+                        <button
+                            mat-raised-button
+                            (click)="onAddToPlan()"
+                            matTooltip="Dodaj przepis do listy zakupów"
+                            aria-label="Dodaj do planu"
+                        >
+                            <mat-icon>playlist_add</mat-icon>
+                            Dodaj do planu
+                        </button>
+                    }
+                    @if (isAddingToPlan()) {
+                        <button
+                            mat-raised-button
+                            disabled
+                            aria-label="Dodawanie do planu..."
+                        >
+                            <mat-spinner diameter="20"></mat-spinner>
+                        </button>
+                    }
+                    @if (recipe()!.in_my_plan && !isAddingToPlan()) {
+                        <button
+                            mat-raised-button
+                            color="accent"
+                            (click)="onOpenPlan()"
+                            matTooltip="Otwórz listę zakupów"
+                            aria-label="Zobacz listę"
+                        >
+                            <mat-icon>check_circle</mat-icon>
+                            Zobacz listę
+                        </button>
+                    }
                 }
             </pych-page-header>
         }

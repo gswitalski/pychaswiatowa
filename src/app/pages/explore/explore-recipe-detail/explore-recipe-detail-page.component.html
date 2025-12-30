@@ -10,6 +10,7 @@
     [showPageHeader]="isAuthenticated()"
     [showGuestCta]="true"
     [showAuthCtaOnError]="true"
+    [isAddingToPlan]="isAddingToPlan()"
     backLabel="Wróć do przeglądania"
     (login)="onLogin()"
     (register)="onRegister()"
@@ -17,4 +18,6 @@
     (addToCollection)="onAddToCollection()"
     (edit)="onEdit()"
     (delete)="onDelete()"
+    (addToPlan)="onAddToPlan()"
+    (openPlan)="onOpenPlan()"
 />

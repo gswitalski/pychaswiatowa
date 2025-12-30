@@ -19,13 +19,10 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-- **Zmienione**
-    - **9. Formularz Przepisu (Dodaj/Edytuj)**:
-        - Doprecyzowano parametry techniczne generowania (model i format wyjściowy) bez zmian w przepływie UX.
-    - **9a. Modal: Podgląd wygenerowanego zdjęcia (AI)**:
-        - Doprecyzowano, że akcja „Wygeneruj ponownie” oznacza kolejną próbę (ponowne wywołanie generowania), nadal w trybie `n=1`.
 
-
+- **Zmienione: Widok szczegółów przepisu (`/recipes/:id` oraz `/explore/recipes/:id`)**
+    - **Co się zmieniło:** dla zalogowanego dodano akcję „Dodaj do planu” obok „Dodaj do kolekcji”.
+    - **Stany przycisku:** „Dodaj do planu” → spinner → „Zobacz listę” (z ikoną sukcesu). Jeśli przepis już jest w planie: od razu „Zobacz listę”.
 
 
 </views>
@@ -35,12 +32,9 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-- **Zmienione**
-    - **3.2. Zarządzanie przepisami (CRUD) – Generowanie zdjęcia (AI, premium)**:
-        - Doprecyzowano parametry techniczne generowania: model **`gpt-image-1.5`**, format **`image/webp` 1024×1024**, `background=auto`, `quality=auto`, `n=1`.
-    - **US-037: Generowanie zdjęcia przepisu (AI) w edycji – tylko premium**
-        - Dodano kryterium techniczne: model **`gpt-image-1.5`** oraz parametry wyjścia (jak wyżej).
-
+- **Nowe: US-038 – Dodanie przepisu do „Mojego planu” z widoku szczegółów**
+    - Dodano nową akcję na szczegółach przepisu: „Dodaj do planu” → (spinner) → „Zobacz listę”.
+    - Dodano wymaganie: brak duplikatów oraz limit **50** elementów.
 
 
 </user_stories>

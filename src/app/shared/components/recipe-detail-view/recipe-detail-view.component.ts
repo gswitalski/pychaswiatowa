@@ -52,6 +52,7 @@ export class RecipeDetailViewComponent {
     readonly showGuestCta = input<boolean>(false);
     readonly showAuthCtaOnError = input<boolean>(false);
     readonly backLabel = input<string>('Wróć');
+    readonly isAddingToPlan = input<boolean>(false);
 
     readonly addToCollection = output<void>();
     readonly edit = output<void>();
@@ -59,6 +60,8 @@ export class RecipeDetailViewComponent {
     readonly back = output<void>();
     readonly login = output<void>();
     readonly register = output<void>();
+    readonly addToPlan = output<void>();
+    readonly openPlan = output<void>();
 
     readonly hasRecipe = computed(() => this.recipe() !== null);
 
@@ -84,6 +87,14 @@ export class RecipeDetailViewComponent {
 
     onRegister(): void {
         this.register.emit();
+    }
+
+    onAddToPlan(): void {
+        this.addToPlan.emit();
+    }
+
+    onOpenPlan(): void {
+        this.openPlan.emit();
     }
 }
 
