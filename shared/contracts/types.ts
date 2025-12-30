@@ -102,6 +102,8 @@ export type RecipeListItemDto = Pick<
     visibility: RecipeVisibility;
     is_owner: boolean;
     in_my_collections: boolean;
+    /** True if recipe is in authenticated user's plan */
+    in_my_plan: boolean;
     author: {
         id: string;
         username: string;
@@ -130,6 +132,8 @@ export interface PublicRecipeListItemDto {
     created_at: string;
     /** True if recipe is in authenticated user's collections (always false for anonymous) */
     in_my_collections: boolean;
+    /** True if recipe is in authenticated user's plan (always false for anonymous) */
+    in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
 }
@@ -150,6 +154,10 @@ export interface PublicRecipeDetailDto {
     tags: string[];
     author: ProfileDto;
     created_at: string;
+    /** True if authenticated user owns the recipe (always false for anonymous) */
+    is_owner: boolean;
+    /** True if recipe is in authenticated user's plan (always false for anonymous) */
+    in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
 }
@@ -185,6 +193,8 @@ export type RecipeDetailDto = Omit<
     visibility: RecipeVisibility;
     /** Number of servings the recipe yields (1-99 or null if not specified). */
     servings: number | null;
+    /** True if recipe is in authenticated user's plan */
+    in_my_plan: boolean;
 };
 
 /**

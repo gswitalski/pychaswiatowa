@@ -5,25 +5,26 @@ Here is the reference image to help you understand the dish
 Here is the recipe for the dish you need to photograph:
 <recipe>
 
-Sałatka z groszkiem cukrowym
-Lekka i świeża sałatka z groszkiem cukrowym, idealna na letnie dni. Połączenie smaków sprawia, że jest nie tylko zdrowa, ale i smaczna!
+
+Tortilla à la Hot Dog
+Prosta i smaczna tortilla z parówkami, idealna na szybki posiłek. Połączenie smaków, które zadowoli każdego miłośnika hot dogów!
 
 Przekąska
 Brak zdjęcia
 Składniki
-100 g groszku cukrowego
-1 ser mozzarella
-1 pomidor
-100 g rukoli
-4 plastry gotowanej szynki
-1 łyżka selera naciowego
-1 łyżeczka octu balsamicznego
-20 ml oliwy
-sól, pieprz, oregano
+4 tortille
+4 parówki
+4 łyżki kapusty kiszonej
+2 łyżki majonezu
+2 łyżki keczupu
 Kroki przygotowania
-Pokroić mozzarellę i pomidor w półplasterki, a seler w półksiężyce.
-Pociąć szynkę w cienkie paski.
-Wymieszać wszystkie składniki, dodać rukolę i groszek, polać oliwą i octem, przyprawić i wymieszać.
+Ugotować parówki w wodzie.
+Wymieszać majonez z keczupem.
+Ogrzać tortille na suchej patelni po 15 sekund z każdej strony.
+Posmarować je sosem i rozłożyć na nich kapustę kiszoną.
+Na każdej tortilli ułożyć parówkę i zwinąć.
+
+
 </recipe>
 
 Requirements for the image you generate:

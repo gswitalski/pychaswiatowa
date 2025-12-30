@@ -267,14 +267,25 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
 /**
  * Handles GET /public/recipes/{id} request.
  * Returns full details of a single public recipe.
- * This endpoint is accessible without authentication.
+ * This endpoint is accessible without authentication, but supports optional authentication
+ * for additional metadata (is_owner, in_my_plan).
  *
+ * @param req - The incoming HTTP request (used to extract optional JWT)
  * @param recipeId - Recipe ID extracted from URL path
  * @returns Response with PublicRecipeDetailDto on success, or error response
  */
-export async function handleGetPublicRecipeById(recipeId: string): Promise<Response> {
+export async function handleGetPublicRecipeById(req: Request, recipeId: string): Promise<Response> {
     try {
         logger.info('Handling GET /public/recipes/:id request', { recipeId });
+
+        // Extract optional user (null for anonymous, throws on invalid token)
+        const user = await getOptionalAuthenticatedUser(req);
+        const userId = user?.id ?? null;
+
+        logger.info('Request context determined', {
+            isAuthenticated: userId !== null,
+            userId: userId ?? 'anonymous',
+        });
 
         // Validate recipe ID parameter
         let validatedParams: GetPublicRecipeByIdParams;
@@ -295,12 +306,13 @@ export async function handleGetPublicRecipeById(recipeId: string): Promise<Respo
         // Create service role client for public access
         const client = createServiceRoleClient();
 
-        // Fetch public recipe by ID
-        const recipe = await getPublicRecipeById(client, validatedParams);
+        // Fetch public recipe by ID (with optional user context for metadata)
+        const recipe = await getPublicRecipeById(client, validatedParams, userId);
 
         logger.info('GET /public/recipes/:id completed successfully', {
             recipeId: recipe.id,
             recipeName: recipe.name,
+            isAuthenticated: userId !== null,
         });
 
         return createSuccessResponse(recipe);
@@ -437,7 +449,7 @@ export async function publicRouter(req: Request): Promise<Response> {
     const recipeByIdMatch = subPath.match(/^\/recipes\/([^/]+)$/);
     if (recipeByIdMatch && method === 'GET') {
         const recipeId = recipeByIdMatch[1];
-        return handleGetPublicRecipeById(recipeId);
+        return handleGetPublicRecipeById(req, recipeId);
     }
 
     // Route: GET /public/recipes

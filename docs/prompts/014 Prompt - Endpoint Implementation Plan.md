@@ -13,7 +13,9 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-`DELETE /plan` – wyczyszczenie całej listy.
+- **Zmienione endpointy (helper field):**
+    - **Co się zmieniło:** dodano pole pomocnicze `in_my_plan` w odpowiedziach, aby UI mogło od razu ustawić stan przycisku na szczegółach przepisu.
+    - Dotyczy (gdy żądanie jest uwierzytelnione): `GET /public/recipes`, `GET /public/recipes/feed`, `GET /public/recipes/{id}`, `GET /recipes`, `GET /recipes/feed`, `GET /recipes/{id}`.
 
 </api_changes_description>
 
