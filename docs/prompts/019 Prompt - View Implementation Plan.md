@@ -20,10 +20,12 @@ Najpierw przejrzyj następujące informacje:
 <views>
 
 
-- **Zmienione: Widok szczegółów przepisu (`/recipes/:id` oraz `/explore/recipes/:id`)**
-    - **Co się zmieniło:** dla zalogowanego dodano akcję „Dodaj do planu” obok „Dodaj do kolekcji”.
-    - **Stany przycisku:** „Dodaj do planu” → spinner → „Zobacz listę” (z ikoną sukcesu). Jeśli przepis już jest w planie: od razu „Zobacz listę”.
-
+- **Nowe: Drawer „Mój plan” (globalny panel wysuwany, bez osobnej trasy)**
+    - Drawer wysuwany z prawej strony, z overlay przyciemniającym tło i zamykaniem po kliknięciu w overlay.
+    - Nagłówek drawer’a: „Wyczyść” (ikona kosza) + „Zamknij” (X).
+    - Lista: miniatura + nazwa + kosz do usunięcia; klik w wiersz przenosi do szczegółów przepisu.
+    - Kolejność: ostatnio dodane na górze.
+    - Pływający przycisk „Mój plan” w prawym dolnym rogu widoczny, gdy plan ma ≥ 1 element.
 
 </views>
 
@@ -32,10 +34,9 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-- **Nowe: US-038 – Dodanie przepisu do „Mojego planu” z widoku szczegółów**
-    - Dodano nową akcję na szczegółach przepisu: „Dodaj do planu” → (spinner) → „Zobacz listę”.
-    - Dodano wymaganie: brak duplikatów oraz limit **50** elementów.
-
+- **Nowe: US-039 – Przeglądanie i zarządzanie listą „Mój plan”**
+    - Drawer z listą (miniatura + nazwa + kosz), wyczyszczenie listy, zamknięcie, overlay zamykający po kliknięciu.
+    - Pływający przycisk „Mój plan” widoczny, gdy lista ma ≥ 1 element.
 
 </user_stories>
 

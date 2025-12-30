@@ -1,0 +1,129 @@
+<div 
+    class="my-plan-drawer"
+    role="region"
+    aria-label="Panel Mój plan"
+>
+    <!-- Header -->
+    <div class="my-plan-drawer__header">
+        <h2 class="my-plan-drawer__title" id="my-plan-drawer-title">Mój plan</h2>
+        <div class="my-plan-drawer__header-actions">
+            @if (hasItems() && !isClearing()) {
+                <button
+                    mat-icon-button
+                    (click)="onClearPlan()"
+                    [disabled]="isLoading() || isClearing()"
+                    aria-label="Wyczyść plan"
+                    matTooltip="Wyczyść plan"
+                >
+                    <mat-icon aria-hidden="true">delete_sweep</mat-icon>
+                </button>
+            }
+            <button
+                mat-icon-button
+                (click)="onClose()"
+                aria-label="Zamknij panel Mój plan"
+                matTooltip="Zamknij"
+            >
+                <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div 
+        class="my-plan-drawer__content"
+        [attr.aria-busy]="isLoading() || isRefreshing()"
+        aria-live="polite"
+    >
+        <!-- Loading state -->
+        @if (isLoading()) {
+            <div class="my-plan-drawer__loading" role="status">
+                <mat-spinner diameter="40" aria-label="Ładowanie planu"></mat-spinner>
+                <p>Ładowanie planu...</p>
+            </div>
+        }
+
+        <!-- Error state -->
+        @else if (error()) {
+            <div class="my-plan-drawer__error" role="alert">
+                <mat-icon class="my-plan-drawer__error-icon" aria-hidden="true">error_outline</mat-icon>
+                <p class="my-plan-drawer__error-message">{{ error()?.message }}</p>
+                <button mat-stroked-button (click)="onRetry()">
+                    <mat-icon aria-hidden="true">refresh</mat-icon>
+                    Spróbuj ponownie
+                </button>
+            </div>
+        }
+
+        <!-- Empty state -->
+        @else if (!hasItems()) {
+            <div class="my-plan-drawer__empty" role="status">
+                <mat-icon class="my-plan-drawer__empty-icon" aria-hidden="true">playlist_add</mat-icon>
+                <h3>Twój plan jest pusty</h3>
+                <p>Dodaj przepisy do planu, aby mieć do nich szybki dostęp.</p>
+            </div>
+        }
+
+        <!-- List -->
+        @else {
+            <div 
+                class="my-plan-drawer__list-container"
+                [class.my-plan-drawer__list-container--refreshing]="isRefreshing()"
+                [class.my-plan-drawer__list-container--clearing]="isClearing()"
+            >
+                <mat-nav-list aria-label="Lista przepisów w planie">
+                    @for (item of items(); track trackByRecipeId($index, item)) {
+                        <mat-list-item
+                            class="my-plan-drawer__item"
+                            [class.my-plan-drawer__item--deleting]="isDeletingRecipe(item.recipe_id)"
+                            (click)="onNavigateToRecipe(item)"
+                            [attr.aria-label]="'Przejdź do przepisu: ' + item.recipe.name"
+                        >
+                            <div class="my-plan-drawer__item-content">
+                                <div class="my-plan-drawer__item-image-container">
+                                    <img
+                                        [src]="getRecipeImageUrl(item.recipe.image_path)"
+                                        [alt]="''"
+                                        aria-hidden="true"
+                                        class="my-plan-drawer__item-image"
+                                    />
+                                </div>
+                                <span class="my-plan-drawer__item-name">
+                                    {{ item.recipe.name }}
+                                </span>
+                                <div class="my-plan-drawer__item-action">
+                                    @if (isDeletingRecipe(item.recipe_id)) {
+                                        <mat-spinner 
+                                            diameter="24"
+                                            [attr.aria-label]="'Usuwanie przepisu ' + item.recipe.name"
+                                        ></mat-spinner>
+                                    } @else {
+                                        <button
+                                            mat-icon-button
+                                            (click)="onRemoveFromPlan($event, item.recipe_id)"
+                                            [disabled]="isClearing()"
+                                            [attr.aria-label]="'Usuń z planu: ' + item.recipe.name"
+                                            matTooltip="Usuń z planu"
+                                        >
+                                            <mat-icon aria-hidden="true">delete_outline</mat-icon>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </mat-list-item>
+                    }
+                </mat-nav-list>
+            </div>
+        }
+    </div>
+
+    <!-- Footer with count -->
+    @if (hasItems() && !isLoading()) {
+        <div class="my-plan-drawer__footer">
+            <span class="my-plan-drawer__count">
+                {{ planTotal() }} / 50 przepisów
+            </span>
+        </div>
+    }
+</div>
+

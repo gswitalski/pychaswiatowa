@@ -20,6 +20,11 @@
         overflow: hidden; // Hide scrollbars on sidenav container
     }
 
+    &__my-plan-drawer {
+        width: auto; // Szerokość określona przez komponent wewnętrzny
+        border-left: 1px solid var(--mat-sys-outline-variant);
+    }
+
     &__content {
         display: flex;
         flex-direction: column;

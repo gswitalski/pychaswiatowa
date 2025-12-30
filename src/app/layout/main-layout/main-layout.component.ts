@@ -10,12 +10,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { LayoutService } from '../../core/services/layout.service';
+import { MyPlanService } from '../../core/services/my-plan.service';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TopbarComponent } from './components/topbar/topbar.component';
+import { MyPlanDrawerComponent } from '../../shared/components/my-plan-drawer/my-plan-drawer.component';
+import { MyPlanFabComponent } from '../../shared/components/my-plan-fab/my-plan-fab.component';
 
 /**
  * Main application layout component (App Shell).
  * Provides the Holy Grail layout with sidebar navigation, topbar, and content area.
+ * Includes "Mój plan" drawer and FAB for authenticated users.
  */
 @Component({
     selector: 'pych-main-layout',
@@ -25,6 +29,8 @@ import { TopbarComponent } from './components/topbar/topbar.component';
         MatSidenavModule,
         SidebarComponent,
         TopbarComponent,
+        MyPlanDrawerComponent,
+        MyPlanFabComponent,
     ],
     templateUrl: './main-layout.component.html',
     styleUrl: './main-layout.component.scss',
@@ -32,6 +38,7 @@ import { TopbarComponent } from './components/topbar/topbar.component';
 })
 export class MainLayoutComponent implements OnInit {
     private readonly layoutService = inject(LayoutService);
+    private readonly myPlanService = inject(MyPlanService);
     private readonly router = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -47,7 +54,16 @@ export class MainLayoutComponent implements OnInit {
     /** Sidebar visibility state (conditional rendering based on route) */
     readonly shouldShowSidebar = this.layoutService.shouldShowSidebar;
 
+    /** My Plan drawer open state */
+    readonly isMyPlanDrawerOpen = this.myPlanService.isDrawerOpen;
+
+    /** My Plan has items (for FAB visibility) */
+    readonly myPlanHasItems = this.myPlanService.hasItems;
+
     ngOnInit(): void {
+        // Prefetch plan data for FAB visibility
+        this.myPlanService.prefetchPlan();
+
         // Set initial sidebar visibility based on current URL
         const initialShouldShow = this.checkSidebarVisibility(this.router.url);
         this.layoutService.setShouldShowSidebar(initialShouldShow);
@@ -81,6 +97,21 @@ export class MainLayoutComponent implements OnInit {
      */
     onSidebarClosed(): void {
         this.layoutService.closeSidebar();
+    }
+
+    /**
+     * Handle My Plan drawer closed event (backdrop click or escape)
+     */
+    onMyPlanDrawerClosed(): void {
+        this.myPlanService.closeDrawer();
+    }
+
+    /**
+     * Handle My Plan drawer opened event
+     * Refresh plan data if needed
+     */
+    onMyPlanDrawerOpened(): void {
+        this.myPlanService.loadPlanIfNeeded();
     }
 }
 
