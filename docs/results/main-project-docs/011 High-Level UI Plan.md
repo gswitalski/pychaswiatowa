@@ -50,11 +50,16 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - CTA do logowania/rejestracji na dole strony
         - Przy próbie dostępu do niepublicznego przepisu: komunikat o braku dostępu z zachętą do logowania
     - **Zalogowany (cudzy przepis):**
-        - Nagłówek z przyciskiem "Dodaj do kolekcji"
+        - Nagłówek z przyciskami: "Dodaj do kolekcji" oraz "Dodaj do planu"
+        - Przycisk "Dodaj do planu" ma stany:
+            - domyślnie: "Dodaj do planu" (ikona listy + plus),
+            - w trakcie dodawania: spinner zamiast etykiety,
+            - po sukcesie: ikona „ptaszka” + etykieta "Zobacz listę",
+            - jeśli przepis już jest w planie: od razu "Zobacz listę".
         - Brak przycisków edycji i usuwania
         - Przy próbie dostępu do niepublicznego przepisu innego autora: komunikat o braku dostępu
     - **Zalogowany (własny przepis):**
-        - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Edytuj", "Usuń"
+        - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Dodaj do planu", "Edytuj", "Usuń"
 - **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, **badge/chip "Termorobot" (jeśli ustawione)**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. (Opcjonalnie) przekierowania/normalizacja URL w warstwie frontendu: `/explore/recipes/:id-:slug` -> `/explore/recipes/:id`.
@@ -129,7 +134,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Header:** Tytuł przepisu. Akcje zależne od kontekstu (patrz punkt 3).
 - **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, **badge/chip "Termorobot" (jeśli ustawione)**, opis, zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji. Dla zalogowanego nie-autora przyciski "Edytuj" i "Usuń" nie są wyświetlane (również gdy wejście nastąpiło z listy `/my-recipies`).
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji. Dla zalogowanego nie-autora przyciski "Edytuj" i "Usuń" nie są wyświetlane (również gdy wejście nastąpiło z listy `/my-recipies`). Dla zalogowanego w nagłówku dostępna jest również akcja „Dodaj do planu” / „Zobacz listę” otwierająca drawer „Mój plan”.
 
 **8a. Dodaj przepis (Kreator – wybór trybu)**
 - **Ścieżka:** `/recipes/new/start`
@@ -229,6 +234,23 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe informacje do wyświetlenia:** Komunikat „Brak dostępu”, krótkie wyjaśnienie, akcje: „Wróć” / „Przejdź do Moja Pycha”.
 - **Względy UX, dostępności i bezpieczeństwa:** Widok nie ujawnia szczegółów zasobów ani reguł uprawnień. Może być używany przez guardy/obsługę błędów `403`.
 
+**15. Drawer: „Mój plan” (panel wysuwany)**
+- **Ścieżka:** (globalny drawer; brak osobnej ścieżki routingu)
+- **Główny cel:** Umożliwić szybki podgląd listy przepisów w „Moim planie” oraz zarządzanie listą bez opuszczania aktualnego widoku.
+- **Sposoby otwarcia:**
+    - kliknięcie „Zobacz listę” na widoku szczegółów przepisu,
+    - kliknięcie pływającego przycisku „Mój plan” (gdy plan ma ≥ 1 element).
+- **Zachowanie:**
+    - Drawer wysuwa się z prawej strony.
+    - Po otwarciu reszta strony jest lekko przyciemniona (overlay).
+    - Kliknięcie w overlay zamyka drawer.
+    - Nagłówek drawer’a zawiera: ikonę kosza (wyczyść plan) oraz ikonę „X” (zamknij).
+    - Lista jest posortowana: ostatnio dodane na górze.
+    - Każdy element listy zawiera: miniaturę/obrazek, nazwę oraz ikonę kosza do usunięcia pozycji.
+    - Kliknięcie w element listy (poza ikoną kosza) przenosi do szczegółów przepisu.
+    - Stan pusty: czytelny komunikat „Twój plan jest pusty” + brak pływającego przycisku.
+- **Względy UX:** Panel i overlay muszą być w pełni dostępne z klawiatury (Esc zamyka, focus trap wewnątrz drawer’a, aria-labels na ikonach).
+
 ## 3. Mapa podróży użytkownika
 
 Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dodaniu i zorganizowaniu pierwszego przepisu:
@@ -268,4 +290,7 @@ Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności o
 - **Komponent "stanu pustego" (`EmptyStateComponent`):** Generyczny komponent wyświetlający informację (np. "Nie masz jeszcze żadnych przepisów") i przycisk z wezwaniem do akcji (np. "Dodaj pierwszy przepis"). Używany na listach przepisów i kolekcji.
 - **Komponent przesyłania pliku (`ImageUploadComponent`):** Komponent obsługujący wybór, walidację i podgląd zdjęcia w formularzu przepisu, z obsługą **wklejania ze schowka (Ctrl+V)** oraz **drag&drop** (plik z dysku) w trybie edycji. Umożliwia auto-upload, pokazuje progres oraz udostępnia akcje: "Wybierz plik" (fallback), "Usuń zdjęcie", "Cofnij" (Undo).
 - **Modal dodawania do kolekcji (`AddToCollectionDialogComponent`):** Okno modalne pozwalające na wybranie istniejącej kolekcji z listy lub stworzenie nowej i dodanie do niej bieżącego przepisu.
+- **Drawer „Mój plan” (`MyPlanDrawerComponent`):** Panel wysuwany z prawej strony pokazujący listę przepisów w planie (miniatura + nazwa + kosz), z akcjami: „Wyczyść” i „Zamknij” oraz z overlay zamykającym po kliknięciu.
+- **Pływający przycisk „Mój plan” (`MyPlanFabComponent`):** Globalny przycisk widoczny po zalogowaniu, gdy plan ma ≥ 1 element. Umieszczony w prawym dolnym rogu i otwierający drawer „Mój plan”.
+- **Serwis planu (`MyPlanService`):** Warstwa komunikacji z API planu oraz źródło stanu UI (czy drawer jest otwarty, czy plan ma elementy) wykorzystywana w komponentach globalnych (App Shell) i na szczegółach przepisu.
 - **Lista edytowalnych elementów (`EditableListComponent`):** Komponent do zarządzania listą składników/kroków w formularzu, wspierający dodawanie, usuwanie, edycję "in-line" oraz zmianę kolejności za pomocą "przeciągnij i upuść".

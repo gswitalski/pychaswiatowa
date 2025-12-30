@@ -11,6 +11,7 @@ The API exposes the following primary resources:
 -   **Categories**: Corresponds to the `categories` table. Represents a predefined recipe category.
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
 -   **Collections**: Corresponds to the `collections` table. Represents user-created collections of recipes.
+-   **My Plan ("Mój plan")**: A per-user, persistent list of recipes the user wants to keep as a short-term plan. The list is unique (no duplicates) and limited to **50** recipes.
 -   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. This is provided by Supabase and consumed via the `supabase-js` client in the Angular app (no custom backend endpoints required for MVP).
 -   **AI Recipe Draft (Supabase Edge Function)**: Generates a structured "recipe draft" from either pasted text or a pasted image (OCR + LLM), to prefill the recipe form. The draft is returned to the client and is **not persisted** until the user explicitly saves the recipe via the standard `POST /recipes`.
 
@@ -128,7 +129,7 @@ Public endpoints are available without authentication:
 -   **Description**: Retrieve a paginated list of recipes for public routes. For anonymous users, the list contains only public recipes. For authenticated users, the list may also include their own recipes with non-public visibility.
 -   **Notes**:
     - Public access is allowed without authentication, but the client MAY include an `Authorization: Bearer <JWT>` header.
-    - If the request is authenticated, the API returns the helper field `is_owner` and MAY include the user's own recipes with `visibility != 'PUBLIC'` (only when `is_owner = true`).
+    - If the request is authenticated, the API returns the helper fields `is_owner` and `in_my_plan` and MAY include the user's own recipes with `visibility != 'PUBLIC'` (only when `is_owner = true`).
 -   **Query Parameters**:
     -   `page` (optional, integer, default: 1): The page number for pagination.
     -   `limit` (optional, integer, default: 20): The number of items per page.
@@ -150,6 +151,7 @@ Public endpoints are available without authentication:
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
               "is_owner": false,
+              "in_my_plan": false,
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
@@ -164,6 +166,7 @@ Public endpoints are available without authentication:
               "image_path": null,
               "visibility": "PRIVATE",
               "is_owner": true,
+              "in_my_plan": true,
               "category": { "id": 1, "name": "Dinner" },
               "tags": [],
               "author": { "id": "me-uuid-...", "username": "me" },
@@ -188,7 +191,7 @@ Public endpoints are available without authentication:
 -   **Description**: Retrieve a "load more" friendly list of recipes for public routes using cursor-based pagination (recommended for the `/explore` UI). For anonymous users, the list contains only public recipes. For authenticated users, the list may also include their own recipes with non-public visibility.
 -   **Notes**:
     - Public access is allowed without authentication, but the client MAY include an `Authorization: Bearer <JWT>` header.
-    - If the request is authenticated, the API returns the helper field `is_owner` and MAY include the user's own recipes with `visibility != 'PUBLIC'` (only when `is_owner = true`).
+    - If the request is authenticated, the API returns the helper fields `is_owner` and `in_my_plan` and MAY include the user's own recipes with `visibility != 'PUBLIC'` (only when `is_owner = true`).
 -   **Query Parameters**:
     -   `cursor` (optional, string): Opaque cursor returned by the previous response (`pageInfo.nextCursor`).
     -   `limit` (optional, integer, default: 12): The number of items to return per batch. (UI uses 12 as the default batch size.)
@@ -210,6 +213,7 @@ Public endpoints are available without authentication:
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
               "is_owner": false,
+              "in_my_plan": false,
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
@@ -224,6 +228,7 @@ Public endpoints are available without authentication:
               "image_path": null,
               "visibility": "SHARED",
               "is_owner": true,
+              "in_my_plan": true,
               "category": { "id": 2, "name": "Dessert" },
               "tags": [],
               "author": { "id": "me-uuid-...", "username": "me" },
@@ -245,6 +250,9 @@ Public endpoints are available without authentication:
 #### `GET /public/recipes/{id}`
 
 -   **Description**: Retrieve a single public recipe by its ID. Intended for public, shareable, SEO-friendly recipe pages (frontend can include a slug in the URL, but the API uses the numeric `id`).
+-   **Notes**:
+    - Public access is allowed without authentication, but the client MAY include an `Authorization: Bearer <JWT>` header.
+    - If the request is authenticated, the API returns the helper fields `is_owner` and `in_my_plan`.
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
@@ -257,6 +265,8 @@ Public endpoints are available without authentication:
           "is_termorobot": false,
           "image_path": "path/to/image.jpg",
           "visibility": "PUBLIC",
+          "is_owner": false,
+          "in_my_plan": false,
           "category": { "id": 2, "name": "Dessert" },
           "ingredients": [
             { "type": "header", "content": "Dough" },
@@ -287,6 +297,7 @@ Public endpoints are available without authentication:
     - Response helper fields:
         - `is_owner`: `true` if the authenticated user is the recipe author, otherwise `false`.
         - `in_my_collections`: `true` if the recipe is present in at least one collection owned by the authenticated user (may be `true` for both owned and non-owned recipes).
+        - `in_my_plan`: `true` if the recipe is present in the authenticated user's "My Plan" list.
     - When `view = my_recipes`, the result set MUST be de-duplicated (a recipe that belongs to multiple collections must appear only once).
 -   **Query Parameters**:
     -   `page` (optional, integer, default: 1): The page number for pagination.
@@ -314,6 +325,7 @@ Public endpoints are available without authentication:
               "visibility": "PUBLIC",
               "is_owner": true,
               "in_my_collections": false,
+              "in_my_plan": false,
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
               "created_at": "2023-10-27T10:00:00Z"
             }
@@ -336,7 +348,7 @@ Public endpoints are available without authentication:
 -   **Description**: Retrieve a "load more" friendly list of recipes for the authenticated user using cursor-based pagination (recommended for the `/my-recipies` UI).
 -   **Notes**:
     - Reuses the same filtering and "view" semantics as `GET /recipes`.
-    - Response helper fields are identical (`is_owner`, `in_my_collections`).
+    - Response helper fields are identical (`is_owner`, `in_my_collections`, `in_my_plan`).
     - Intended to support appending results in the UI ("Load more") without classic page navigation.
 -   **Query Parameters**:
     -   `cursor` (optional, string): Opaque cursor returned by the previous response (`pageInfo.nextCursor`).
@@ -364,6 +376,7 @@ Public endpoints are available without authentication:
               "visibility": "PUBLIC",
               "is_owner": true,
               "in_my_collections": false,
+              "in_my_plan": false,
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
               "created_at": "2023-10-27T10:00:00Z"
             }
@@ -628,9 +641,14 @@ Public endpoints are available without authentication:
 #### `GET /recipes/{id}`
 
 -   **Description**: Retrieve a single recipe by its ID.
+-   **Notes**:
+    - The response SHOULD include the same helper fields used across recipe list endpoints to support UI decisions:
+        - `is_owner`
+        - `in_my_collections`
+        - `in_my_plan`
 -   **Success Response**:
     -   **Code**: `200 OK`
-    -   **Payload**: (Similar to the `POST /recipes` success response)
+    -   **Payload**: (Similar to the `POST /recipes` success response, plus helper fields)
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
     -   **Code**: `403 Forbidden` - If the recipe is not public and the user does not own the recipe.
@@ -891,6 +909,85 @@ Public endpoints are available without authentication:
     -   **Code**: `401 Unauthorized`
     -   **Code**: `403 Forbidden`
     -   **Code**: `404 Not Found`
+
+---
+
+### My Plan ("Mój plan")
+
+#### `GET /plan`
+
+-   **Description**: Retrieve the authenticated user's "My Plan" list (a persistent list of recipes). The list is ordered by `added_at.desc` (newest first).
+-   **Notes**:
+    - The list MUST be unique (no duplicate `recipe_id` per user).
+    - The list has a hard technical limit of **50** recipes per user.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "data": [
+            {
+              "recipe_id": 123,
+              "added_at": "2023-10-30T10:00:00Z",
+              "recipe": {
+                "id": 123,
+                "name": "Apple Pie",
+                "image_path": "path/to/image.jpg"
+              }
+            }
+          ],
+          "meta": {
+            "total": 1,
+            "limit": 50
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+
+---
+
+#### `POST /plan/recipes`
+
+-   **Description**: Add a recipe to the authenticated user's "My Plan" list.
+-   **Request Payload**:
+    ```json
+    {
+      "recipe_id": 123
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `201 Created`
+    -   **Payload**: `{ "message": "Recipe added to plan successfully." }`
+-   **Error Response**:
+    -   **Code**: `400 Bad Request`
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden` (if the user does not have access to the recipe)
+    -   **Code**: `404 Not Found` (if the recipe does not exist)
+    -   **Code**: `409 Conflict` (if the recipe is already in the plan)
+    -   **Code**: `422 Unprocessable Entity` (if the plan reached the limit of 50 recipes)
+
+---
+
+#### `DELETE /plan/recipes/{recipeId}`
+
+-   **Description**: Remove a recipe from the authenticated user's "My Plan" list.
+-   **Success Response**:
+    -   **Code**: `204 No Content`
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
+---
+
+#### `DELETE /plan`
+
+-   **Description**: Clear the authenticated user's entire "My Plan" list.
+-   **Success Response**:
+    -   **Code**: `204 No Content`
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
 
 ---
 
