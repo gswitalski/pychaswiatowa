@@ -6,7 +6,7 @@ import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import { AddRecipeToPlanSchema } from './plan.types.ts';
-import { addRecipeToPlan, getPlan, removeRecipeFromPlan } from './plan.service.ts';
+import { addRecipeToPlan, getPlan, removeRecipeFromPlan, clearPlan } from './plan.service.ts';
 
 /**
  * Main router for /plan endpoints
@@ -27,6 +27,11 @@ export async function planRouter(req: Request): Promise<Response> {
     // Route: POST /recipes
     if (path === '/recipes' && method === 'POST') {
         return await handlePostPlanRecipes(req);
+    }
+
+    // Route: DELETE / or DELETE '' (clear entire plan)
+    if ((path === '' || path === '/') && method === 'DELETE') {
+        return await handleDeletePlan(req);
     }
 
     // Route: DELETE /recipes/{recipeId}
@@ -113,6 +118,31 @@ export async function handlePostPlanRecipes(req: Request): Promise<Response> {
             headers: { 'Content-Type': 'application/json' },
         }
     );
+}
+
+/**
+ * Handler for DELETE /plan
+ * Clears the entire plan (removes all recipes) for the authenticated user
+ * 
+ * This endpoint is idempotent: clearing an already-empty plan is considered a success.
+ */
+export async function handleDeletePlan(req: Request): Promise<Response> {
+    // 1. Authenticate user
+    const { client, user } = await getAuthenticatedContext(req);
+
+    logger.info(`[handleDeletePlan] User ${user.id} clearing entire plan`);
+
+    // 2. Call service to clear plan
+    const deletedCount = await clearPlan({ client, userId: user.id });
+
+    logger.info(
+        `[handleDeletePlan] Plan cleared for user ${user.id} (${deletedCount} items removed)`
+    );
+
+    // 3. Return success response (204 No Content)
+    return new Response(null, {
+        status: 204,
+    });
 }
 
 /**

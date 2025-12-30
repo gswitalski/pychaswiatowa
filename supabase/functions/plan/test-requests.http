@@ -130,3 +130,22 @@ DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
 DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
 Authorization: Bearer invalid_token_here
 
+###############################################################################
+### DELETE /plan - Clear entire plan
+###############################################################################
+
+### CLEAR-1. SUCCESS: Clear plan with recipes (run POST-1 multiple times first)
+DELETE {{baseUrl}}/plan
+Authorization: Bearer {{token}}
+
+### CLEAR-2. SUCCESS: Clear empty plan (idempotent - run after CLEAR-1)
+DELETE {{baseUrl}}/plan
+Authorization: Bearer {{token}}
+
+### CLEAR-3. UNAUTHORIZED: Missing Authorization header
+DELETE {{baseUrl}}/plan
+
+### CLEAR-4. UNAUTHORIZED: Invalid token
+DELETE {{baseUrl}}/plan
+Authorization: Bearer invalid_token_here
+

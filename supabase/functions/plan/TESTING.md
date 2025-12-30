@@ -692,6 +692,207 @@ curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
 
 ---
 
+## Test Scenarios: DELETE /plan
+
+### Scenario CLEAR-1: ✅ Clear plan with recipes (SUCCESS)
+
+**Setup:** Add 3 recipes to plan first:
+```bash
+curl -X POST http://localhost:54331/functions/v1/plan/recipes \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"recipe_id": 1}'
+
+curl -X POST http://localhost:54331/functions/v1/plan/recipes \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"recipe_id": 2}'
+
+curl -X POST http://localhost:54331/functions/v1/plan/recipes \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"recipe_id": 3}'
+```
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `204 No Content`
+- Body: empty (no content)
+
+**Verify:**
+```bash
+# GET /plan should return empty plan
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected verification response:**
+```json
+{
+  "data": [],
+  "meta": {
+    "total": 0,
+    "limit": 50
+  }
+}
+```
+
+**SQL verification:**
+```sql
+-- All recipes should be removed from plan
+SELECT * FROM plan_recipes WHERE user_id = auth.uid();
+-- Should return 0 rows
+```
+
+### Scenario CLEAR-2: ✅ Clear empty plan (SUCCESS - Idempotent)
+
+**Setup:** Ensure plan is empty (run CLEAR-1 first or start fresh).
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `204 No Content`
+- Body: empty (no content)
+
+**Note:** This verifies idempotency - clearing an already-empty plan is considered success.
+
+**Verify:**
+```bash
+# GET /plan should still return empty plan
+curl -X GET http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+### Scenario CLEAR-3: ✅ Clear plan with 50 items (SUCCESS)
+
+**Setup:** Add 50 recipes to plan (maximum allowed).
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `204 No Content`
+- Body: empty (no content)
+
+**Verify:**
+```sql
+-- All 50 recipes should be removed
+SELECT COUNT(*) FROM plan_recipes WHERE user_id = auth.uid();
+-- Should return 0
+```
+
+**Performance:** Should complete in < 20ms even with 50 items.
+
+### Scenario CLEAR-4: ❌ Missing Authorization header (UNAUTHORIZED)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan
+```
+
+**Expected Response:**
+- Status: `401 Unauthorized`
+- Body:
+```json
+{
+  "code": "UNAUTHORIZED",
+  "message": "Missing Authorization header"
+}
+```
+
+### Scenario CLEAR-5: ❌ Invalid JWT token (UNAUTHORIZED)
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer invalid_token_here"
+```
+
+**Expected Response:**
+- Status: `401 Unauthorized`
+- Body:
+```json
+{
+  "code": "UNAUTHORIZED",
+  "message": "Invalid token"
+}
+```
+
+### Scenario CLEAR-6: ✅ Cannot clear another user's plan (RLS protection)
+
+**Setup:**
+- User A adds recipes to their plan
+- User B tries to clear User A's plan
+
+**Request:** (as User B)
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <USER_B_JWT_TOKEN>"
+```
+
+**Expected Response:**
+- Status: `204 No Content` (User B's own plan is cleared, not User A's)
+
+**Verify:**
+```sql
+-- User A's plan should remain intact
+SELECT COUNT(*) FROM plan_recipes WHERE user_id = '<USER_A_ID>';
+-- Should still show User A's recipes
+
+-- User B's plan should be empty (if it had any items)
+SELECT COUNT(*) FROM plan_recipes WHERE user_id = '<USER_B_ID>';
+-- Should return 0
+```
+
+**Note:** RLS ensures users can only modify their own plan. Each user's DELETE operation is isolated to their own data.
+
+### Scenario CLEAR-7: ✅ Idempotency test (multiple clears)
+
+**Setup:** Add recipes to plan, then clear multiple times.
+
+**Request 1:** (First clear)
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response 1:**
+- Status: `204 No Content`
+
+**Request 2:** (Second clear - plan already empty)
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response 2:**
+- Status: `204 No Content`
+
+**Request 3:** (Third clear - still empty)
+```bash
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+**Expected Response 3:**
+- Status: `204 No Content`
+
+**Verify:** All three operations succeed with 204, demonstrating true idempotency.
+
+---
+
 ## Verification Queries
 
 ### GET /plan verification
@@ -758,6 +959,27 @@ SELECT recipe_id FROM plan_recipes
 WHERE user_id = auth.uid()
 ORDER BY added_at DESC;
 -- Should show all recipes except the deleted one
+```
+
+### DELETE /plan verification
+
+```sql
+-- Verify all recipes were removed from plan
+SELECT * FROM plan_recipes 
+WHERE user_id = auth.uid();
+-- Should return 0 rows after successful clear
+
+-- Verify count is zero
+SELECT COUNT(*) FROM plan_recipes 
+WHERE user_id = auth.uid();
+-- Should return 0
+
+-- Verify other users' plans are not affected (requires service role query)
+SELECT user_id, COUNT(*) as plan_count
+FROM plan_recipes
+GROUP BY user_id
+ORDER BY user_id;
+-- Should show only other users' plans with their counts intact
 ```
 
 ## Clean up

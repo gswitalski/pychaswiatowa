@@ -13,7 +13,7 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-`DELETE /plan/recipes/{recipeId}` – usunięcie pojedynczego przepisu z planu.
+`DELETE /plan` – wyczyszczenie całej listy.
 
 </api_changes_description>
 

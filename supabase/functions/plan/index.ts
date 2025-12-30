@@ -5,6 +5,7 @@
  * Routes:
  * - GET / - Get user's plan
  * - POST /recipes - Add recipe to plan
+ * - DELETE / - Clear entire plan
  * - DELETE /recipes/{id} - Remove recipe from plan
  */
 

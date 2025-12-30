@@ -117,6 +117,27 @@ Usuwa przepis z planu użytkownika.
 - Próba usunięcia przepisu, który nie jest w planie, zwraca `404`
 - Operacja jest idempotentna - ponowna próba usunięcia tego samego przepisu zwraca `404`
 
+### `DELETE /plan`
+Czyści cały plan użytkownika (usuwa wszystkie przepisy z planu).
+
+**Request:**
+- Method: `DELETE`
+- Path: `/functions/v1/plan`
+- Headers:
+  - `Authorization: Bearer <JWT>` (required)
+
+**Response:**
+- `204 No Content` - plan został pomyślnie wyczyszczony (brak body)
+
+**Error Responses:**
+- `401 Unauthorized` - brak lub nieprawidłowy JWT
+- `500 Internal Server Error` - błąd serwera
+
+**Business Rules:**
+- Usuwa wszystkie przepisy z planu użytkownika (0-50 elementów)
+- Operacja jest idempotentna - czyszczenie pustego planu również zwraca sukces `204`
+- Użytkownik może wyczyścić tylko swój własny plan (RLS enforcement)
+
 ## Business Rules
 
 1. **Unikalność**: Użytkownik nie może dodać tego samego przepisu dwa razy
@@ -217,6 +238,12 @@ plan/
 - **Indexes**: `PRIMARY KEY (user_id, recipe_id)` ensures efficient deletion
 - **Performance**: Single-query operation, very fast (< 10ms typical)
 
+### DELETE /plan
+- **Queries per request**: 1
+  - 1× plan_recipes bulk delete with RETURNING (uses user context, RLS enforced)
+- **Indexes**: `PRIMARY KEY (user_id, recipe_id)` ensures efficient deletion
+- **Performance**: Single-query operation deleting 0-50 rows (< 20ms typical)
+
 ## Testing
 
 See [TESTING.md](./TESTING.md) for comprehensive test scenarios and examples.
@@ -239,11 +266,14 @@ curl -X POST http://localhost:54331/functions/v1/plan/recipes \
 # Remove recipe from plan
 curl -X DELETE http://localhost:54331/functions/v1/plan/recipes/1 \
   -H "Authorization: Bearer <YOUR_JWT>"
+
+# Clear entire plan
+curl -X DELETE http://localhost:54331/functions/v1/plan \
+  -H "Authorization: Bearer <YOUR_JWT>"
 ```
 
 ## Future Endpoints (Not implemented yet)
 
-- `DELETE /plan` - Clear entire plan
 - `GET /plan/export` - Export plan as shopping list
 
 ## Related Resources

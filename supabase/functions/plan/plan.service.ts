@@ -266,6 +266,56 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
 }
 
 /**
+ * Clears the entire plan for a user (removes all recipes).
+ * 
+ * Business rules:
+ * - Removes ALL recipes from user's plan
+ * - Idempotent: clearing an empty plan is considered success
+ * - Uses user-context client to enforce RLS (user can only clear their own plan)
+ * 
+ * @param params - Object containing client and userId
+ * @param params.client - The authenticated Supabase client (user context)
+ * @param params.userId - The ID of the authenticated user (for logging)
+ * @returns The number of items deleted (0-50)
+ * @throws ApplicationError
+ * - INTERNAL_ERROR: Database operation failed
+ */
+export async function clearPlan(params: {
+    client: TypedSupabaseClient;
+    userId: string;
+}): Promise<number> {
+    const { client, userId } = params;
+
+    // Execute DELETE with RETURNING to count deleted rows
+    // RLS ensures user can only delete from their own plan (user_id = auth.uid())
+    // No .eq() filter needed - we want to delete ALL rows for this user
+    const { data, error } = await client
+        .from('plan_recipes')
+        .delete()
+        .select('recipe_id');
+
+    if (error) {
+        logger.error(
+            `[clearPlan] Failed to clear plan for user ${userId}`,
+            error
+        );
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to clear plan'
+        );
+    }
+
+    // Count deleted rows (0 if plan was already empty - this is OK, idempotent)
+    const deletedCount = data?.length || 0;
+
+    logger.info(
+        `[clearPlan] Plan cleared for user ${userId}: ${deletedCount} items deleted`
+    );
+
+    return deletedCount;
+}
+
+/**
  * Removes a recipe from user's plan.
  * 
  * Business rules:
