@@ -12,17 +12,18 @@ Zapoznaj się z dokumnetacją projektu
 <aktualne_zachowanie>
 
 komponent
-pych-my-plan-drawer
+pych-my-plan-fab
 
-nie wyświetla obrazka przepisu
+nie znika gdy pojkawia się rawr  z planem przepisó (komponent pych-my-plan-drawer)
 
-ścieka do img = src="c553b8d1-3dbb-488f-b610-97eb6f95d357/38/cover_1767138401497.png"
+
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-src = "http://127.0.0.1:54331/storage/v1/object/public/recipe-images/c553b8d1-3dbb-488f-b610-97eb6f95d357/38/cover_1767138401497.png"
+pych-my-plan-fab
+znika gdy pojawi sie drawr pojawia sie ponownie po zamknięciu drawera
 
 </oczekiwane_zachowanie>
 

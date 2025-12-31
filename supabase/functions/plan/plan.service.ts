@@ -289,10 +289,11 @@ export async function clearPlan(params: {
 
     // Execute DELETE with RETURNING to count deleted rows
     // RLS ensures user can only delete from their own plan (user_id = auth.uid())
-    // No .eq() filter needed - we want to delete ALL rows for this user
+    // However, we need to explicitly filter by user_id for the query to work correctly
     const { data, error } = await client
         .from('plan_recipes')
         .delete()
+        .eq('user_id', userId)
         .select('recipe_id');
 
     if (error) {

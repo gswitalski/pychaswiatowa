@@ -12,14 +12,14 @@ Zapoznaj się z dokumentamu projektu
 
 <aktualne_zachowanie>
 
-endpoint GET
-http://127.0.0.1:54331/functions/v1/explore/recipes/41
+endpoint DELETE
+http://127.0.0.1:54331/functions/v1/plan
 
-nie zwraca pola 
-in_my_plan
-
-
-nawet gdy przepis ma przypisany obrazek
+zwraca kod 500:
+{
+  "code": "INTERNAL_ERROR",
+  "message": "Failed to clear plan"
+}
 
 
 </aktualne_zachowanie>
@@ -27,11 +27,7 @@ nawet gdy przepis ma przypisany obrazek
 
 <oczekiwane_zachowanie>
 
-zwrraca pole
-in_my_plan
-
-tak jak robi to dorze endpoint GET
-http://127.0.0.1:54331/functions/v1/recipes/41
+usuwane są wszystkie przepisy z mojego planu
 
 </oczekiwane_zachowanie>
 
