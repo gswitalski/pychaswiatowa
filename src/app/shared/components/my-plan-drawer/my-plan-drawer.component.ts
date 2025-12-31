@@ -15,6 +15,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MyPlanService } from '../../../core/services/my-plan.service';
+import { SupabaseService } from '../../../core/services/supabase.service';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../confirm-dialog/confirm-dialog.component';
 import { PlanListItemDto, ApiError } from '../../../../../shared/contracts/types';
 
@@ -51,6 +52,7 @@ export class MyPlanDrawerComponent {
     private readonly snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly supabase = inject(SupabaseService);
 
     /** Lista elementów planu */
     readonly items = this.myPlanService.items;
@@ -159,14 +161,25 @@ export class MyPlanDrawerComponent {
     }
 
     /**
-     * Zwraca URL obrazka przepisu lub placeholder
+     * Zwraca pełny public URL obrazka przepisu lub null jeśli brak obrazka
+     * Konwertuje storage path na pełny URL używając Supabase Storage
      */
-    getRecipeImageUrl(imagePath: string | null): string {
+    getRecipeImageUrl(imagePath: string | null): string | null {
         if (!imagePath) {
-            return '/placeholder-recipe.svg';
+            return null;
         }
-        // Zakładamy, że imagePath to pełny URL lub ścieżka do storage
-        return imagePath;
+
+        // Jeśli to już pełny URL, zwróć bez zmian
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+            return imagePath;
+        }
+
+        // W przeciwnym razie skonstruuj public URL ze ścieżki storage
+        const { data } = this.supabase.storage
+            .from('recipe-images')
+            .getPublicUrl(imagePath);
+
+        return data?.publicUrl || null;
     }
 
     /**

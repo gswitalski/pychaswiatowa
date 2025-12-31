@@ -54,6 +54,8 @@ export interface RecipeDetailDto {
     servings: number | null;
     created_at: string;
     updated_at: string;
+    /** True if recipe is in authenticated user's plan (false for anonymous users) */
+    in_my_plan: boolean;
 }
 
 /**
@@ -84,6 +86,69 @@ interface RecipeDetailFullRow {
 const RECIPE_DETAIL_SELECT_COLUMNS =
     'id, user_id, name, description, image_path, visibility, category_id, category_name, ' +
     'ingredients, steps, tags, servings, created_at, updated_at, deleted_at';
+
+/**
+ * Checks which recipes from the given list are in the authenticated user's plan.
+ * Returns a Set of recipe IDs that are in the plan.
+ * If user is anonymous (null), returns empty Set.
+ * If query fails, logs error and returns empty Set (non-blocking, defensive approach).
+ *
+ * @param client - Supabase client (service role for anonymous, authenticated otherwise)
+ * @param recipeIds - Array of recipe IDs to check
+ * @param userId - User ID or null for anonymous
+ * @returns Set of recipe IDs that are in user's plan
+ */
+async function getRecipeIdsInPlan(
+    client: TypedSupabaseClient,
+    recipeIds: number[],
+    userId: string | null
+): Promise<Set<number>> {
+    // Anonymous users have no plan
+    if (userId === null || recipeIds.length === 0) {
+        return new Set<number>();
+    }
+
+    logger.info('Checking if recipes are in user plan', {
+        userId,
+        recipeIdsCount: recipeIds.length,
+    });
+
+    try {
+        const { data, error } = await client
+            .from('plan_recipes')
+            .select('recipe_id')
+            .eq('user_id', userId)
+            .in('recipe_id', recipeIds);
+
+        if (error) {
+            logger.error('Error checking recipe plan', {
+                errorCode: error.code,
+                errorMessage: error.message,
+                userId,
+                recipeIdsCount: recipeIds.length,
+            });
+            // Non-blocking: return empty set
+            return new Set<number>();
+        }
+
+        const recipeIdsInPlan = new Set<number>(
+            (data ?? []).map((pr: { recipe_id: number }) => pr.recipe_id)
+        );
+
+        logger.info('Found recipes in user plan', {
+            count: recipeIdsInPlan.size,
+        });
+
+        return recipeIdsInPlan;
+    } catch (err) {
+        logger.error('Unexpected error checking recipe plan', {
+            error: err,
+            userId,
+        });
+        // Non-blocking: return empty set
+        return new Set<number>();
+    }
+}
 
 /**
  * Retrieves a single recipe by ID with optional authentication.
@@ -162,7 +227,12 @@ export async function getExploreRecipeById(params: {
     // Rule 1: If PUBLIC, allow everyone
     if (recipe.visibility === 'PUBLIC') {
         logger.info('Recipe is PUBLIC - access granted', { recipeId });
-        return mapToDto(recipe);
+        
+        // Check if recipe is in user's plan
+        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [recipeId], requesterUserId);
+        const inMyPlan = recipeIdsInPlan.has(recipeId);
+        
+        return mapToDto(recipe, inMyPlan);
     }
 
     // Rule 2: If not PUBLIC, require authentication and author match
@@ -193,7 +263,11 @@ export async function getExploreRecipeById(params: {
         authorId: recipe.user_id,
     });
 
-    return mapToDto(recipe);
+    // Check if recipe is in user's plan
+    const recipeIdsInPlan = await getRecipeIdsInPlan(client, [recipeId], requesterUserId);
+    const inMyPlan = recipeIdsInPlan.has(recipeId);
+
+    return mapToDto(recipe, inMyPlan);
 }
 
 /**
@@ -201,9 +275,10 @@ export async function getExploreRecipeById(params: {
  * Excludes deleted_at from response.
  *
  * @param recipe - Raw database record
+ * @param inMyPlan - Whether recipe is in authenticated user's plan
  * @returns RecipeDetailDto
  */
-function mapToDto(recipe: RecipeDetailFullRow): RecipeDetailDto {
+function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean): RecipeDetailDto {
     return {
         id: recipe.id,
         user_id: recipe.user_id,
@@ -221,5 +296,6 @@ function mapToDto(recipe: RecipeDetailFullRow): RecipeDetailDto {
         servings: recipe.servings ?? null,
         created_at: recipe.created_at,
         updated_at: recipe.updated_at,
+        in_my_plan: inMyPlan,
     };
 }

@@ -11,20 +11,18 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-sciezka
-http://localhost:4200/recipes/52/edit
+komponent
+pych-my-plan-drawer
 
-klikam "wygeneruj zdjęcia za pomoca AI"
+nie wyświetla obrazka przepisu
 
-zdjęcie się generuje. klikam "zastosuj"
-
-zdjęcie nie jest zastosowane do formularza  
+ścieka do img = src="c553b8d1-3dbb-488f-b610-97eb6f95d357/38/cover_1767138401497.png"
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-zdjęcie jest zastosowane w formularzu
+src = "http://127.0.0.1:54331/storage/v1/object/public/recipe-images/c553b8d1-3dbb-488f-b610-97eb6f95d357/38/cover_1767138401497.png"
 
 </oczekiwane_zachowanie>
 

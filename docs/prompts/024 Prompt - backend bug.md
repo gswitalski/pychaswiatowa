@@ -11,17 +11,27 @@ Zapoznaj się z dokumentamu projektu
 
 
 <aktualne_zachowanie>
-endpoint GET
-http://127.0.0.1:54331/functions/v1/public/recipes/feed?limit=12&sort=created_at.desc
 
-zwraca tylko publiczce przepisy
+endpoint GET
+http://127.0.0.1:54331/functions/v1/explore/recipes/41
+
+nie zwraca pola 
+in_my_plan
+
+
+nawet gdy przepis ma przypisany obrazek
+
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-zwraca publiczce przepisy oraz moje (zalogowanego użytkownika) bez zwzgledu na vidzialność przepisu
+zwrraca pole
+in_my_plan
+
+tak jak robi to dorze endpoint GET
+http://127.0.0.1:54331/functions/v1/recipes/41
 
 </oczekiwane_zachowanie>
 

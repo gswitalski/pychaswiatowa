@@ -81,12 +81,18 @@
                         >
                             <div class="my-plan-drawer__item-content">
                                 <div class="my-plan-drawer__item-image-container">
-                                    <img
-                                        [src]="getRecipeImageUrl(item.recipe.image_path)"
-                                        [alt]="''"
-                                        aria-hidden="true"
-                                        class="my-plan-drawer__item-image"
-                                    />
+                                    @if (getRecipeImageUrl(item.recipe.image_path)) {
+                                        <img
+                                            [src]="getRecipeImageUrl(item.recipe.image_path)"
+                                            [alt]="''"
+                                            aria-hidden="true"
+                                            class="my-plan-drawer__item-image"
+                                        />
+                                    } @else {
+                                        <div class="my-plan-drawer__item-image-placeholder">
+                                            <mat-icon>restaurant_menu</mat-icon>
+                                        </div>
+                                    }
                                 </div>
                                 <span class="my-plan-drawer__item-name">
                                     {{ item.recipe.name }}

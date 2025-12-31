@@ -9,14 +9,14 @@ import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan
 
 /**
  * Adds a recipe to user's plan.
- * 
+ *
  * Business rules:
  * - User can add own recipes (any visibility)
  * - User can add public recipes from other users
  * - Recipe must exist and not be soft-deleted
  * - Recipe cannot already be in plan (enforced by DB unique constraint)
  * - Plan cannot exceed 50 items (enforced by DB trigger)
- * 
+ *
  * @param client - The authenticated Supabase client
  * @param userId - The ID of the authenticated user
  * @param recipeId - The ID of the recipe to add
@@ -46,7 +46,7 @@ export async function addRecipeToPlan(
 /**
  * Verifies that user has access to the recipe.
  * Returns minimal recipe info if access is granted.
- * 
+ *
  * @throws ApplicationError
  * - NOT_FOUND: Recipe doesn't exist or is deleted
  * - FORBIDDEN: User doesn't have access to recipe
@@ -101,7 +101,7 @@ async function verifyRecipeAccess(
 /**
  * Inserts recipe into plan_recipes table.
  * Uses user context client to enforce RLS.
- * 
+ *
  * @param client - The authenticated Supabase client (user context)
  * @param recipeId - The ID of the recipe to add
  * @throws ApplicationError
@@ -157,14 +157,14 @@ async function insertRecipeToPlan(
 
 /**
  * Retrieves user's plan list with recipe details.
- * 
+ *
  * Business rules:
  * - Returns only recipes that are:
  *   - Not soft-deleted (deleted_at IS NULL)
  *   - Either owned by user OR public
  * - Sorted by added_at DESC (newest first)
  * - Limited to 50 items
- * 
+ *
  * @param userId - The ID of the authenticated user
  * @returns GetPlanResponseDto with data and meta
  * @throws ApplicationError on database errors
@@ -174,13 +174,14 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
 
     // Query plan_recipes with join to recipes
     // Filter: user's plan + not deleted + (owner OR public)
+    // Note: używamy recipes!fk_plan_recipes_recipe aby jawnie wskazać foreign key
     const { data, error } = await supabase
         .from('plan_recipes')
         .select(
             `
             recipe_id,
             added_at,
-            recipes:recipe_id (
+            recipes!fk_plan_recipes_recipe (
                 id,
                 name,
                 image_path,
@@ -267,12 +268,12 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
 
 /**
  * Clears the entire plan for a user (removes all recipes).
- * 
+ *
  * Business rules:
  * - Removes ALL recipes from user's plan
  * - Idempotent: clearing an empty plan is considered success
  * - Uses user-context client to enforce RLS (user can only clear their own plan)
- * 
+ *
  * @param params - Object containing client and userId
  * @param params.client - The authenticated Supabase client (user context)
  * @param params.userId - The ID of the authenticated user (for logging)
@@ -317,11 +318,11 @@ export async function clearPlan(params: {
 
 /**
  * Removes a recipe from user's plan.
- * 
+ *
  * Business rules:
  * - Recipe must be in user's plan to be removed
  * - Uses user-context client to enforce RLS (user can only remove from their own plan)
- * 
+ *
  * @param client - The authenticated Supabase client (user context)
  * @param userId - The ID of the authenticated user (for logging)
  * @param recipeId - The ID of the recipe to remove
