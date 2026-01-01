@@ -65,7 +65,7 @@ jobs:
           supabase functions deploy explore --no-verify-jwt
           supabase functions deploy public --no-verify-jwt
           # Auth-required endpoints keep default JWT verification
-          supabase functions deploy categories collections me profile recipes search tags
+          supabase functions deploy ai categories collections explore me plan profile public recipes search tags
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
