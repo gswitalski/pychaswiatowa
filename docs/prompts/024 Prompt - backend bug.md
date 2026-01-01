@@ -12,22 +12,21 @@ Zapoznaj się z dokumentamu projektu
 
 <aktualne_zachowanie>
 
-endpoint DELETE
-http://127.0.0.1:54331/functions/v1/plan
-
-zwraca kod 500:
-{
-  "code": "INTERNAL_ERROR",
-  "message": "Failed to clear plan"
-}
-
+endpoint GET http://127.0.0.1:54331/functions/v1/explore/recipes/4
+nie zwraca pól
+prep_time_minutes
+total_time_minutes
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-usuwane są wszystkie przepisy z mojego planu
+endpoint GET http://127.0.0.1:54331/functions/v1/explore/recipes/4
+zwraca pola
+prep_time_minutes
+total_time_minutes
+
 
 </oczekiwane_zachowanie>
 

@@ -52,6 +52,8 @@ export interface RecipeDetailDto {
     steps: RecipeContent;
     tags: TagDto[];
     servings: number | null;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
     created_at: string;
     updated_at: string;
     /** True if recipe is in authenticated user's plan (false for anonymous users) */
@@ -74,6 +76,8 @@ interface RecipeDetailFullRow {
     steps: RecipeContent;
     tags: Array<{ id: number; name: string }> | null;
     servings: number | null;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -85,7 +89,7 @@ interface RecipeDetailFullRow {
  */
 const RECIPE_DETAIL_SELECT_COLUMNS =
     'id, user_id, name, description, image_path, visibility, category_id, category_name, ' +
-    'ingredients, steps, tags, servings, created_at, updated_at, deleted_at';
+    'ingredients, steps, tags, servings, prep_time_minutes, total_time_minutes, created_at, updated_at, deleted_at';
 
 /**
  * Checks which recipes from the given list are in the authenticated user's plan.
@@ -294,6 +298,8 @@ function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean): RecipeDetailD
             ? recipe.tags.map((tag) => ({ id: tag.id, name: tag.name }))
             : [],
         servings: recipe.servings ?? null,
+        prep_time_minutes: recipe.prep_time_minutes ?? null,
+        total_time_minutes: recipe.total_time_minutes ?? null,
         created_at: recipe.created_at,
         updated_at: recipe.updated_at,
         in_my_plan: inMyPlan,

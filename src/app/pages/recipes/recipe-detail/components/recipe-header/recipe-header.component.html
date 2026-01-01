@@ -13,13 +13,13 @@
         <div class="recipe-times">
             @if (shouldShowPrepTime()) {
                 <div class="time-item">
-                    <mat-icon aria-label="Czas przygotowania">schedule</mat-icon>
+                    <mat-icon aria-label="Czas przygotowania">restaurant_menu</mat-icon>
                     <span>{{ recipe().prep_time_minutes | durationMinutes }}</span>
                 </div>
             }
             @if (shouldShowTotalTime()) {
                 <div class="time-item">
-                    <mat-icon aria-label="Czas całkowity">timer</mat-icon>
+                    <mat-icon aria-label="Czas całkowity">schedule</mat-icon>
                     <span>{{ recipe().total_time_minutes | durationMinutes }}</span>
                 </div>
             }
