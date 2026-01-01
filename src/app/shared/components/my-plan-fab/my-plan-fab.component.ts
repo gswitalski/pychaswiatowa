@@ -36,6 +36,9 @@ export class MyPlanFabComponent {
     /** Czy plan ma elementy */
     readonly hasItems = this.myPlanService.hasItems;
 
+    /** Czy drawer "Mój plan" jest aktualnie otwarty */
+    readonly isDrawerOpen = this.myPlanService.isDrawerOpen;
+
     /**
      * Otwiera drawer "Mój plan"
      */

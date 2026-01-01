@@ -80,8 +80,8 @@
                     @if (recipe()!.in_my_plan && !isAddingToPlan()) {
                         <button
                             mat-icon-button
-                            matTooltip="Zobacz listę zakupów"
-                            aria-label="Zobacz listę zakupów"
+                            matTooltip="Zobacz listę"
+                            aria-label="Zobacz listę"
                             (click)="onOpenPlan()"
                         >
                             <mat-icon>check_circle</mat-icon>
@@ -119,7 +119,7 @@
                         <button
                             mat-raised-button
                             (click)="onAddToPlan()"
-                            matTooltip="Dodaj przepis do listy zakupów"
+                            matTooltip="Dodaj przepis do mojego planu"
                             aria-label="Dodaj do planu"
                         >
                             <mat-icon>playlist_add</mat-icon>
@@ -140,8 +140,8 @@
                             mat-raised-button
                             color="accent"
                             (click)="onOpenPlan()"
-                            matTooltip="Otwórz listę zakupów"
-                            aria-label="Zobacz listę"
+                            matTooltip="Otwórz mój plan"
+                            aria-label="Otwórz mój plan"
                         >
                             <mat-icon>check_circle</mat-icon>
                             Zobacz listę
