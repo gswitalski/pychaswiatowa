@@ -41,7 +41,8 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - **Reset kontekstu listy:** Zmiana frazy wyszukiwania (i ewentualnych filtrów w przyszłości) resetuje listę do pierwszych 12 wyników oraz ponownie pokazuje przycisk "Więcej" (jeśli są kolejne).
 
 **3. Szczegóły przepisu (uniwersalny widok)**
-- **Ścieżka:** prywatnie `/recipes/:id` oraz publicznie `/explore/recipes/:id`
+- **Ścieżka (kanoniczna):** prywatnie `/recipes/:id-:slug` oraz publicznie `/explore/recipes/:id-:slug`
+- **Ścieżka (kompatybilność wsteczna):** `/recipes/:id` oraz `/explore/recipes/:id` (normalizowane do kanonicznego URL)
 - **Główny cel:** Pełny podgląd przepisu w czytelnym układzie - zarówno dla gości jak i zalogowanych użytkowników.
 - **Dostępność:** Widok dostępny dla wszystkich użytkowników. Goście mogą przeglądać tylko przepisy publiczne.
 - **Zachowanie w zależności od kontekstu:**
@@ -62,7 +63,20 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Dodaj do planu", "Edytuj", "Usuń"
 - **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, **badge/chip "Termorobot" (jeśli ustawione)**, opis, **czasy (jeśli ustawione) pod opisem z ikonkami**: czas przygotowania (`schedule`) i czas całkowity (`timer`), zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
-- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. (Opcjonalnie) przekierowania/normalizacja URL w warstwie frontendu: `/explore/recipes/:id-:slug` -> `/explore/recipes/:id`.
+- **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. Normalizacja URL w warstwie frontendu:
+    - `/explore/recipes/:id` -> `/explore/recipes/:id-:slug`
+    - `/recipes/:id` -> `/recipes/:id-:slug`
+    - jeśli slug w URL jest niepoprawny (np. po zmianie nazwy przepisu), URL jest normalizowany do poprawnego kanonicznego adresu (np. `replaceUrl=true`).
+
+**3a. Normalizacja URL przepisu (techniczny handler)**
+- **Ścieżka:** `/explore/recipes/:id` oraz `/recipes/:id` (opcjonalnie także warianty z `:id-:slug` dla weryfikacji poprawności sluga)
+- **Główny cel:** Zapewnienie kompatybilności wstecznej oraz zawsze-kanonicznych, udostępnialnych linków do przepisów.
+- **Zachowanie (happy path):**
+    - handler pobiera `id` z routingu,
+    - pobiera dane przepisu (w szczególności `name`) i wylicza slug zgodnie z regułami (lowercase, zamiana polskich znaków, separatory `-`, limit długości, fallback),
+    - wykonuje nawigację do kanonicznej ścieżki `/.../recipes/:id-:slug` z `replaceUrl=true`.
+- **Zachowanie (error path):**
+    - jeśli przepis nie istnieje lub użytkownik nie ma dostępu, handler pokazuje ten sam komunikat co standardowy widok szczegółów (np. 404/403 zgodnie z kontekstem).
 
 **4. Logowanie**
 - **Ścieżka:** `/login`
@@ -270,7 +284,7 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 ## 4. Układ i struktura nawigacji
 
 - **Nawigacja dla gości:** Topbar zawiera stałą główną nawigację: `Moja Pycha` (do `/dashboard`) i `Odkrywaj przepisy` (do `/explore`) oraz akcje po prawej stronie: `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
-- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id`) korzystają z Topbara (bez Sidebara):
+- **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id-:slug`) korzystają z Topbara (bez Sidebara). Dodatkowo `/explore/recipes/:id` pozostaje jako ścieżka kompatybilności wstecznej i jest normalizowana do kanonicznego URL:
     - brak przycisków "Zaloguj" i "Zarejestruj",
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
     - w Topbarze dostępna jest stała główna nawigacja: `Moja Pycha` (`/dashboard`) i `Odkrywaj przepisy` (`/explore`).

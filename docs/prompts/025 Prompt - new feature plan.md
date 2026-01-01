@@ -11,13 +11,22 @@ Oto dokumenty projektu, które musisz przeanalizować:
 Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
+dla przpisu 
+https://pychaswiatowa.pl/explore/recipes/111
 
-na formularzu edyzji przpisu chce mieć możliwodć wprowadzene dodatkowych dwóch pól:
-1. czas przyrządania
-2. czas całkowity
+kóry jest przepisem na
+Biała kiełbasa z jabłkami
+
+chcce aby link zawierał slug:
+
+https://pychaswiatowa.pl/explore/recipes/111-biala-kielbasa-z-jablkami
 
 
-te dw pola mają sie potem wyświetlać z odpowienimi ikonkami w widoku szczegóow przepisu pod opisem
+polskie znaki diakrytyczne mają byc zamieniione n amiedzynarodowe
+
+
+wymaganie dotyczy tez sciezki
+https://pychaswiatowa.pl/recipes/111
 
 
 </nowa_funkcjonalnosc>

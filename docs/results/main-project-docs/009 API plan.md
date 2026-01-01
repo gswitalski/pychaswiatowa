@@ -257,10 +257,14 @@ Public endpoints are available without authentication:
 
 #### `GET /public/recipes/{id}`
 
--   **Description**: Retrieve a single public recipe by its ID. Intended for public, shareable, SEO-friendly recipe pages (frontend can include a slug in the URL, but the API uses the numeric `id`).
+-   **Description**: Retrieve a single public recipe by its ID. Intended for public, shareable, SEO-friendly recipe pages (the frontend uses canonical routes like `/explore/recipes/{id}-{slug}`, but the API uses the numeric `id`).
 -   **Notes**:
     - Public access is allowed without authentication, but the client MAY include an `Authorization: Bearer <JWT>` header.
     - If the request is authenticated, the API returns the helper fields `is_owner` and `in_my_plan`.
+    - **Canonical URL (frontend concern)**:
+        - Canonical public route: `/explore/recipes/{id}-{slug}`
+        - Backward-compatible route: `/explore/recipes/{id}` (should be normalized/redirected to the canonical URL)
+        - If the URL contains an incorrect slug (e.g., after a recipe rename), the frontend SHOULD normalize it to the current canonical slug.
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
@@ -293,6 +297,47 @@ Public endpoints are available without authentication:
         ```
 -   **Error Response**:
     -   **Code**: `404 Not Found` - If the recipe does not exist or is not public.
+
+---
+
+### Utilities / SEO
+
+#### `POST /utils/slugify` (Supabase Edge Function)
+
+-   **Description**: Generate a URL-safe slug from a human-readable recipe name. Intended to keep slug generation consistent (diacritics removal, separators, length limits) across clients.
+-   **Auth**: Not required.
+-   **Request Payload**:
+    ```json
+    {
+      "text": "Biała kiełbasa z jabłkami",
+      "max_length": 80,
+      "fallback": "przepis"
+    }
+    ```
+-   **Slug rules (MVP)**:
+    - Lowercase
+    - Polish diacritics are transliterated: `ą->a`, `ć->c`, `ę->e`, `ł->l`, `ń->n`, `ó->o`, `ś->s`, `ż->z`, `ź->z`
+    - Non-alphanumeric characters are removed/treated as separators
+    - Multiple separators collapse into a single `-`
+    - Trim `-` from start/end
+    - Enforce `max_length` (default `80`)
+    - If the result is empty, use `fallback` (default `przepis`)
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "slug": "biala-kielbasa-z-jablkami"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (missing/invalid `text`)
+        -   **Payload** (example):
+            ```json
+            {
+              "message": "Field 'text' is required."
+            }
+            ```
 
 ---
 
