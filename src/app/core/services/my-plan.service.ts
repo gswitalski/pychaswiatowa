@@ -409,9 +409,13 @@ export class MyPlanService {
      * Mapuje błędy API na czytelne komunikaty dla UI
      * zgodnie z planem implementacji (sekcja 5)
      */
-    private mapError(error: any, statusCode?: number): ApiError {
-        const status = statusCode || error.status || 500;
-        let message = error.message || 'Wystąpił nieoczekiwany błąd';
+    private mapError(error: unknown, statusCode?: number): ApiError {
+        const normalizedError =
+            typeof error === 'object' && error !== null
+                ? (error as Partial<ApiError>)
+                : {};
+        const status = statusCode || normalizedError.status || 500;
+        let message = normalizedError.message || 'Wystąpił nieoczekiwany błąd';
 
         switch (status) {
             case 401:
@@ -441,21 +445,30 @@ export class MyPlanService {
     /**
      * Obsługuje błędy z Observable
      */
-    private handleError(err: any): Observable<never> {
+    private handleError(err: unknown): Observable<never> {
         console.error('[MyPlanService] Error:', err);
 
         // Jeśli już jest ApiError, przepuść dalej
-        if (err.status !== undefined) {
-            return throwError(() => err as ApiError);
+        if (this.isApiError(err)) {
+            return throwError(() => err);
         }
 
         // W przeciwnym razie stwórz generyczny błąd
         const apiError: ApiError = {
-            message: err.message || 'Nieoczekiwany błąd',
-            status: err.status || 500,
+            message: err instanceof Error ? err.message : 'Nieoczekiwany błąd',
+            status: 500,
         };
 
         return throwError(() => apiError);
+    }
+
+    private isApiError(value: unknown): value is ApiError {
+        if (typeof value !== 'object' || value === null) {
+            return false;
+        }
+
+        const maybeError = value as Partial<ApiError>;
+        return typeof maybeError.message === 'string' && typeof maybeError.status === 'number';
     }
 }
 

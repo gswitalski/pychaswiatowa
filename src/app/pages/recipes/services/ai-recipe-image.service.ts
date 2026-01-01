@@ -145,7 +145,7 @@ export class AiRecipeImageService {
             case 403:
                 throw new AiImagePremiumRequiredError();
 
-            case 422:
+            case 422: {
                 const unprocessableData: AiRecipeImageUnprocessableEntityDto =
                     await response.json().catch(() => ({
                         message: 'Nie udało się wygenerować sensownego zdjęcia dla tego przepisu.',
@@ -156,17 +156,19 @@ export class AiRecipeImageService {
                         'Nie udało się wygenerować sensownego zdjęcia dla tego przepisu.',
                     unprocessableData.reasons || []
                 );
+            }
 
             case 429:
                 throw new AiImageRateLimitError();
 
-            default:
+            default: {
                 const errorData = await response.json().catch(() => ({
                     message: 'Wystąpił błąd podczas generowania zdjęcia.',
                 }));
                 throw new Error(
                     errorData.message || 'Wystąpił błąd podczas generowania zdjęcia.'
                 );
+            }
         }
     }
 }

@@ -15,8 +15,10 @@
         @if (isLoading()) {
         <mat-spinner diameter="20"></mat-spinner>
         } @else {
-        Dalej
-        <mat-icon>arrow_forward</mat-icon>
+        <span class="next-button-content">
+            Dalej
+            <mat-icon matButtonIcon>arrow_forward</mat-icon>
+        </span>
         }
     </button>
 </pych-page-header>

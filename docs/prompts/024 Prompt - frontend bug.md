@@ -11,20 +11,16 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-komponent
-pych-my-plan-fab
+na ekranie
+http://localhost:4200/recipes/new/assist
 
-nie znika gdy pojkawia się rawr  z planem przepisó (komponent pych-my-plan-drawer)
-
-
+przyski "Dale" ma elementy nie wycentrowane w poziomie.
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-pych-my-plan-fab
-znika gdy pojawi sie drawr pojawia sie ponownie po zamknięciu drawera
-
+elementy (napis i strzałka wycentrowane .)
 </oczekiwane_zachowanie>
 
 
