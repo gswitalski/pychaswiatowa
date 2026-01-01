@@ -65,6 +65,79 @@
         <mat-hint>Opcjonalne. Zakres 1–99.</mat-hint>
     </mat-form-field>
 
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Czas przygotowania (min)</mat-label>
+        <input
+            matInput
+            type="number"
+            [formControl]="prepTimeMinutesControl"
+            placeholder="np. 30"
+            min="0"
+            max="999"
+            step="1"
+            inputmode="numeric"
+        />
+        @if (prepTimeMinutesControl.value !== null && prepTimeMinutesControl.value !== undefined) {
+            <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="clearPrepTime()"
+                aria-label="Wyczyść czas przygotowania"
+            >
+                <mat-icon>clear</mat-icon>
+            </button>
+        }
+        @if (prepTimeMinutesControl.hasError('min')) {
+            <mat-error>Minimalna wartość to 0</mat-error>
+        }
+        @if (prepTimeMinutesControl.hasError('max')) {
+            <mat-error>Maksymalna wartość to 999</mat-error>
+        }
+        @if (prepTimeMinutesControl.hasError('notInteger') && !prepTimeMinutesControl.hasError('min') && !prepTimeMinutesControl.hasError('max')) {
+            <mat-error>Podaj liczbę całkowitą</mat-error>
+        }
+        <mat-hint>Opcjonalne. Zakres 0–999.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Czas całkowity (min)</mat-label>
+        <input
+            matInput
+            type="number"
+            [formControl]="totalTimeMinutesControl"
+            placeholder="np. 90"
+            min="0"
+            max="999"
+            step="1"
+            inputmode="numeric"
+        />
+        @if (totalTimeMinutesControl.value !== null && totalTimeMinutesControl.value !== undefined) {
+            <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="clearTotalTime()"
+                aria-label="Wyczyść czas całkowity"
+            >
+                <mat-icon>clear</mat-icon>
+            </button>
+        }
+        @if (totalTimeMinutesControl.hasError('min')) {
+            <mat-error>Minimalna wartość to 0</mat-error>
+        }
+        @if (totalTimeMinutesControl.hasError('max')) {
+            <mat-error>Maksymalna wartość to 999</mat-error>
+        }
+        @if (totalTimeMinutesControl.hasError('notInteger') && !totalTimeMinutesControl.hasError('min') && !totalTimeMinutesControl.hasError('max')) {
+            <mat-error>Podaj liczbę całkowitą</mat-error>
+        }
+        @if (totalTimeMinutesControl.hasError('totalLessThanPrep')) {
+            <mat-error>Czas całkowity nie może być mniejszy niż czas przygotowania</mat-error>
+        }
+        <mat-hint>Opcjonalne. Zakres 0–999. Jeśli uzupełnisz oba pola, czas całkowity musi być ≥ przygotowania.</mat-hint>
+    </mat-form-field>
+
     <div class="termorobot-toggle">
         <mat-slide-toggle [formControl]="isTermorobotControl">
             Termorobot (Thermomix/Lidlomix)

@@ -69,6 +69,8 @@ export interface RecipeFormViewModel {
     steps: FormArray<FormControl<string>>;
     servings: FormControl<number | null>;
     isTermorobot: FormControl<boolean>;
+    prepTimeMinutes: FormControl<number | null>;
+    totalTimeMinutes: FormControl<number | null>;
 }
 
 @Component({
@@ -206,6 +208,16 @@ export class RecipeFormPageComponent implements OnInit {
         return this.form.controls.isTermorobot;
     }
 
+    /** Quick access to prepTimeMinutes FormControl */
+    get prepTimeMinutesControl(): FormControl<number | null> {
+        return this.form.controls.prepTimeMinutes;
+    }
+
+    /** Quick access to totalTimeMinutes FormControl */
+    get totalTimeMinutesControl(): FormControl<number | null> {
+        return this.form.controls.totalTimeMinutes;
+    }
+
     ngOnInit(): void {
         this.initForm();
         this.loadCategories();
@@ -248,6 +260,14 @@ export class RecipeFormPageComponent implements OnInit {
                 validators: [Validators.min(1), Validators.max(99), this.integerValidator()],
             }),
             isTermorobot: this.fb.control<boolean>(false, { nonNullable: true }),
+            prepTimeMinutes: this.fb.control<number | null>(null, {
+                validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
+            }),
+            totalTimeMinutes: this.fb.control<number | null>(null, {
+                validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
+            }),
+        }, {
+            validators: [this.timeRelationValidator()],
         });
     }
 
@@ -407,6 +427,8 @@ export class RecipeFormPageComponent implements OnInit {
             visibility: recipe.visibility ?? 'PRIVATE',
             servings: recipe.servings ?? null,
             isTermorobot: recipe.is_termorobot ?? false,
+            prepTimeMinutes: recipe.prep_time_minutes ?? null,
+            totalTimeMinutes: recipe.total_time_minutes ?? null,
         });
 
         // Set current image URL
@@ -510,6 +532,15 @@ export class RecipeFormPageComponent implements OnInit {
             ? Math.round(formValue.servings)
             : null;
 
+        // Normalizacja czasów: puste wartości → null, wartości liczbowe → liczba całkowita
+        const prepTimeMinutes = formValue.prepTimeMinutes !== null && formValue.prepTimeMinutes !== undefined
+            ? Math.round(formValue.prepTimeMinutes)
+            : null;
+
+        const totalTimeMinutes = formValue.totalTimeMinutes !== null && formValue.totalTimeMinutes !== undefined
+            ? Math.round(formValue.totalTimeMinutes)
+            : null;
+
         return {
             name: formValue.name,
             description: formValue.description || null,
@@ -520,6 +551,8 @@ export class RecipeFormPageComponent implements OnInit {
             tags: formValue.tags,
             servings: servings,
             is_termorobot: formValue.isTermorobot,
+            prep_time_minutes: prepTimeMinutes,
+            total_time_minutes: totalTimeMinutes,
         };
     }
 
@@ -853,6 +886,55 @@ export class RecipeFormPageComponent implements OnInit {
             // Sprawdź czy wartość jest liczbą całkowitą
             if (!Number.isInteger(value)) {
                 return { notInteger: true };
+            }
+
+            return null;
+        };
+    }
+
+    /**
+     * Cross-field validator for time relation: total_time_minutes >= prep_time_minutes
+     * Only validates when both fields are set (not null).
+     * Sets error on totalTimeMinutes control for better UX.
+     */
+    private timeRelationValidator() {
+        return (formGroup: AbstractControl): ValidationErrors | null => {
+            const prepControl = (formGroup as FormGroup).get('prepTimeMinutes');
+            const totalControl = (formGroup as FormGroup).get('totalTimeMinutes');
+
+            if (!prepControl || !totalControl) {
+                return null;
+            }
+
+            const prepTime = prepControl.value;
+            const totalTime = totalControl.value;
+
+            // Jeśli którakolwiek wartość jest null - brak walidacji relacji
+            if (prepTime === null || prepTime === undefined || totalTime === null || totalTime === undefined) {
+                // Usuń błąd relacji jeśli był ustawiony
+                const currentErrors = totalControl.errors;
+                if (currentErrors && currentErrors['totalLessThanPrep']) {
+                    const { totalLessThanPrep, ...remainingErrors } = currentErrors;
+                    totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
+                }
+                return null;
+            }
+
+            // Sprawdź relację: total >= prep
+            if (totalTime < prepTime) {
+                // Ustaw błąd na kontrolce totalTimeMinutes
+                totalControl.setErrors({
+                    ...totalControl.errors,
+                    totalLessThanPrep: true,
+                });
+                return { timeRelationInvalid: true };
+            }
+
+            // Relacja OK - usuń błąd totalLessThanPrep jeśli istnieje
+            const currentErrors = totalControl.errors;
+            if (currentErrors && currentErrors['totalLessThanPrep']) {
+                const { totalLessThanPrep, ...remainingErrors } = currentErrors;
+                totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
             }
 
             return null;

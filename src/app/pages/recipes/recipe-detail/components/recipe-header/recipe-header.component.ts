@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { RecipeDetailDto, PublicRecipeDetailDto, TagDto } from '../../../../../../../shared/contracts/types';
+import { DurationMinutesPipe } from '../../../../../shared/pipes/duration-minutes.pipe';
 
 /**
  * Type guard sprawdzający czy przepis to RecipeDetailDto
@@ -26,7 +27,7 @@ function isTagDtoArray(tags: TagDto[] | string[]): tags is TagDto[] {
 @Component({
     selector: 'pych-recipe-header',
     standalone: true,
-    imports: [RouterLink, MatChipsModule, MatIconModule],
+    imports: [RouterLink, MatChipsModule, MatIconModule, DurationMinutesPipe],
     templateUrl: './recipe-header.component.html',
     styleUrl: './recipe-header.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -107,6 +108,24 @@ export class RecipeHeaderComponent {
 
         const word = this.getServingsWord(servings);
         return `${servings} ${word}`;
+    });
+
+    /**
+     * Computed signal sprawdzający czy należy pokazać metadane czasu przygotowania.
+     * Renderujemy tylko jeśli wartość jest ustawiona (w tym 0).
+     */
+    readonly shouldShowPrepTime = computed(() => {
+        const prepTime = this.recipe().prep_time_minutes;
+        return prepTime !== null && prepTime !== undefined;
+    });
+
+    /**
+     * Computed signal sprawdzający czy należy pokazać metadane czasu całkowitego.
+     * Renderujemy tylko jeśli wartość jest ustawiona (w tym 0).
+     */
+    readonly shouldShowTotalTime = computed(() => {
+        const totalTime = this.recipe().total_time_minutes;
+        return totalTime !== null && totalTime !== undefined;
     });
 
     /**

@@ -26,6 +26,8 @@ export class RecipeBasicInfoFormComponent {
     @Input({ required: true }) descriptionControl!: FormControl<string>;
     @Input({ required: true }) servingsControl!: FormControl<number | null>;
     @Input({ required: true }) isTermorobotControl!: FormControl<boolean>;
+    @Input({ required: true }) prepTimeMinutesControl!: FormControl<number | null>;
+    @Input({ required: true }) totalTimeMinutesControl!: FormControl<number | null>;
 
     /**
      * Czyści pole liczby porcji (ustawia wartość na null)
@@ -33,6 +35,22 @@ export class RecipeBasicInfoFormComponent {
     clearServings(): void {
         this.servingsControl.setValue(null);
         this.servingsControl.markAsTouched();
+    }
+
+    /**
+     * Czyści pole czasu przygotowania (ustawia wartość na null)
+     */
+    clearPrepTime(): void {
+        this.prepTimeMinutesControl.setValue(null);
+        this.prepTimeMinutesControl.markAsTouched();
+    }
+
+    /**
+     * Czyści pole czasu całkowitego (ustawia wartość na null)
+     */
+    clearTotalTime(): void {
+        this.totalTimeMinutesControl.setValue(null);
+        this.totalTimeMinutesControl.markAsTouched();
     }
 }
 
