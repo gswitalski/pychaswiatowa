@@ -109,7 +109,39 @@ const createRecipeSchema = z.object({
         })
         .optional()
         .default(false),
-});
+    prep_time_minutes: z
+        .number({
+            invalid_type_error: 'Preparation time must be a number',
+        })
+        .int('Preparation time must be an integer')
+        .min(0, 'Preparation time must be at least 0')
+        .max(999, 'Preparation time cannot exceed 999')
+        .nullable()
+        .optional()
+        .transform((val) => val ?? null),
+    total_time_minutes: z
+        .number({
+            invalid_type_error: 'Total time must be a number',
+        })
+        .int('Total time must be an integer')
+        .min(0, 'Total time must be at least 0')
+        .max(999, 'Total time cannot exceed 999')
+        .nullable()
+        .optional()
+        .transform((val) => val ?? null),
+}).refine(
+    (data) => {
+        // Cross-field validation: total_time_minutes >= prep_time_minutes (when both are set)
+        if (data.prep_time_minutes !== null && data.total_time_minutes !== null) {
+            return data.total_time_minutes >= data.prep_time_minutes;
+        }
+        return true;
+    },
+    {
+        message: 'Total time must be greater than or equal to preparation time',
+        path: ['total_time_minutes'],
+    }
+);
 
 /**
  * Schema for validating PUT /recipes/{id} request body.
@@ -185,6 +217,24 @@ const updateRecipeSchema = z
                 invalid_type_error: 'is_termorobot must be a boolean',
             })
             .optional(),
+        prep_time_minutes: z
+            .number({
+                invalid_type_error: 'Preparation time must be a number',
+            })
+            .int('Preparation time must be an integer')
+            .min(0, 'Preparation time must be at least 0')
+            .max(999, 'Preparation time cannot exceed 999')
+            .nullable()
+            .optional(),
+        total_time_minutes: z
+            .number({
+                invalid_type_error: 'Total time must be a number',
+            })
+            .int('Total time must be an integer')
+            .min(0, 'Total time must be at least 0')
+            .max(999, 'Total time cannot exceed 999')
+            .nullable()
+            .optional(),
     })
     .refine(
         (data) => {
@@ -193,6 +243,20 @@ const updateRecipeSchema = z
         },
         {
             message: 'At least one field must be provided for update',
+        }
+    )
+    .refine(
+        (data) => {
+            // Cross-field validation: total_time_minutes >= prep_time_minutes (when both are set)
+            if (data.prep_time_minutes !== null && data.prep_time_minutes !== undefined 
+                && data.total_time_minutes !== null && data.total_time_minutes !== undefined) {
+                return data.total_time_minutes >= data.prep_time_minutes;
+            }
+            return true;
+        },
+        {
+            message: 'Total time must be greater than or equal to preparation time',
+            path: ['total_time_minutes'],
         }
     );
 
@@ -593,6 +657,8 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
             visibility: validatedData.visibility,
             servings: validatedData.servings,
             is_termorobot: validatedData.is_termorobot,
+            prep_time_minutes: validatedData.prep_time_minutes,
+            total_time_minutes: validatedData.total_time_minutes,
         };
 
         // Call the service to create the recipe
@@ -681,6 +747,8 @@ export async function handleUpdateRecipe(
             image_path: validatedData.image_path,
             servings: validatedData.servings,
             is_termorobot: validatedData.is_termorobot,
+            prep_time_minutes: validatedData.prep_time_minutes,
+            total_time_minutes: validatedData.total_time_minutes,
         };
 
         // Call the service to update the recipe

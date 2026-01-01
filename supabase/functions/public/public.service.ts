@@ -67,6 +67,8 @@ export interface PublicRecipeListItemDto {
     in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -90,6 +92,8 @@ export interface PublicRecipeDetailDto {
     in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -133,6 +137,8 @@ interface RecipeDetailsRow {
     created_at: string;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -154,6 +160,8 @@ interface RecipeDetailFullRow {
     deleted_at: string | null;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -165,10 +173,10 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
-const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot';
+const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes';
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
@@ -451,6 +459,8 @@ export async function getPublicRecipes(
             in_my_plan: recipeIdsInPlan.has(recipe.id),
             servings: recipe.servings,
             is_termorobot: recipe.is_termorobot,
+            prep_time_minutes: recipe.prep_time_minutes,
+            total_time_minutes: recipe.total_time_minutes,
         };
     });
 
@@ -595,6 +605,8 @@ export async function getPublicRecipeById(
         in_my_plan: inMyPlan,
         servings: recipe.servings,
         is_termorobot: recipe.is_termorobot,
+        prep_time_minutes: recipe.prep_time_minutes,
+        total_time_minutes: recipe.total_time_minutes,
     };
 
     logger.info('Public recipe fetched successfully', {
@@ -865,6 +877,8 @@ export async function getPublicRecipesFeed(
             in_my_plan: recipeIdsInPlan.has(recipe.id),
             servings: recipe.servings,
             is_termorobot: recipe.is_termorobot,
+            prep_time_minutes: recipe.prep_time_minutes,
+            total_time_minutes: recipe.total_time_minutes,
         };
     });
 

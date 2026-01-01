@@ -112,6 +112,8 @@ export type RecipeListItemDto = Pick<
     category_name: string | null;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 };
 
 /**
@@ -136,6 +138,8 @@ export interface PublicRecipeListItemDto {
     in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -160,6 +164,8 @@ export interface PublicRecipeDetailDto {
     in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -195,6 +201,10 @@ export type RecipeDetailDto = Omit<
     servings: number | null;
     /** True if recipe is in authenticated user's plan */
     in_my_plan: boolean;
+    /** Preparation time in minutes (0-999 or null if not specified). */
+    prep_time_minutes: number | null;
+    /** Total time in minutes (0-999 or null if not specified). */
+    total_time_minutes: number | null;
 };
 
 /**
@@ -215,6 +225,10 @@ export type CreateRecipeCommand = Pick<
     servings?: number | null;
     /** Flag indicating recipe is designed for Thermomix/Lidlomix (Termorobot). Defaults to false if not provided. */
     is_termorobot?: boolean;
+    /** Preparation time in minutes (0-999 or null if not specified). */
+    prep_time_minutes?: number | null;
+    /** Total time in minutes (0-999 or null if not specified). */
+    total_time_minutes?: number | null;
 };
 
 /**

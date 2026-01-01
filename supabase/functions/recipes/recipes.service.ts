@@ -41,6 +41,8 @@ export interface RecipeListItemDto {
     category_name: string | null;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -128,6 +130,8 @@ export interface RecipeDetailDto {
     is_termorobot: boolean;
     /** True if recipe is in authenticated user's plan */
     in_my_plan: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -168,11 +172,11 @@ export interface GetRecipesFeedOptions {
 }
 
 /** Columns to select for recipe list queries. */
-const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings, is_termorobot';
+const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings, is_termorobot, prep_time_minutes, total_time_minutes';
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings, is_termorobot';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -413,6 +417,8 @@ export async function getRecipes(
         category_name: recipe.category_name ?? null,
         servings: recipe.servings ? Number(recipe.servings) : null,
         is_termorobot: Boolean(recipe.is_termorobot),
+        prep_time_minutes: recipe.prep_time_minutes ? Number(recipe.prep_time_minutes) : null,
+        total_time_minutes: recipe.total_time_minutes ? Number(recipe.total_time_minutes) : null,
     }));
 
     return {
@@ -616,6 +622,8 @@ export async function getRecipesFeed(
         category_name: recipe.category_name ?? null,
         servings: recipe.servings ? Number(recipe.servings) : null,
         is_termorobot: Boolean(recipe.is_termorobot),
+        prep_time_minutes: recipe.prep_time_minutes ? Number(recipe.prep_time_minutes) : null,
+        total_time_minutes: recipe.total_time_minutes ? Number(recipe.total_time_minutes) : null,
     }));
 
     // Create next cursor if there are more results
@@ -854,6 +862,8 @@ function mapToRecipeDetailDto(data: any, inMyPlan: boolean): RecipeDetailDto {
         servings: data.servings ? Number(data.servings) : null,
         is_termorobot: Boolean(data.is_termorobot),
         in_my_plan: inMyPlan,
+        prep_time_minutes: data.prep_time_minutes ? Number(data.prep_time_minutes) : null,
+        total_time_minutes: data.total_time_minutes ? Number(data.total_time_minutes) : null,
     };
 }
 
@@ -870,6 +880,8 @@ export interface CreateRecipeInput {
     visibility: RecipeVisibility;
     servings: number | null;
     is_termorobot: boolean;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
 }
 
 /**
@@ -887,6 +899,8 @@ export interface UpdateRecipeInput {
     image_path?: string | null;
     servings?: number | null;
     is_termorobot?: boolean;
+    prep_time_minutes?: number | null;
+    total_time_minutes?: number | null;
 }
 
 /**
@@ -923,6 +937,8 @@ export async function createRecipe(
         tagsCount: input.tags.length,
         servings: input.servings,
         is_termorobot: input.is_termorobot,
+        prep_time_minutes: input.prep_time_minutes,
+        total_time_minutes: input.total_time_minutes,
     });
 
     // Call the RPC function to create the recipe with tags atomically
@@ -939,6 +955,8 @@ export async function createRecipe(
             p_visibility: input.visibility,
             p_servings: input.servings,
             p_is_termorobot: input.is_termorobot,
+            p_prep_time_minutes: input.prep_time_minutes,
+            p_total_time_minutes: input.total_time_minutes,
         }
     );
 
@@ -1022,6 +1040,8 @@ export async function updateRecipe(
         updatingImagePath: input.image_path !== undefined,
         updatingServings: input.servings !== undefined,
         updatingIsTermorobot: input.is_termorobot !== undefined,
+        updatingPrepTime: input.prep_time_minutes !== undefined,
+        updatingTotalTime: input.total_time_minutes !== undefined,
     });
 
     // Determine if tags should be updated
@@ -1035,6 +1055,12 @@ export async function updateRecipe(
 
     // Determine if termorobot flag should be updated
     const updateIsTermorobot = input.is_termorobot !== undefined;
+
+    // Determine if prep time should be updated
+    const updatePrepTime = input.prep_time_minutes !== undefined;
+
+    // Determine if total time should be updated
+    const updateTotalTime = input.total_time_minutes !== undefined;
 
     // Call the RPC function to update the recipe with tags atomically
     const { data: updatedRecipeId, error: rpcError } = await client.rpc(
@@ -1056,6 +1082,10 @@ export async function updateRecipe(
             p_update_servings: updateServings,
             p_is_termorobot: input.is_termorobot ?? null,
             p_update_is_termorobot: updateIsTermorobot,
+            p_prep_time_minutes: input.prep_time_minutes ?? null,
+            p_update_prep_time: updatePrepTime,
+            p_total_time_minutes: input.total_time_minutes ?? null,
+            p_update_total_time: updateTotalTime,
         }
     );
 
