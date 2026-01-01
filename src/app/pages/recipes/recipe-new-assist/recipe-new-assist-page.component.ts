@@ -131,7 +131,7 @@ export class RecipeNewAssistPageComponent {
         }
 
         // Find image in clipboard
-        for (const item of items) {
+        for (const item of Array.from(items)) {
             if (item.type.startsWith('image/')) {
                 event.preventDefault();
                 const file = item.getAsFile();
