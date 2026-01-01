@@ -32,21 +32,21 @@ import { RecipeBasicInfoFormComponent } from './components/recipe-basic-info-for
 import { RecipeImageUploadComponent, RecipeImageEvent } from './components/recipe-image-upload/recipe-image-upload.component';
 import { RecipeCategorizationFormComponent } from './components/recipe-categorization-form/recipe-categorization-form.component';
 import { EditableListComponent } from '../../../shared/components/editable-list/editable-list.component';
-import { 
-    AiRecipeImagePreviewDialogComponent, 
-    AiRecipeImageDialogData, 
-    AiRecipeImageDialogResult 
+import {
+    AiRecipeImagePreviewDialogComponent,
+    AiRecipeImageDialogData,
+    AiRecipeImageDialogResult
 } from './components/ai-recipe-image-preview-dialog/ai-recipe-image-preview-dialog.component';
 
 import { CategoriesService } from '../../../core/services/categories.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { RecipesService } from '../services/recipes.service';
 import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
-import { 
-    AiRecipeImageService, 
-    AiImageValidationError, 
-    AiImageRateLimitError, 
-    AiImagePremiumRequiredError 
+import {
+    AiRecipeImageService,
+    AiImageValidationError,
+    AiImageRateLimitError,
+    AiImagePremiumRequiredError
 } from '../services/ai-recipe-image.service';
 import {
     RecipeDetailDto,
@@ -107,7 +107,7 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly aiRecipeImageService = inject(AiRecipeImageService);
 
     /** Reference to RecipeImageUploadComponent for applying AI-generated images */
-    @ViewChild(RecipeImageUploadComponent) 
+    @ViewChild(RecipeImageUploadComponent)
     private imageUploadComponent!: RecipeImageUploadComponent;
 
     /** Signal indicating edit mode vs create mode */
@@ -914,8 +914,9 @@ export class RecipeFormPageComponent implements OnInit {
                 // Usuń błąd relacji jeśli był ustawiony
                 const currentErrors = totalControl.errors;
                 if (currentErrors && currentErrors['totalLessThanPrep']) {
-                    const { totalLessThanPrep, ...remainingErrors } = currentErrors;
-                    totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
+                const remainingErrors = { ...currentErrors };
+                delete remainingErrors['totalLessThanPrep'];
+                totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
                 }
                 return null;
             }
@@ -933,8 +934,9 @@ export class RecipeFormPageComponent implements OnInit {
             // Relacja OK - usuń błąd totalLessThanPrep jeśli istnieje
             const currentErrors = totalControl.errors;
             if (currentErrors && currentErrors['totalLessThanPrep']) {
-                const { totalLessThanPrep, ...remainingErrors } = currentErrors;
-                totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
+            const remainingErrors = { ...currentErrors };
+            delete remainingErrors['totalLessThanPrep'];
+            totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
             }
 
             return null;
