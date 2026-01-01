@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
                     'Access-Control-Allow-Headers':
-                        'Authorization, Content-Type',
+                        'Authorization, Content-Type, x-client-info, apikey',
                     'Access-Control-Max-Age': '86400',
                 },
             });
