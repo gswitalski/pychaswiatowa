@@ -12,16 +12,13 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-jako użytkownik systemu, który ma dostęp do jakiegoś przepisu czy to do mojego czy innego publicznego, chę mieć możliwośćć dodadnia  do mojego planu. na widoku szcegółow przpepisu gdy jestem zalogowany chce miec obok przycisku dodanika do kolekcji przycisk "dodaj do planu" z ikonka listy z plusikiem.
-Po wciśnięciui tego przycisku podczas dodawania nazwa przyisku zamienia się w spinner i po zkonczeniu dowadania przycisk am  ikonkę ptaszka zatwierdzającego a nazwa ziemia się na "zobacz listę".
-Gdy wchodzę na przepis który już jest  w moim planie to przepis od razu pirzybiera postać "Zobacz listę".
-
-po kliknięciu w "zobacz listę" z prawej strony wysuwa się drawer z listą przepisów w mom planie 
-na tej liście mam mały obrazek z ilustracją przepisu, nazwe oraz ikonkę z koszem do usunięcia przepisu z listy. sama lista na górze ma ikonkę z koszem do wyczyszczenia całej listy oraz krzyżyk do zamknięcia
-po otwarciu tej listy pozostały kontent strony jest lekko przyciemniony. kliknięcie w przyciemniony konetent zamyka okienko z listą.
+na formularzu edyzji przpisu chce mieć możliwodć wprowadzene dodatkowych dwóch pól:
+1. czas przyrządania
+2. czas całkowity
 
 
-Gdy moój plan zweira conajmniej jeden przepis to na dole ekranu z prawej strony pojawia się pływający przyisk "Mój plan" od otwearcia listy z moim planem.
+te dw pola mają sie potem wyświetlać z odpowienimi ikonkami w widoku szczegóow przepisu pod opisem
+
 
 </nowa_funkcjonalnosc>
 

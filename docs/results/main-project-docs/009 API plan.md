@@ -147,6 +147,8 @@ Public endpoints are available without authentication:
               "name": "Apple Pie",
               "description": "A classic dessert.",
               "servings": 6,
+              "prep_time_minutes": 30,
+              "total_time_minutes": 90,
               "is_termorobot": false,
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
@@ -162,6 +164,8 @@ Public endpoints are available without authentication:
               "name": "My Private Soup",
               "description": null,
               "servings": 2,
+              "prep_time_minutes": 0,
+              "total_time_minutes": 0,
               "is_termorobot": false,
               "image_path": null,
               "visibility": "PRIVATE",
@@ -209,6 +213,8 @@ Public endpoints are available without authentication:
               "name": "Apple Pie",
               "description": "A classic dessert.",
               "servings": 6,
+              "prep_time_minutes": 30,
+              "total_time_minutes": 90,
               "is_termorobot": false,
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
@@ -224,6 +230,8 @@ Public endpoints are available without authentication:
               "name": "My Shared Cake",
               "description": null,
               "servings": 8,
+              "prep_time_minutes": 0,
+              "total_time_minutes": 0,
               "is_termorobot": false,
               "image_path": null,
               "visibility": "SHARED",
@@ -262,6 +270,8 @@ Public endpoints are available without authentication:
           "name": "Apple Pie",
           "description": "A classic dessert.",
           "servings": 6,
+          "prep_time_minutes": 30,
+          "total_time_minutes": 90,
           "is_termorobot": false,
           "image_path": "path/to/image.jpg",
           "visibility": "PUBLIC",
@@ -320,6 +330,8 @@ Public endpoints are available without authentication:
               "id": 1,
               "name": "Apple Pie",
               "servings": 6,
+              "prep_time_minutes": 30,
+              "total_time_minutes": 90,
               "is_termorobot": false,
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
@@ -371,6 +383,8 @@ Public endpoints are available without authentication:
               "id": 1,
               "name": "Apple Pie",
               "servings": 6,
+              "prep_time_minutes": 30,
+              "total_time_minutes": 90,
               "is_termorobot": false,
               "image_path": "path/to/image.jpg",
               "visibility": "PUBLIC",
@@ -402,6 +416,8 @@ Public endpoints are available without authentication:
       "name": "New Awesome Recipe",
       "description": "A short description.",
       "servings": 4,
+      "prep_time_minutes": 30,
+      "total_time_minutes": 90,
       "is_termorobot": false,
       "category_id": 2,
       "visibility": "PRIVATE",
@@ -419,6 +435,8 @@ Public endpoints are available without authentication:
           "name": "New Awesome Recipe",
           "description": "A short description.",
           "servings": 4,
+          "prep_time_minutes": 30,
+          "total_time_minutes": 90,
           "is_termorobot": false,
           "category_id": 2,
           "visibility": "PRIVATE",
@@ -464,6 +482,8 @@ Public endpoints are available without authentication:
           "name": "Pizza",
           "description": null,
           "servings": null,
+          "prep_time_minutes": null,
+          "total_time_minutes": null,
           "is_termorobot": false,
           "category_id": null,
           "visibility": "PRIVATE",
@@ -582,6 +602,8 @@ Public endpoints are available without authentication:
         "name": "Sernik klasyczny",
         "description": "Kremowy sernik na spodzie z herbatników.",
         "servings": 8,
+        "prep_time_minutes": 20,
+        "total_time_minutes": 90,
         "is_termorobot": false,
         "category_name": "Deser",
         "ingredients": [
@@ -665,6 +687,8 @@ Public endpoints are available without authentication:
       "name": "Updated Awesome Recipe",
       "description": "An updated description.",
       "servings": 6,
+      "prep_time_minutes": 45,
+      "total_time_minutes": 120,
       "is_termorobot": true,
       "visibility": "PUBLIC"
     }
@@ -1118,6 +1142,8 @@ Public endpoints are available without authentication:
 -   **Validation**: Input validation will be performed at the API level before data is sent to the database. This includes checking for required fields, data types, and length constraints as defined in the database schema.
     -   `recipes.name`: required, 1-150 characters.
     -   `recipes.servings`: optional, integer, 1-99. Can be `null` (no value provided).
+    -   `recipes.prep_time_minutes`: optional, integer, 0-999. Can be `null` (no value provided).
+    -   `recipes.total_time_minutes`: optional, integer, 0-999. Can be `null` (no value provided).
     -   `recipes.is_termorobot`: optional, boolean. Default: `false`.
     -   `recipes.visibility`: required, enum: 'PRIVATE', 'SHARED', 'PUBLIC'. Default: 'PRIVATE'.
     -   `recipes.ingredients_raw`, `recipes.steps_raw`: required.
@@ -1128,6 +1154,7 @@ Public endpoints are available without authentication:
     -   `tags.name`: required, 1-50 characters.
     -   `collections.name`: required, 1-100 characters.
 -   **Business Logic**:
+    -   **Recipe time consistency**: If both `prep_time_minutes` and `total_time_minutes` are provided (non-null), then `total_time_minutes` MUST be greater than or equal to `prep_time_minutes`. Otherwise the API MUST return `400 Bad Request` with a clear validation error payload.
     -   **Text Parsing**: For `POST /recipes` and `PUT /recipes`, the API will accept `ingredients_raw` and `steps_raw` as plain text. A dedicated PostgreSQL function, called via RPC, will parse this text into the structured `jsonb` format required by the database. Lines starting with `#` will be converted to `{"type": "header", ...}` objects. For lines in `steps_raw`, the parser will strip leading numbering (like "1.", "2.") and bullet points to ensure clean data storage. This allows the frontend to implement automatic, continuous numbering across sections without duplication.
     -   **Tag Management**: When creating/updating a recipe, the list of tag names provided will be used to find existing tags or create new ones for the user, and then associate them with the recipe. This logic will be handled within the database transaction for creating/updating the recipe.
     -   **Soft Deletes**: `DELETE /recipes/{id}` performs a soft delete by setting the `deleted_at` field. All `GET` requests for recipes will automatically filter out records where `deleted_at` is not null.
