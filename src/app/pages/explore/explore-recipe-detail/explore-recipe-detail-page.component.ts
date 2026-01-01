@@ -9,13 +9,14 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map } from 'rxjs';
+import { map, finalize } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 
 import { ExploreRecipesService } from '../../../core/services/explore-recipes.service';
 import { RecipesService } from '../../recipes/services/recipes.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import { MyPlanService } from '../../../core/services/my-plan.service';
 import {
     RecipeDetailDto,
     ApiError,
@@ -69,6 +70,7 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
     private readonly exploreRecipesService = inject(ExploreRecipesService);
     private readonly recipesService = inject(RecipesService);
     private readonly supabase = inject(SupabaseService);
+    private readonly myPlanService = inject(MyPlanService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
@@ -84,6 +86,9 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
 
     /** ID aktualnie zalogowanego użytkownika (null jeśli gość) */
     readonly currentUserId = signal<string | null>(null);
+
+    /** Czy trwa dodawanie przepisu do planu */
+    readonly isAddingToPlan = signal<boolean>(false);
 
     readonly recipe = computed(() => this.state().recipe);
     readonly isLoading = computed(() => this.state().isLoading);
@@ -328,5 +333,95 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
         this.router.navigate(['/register'], {
             queryParams: { returnUrl: currentUrl },
         });
+    }
+
+    /**
+     * Dodaje przepis do planu użytkownika
+     */
+    onAddToPlan(): void {
+        const recipe = this.recipe();
+
+        // Guard clauses
+        if (!recipe || recipe.id === null) {
+            console.warn('[ExploreRecipeDetailPage] Cannot add to plan: no recipe loaded');
+            return;
+        }
+
+        if (!this.isAuthenticated()) {
+            console.warn('[ExploreRecipeDetailPage] Cannot add to plan: user not authenticated');
+            return;
+        }
+
+        if (recipe.in_my_plan) {
+            // Już w planie - otwórz drawer zamiast dodawać ponownie
+            this.onOpenPlan();
+            return;
+        }
+
+        // Rozpocznij dodawanie
+        this.isAddingToPlan.set(true);
+
+        this.myPlanService
+            .addToPlan({ recipe_id: recipe.id })
+            .pipe(
+                finalize(() => {
+                    // Zawsze zdejmij spinner po zakończeniu (sukces lub błąd)
+                    this.isAddingToPlan.set(false);
+                })
+            )
+            .subscribe({
+                next: () => {
+                    // Sukces - zaktualizuj stan lokalny
+                    this.state.update((s) => ({
+                        ...s,
+                        recipe: s.recipe ? { ...s.recipe, in_my_plan: true } : null,
+                    }));
+
+                    this.snackBar.open('Dodano do planu', 'OK', {
+                        duration: 3000,
+                    });
+                },
+                error: (err: ApiError) => {
+                    // Obsługa błędów zgodnie z planem implementacji
+                    if (err.status === 409) {
+                        // Duplikat - potraktuj jako "już w planie"
+                        this.state.update((s) => ({
+                            ...s,
+                            recipe: s.recipe ? { ...s.recipe, in_my_plan: true } : null,
+                        }));
+                        this.snackBar.open('Ten przepis jest już w Twoim planie.', 'OK', {
+                            duration: 3000,
+                        });
+                    } else if (err.status === 422) {
+                        // Limit 50
+                        this.snackBar.open(
+                            'Plan ma już 50 przepisów. Usuń coś z planu i spróbuj ponownie.',
+                            'OK',
+                            { duration: 5000 }
+                        );
+                    } else if (err.status === 401) {
+                        // Sesja wygasła
+                        this.snackBar.open('Sesja wygasła. Zaloguj się ponownie.', 'OK', {
+                            duration: 5000,
+                        });
+                        this.onLogin();
+                    } else {
+                        // Inny błąd
+                        this.snackBar.open(
+                            err.message || 'Nie udało się dodać do planu. Spróbuj ponownie.',
+                            'OK',
+                            { duration: 5000 }
+                        );
+                    }
+                    console.error('[ExploreRecipeDetailPage] Error adding to plan:', err);
+                },
+            });
+    }
+
+    /**
+     * Otwiera drawer "Mój plan"
+     */
+    onOpenPlan(): void {
+        this.myPlanService.openDrawer();
     }
 }

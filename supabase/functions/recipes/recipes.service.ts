@@ -31,6 +31,8 @@ export interface RecipeListItemDto {
     visibility: RecipeVisibility;
     is_owner: boolean;
     in_my_collections: boolean;
+    /** True if recipe is in authenticated user's plan */
+    in_my_plan: boolean;
     author: {
         id: string;
         username: string;
@@ -124,6 +126,8 @@ export interface RecipeDetailDto {
     tags: TagDto[];
     servings: number | null;
     is_termorobot: boolean;
+    /** True if recipe is in authenticated user's plan */
+    in_my_plan: boolean;
 }
 
 /**
@@ -175,6 +179,67 @@ const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
 
 /** Default sort field. */
 const DEFAULT_SORT_FIELD = 'created_at';
+
+/**
+ * Checks which recipes from the given list are in the authenticated user's plan.
+ * Returns a Set of recipe IDs that are in the plan.
+ * If query fails, logs error and returns empty Set (non-blocking, defensive approach).
+ *
+ * @param client - Authenticated Supabase client
+ * @param recipeIds - Array of recipe IDs to check
+ * @param userId - Authenticated user ID
+ * @returns Set of recipe IDs that are in user's plan
+ */
+async function getRecipeIdsInPlan(
+    client: TypedSupabaseClient,
+    recipeIds: number[],
+    userId: string
+): Promise<Set<number>> {
+    if (recipeIds.length === 0) {
+        return new Set<number>();
+    }
+
+    logger.info('Checking if recipes are in user plan', {
+        userId,
+        recipeIdsCount: recipeIds.length,
+    });
+
+    try {
+        const { data, error } = await client
+            .from('plan_recipes')
+            .select('recipe_id')
+            .eq('user_id', userId)
+            .in('recipe_id', recipeIds);
+
+        if (error) {
+            logger.error('Error checking recipe plan', {
+                errorCode: error.code,
+                errorMessage: error.message,
+                userId,
+                recipeIdsCount: recipeIds.length,
+            });
+            // Non-blocking: return empty set
+            return new Set<number>();
+        }
+
+        const recipeIdsInPlan = new Set<number>(
+            (data ?? []).map((pr: { recipe_id: number }) => pr.recipe_id)
+        );
+
+        logger.info('Found recipes in user plan', {
+            count: recipeIdsInPlan.size,
+        });
+
+        return recipeIdsInPlan;
+    } catch (err) {
+        logger.error('Unexpected error checking recipe plan', {
+            error: err,
+            userId,
+        });
+        // Non-blocking: return empty set
+        return new Set<number>();
+    }
+}
 
 /**
  * Resolves tag names to their IDs for the current user.
@@ -314,8 +379,24 @@ export async function getRecipes(
         view,
     });
 
+    // If no data, return empty result
+    if (!data || data.length === 0) {
+        return {
+            data: [],
+            pagination: {
+                currentPage: page,
+                totalPages: 0,
+                totalItems: 0,
+            },
+        };
+    }
+
+    // Bulk check which recipes are in user's plan
+    const recipeIds = data.map((recipe) => Number(recipe.id));
+    const recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, requesterUserId);
+
     // Map the data to DTOs
-    const recipes: RecipeListItemDto[] = (data ?? []).map((recipe) => ({
+    const recipes: RecipeListItemDto[] = data.map((recipe) => ({
         id: Number(recipe.id),
         name: recipe.name,
         image_path: recipe.image_path,
@@ -323,6 +404,7 @@ export async function getRecipes(
         visibility: recipe.visibility as RecipeVisibility,
         is_owner: Boolean(recipe.is_owner),
         in_my_collections: Boolean(recipe.in_my_collections),
+        in_my_plan: recipeIdsInPlan.has(Number(recipe.id)),
         author: {
             id: recipe.author_id,
             username: recipe.author_username,
@@ -512,6 +594,10 @@ export async function getRecipesFeed(
         view,
     });
 
+    // Bulk check which recipes are in user's plan
+    const recipeIds = data.map((recipe) => Number(recipe.id));
+    const recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, requesterUserId);
+
     // Map the data to DTOs
     const recipes: RecipeListItemDto[] = data.map((recipe) => ({
         id: Number(recipe.id),
@@ -521,6 +607,7 @@ export async function getRecipesFeed(
         visibility: recipe.visibility as RecipeVisibility,
         is_owner: Boolean(recipe.is_owner),
         in_my_collections: Boolean(recipe.in_my_collections),
+        in_my_plan: recipeIdsInPlan.has(Number(recipe.id)),
         author: {
             id: recipe.author_id,
             username: recipe.author_username,
@@ -644,7 +731,11 @@ export async function getRecipeById(
             recipeName: data.name,
         });
 
-        return mapToRecipeDetailDto(data);
+        // Check if recipe is in user's plan
+        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [id], requesterUserId);
+        const inMyPlan = recipeIdsInPlan.has(id);
+
+        return mapToRecipeDetailDto(data, inMyPlan);
     }
 
     // Step B: If PGRST116 (not found by RLS), distinguish between 403 and 404
@@ -725,7 +816,11 @@ export async function getRecipeById(
             recipeName: publicRecipe.name,
         });
 
-        return mapToRecipeDetailDto(publicRecipe);
+        // Check if recipe is in user's plan
+        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [id], requesterUserId);
+        const inMyPlan = recipeIdsInPlan.has(id);
+
+        return mapToRecipeDetailDto(publicRecipe, inMyPlan);
     }
 
     // Other database errors
@@ -741,7 +836,7 @@ export async function getRecipeById(
  * Maps raw recipe_details view data to RecipeDetailDto.
  * Helper function to avoid code duplication.
  */
-function mapToRecipeDetailDto(data: any): RecipeDetailDto {
+function mapToRecipeDetailDto(data: any, inMyPlan: boolean): RecipeDetailDto {
     return {
         id: data.id!,
         user_id: data.user_id!,
@@ -758,6 +853,7 @@ function mapToRecipeDetailDto(data: any): RecipeDetailDto {
         tags: parseTagsContent(data.tags),
         servings: data.servings ? Number(data.servings) : null,
         is_termorobot: Boolean(data.is_termorobot),
+        in_my_plan: inMyPlan,
     };
 }
 

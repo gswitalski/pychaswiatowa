@@ -8,9 +8,12 @@
     [pageTitle]="pageTitle()"
     [isPublicView]="false"
     [showPageHeader]="showPageHeader()"
+    [isAddingToPlan]="isAddingToPlan()"
     backLabel="Wróć do listy przepisów"
     (back)="onBackToList()"
     (addToCollection)="onAddToCollection()"
     (edit)="onEdit()"
     (delete)="onDelete()"
+    (addToPlan)="onAddToPlan()"
+    (openPlan)="onOpenPlan()"
 />

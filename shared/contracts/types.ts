@@ -102,6 +102,8 @@ export type RecipeListItemDto = Pick<
     visibility: RecipeVisibility;
     is_owner: boolean;
     in_my_collections: boolean;
+    /** True if recipe is in authenticated user's plan */
+    in_my_plan: boolean;
     author: {
         id: string;
         username: string;
@@ -130,6 +132,8 @@ export interface PublicRecipeListItemDto {
     created_at: string;
     /** True if recipe is in authenticated user's collections (always false for anonymous) */
     in_my_collections: boolean;
+    /** True if recipe is in authenticated user's plan (always false for anonymous) */
+    in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
 }
@@ -150,6 +154,10 @@ export interface PublicRecipeDetailDto {
     tags: string[];
     author: ProfileDto;
     created_at: string;
+    /** True if authenticated user owns the recipe (always false for anonymous) */
+    is_owner: boolean;
+    /** True if recipe is in authenticated user's plan (always false for anonymous) */
+    in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
 }
@@ -185,6 +193,8 @@ export type RecipeDetailDto = Omit<
     visibility: RecipeVisibility;
     /** Number of servings the recipe yields (1-99 or null if not specified). */
     servings: number | null;
+    /** True if recipe is in authenticated user's plan */
+    in_my_plan: boolean;
 };
 
 /**
@@ -412,6 +422,43 @@ export interface SignUpRequestDto {
 export interface ApiError {
     message: string;
     status: number;
+}
+
+// #endregion
+
+// #region --- Plan (My Plan) ---
+
+/**
+ * Command model for adding a recipe to user's plan.
+ */
+export type AddRecipeToPlanCommand = {
+    recipe_id: number;
+};
+
+/**
+ * DTO for a single item in user's plan list.
+ * Minimal recipe data for display in plan view.
+ */
+export interface PlanListItemDto {
+    recipe_id: number;
+    added_at: string;
+    recipe: {
+        id: number;
+        name: string;
+        image_path: string | null;
+    };
+}
+
+/**
+ * Response DTO for GET /plan endpoint.
+ * Returns user's plan list with metadata.
+ */
+export interface GetPlanResponseDto {
+    data: PlanListItemDto[];
+    meta: {
+        total: number;
+        limit: 50;
+    };
 }
 
 // #endregion

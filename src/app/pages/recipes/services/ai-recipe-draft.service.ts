@@ -130,7 +130,7 @@ export class AiRecipeDraftService {
             case 413:
                 throw new AiDraftPayloadTooLargeError();
 
-            case 422:
+            case 422: {
                 const unprocessableData: AiRecipeDraftUnprocessableEntityDto =
                     await response.json().catch(() => ({
                         message: 'Wklejony materiał nie opisuje pojedynczego przepisu.',
@@ -141,17 +141,19 @@ export class AiRecipeDraftService {
                         'Wklejony materiał nie opisuje pojedynczego przepisu.',
                     unprocessableData.reasons || []
                 );
+            }
 
             case 429:
                 throw new AiDraftRateLimitError();
 
-            default:
+            default: {
                 const errorData = await response.json().catch(() => ({
                     message: 'Wystąpił błąd podczas przetwarzania przepisu.',
                 }));
                 throw new Error(
                     errorData.message || 'Wystąpił błąd podczas przetwarzania przepisu.'
                 );
+            }
         }
     }
 }

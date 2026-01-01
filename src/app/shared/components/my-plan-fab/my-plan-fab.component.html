@@ -1,0 +1,17 @@
+@if (hasItems() && !isDrawerOpen()) {
+    <button
+        mat-fab
+        extended
+        class="my-plan-fab"
+        (click)="onOpenDrawer()"
+        [attr.aria-label]="'Otwórz mój plan, ' + planTotal() + ' przepisów'"
+        matTooltip="Mój plan"
+    >
+        <mat-icon aria-hidden="true">checklist</mat-icon>
+        <span class="my-plan-fab__label" aria-hidden="true">Mój plan</span>
+        <span class="my-plan-fab__badge" aria-hidden="true">
+            {{ planTotal() }}
+        </span>
+    </button>
+}
+

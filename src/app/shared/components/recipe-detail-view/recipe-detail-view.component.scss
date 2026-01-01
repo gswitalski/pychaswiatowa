@@ -55,6 +55,23 @@
     }
 }
 
+// Spinner w przyciskach akcji planu - centrowanie i rozmiar
+::ng-deep {
+    pych-page-header {
+        // Spinner w icon button (ownerActions)
+        button[mat-icon-button] mat-spinner {
+            display: flex;
+            margin: auto;
+        }
+
+        // Spinner w raised button (addToCollection)
+        button[mat-raised-button] mat-spinner {
+            display: inline-flex;
+            vertical-align: middle;
+        }
+    }
+}
+
 .recipe-content {
     display: flex;
     flex-direction: column;

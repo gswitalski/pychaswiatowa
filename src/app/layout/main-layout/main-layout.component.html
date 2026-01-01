@@ -1,12 +1,13 @@
 <div class="main-layout">
     <!-- Topbar na całą szerokość -->
-    <pych-topbar 
+    <pych-topbar
         class="main-layout__topbar"
-        [shouldShowSidebar]="shouldShowSidebar()" 
+        [shouldShowSidebar]="shouldShowSidebar()"
     />
 
-    <!-- Sidebar + Content -->
+    <!-- Sidebar + Content + My Plan Drawer -->
     <mat-sidenav-container class="main-layout__body">
+        <!-- Left sidebar (navigation) -->
         @if (shouldShowSidebar()) {
             <mat-sidenav
                 #sidenav
@@ -19,11 +20,27 @@
             </mat-sidenav>
         }
 
+        <!-- Right drawer (My Plan) -->
+        <mat-sidenav
+            #myPlanDrawer
+            position="end"
+            mode="over"
+            [opened]="isMyPlanDrawerOpen()"
+            (closed)="onMyPlanDrawerClosed()"
+            (opened)="onMyPlanDrawerOpened()"
+            class="main-layout__my-plan-drawer"
+        >
+            <pych-my-plan-drawer />
+        </mat-sidenav>
+
         <mat-sidenav-content class="main-layout__content">
             <main class="main-layout__main">
                 <router-outlet />
             </main>
         </mat-sidenav-content>
     </mat-sidenav-container>
+
+    <!-- FAB "Mój plan" -->
+    <pych-my-plan-fab />
 </div>
 

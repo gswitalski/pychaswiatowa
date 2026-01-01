@@ -63,6 +63,8 @@ export interface PublicRecipeListItemDto {
     created_at: string;
     /** True if recipe is in authenticated user's collections (always false for anonymous) */
     in_my_collections: boolean;
+    /** True if recipe is in authenticated user's plan (always false for anonymous) */
+    in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
 }
@@ -82,6 +84,10 @@ export interface PublicRecipeDetailDto {
     tags: string[];
     author: ProfileDto;
     created_at: string;
+    /** True if authenticated user owns the recipe (always false for anonymous) */
+    is_owner: boolean;
+    /** True if recipe is in authenticated user's plan (always false for anonymous) */
+    in_my_plan: boolean;
     servings: number | null;
     is_termorobot: boolean;
 }
@@ -166,6 +172,67 @@ const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
+
+/**
+ * Checks which recipes from the given list are in the authenticated user's plan.
+ * Returns a Set of recipe IDs that are in the plan.
+ * If userId is null (anonymous), returns an empty Set.
+ * If query fails, logs error and returns empty Set (non-blocking, defensive approach).
+ *
+ * @param client - Service role Supabase client
+ * @param recipeIds - Array of recipe IDs to check
+ * @param userId - Authenticated user ID (or null for anonymous)
+ * @returns Set of recipe IDs that are in user's plan
+ */
+async function getRecipeIdsInPlan(
+    client: TypedSupabaseClient,
+    recipeIds: number[],
+    userId: string | null
+): Promise<Set<number>> {
+    if (userId === null || recipeIds.length === 0) {
+        return new Set<number>();
+    }
+
+    logger.info('Checking if recipes are in user plan', {
+        userId,
+        recipeIdsCount: recipeIds.length,
+    });
+
+    try {
+        const { data, error } = await client
+            .from('plan_recipes')
+            .select('recipe_id')
+            .eq('user_id', userId)
+            .in('recipe_id', recipeIds);
+
+        if (error) {
+            logger.error('Error checking recipe plan', {
+                errorCode: error.code,
+                errorMessage: error.message,
+                userId,
+            });
+            // Non-blocking: return empty set
+            return new Set<number>();
+        }
+
+        const recipeIdsInPlan = new Set<number>(
+            (data ?? []).map((pr: { recipe_id: number }) => pr.recipe_id)
+        );
+
+        logger.info('Found recipes in user plan', {
+            count: recipeIdsInPlan.size,
+        });
+
+        return recipeIdsInPlan;
+    } catch (err) {
+        logger.error('Unexpected error checking recipe plan', {
+            error: err,
+            userId,
+        });
+        // Non-blocking: return empty set
+        return new Set<number>();
+    }
+}
 
 /**
  * Retrieves public recipes with pagination, sorting, and optional search.
@@ -318,8 +385,9 @@ export async function getPublicRecipes(
         throw new ApplicationError('INTERNAL_ERROR', 'Some recipe authors could not be found');
     }
 
-    // If user is authenticated, fetch collection information for all recipes
+    // If user is authenticated, fetch collection information and plan information for all recipes
     let recipeIdsInCollections = new Set<number>();
+    let recipeIdsInPlan = new Set<number>();
 
     if (userId !== null) {
         const recipeIds = recipeRows.map(r => r.id);
@@ -349,6 +417,9 @@ export async function getPublicRecipes(
                 count: recipeIdsInCollections.size,
             });
         }
+
+        // Check which recipes are in user's plan
+        recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, userId);
     }
 
     // Map database records to DTOs
@@ -377,6 +448,7 @@ export async function getPublicRecipes(
             },
             created_at: recipe.created_at,
             in_my_collections: recipeIdsInCollections.has(recipe.id),
+            in_my_plan: recipeIdsInPlan.has(recipe.id),
             servings: recipe.servings,
             is_termorobot: recipe.is_termorobot,
         };
@@ -406,21 +478,28 @@ export async function getPublicRecipes(
 /**
  * Retrieves a single public recipe by ID with full details.
  * This function is intended for anonymous access using service role key.
+ * Supports optional authentication for additional metadata (is_owner, in_my_plan).
  *
  * Security: Always filters for visibility='PUBLIC' and deleted_at IS NULL.
  * Returns 404 if recipe doesn't exist, is not public, or is soft-deleted.
  *
  * @param client - Service role Supabase client
  * @param params - Parameters containing recipe ID
+ * @param userId - Optional authenticated user ID (null for anonymous)
  * @returns Public recipe detail DTO
  * @throws ApplicationError with NOT_FOUND code if recipe not found or not public
  * @throws ApplicationError with INTERNAL_ERROR code for database errors
  */
 export async function getPublicRecipeById(
     client: TypedSupabaseClient,
-    params: { id: number }
+    params: { id: number },
+    userId: string | null = null
 ): Promise<PublicRecipeDetailDto> {
-    logger.info('Fetching public recipe by ID', { recipeId: params.id });
+    logger.info('Fetching public recipe by ID', { 
+        recipeId: params.id,
+        isAuthenticated: userId !== null,
+        userId: userId ?? 'anonymous',
+    });
 
     // Fetch recipe from recipe_details view
     const { data: recipeData, error: recipeError } = await client
@@ -484,6 +563,16 @@ export async function getPublicRecipeById(
 
     const profile = profileData as ProfileRow;
 
+    // Calculate is_owner and in_my_plan for authenticated users
+    const isOwner = userId !== null && recipe.user_id === userId;
+    let inMyPlan = false;
+
+    if (userId !== null) {
+        // Check if recipe is in user's plan
+        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [params.id], userId);
+        inMyPlan = recipeIdsInPlan.has(params.id);
+    }
+
     // Map to DTO
     const recipeDto: PublicRecipeDetailDto = {
         id: recipe.id,
@@ -502,6 +591,8 @@ export async function getPublicRecipeById(
             username: profile.username,
         },
         created_at: recipe.created_at,
+        is_owner: isOwner,
+        in_my_plan: inMyPlan,
         servings: recipe.servings,
         is_termorobot: recipe.is_termorobot,
     };
@@ -510,6 +601,8 @@ export async function getPublicRecipeById(
         recipeId: recipeDto.id,
         recipeName: recipeDto.name,
         authorId: recipeDto.author.id,
+        isOwner,
+        inMyPlan,
     });
 
     return recipeDto;
@@ -706,8 +799,9 @@ export async function getPublicRecipesFeed(
         throw new ApplicationError('INTERNAL_ERROR', 'Some recipe authors could not be found');
     }
 
-    // If user is authenticated, fetch collection information for all recipes
+    // If user is authenticated, fetch collection information and plan information for all recipes
     let recipeIdsInCollections = new Set<number>();
+    let recipeIdsInPlan = new Set<number>();
 
     if (userId !== null) {
         const recipeIds = recipesToReturn.map(r => r.id);
@@ -737,6 +831,9 @@ export async function getPublicRecipesFeed(
                 count: recipeIdsInCollections.size,
             });
         }
+
+        // Check which recipes are in user's plan
+        recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, userId);
     }
 
     // Map database records to DTOs
@@ -765,6 +862,7 @@ export async function getPublicRecipesFeed(
             },
             created_at: recipe.created_at,
             in_my_collections: recipeIdsInCollections.has(recipe.id),
+            in_my_plan: recipeIdsInPlan.has(recipe.id),
             servings: recipe.servings,
             is_termorobot: recipe.is_termorobot,
         };

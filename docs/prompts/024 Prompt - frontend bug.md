@@ -11,21 +11,16 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-sciezka
-http://localhost:4200/recipes/52/edit
+na ekranie
+http://localhost:4200/recipes/new/assist
 
-klikam "wygeneruj zdjęcia za pomoca AI"
-
-zdjęcie się generuje. klikam "zastosuj"
-
-zdjęcie nie jest zastosowane do formularza  
+przyski "Dale" ma elementy nie wycentrowane w poziomie.
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-zdjęcie jest zastosowane w formularzu
-
+elementy (napis i strzałka wycentrowane .)
 </oczekiwane_zachowanie>
 
 

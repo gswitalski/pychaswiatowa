@@ -1,0 +1,66 @@
+.my-plan-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+
+    // Animacja wejścia
+    animation: fab-enter 0.2s ease-out;
+
+    &__label {
+        margin: 0 4px;
+    }
+
+    &__badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        margin-left: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border-radius: 10px;
+        background-color: var(--mat-sys-primary-container);
+        color: var(--mat-sys-on-primary-container);
+    }
+}
+
+@keyframes fab-enter {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+// Responsywność - na małych ekranach
+@media (max-width: 599px) {
+    .my-plan-fab {
+        bottom: 16px;
+        right: 16px;
+
+        // Na mobile chowamy label i pokazujemy tylko ikonę z badge
+        &__label {
+            display: none;
+        }
+    }
+}
+
+// Safe area dla urządzeń z notch
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .my-plan-fab {
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        right: calc(24px + env(safe-area-inset-right));
+
+        @media (max-width: 599px) {
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            right: calc(16px + env(safe-area-inset-right));
+        }
+    }
+}
+

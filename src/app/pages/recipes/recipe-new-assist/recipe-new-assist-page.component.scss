@@ -9,6 +9,13 @@
     }
 }
 
+.next-button-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
 .input-card {
     mat-card-header {
         margin-bottom: 24px;

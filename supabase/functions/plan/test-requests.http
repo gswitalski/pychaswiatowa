@@ -1,0 +1,151 @@
+### Test Plan Endpoints
+### Use REST Client extension in VS Code to execute these requests
+
+@baseUrl = http://localhost:54331/functions/v1
+@token = YOUR_JWT_TOKEN_HERE
+@recipeId = 1
+
+###############################################################################
+### GET /plan - Get user's plan
+###############################################################################
+
+### GET-1. SUCCESS: Get user's plan
+GET {{baseUrl}}/plan
+Authorization: Bearer {{token}}
+
+### GET-2. UNAUTHORIZED: Missing Authorization header
+GET {{baseUrl}}/plan
+
+### GET-3. UNAUTHORIZED: Invalid token
+GET {{baseUrl}}/plan
+Authorization: Bearer invalid_token_here
+
+###############################################################################
+### POST /plan/recipes - Add recipe to plan
+###############################################################################
+
+### POST-1. SUCCESS: Add recipe to plan
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": {{recipeId}}
+}
+
+### POST-2. CONFLICT: Add duplicate recipe
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": {{recipeId}}
+}
+
+### POST-3. NOT FOUND: Non-existent recipe
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 999999
+}
+
+### POST-4. VALIDATION ERROR: Invalid recipe_id (string)
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": "invalid"
+}
+
+### POST-5. VALIDATION ERROR: Negative recipe_id
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": -5
+}
+
+### POST-6. VALIDATION ERROR: Missing recipe_id
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### POST-7. UNAUTHORIZED: Missing Authorization header
+POST {{baseUrl}}/plan/recipes
+Content-Type: application/json
+
+{
+  "recipe_id": 1
+}
+
+### POST-8. VALIDATION ERROR: Invalid JSON
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{invalid json}
+
+###############################################################################
+### DELETE /plan/recipes/{recipeId} - Remove recipe from plan
+###############################################################################
+
+### DELETE-1. SUCCESS: Remove recipe from plan (run POST-1 first)
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+Authorization: Bearer {{token}}
+
+### DELETE-2. NOT FOUND: Recipe not in plan (already removed or never added)
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+Authorization: Bearer {{token}}
+
+### DELETE-3. NOT FOUND: Non-existent recipe ID
+DELETE {{baseUrl}}/plan/recipes/999999
+Authorization: Bearer {{token}}
+
+### DELETE-4. VALIDATION ERROR: Invalid recipeId (string)
+DELETE {{baseUrl}}/plan/recipes/abc
+Authorization: Bearer {{token}}
+
+### DELETE-5. VALIDATION ERROR: Negative recipeId
+DELETE {{baseUrl}}/plan/recipes/-1
+Authorization: Bearer {{token}}
+
+### DELETE-6. VALIDATION ERROR: Zero recipeId
+DELETE {{baseUrl}}/plan/recipes/0
+Authorization: Bearer {{token}}
+
+### DELETE-7. VALIDATION ERROR: Decimal recipeId
+DELETE {{baseUrl}}/plan/recipes/1.5
+Authorization: Bearer {{token}}
+
+### DELETE-8. UNAUTHORIZED: Missing Authorization header
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+
+### DELETE-9. UNAUTHORIZED: Invalid token
+DELETE {{baseUrl}}/plan/recipes/{{recipeId}}
+Authorization: Bearer invalid_token_here
+
+###############################################################################
+### DELETE /plan - Clear entire plan
+###############################################################################
+
+### CLEAR-1. SUCCESS: Clear plan with recipes (run POST-1 multiple times first)
+DELETE {{baseUrl}}/plan
+Authorization: Bearer {{token}}
+
+### CLEAR-2. SUCCESS: Clear empty plan (idempotent - run after CLEAR-1)
+DELETE {{baseUrl}}/plan
+Authorization: Bearer {{token}}
+
+### CLEAR-3. UNAUTHORIZED: Missing Authorization header
+DELETE {{baseUrl}}/plan
+
+### CLEAR-4. UNAUTHORIZED: Invalid token
+DELETE {{baseUrl}}/plan
+Authorization: Bearer invalid_token_here
+

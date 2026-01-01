@@ -19,14 +19,13 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-- **Zmienione**
-    - **9. Formularz Przepisu (Dodaj/Edytuj)**:
-        - Doprecyzowano parametry techniczne generowania (model i format wyjściowy) bez zmian w przepływie UX.
-    - **9a. Modal: Podgląd wygenerowanego zdjęcia (AI)**:
-        - Doprecyzowano, że akcja „Wygeneruj ponownie” oznacza kolejną próbę (ponowne wywołanie generowania), nadal w trybie `n=1`.
 
-
-
+- **Nowe: Drawer „Mój plan” (globalny panel wysuwany, bez osobnej trasy)**
+    - Drawer wysuwany z prawej strony, z overlay przyciemniającym tło i zamykaniem po kliknięciu w overlay.
+    - Nagłówek drawer’a: „Wyczyść” (ikona kosza) + „Zamknij” (X).
+    - Lista: miniatura + nazwa + kosz do usunięcia; klik w wiersz przenosi do szczegółów przepisu.
+    - Kolejność: ostatnio dodane na górze.
+    - Pływający przycisk „Mój plan” w prawym dolnym rogu widoczny, gdy plan ma ≥ 1 element.
 
 </views>
 
@@ -35,13 +34,9 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-- **Zmienione**
-    - **3.2. Zarządzanie przepisami (CRUD) – Generowanie zdjęcia (AI, premium)**:
-        - Doprecyzowano parametry techniczne generowania: model **`gpt-image-1.5`**, format **`image/webp` 1024×1024**, `background=auto`, `quality=auto`, `n=1`.
-    - **US-037: Generowanie zdjęcia przepisu (AI) w edycji – tylko premium**
-        - Dodano kryterium techniczne: model **`gpt-image-1.5`** oraz parametry wyjścia (jak wyżej).
-
-
+- **Nowe: US-039 – Przeglądanie i zarządzanie listą „Mój plan”**
+    - Drawer z listą (miniatura + nazwa + kosz), wyczyszczenie listy, zamknięcie, overlay zamykający po kliknięciu.
+    - Pływający przycisk „Mój plan” widoczny, gdy lista ma ≥ 1 element.
 
 </user_stories>
 

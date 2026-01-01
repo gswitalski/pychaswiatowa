@@ -12,12 +12,10 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-- **Zmienione**
-    - **POST `/ai/recipes/image` (Supabase Edge Function)**:
-        - Zmieniono model generowania z `dall-e-3` na **`gpt-image-1.5`** (OpenAI Images API `POST /v1/images/generations`).
-        - Doprecyzowano parametry wyjścia (MVP): **`image/webp` 1024×1024**, `background=auto`, `quality=auto`, `n=1`, `stream=false`.
-        - **Kontrakt endpointu bez zmian**: nadal zwracany jest podgląd jako base64 (`image.data_base64`).
 
+- **Zmienione endpointy (helper field):**
+    - **Co się zmieniło:** dodano pole pomocnicze `in_my_plan` w odpowiedziach, aby UI mogło od razu ustawić stan przycisku na szczegółach przepisu.
+    - Dotyczy (gdy żądanie jest uwierzytelnione): `GET /public/recipes`, `GET /public/recipes/feed`, `GET /public/recipes/{id}`, `GET /recipes`, `GET /recipes/feed`, `GET /recipes/{id}`.
 
 </api_changes_description>
 
