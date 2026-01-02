@@ -1,0 +1,262 @@
+###
+# Test requests for utils Edge Function
+# Usage: Use REST Client extension in VS Code or similar HTTP client
+###
+
+@baseUrl = http://localhost:54331/functions/v1/utils
+# For deployed function use:
+# @baseUrl = https://YOUR_PROJECT_REF.supabase.co/functions/v1/utils
+
+###
+# Test 1: Basic slugify - Polish text with diacritics
+POST {{baseUrl}}/slugify
+Content-Type: application/json; charset=utf-8
+
+{
+    "text": "Biała kiełbasa z jabłkami"
+}
+
+# Expected response (200):
+# {
+#     "slug": "biala-kielbasa-z-jablkami"
+# }
+
+###
+# Test 2: Slugify with custom max_length
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "Pierogi z kapustą i grzybami - tradycyjny przepis na Wigilię",
+    "max_length": 30
+}
+
+# Expected response (200):
+# {
+#     "slug": "pierogi-z-kapusta-i-grzybami"
+# }
+
+###
+# Test 3: Slugify with custom fallback
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "!@#$%^&*()",
+    "fallback": "domyslny-przepis"
+}
+
+# Expected response (200):
+# {
+#     "slug": "domyslny-przepis"
+# }
+
+###
+# Test 4: Text with multiple consecutive spaces and special characters
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "Kotlet   schabowy --- najlepszy!!!"
+}
+
+# Expected response (200):
+# {
+#     "slug": "kotlet-schabowy-najlepszy"
+# }
+
+###
+# Test 5: All Polish diacritics transliteration test
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "ąćęłńóśżź ĄĆĘŁŃÓŚŻŹ"
+}
+
+# Expected response (200):
+# {
+#     "slug": "acelnoszz-acelnoszz"
+# }
+
+###
+# Test 6: Long text truncation
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "To jest bardzo długi tekst który powinien zostać ucięty do maksymalnej długości określonej przez parametr max length",
+    "max_length": 40
+}
+
+# Expected response (200):
+# {
+#     "slug": "to-jest-bardzo-dlugi-tekst-ktory"
+# }
+
+###
+# Test 7: Empty text after trimming (should use fallback)
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "   "
+}
+
+# Expected response (400 - validation error):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Field \"text\" is required and cannot be empty."
+# }
+
+###
+# Test 8: Missing text field (validation error)
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "max_length": 50
+}
+
+# Expected response (400 - validation error):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "..."
+# }
+
+###
+# Test 9: Invalid max_length (negative)
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "Test przepis",
+    "max_length": -5
+}
+
+# Expected response (400 - validation error):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Field \"max_length\" must be at least 1."
+# }
+
+###
+# Test 10: Invalid max_length (exceeds limit)
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "Test przepis",
+    "max_length": 500
+}
+
+# Expected response (400 - validation error):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Field \"max_length\" cannot exceed 200."
+# }
+
+###
+# Test 11: Text exceeds maximum allowed length
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis"
+}
+
+# Expected response (400 - validation error):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Field \"text\" cannot exceed 500 characters."
+# }
+
+###
+# Test 12: Numbers and alphanumerics
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "Przepis nr 123 - wersja 2.0"
+}
+
+# Expected response (200):
+# {
+#     "slug": "przepis-nr-123-wersja-2-0"
+# }
+
+###
+# Test 13: Text starting and ending with special characters
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "---Test przepisu---"
+}
+
+# Expected response (200):
+# {
+#     "slug": "test-przepisu"
+# }
+
+###
+# Test 14: Only special characters (should use default fallback)
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "!@#$%^&*()"
+}
+
+# Expected response (200):
+# {
+#     "slug": "przepis"
+# }
+
+###
+# Test 15: Empty fallback string
+POST {{baseUrl}}/slugify
+Content-Type: application/json
+
+{
+    "text": "Test",
+    "fallback": "   "
+}
+
+# Expected response (400 - validation error):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Field \"fallback\" cannot be empty."
+# }
+
+###
+# Test 16: CORS preflight request
+OPTIONS {{baseUrl}}/slugify
+
+# Expected response (204 No Content with CORS headers)
+
+###
+# Test 17: Method not allowed (GET instead of POST)
+GET {{baseUrl}}/slugify
+
+# Expected response (400):
+# {
+#     "code": "METHOD_NOT_ALLOWED",
+#     "message": "Method GET is not allowed for /slugify endpoint."
+# }
+
+###
+# Test 18: Invalid endpoint path (404)
+POST {{baseUrl}}/invalid-endpoint
+Content-Type: application/json
+
+{
+    "text": "Test"
+}
+
+# Expected response (404):
+# {
+#     "code": "NOT_FOUND",
+#     "message": "Endpoint /invalid-endpoint not found."
+# }
+

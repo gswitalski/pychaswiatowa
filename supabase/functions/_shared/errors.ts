@@ -12,6 +12,7 @@ export type ErrorCode =
     | 'PAYLOAD_TOO_LARGE'
     | 'UNPROCESSABLE_ENTITY'
     | 'TOO_MANY_REQUESTS'
+    | 'METHOD_NOT_ALLOWED'
     | 'INTERNAL_ERROR';
 
 /**
@@ -42,6 +43,7 @@ export class ApplicationError extends Error {
             PAYLOAD_TOO_LARGE: 413,
             UNPROCESSABLE_ENTITY: 422,
             TOO_MANY_REQUESTS: 429,
+            METHOD_NOT_ALLOWED: 405,
             INTERNAL_ERROR: 500,
         };
         return statusMap[code];

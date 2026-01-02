@@ -563,6 +563,30 @@ export interface AiRecipeDraftUnprocessableEntityDto {
 
 // #endregion
 
+// #region --- Utils (Slugify) ---
+
+/**
+ * Request DTO for POST /utils/slugify endpoint.
+ */
+export interface SlugifyRequestDto {
+    /** Text to convert to URL-safe slug. */
+    text: string;
+    /** Maximum length of the generated slug (defaults to 80 on backend). */
+    max_length?: number;
+    /** Fallback slug if text produces empty result (defaults to "przepis" on backend). */
+    fallback?: string;
+}
+
+/**
+ * Response DTO for POST /utils/slugify endpoint.
+ */
+export interface SlugifyResponseDto {
+    /** Generated URL-safe slug. */
+    slug: string;
+}
+
+// #endregion
+
 // #region --- AI Recipe Image Generation ---
 
 /**
