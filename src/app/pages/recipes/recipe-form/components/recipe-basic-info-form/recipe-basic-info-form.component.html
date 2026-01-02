@@ -138,6 +138,75 @@
         <mat-hint>Opcjonalne. Zakres 0–999. Jeśli uzupełnisz oba pola, czas całkowity musi być ≥ przygotowania.</mat-hint>
     </mat-form-field>
 
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Typ diety</mat-label>
+        <mat-select [formControl]="dietTypeControl" placeholder="Wybierz typ diety">
+            @for (option of dietTypeOptions; track option) {
+                <mat-option [value]="option">
+                    {{ dietTypeLabels[option] }}
+                </mat-option>
+            }
+        </mat-select>
+        @if (dietTypeControl.value !== null) {
+            <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="clearDietType()"
+                aria-label="Wyczyść typ diety"
+            >
+                <mat-icon>clear</mat-icon>
+            </button>
+        }
+        <mat-hint>Opcjonalne. Klasyfikacja ze względu na dietę.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Kuchnia</mat-label>
+        <mat-select [formControl]="cuisineControl" placeholder="Wybierz kuchnię">
+            @for (option of cuisineOptions; track option) {
+                <mat-option [value]="option">
+                    {{ cuisineLabels[option] }}
+                </mat-option>
+            }
+        </mat-select>
+        @if (cuisineControl.value !== null) {
+            <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="clearCuisine()"
+                aria-label="Wyczyść kuchnię"
+            >
+                <mat-icon>clear</mat-icon>
+            </button>
+        }
+        <mat-hint>Opcjonalne. Klasyfikacja ze względu na typ kuchni.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Stopień trudności</mat-label>
+        <mat-select [formControl]="difficultyControl" placeholder="Wybierz stopień trudności">
+            @for (option of difficultyOptions; track option) {
+                <mat-option [value]="option">
+                    {{ difficultyLabels[option] }}
+                </mat-option>
+            }
+        </mat-select>
+        @if (difficultyControl.value !== null) {
+            <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="clearDifficulty()"
+                aria-label="Wyczyść stopień trudności"
+            >
+                <mat-icon>clear</mat-icon>
+            </button>
+        }
+        <mat-hint>Opcjonalne. Klasyfikacja ze względu na poziom trudności.</mat-hint>
+    </mat-form-field>
+
     <div class="termorobot-toggle">
         <mat-slide-toggle [formControl]="isTermorobotControl">
             Termorobot (Thermomix/Lidlomix)

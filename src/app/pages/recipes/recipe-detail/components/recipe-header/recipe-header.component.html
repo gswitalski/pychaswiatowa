@@ -33,6 +33,25 @@
                 Termorobot
             </mat-chip>
         }
+
+        @if (shouldShowDietType()) {
+            <mat-chip class="classification-badge non-clickable">
+                {{ dietTypeLabels[recipe().diet_type!] }}
+            </mat-chip>
+        }
+
+        @if (shouldShowCuisine()) {
+            <mat-chip class="classification-badge non-clickable">
+                {{ cuisineLabels[recipe().cuisine!] }}
+            </mat-chip>
+        }
+
+        @if (shouldShowDifficulty()) {
+            <mat-chip class="classification-badge non-clickable">
+                {{ difficultyLabels[recipe().difficulty!] }}
+            </mat-chip>
+        }
+
         @if (getCategoryName(recipe())) {
             <!-- Prywatny kontekst: kategoria jako link -->
             @if (!isPublic()) {

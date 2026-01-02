@@ -58,6 +58,9 @@ import {
     CategoryDto,
     AiRecipeImageRequestDto,
     AiRecipeImageContentItem,
+    RecipeDietType,
+    RecipeCuisine,
+    RecipeDifficulty,
 } from '../../../../../shared/contracts/types';
 
 export interface RecipeFormViewModel {
@@ -72,6 +75,9 @@ export interface RecipeFormViewModel {
     isTermorobot: FormControl<boolean>;
     prepTimeMinutes: FormControl<number | null>;
     totalTimeMinutes: FormControl<number | null>;
+    dietType: FormControl<RecipeDietType | null>;
+    cuisine: FormControl<RecipeCuisine | null>;
+    difficulty: FormControl<RecipeDifficulty | null>;
 }
 
 @Component({
@@ -220,6 +226,21 @@ export class RecipeFormPageComponent implements OnInit {
         return this.form.controls.totalTimeMinutes;
     }
 
+    /** Quick access to dietType FormControl */
+    get dietTypeControl(): FormControl<RecipeDietType | null> {
+        return this.form.controls.dietType;
+    }
+
+    /** Quick access to cuisine FormControl */
+    get cuisineControl(): FormControl<RecipeCuisine | null> {
+        return this.form.controls.cuisine;
+    }
+
+    /** Quick access to difficulty FormControl */
+    get difficultyControl(): FormControl<RecipeDifficulty | null> {
+        return this.form.controls.difficulty;
+    }
+
     ngOnInit(): void {
         this.initForm();
         this.loadCategories();
@@ -268,6 +289,9 @@ export class RecipeFormPageComponent implements OnInit {
             totalTimeMinutes: this.fb.control<number | null>(null, {
                 validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
             }),
+            dietType: this.fb.control<RecipeDietType | null>(null),
+            cuisine: this.fb.control<RecipeCuisine | null>(null),
+            difficulty: this.fb.control<RecipeDifficulty | null>(null),
         }, {
             validators: [this.timeRelationValidator()],
         });
@@ -431,6 +455,9 @@ export class RecipeFormPageComponent implements OnInit {
             isTermorobot: recipe.is_termorobot ?? false,
             prepTimeMinutes: recipe.prep_time_minutes ?? null,
             totalTimeMinutes: recipe.total_time_minutes ?? null,
+            dietType: recipe.diet_type ?? null,
+            cuisine: recipe.cuisine ?? null,
+            difficulty: recipe.difficulty ?? null,
         });
 
         // Set current image URL
@@ -555,6 +582,9 @@ export class RecipeFormPageComponent implements OnInit {
             is_termorobot: formValue.isTermorobot,
             prep_time_minutes: prepTimeMinutes,
             total_time_minutes: totalTimeMinutes,
+            diet_type: formValue.dietType ?? null,
+            cuisine: formValue.cuisine ?? null,
+            difficulty: formValue.difficulty ?? null,
         };
     }
 

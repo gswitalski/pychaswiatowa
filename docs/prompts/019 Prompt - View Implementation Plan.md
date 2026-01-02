@@ -22,14 +22,16 @@ Najpierw przejrzyj następujące informacje:
 
 ### Zmienione widoki
 
-**3. Szczegóły przepisu (uniwersalny widok)**
-- **Zmiana:** Ścieżka kanoniczna: `/explore/recipes/:id-:slug` oraz `/recipes/:id-:slug` (warianty bez sluga traktowane jako legacy i normalizowane).
 
-### Nowe widoki
+- **Formularz przepisu (Dodaj/Edytuj)**: dodano 3 pola opcjonalne w sekcji danych podstawowych:
+    - typ diety: Mięso / Wege / Vegan
+    - kuchnia: Polska / Azjatycka / Meksykańska / Bliskowschodnia
+    - stopień trudności: Łatwe / Średnie / Trudne
+  Zmiana: pola są wybierane z list kontrolowanych i można je wyczyścić (brak wartości).
 
-**3a. Normalizacja URL przepisu (techniczny handler)**
-- **Ścieżka:** `/explore/recipes/:id` oraz `/recipes/:id` (handler wykonuje nawigację do kanonicznego URL z `replaceUrl=true`).
-- **Opis:** Zapewnia kompatybilność wsteczną i kanoniczne linki oparte o aktualną nazwę przepisu.
+- **Szczegóły przepisu**: dodano metadane (np. chipy/badge) prezentujące ustawione wartości pól klasyfikacyjnych.
+  Zmiana: brak „pustych” placeholderów — jeśli wartość nie jest ustawiona, nie jest pokazywana.
+
 </views>
 
 
@@ -37,27 +39,16 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
+### Nowe
 
-### Nowe historyjki
+- **US-042 — Klasyfikacja przepisu (typ diety, kuchnia, trudność)**: dodano możliwość opcjonalnego ustawiania pól klasyfikacyjnych (listy kontrolowane) oraz ich wyświetlanie jako metadane w szczegółach przepisu.
 
-**US-041: Kanoniczny link do przepisu z identyfikatorem i slugiem (publiczny i prywatny)**
-- **Opis:** Jako użytkownik (gość lub zalogowany), chcę udostępniać link do przepisu w postaci zawierającej czytelną nazwę (slug), aby adres był przyjazny i jednoznaczny, a aplikacja zawsze prowadziła do kanonicznego URL.
-- **Kryteria akceptacji (skrót):**
-    1. Kanoniczny URL: `/explore/recipes/:id-:slug` oraz `/recipes/:id-:slug`.
-    2. Wejście na `/explore/recipes/:id` i `/recipes/:id` normalizuje do kanonicznego URL.
-    3. Wejście na URL z błędnym slugiem normalizuje do poprawnego sluga.
-    4. Slug bez polskich znaków diakrytycznych, lowercase, separatory `-`, limit długości, fallback gdy pusty.
+### Zmienione
 
-### Zmienione historyjki
-
-**US-019: Przeglądanie szczegółów publicznego przepisu**
-- **Zmiana:** Kanoniczna ścieżka została doprecyzowana jako `/explore/recipes/:id-:slug` (z normalizacją z `/explore/recipes/:id` oraz z błędnego sluga).
-
-**US-020: Publiczne widoki w trybie zalogowanego (App Shell)**
-- **Zmiana:** Doprecyzowanie, że publiczne szczegóły przepisu funkcjonują pod `/explore/recipes/:id-:slug`.
-
-**US-024: Publiczne szczegóły przepisu bez sidebara**
-- **Zmiana:** Doprecyzowanie, że ścieżka kanoniczna to `/explore/recipes/:id-:slug`, a `/explore/recipes/:id` pozostaje jako kompatybilność wsteczna (normalizacja).
+- **US-003 — Dodawanie nowego przepisu**: formularz tworzenia rozszerzony o pola opcjonalne: typ diety, kuchnia (lista kontrolowana), stopień trudności.
+- **US-004 — Przeglądanie szczegółów przepisu**: szczegóły przepisu rozszerzone o wyświetlanie ustawionych wartości pól klasyfikacyjnych jako metadane; brak wartości nie jest wyświetlany.
+- **US-005 — Edycja istniejącego przepisu**: edycja rozszerzona o możliwość ustawiania i czyszczenia pól: typ diety, kuchnia, stopień trudności.
+ja).
 
 </user_stories>
 

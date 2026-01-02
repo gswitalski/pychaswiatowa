@@ -3,6 +3,14 @@
 -- functions affected: get_recipes_list
 -- dependencies: recipes (with classification fields)
 
+-- Najpierw usuń wszystkie istniejące wersje funkcji get_recipes_list
+-- aby uniknąć konfliktów z różnymi sygnaturami
+drop function if exists public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text);
+drop function if exists public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text, boolean);
+drop function if exists public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], boolean, text);
+drop function if exists public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text, boolean, smallint, smallint);
+drop function if exists public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text, boolean, recipe_diet_type, recipe_cuisine, recipe_difficulty);
+
 /**
  * Retrieves a paginated list of recipes with filtering and sorting.
  *
@@ -60,8 +68,8 @@ create or replace function public.get_recipes_list(
     p_sort_direction text default 'desc',
     p_category_id bigint default null,
     p_tag_ids bigint[] default null,
-    p_termorobot boolean default null,
     p_search text default null,
+    p_termorobot boolean default null,
     p_diet_type recipe_diet_type default null,
     p_cuisine recipe_cuisine default null,
     p_difficulty recipe_difficulty default null
@@ -190,13 +198,13 @@ begin
                       where rt.recipe_id = r.id
                   ) @> $4
               )
-              -- Termorobot filter
-              and ($5::boolean is null or r.is_termorobot = $5)
               -- Search filter (case-insensitive pattern matching on name)
               and (
-                  $6::text is null
-                  or r.name ilike ''%%'' || $6 || ''%%''
+                  $5::text is null
+                  or r.name ilike ''%%'' || $5 || ''%%''
               )
+              -- Termorobot filter
+              and ($6::boolean is null or r.is_termorobot = $6)
               -- Diet type filter
               and ($7::recipe_diet_type is null or r.diet_type = $7)
               -- Cuisine filter
@@ -243,8 +251,8 @@ begin
         p_view,              -- $2
         p_category_id,       -- $3
         p_tag_ids,           -- $4
-        p_termorobot,        -- $5
-        p_search,            -- $6
+        p_search,            -- $5
+        p_termorobot,        -- $6
         p_diet_type,         -- $7
         p_cuisine,           -- $8
         p_difficulty,        -- $9
@@ -254,9 +262,9 @@ end;
 $$;
 
 -- Add comment for documentation
-comment on function public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], boolean, text, recipe_diet_type, recipe_cuisine, recipe_difficulty) is
+comment on function public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text, boolean, recipe_diet_type, recipe_cuisine, recipe_difficulty) is
     'Retrieves a paginated list of recipes with support for owned and my_recipes views. Returns recipe details with ownership, collection status, and classification fields (diet_type, cuisine, difficulty).';
 
 -- Grant execute permission to authenticated users
-grant execute on function public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], boolean, text, recipe_diet_type, recipe_cuisine, recipe_difficulty) to authenticated;
+grant execute on function public.get_recipes_list(uuid, text, integer, integer, text, text, bigint, bigint[], text, boolean, recipe_diet_type, recipe_cuisine, recipe_difficulty) to authenticated;
 

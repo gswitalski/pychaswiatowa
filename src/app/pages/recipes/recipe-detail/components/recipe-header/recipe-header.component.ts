@@ -4,6 +4,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { RecipeDetailDto, PublicRecipeDetailDto, TagDto } from '../../../../../../../shared/contracts/types';
 import { DurationMinutesPipe } from '../../../../../shared/pipes/duration-minutes.pipe';
+import {
+    RECIPE_DIET_TYPE_LABELS,
+    RECIPE_CUISINE_LABELS,
+    RECIPE_DIFFICULTY_LABELS,
+} from '../../../../../shared/models/recipe-classification.model';
 
 /**
  * Type guard sprawdzający czy przepis to RecipeDetailDto
@@ -41,6 +46,11 @@ export class RecipeHeaderComponent {
      * W kontekście publicznym kategoria i tagi nie są klikalne.
      */
     readonly isPublic = input<boolean>(false);
+
+    // Mapy etykiet dla pól klasyfikacyjnych
+    readonly dietTypeLabels = RECIPE_DIET_TYPE_LABELS;
+    readonly cuisineLabels = RECIPE_CUISINE_LABELS;
+    readonly difficultyLabels = RECIPE_DIFFICULTY_LABELS;
 
     /**
      * Helper method do sprawdzania typu przepisu w template
@@ -126,6 +136,27 @@ export class RecipeHeaderComponent {
     readonly shouldShowTotalTime = computed(() => {
         const totalTime = this.recipe().total_time_minutes;
         return totalTime !== null && totalTime !== undefined;
+    });
+
+    /**
+     * Computed signal sprawdzający czy należy pokazać chip typu diety.
+     */
+    readonly shouldShowDietType = computed(() => {
+        return this.recipe().diet_type !== null && this.recipe().diet_type !== undefined;
+    });
+
+    /**
+     * Computed signal sprawdzający czy należy pokazać chip kuchni.
+     */
+    readonly shouldShowCuisine = computed(() => {
+        return this.recipe().cuisine !== null && this.recipe().cuisine !== undefined;
+    });
+
+    /**
+     * Computed signal sprawdzający czy należy pokazać chip trudności.
+     */
+    readonly shouldShowDifficulty = computed(() => {
+        return this.recipe().difficulty !== null && this.recipe().difficulty !== undefined;
     });
 
     /**

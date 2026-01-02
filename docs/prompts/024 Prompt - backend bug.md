@@ -12,20 +12,22 @@ Zapoznaj się z dokumentamu projektu
 
 <aktualne_zachowanie>
 
-endpoint GET http://127.0.0.1:54331/functions/v1/explore/recipes/4
-nie zwraca pól
-prep_time_minutes
-total_time_minutes
+
+endpoint GET 
+http://127.0.0.1:54331/functions/v1/recipes?page=1&limit=5&sort=created_at.desc
+
+zwraca 500
+{
+  "code": "INTERNAL_ERROR",
+  "message": "Failed to fetch recipes"
+}
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-endpoint GET http://127.0.0.1:54331/functions/v1/explore/recipes/4
-zwraca pola
-prep_time_minutes
-total_time_minutes
+endpoint zwraca przepisy
 
 
 </oczekiwane_zachowanie>
