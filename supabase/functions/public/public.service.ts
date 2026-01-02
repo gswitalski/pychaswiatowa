@@ -48,6 +48,21 @@ export type RecipeContent = RecipeContentItem[];
 export type RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
 
 /**
+ * Recipe diet type enum (public API).
+ */
+export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
+
+/**
+ * Recipe cuisine enum (public API).
+ */
+export type RecipeCuisine = 'POLISH' | 'ASIAN' | 'MEXICAN' | 'MIDDLE_EASTERN';
+
+/**
+ * Recipe difficulty enum (public API).
+ */
+export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+/**
  * DTO for a public recipe list item.
  */
 export interface PublicRecipeListItemDto {
@@ -69,6 +84,9 @@ export interface PublicRecipeListItemDto {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 }
 
 /**
@@ -94,6 +112,9 @@ export interface PublicRecipeDetailDto {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 }
 
 /**
@@ -139,6 +160,9 @@ interface RecipeDetailsRow {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: string | null;
+    cuisine: string | null;
+    difficulty: string | null;
 }
 
 /**
@@ -162,6 +186,9 @@ interface RecipeDetailFullRow {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: string | null;
+    cuisine: string | null;
+    difficulty: string | null;
 }
 
 /**
@@ -173,10 +200,10 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
-const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes';
+const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
@@ -309,6 +336,21 @@ export async function getPublicRecipes(
     // Apply termorobot filter if provided
     if (query.termorobot !== undefined) {
         dbQuery = dbQuery.eq('is_termorobot', query.termorobot);
+    }
+
+    // Apply diet type filter if provided
+    if (query.dietType !== undefined) {
+        dbQuery = dbQuery.eq('diet_type', query.dietType);
+    }
+
+    // Apply cuisine filter if provided
+    if (query.cuisine !== undefined) {
+        dbQuery = dbQuery.eq('cuisine', query.cuisine);
+    }
+
+    // Apply difficulty filter if provided
+    if (query.difficulty !== undefined) {
+        dbQuery = dbQuery.eq('difficulty', query.difficulty);
     }
 
     // Apply sorting
@@ -461,6 +503,9 @@ export async function getPublicRecipes(
             is_termorobot: recipe.is_termorobot,
             prep_time_minutes: recipe.prep_time_minutes,
             total_time_minutes: recipe.total_time_minutes,
+            diet_type: (recipe.diet_type as RecipeDietType) ?? null,
+            cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
+            difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
         };
     });
 
@@ -607,6 +652,9 @@ export async function getPublicRecipeById(
         is_termorobot: recipe.is_termorobot,
         prep_time_minutes: recipe.prep_time_minutes,
         total_time_minutes: recipe.total_time_minutes,
+        diet_type: (recipe.diet_type as RecipeDietType) ?? null,
+        cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
+        difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
     };
 
     logger.info('Public recipe fetched successfully', {
@@ -656,6 +704,9 @@ export async function getPublicRecipesFeed(
         sort: sortString,
         q: query.q,
         termorobot: query.termorobot,
+        dietType: query.dietType,
+        cuisine: query.cuisine,
+        difficulty: query.difficulty,
         userId: userId ?? undefined, // Include userId in hash to separate anonymous/authenticated cursors
     });
 
@@ -713,6 +764,21 @@ export async function getPublicRecipesFeed(
     // Apply termorobot filter if provided
     if (query.termorobot !== undefined) {
         dbQuery = dbQuery.eq('is_termorobot', query.termorobot);
+    }
+
+    // Apply diet type filter if provided
+    if (query.dietType !== undefined) {
+        dbQuery = dbQuery.eq('diet_type', query.dietType);
+    }
+
+    // Apply cuisine filter if provided
+    if (query.cuisine !== undefined) {
+        dbQuery = dbQuery.eq('cuisine', query.cuisine);
+    }
+
+    // Apply difficulty filter if provided
+    if (query.difficulty !== undefined) {
+        dbQuery = dbQuery.eq('difficulty', query.difficulty);
     }
 
     // Apply stable sorting (includes id as tie-breaker)
@@ -879,6 +945,9 @@ export async function getPublicRecipesFeed(
             is_termorobot: recipe.is_termorobot,
             prep_time_minutes: recipe.prep_time_minutes,
             total_time_minutes: recipe.total_time_minutes,
+            diet_type: (recipe.diet_type as RecipeDietType) ?? null,
+            cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
+            difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
         };
     });
 

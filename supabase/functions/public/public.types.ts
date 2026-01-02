@@ -4,6 +4,21 @@
  */
 
 /**
+ * Recipe diet type enum (public API).
+ */
+export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
+
+/**
+ * Recipe cuisine enum (public API).
+ */
+export type RecipeCuisine = 'POLISH' | 'ASIAN' | 'MEXICAN' | 'MIDDLE_EASTERN';
+
+/**
+ * Recipe difficulty enum (public API).
+ */
+export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+/**
  * Query parameters for fetching public recipes.
  */
 export interface GetPublicRecipesQuery {
@@ -13,6 +28,9 @@ export interface GetPublicRecipesQuery {
     sortDirection: 'asc' | 'desc';
     q?: string;
     termorobot?: boolean;
+    dietType?: RecipeDietType;
+    cuisine?: RecipeCuisine;
+    difficulty?: RecipeDifficulty;
 }
 
 /**
@@ -32,4 +50,7 @@ export interface GetPublicRecipesFeedQuery {
     sortDirection: 'asc' | 'desc';
     q?: string;
     termorobot?: boolean;
+    dietType?: RecipeDietType;
+    cuisine?: RecipeCuisine;
+    difficulty?: RecipeDifficulty;
 }

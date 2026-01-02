@@ -13,15 +13,27 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-### Nowe endpointy
 
-**POST /utils/slugify** (Supabase Edge Function)
-- **Zmiana:** Nowy endpoint pomocniczy do spójnego generowania sluga (lowercase, transliteracja PL diakrytyków, separatory `-`, limit długości, fallback).
+### Zmienione
 
-### Zmienione endpointy
+- **Obiekty `Recipe` w odpowiedziach**: rozszerzono o pola:
+    - `diet_type`: `MEAT | VEGETARIAN | VEGAN` (nullable)
+    - `cuisine`: `POLISH | ASIAN | MEXICAN | MIDDLE_EASTERN` (nullable)
+    - `difficulty`: `EASY | MEDIUM | HARD` (nullable)
+  Zmiana: pola są zwracane w listach oraz w szczegółach przepisu.
 
-**GET /public/recipes/{id}**
-- **Zmiana:** Doprecyzowanie kontraktu: frontend używa kanonicznego routingu `/explore/recipes/{id}-{slug}`; API nadal pobiera dane po `id`.
+- **`POST /recipes`**: request payload rozszerzony o `diet_type`, `cuisine`, `difficulty` (opcjonalne).
+- **`PUT /recipes/{id}`**: request payload rozszerzony o `diet_type`, `cuisine`, `difficulty` (opcjonalne).
+
+- **Endpointy listujące**: dodano „API-ready” filtry:
+    - `filter[diet_type]`
+    - `filter[cuisine]`
+    - `filter[difficulty]`
+  Dotyczy:
+    - `GET /recipes`
+    - `GET /recipes/feed`
+    - `GET /public/recipes`
+    - `GET /public/recipes/feed`
 
 
 

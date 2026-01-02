@@ -70,6 +70,15 @@ const GetPublicRecipesQuerySchema = z.object({
         }
         throw new Error('filter[termorobot] must be true, false, 1, or 0');
     }),
+    'filter[diet_type]': z.enum(['MEAT', 'VEGETARIAN', 'VEGAN'], {
+        invalid_type_error: 'Diet type must be one of: MEAT, VEGETARIAN, VEGAN',
+    }).optional(),
+    'filter[cuisine]': z.enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
+        invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+    }).optional(),
+    'filter[difficulty]': z.enum(['EASY', 'MEDIUM', 'HARD'], {
+        invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
+    }).optional(),
 });
 
 /**
@@ -127,6 +136,15 @@ const GetPublicRecipesFeedQuerySchema = z.object({
         }
         throw new Error('filter[termorobot] must be true, false, 1, or 0');
     }),
+    'filter[diet_type]': z.enum(['MEAT', 'VEGETARIAN', 'VEGAN'], {
+        invalid_type_error: 'Diet type must be one of: MEAT, VEGETARIAN, VEGAN',
+    }).optional(),
+    'filter[cuisine]': z.enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
+        invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+    }).optional(),
+    'filter[difficulty]': z.enum(['EASY', 'MEDIUM', 'HARD'], {
+        invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
+    }).optional(),
 });
 
 /**
@@ -218,6 +236,9 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             sort: url.searchParams.get('sort') || undefined,
             q: url.searchParams.get('q') || undefined,
             'filter[termorobot]': url.searchParams.get('filter[termorobot]') || undefined,
+            'filter[diet_type]': url.searchParams.get('filter[diet_type]') || undefined,
+            'filter[cuisine]': url.searchParams.get('filter[cuisine]') || undefined,
+            'filter[difficulty]': url.searchParams.get('filter[difficulty]') || undefined,
         };
 
         let validatedParams;
@@ -243,6 +264,9 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             sortDirection: validatedParams.sort.direction,
             q: validatedParams.q,
             termorobot: validatedParams['filter[termorobot]'],
+            dietType: validatedParams['filter[diet_type]'],
+            cuisine: validatedParams['filter[cuisine]'],
+            difficulty: validatedParams['filter[difficulty]'],
         };
 
         // Create service role client for public access
@@ -362,6 +386,9 @@ export async function handleGetPublicRecipesFeed(req: Request): Promise<Response
             sort: url.searchParams.get('sort') || undefined,
             q: url.searchParams.get('q') || undefined,
             'filter[termorobot]': url.searchParams.get('filter[termorobot]') || undefined,
+            'filter[diet_type]': url.searchParams.get('filter[diet_type]') || undefined,
+            'filter[cuisine]': url.searchParams.get('filter[cuisine]') || undefined,
+            'filter[difficulty]': url.searchParams.get('filter[difficulty]') || undefined,
         };
 
         let validatedParams;
@@ -394,6 +421,9 @@ export async function handleGetPublicRecipesFeed(req: Request): Promise<Response
             sortDirection: validatedParams.sort.direction,
             q: validatedParams.q,
             termorobot: validatedParams['filter[termorobot]'],
+            dietType: validatedParams['filter[diet_type]'],
+            cuisine: validatedParams['filter[cuisine]'],
+            difficulty: validatedParams['filter[difficulty]'],
         };
 
         // Create service role client for public access

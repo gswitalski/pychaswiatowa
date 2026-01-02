@@ -129,6 +129,27 @@ const createRecipeSchema = z.object({
         .nullable()
         .optional()
         .transform((val) => val ?? null),
+    diet_type: z
+        .enum(['MEAT', 'VEGETARIAN', 'VEGAN'], {
+            invalid_type_error: 'Diet type must be one of: MEAT, VEGETARIAN, VEGAN',
+        })
+        .nullable()
+        .optional()
+        .transform((val) => val ?? null),
+    cuisine: z
+        .enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
+            invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+        })
+        .nullable()
+        .optional()
+        .transform((val) => val ?? null),
+    difficulty: z
+        .enum(['EASY', 'MEDIUM', 'HARD'], {
+            invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
+        })
+        .nullable()
+        .optional()
+        .transform((val) => val ?? null),
 }).refine(
     (data) => {
         // Cross-field validation: total_time_minutes >= prep_time_minutes (when both are set)
@@ -233,6 +254,24 @@ const updateRecipeSchema = z
             .int('Total time must be an integer')
             .min(0, 'Total time must be at least 0')
             .max(999, 'Total time cannot exceed 999')
+            .nullable()
+            .optional(),
+        diet_type: z
+            .enum(['MEAT', 'VEGETARIAN', 'VEGAN'], {
+                invalid_type_error: 'Diet type must be one of: MEAT, VEGETARIAN, VEGAN',
+            })
+            .nullable()
+            .optional(),
+        cuisine: z
+            .enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
+                invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+            })
+            .nullable()
+            .optional(),
+        difficulty: z
+            .enum(['EASY', 'MEDIUM', 'HARD'], {
+                invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
+            })
             .nullable()
             .optional(),
     })
@@ -340,6 +379,21 @@ const getRecipesQuerySchema = z.object({
         .string()
         .optional()
         .transform((val) => val?.trim() || undefined),
+    'filter[diet_type]': z
+        .enum(['MEAT', 'VEGETARIAN', 'VEGAN'], {
+            invalid_type_error: 'Diet type must be one of: MEAT, VEGETARIAN, VEGAN',
+        })
+        .optional(),
+    'filter[cuisine]': z
+        .enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
+            invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+        })
+        .optional(),
+    'filter[difficulty]': z
+        .enum(['EASY', 'MEDIUM', 'HARD'], {
+            invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
+        })
+        .optional(),
 });
 
 /**
@@ -425,6 +479,21 @@ const getRecipesFeedQuerySchema = z.object({
         .string()
         .optional()
         .transform((val) => val?.trim() || undefined),
+    'filter[diet_type]': z
+        .enum(['MEAT', 'VEGETARIAN', 'VEGAN'], {
+            invalid_type_error: 'Diet type must be one of: MEAT, VEGETARIAN, VEGAN',
+        })
+        .optional(),
+    'filter[cuisine]': z
+        .enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
+            invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+        })
+        .optional(),
+    'filter[difficulty]': z
+        .enum(['EASY', 'MEDIUM', 'HARD'], {
+            invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
+        })
+        .optional(),
 });
 
 /**
@@ -500,6 +569,9 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
                 tags: params['filter[tags]'],
                 search: params.search,
                 termorobot: params['filter[termorobot]'],
+                dietType: params['filter[diet_type]'],
+                cuisine: params['filter[cuisine]'],
+                difficulty: params['filter[difficulty]'],
             }
         );
 
@@ -659,6 +731,9 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
             is_termorobot: validatedData.is_termorobot,
             prep_time_minutes: validatedData.prep_time_minutes,
             total_time_minutes: validatedData.total_time_minutes,
+            diet_type: validatedData.diet_type,
+            cuisine: validatedData.cuisine,
+            difficulty: validatedData.difficulty,
         };
 
         // Call the service to create the recipe
@@ -749,6 +824,9 @@ export async function handleUpdateRecipe(
             is_termorobot: validatedData.is_termorobot,
             prep_time_minutes: validatedData.prep_time_minutes,
             total_time_minutes: validatedData.total_time_minutes,
+            diet_type: validatedData.diet_type,
+            cuisine: validatedData.cuisine,
+            difficulty: validatedData.difficulty,
         };
 
         // Call the service to update the recipe
@@ -1137,6 +1215,9 @@ export async function handleGetRecipesFeed(req: Request): Promise<Response> {
             tags: params['filter[tags]'],
             search: params.search,
             termorobot: params['filter[termorobot]'],
+            dietType: params['filter[diet_type]'],
+            cuisine: params['filter[cuisine]'],
+            difficulty: params['filter[difficulty]'],
         });
 
         logger.info('GET /recipes/feed completed successfully', {

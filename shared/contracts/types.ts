@@ -92,6 +92,24 @@ export interface CursorPaginatedResponseDto<T> {
 export type RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
 
 /**
+ * Recipe diet type enum.
+ * Defines the dietary classification of a recipe.
+ */
+export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
+
+/**
+ * Recipe cuisine enum.
+ * Defines the cuisine type of a recipe.
+ */
+export type RecipeCuisine = 'POLISH' | 'ASIAN' | 'MEXICAN' | 'MIDDLE_EASTERN';
+
+/**
+ * Recipe difficulty enum.
+ * Defines the difficulty level of a recipe.
+ */
+export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+/**
  * DTO for an item on the recipe list.
  * Contains a minimal set of fields for display.
  */
@@ -114,6 +132,9 @@ export type RecipeListItemDto = Pick<
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 };
 
 /**
@@ -140,6 +161,9 @@ export interface PublicRecipeListItemDto {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 }
 
 /**
@@ -166,6 +190,9 @@ export interface PublicRecipeDetailDto {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 }
 
 /**
@@ -205,6 +232,12 @@ export type RecipeDetailDto = Omit<
     prep_time_minutes: number | null;
     /** Total time in minutes (0-999 or null if not specified). */
     total_time_minutes: number | null;
+    /** Diet type classification (nullable). */
+    diet_type: RecipeDietType | null;
+    /** Cuisine classification (nullable). */
+    cuisine: RecipeCuisine | null;
+    /** Difficulty level (nullable). */
+    difficulty: RecipeDifficulty | null;
 };
 
 /**
@@ -229,6 +262,12 @@ export type CreateRecipeCommand = Pick<
     prep_time_minutes?: number | null;
     /** Total time in minutes (0-999 or null if not specified). */
     total_time_minutes?: number | null;
+    /** Diet type classification (optional, nullable). */
+    diet_type?: RecipeDietType | null;
+    /** Cuisine classification (optional, nullable). */
+    cuisine?: RecipeCuisine | null;
+    /** Difficulty level (optional, nullable). */
+    difficulty?: RecipeDifficulty | null;
 };
 
 /**

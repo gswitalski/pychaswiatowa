@@ -5,26 +5,29 @@ Here is the reference image to help you understand the dish
 Here is the recipe for the dish you need to photograph:
 <recipe>
 
+Tatar wołowy
+4 porcje
 
-Tortilla à la Hot Dog
-Prosta i smaczna tortilla z parówkami, idealna na szybki posiłek. Połączenie smaków, które zadowoli każdego miłośnika hot dogów!
+Klasyczny tatar wołowy, idealny na wyjątkowe okazje. Przygotuj go z wysokiej jakości mięsa i delektuj się jego smakiem z dodatkiem świeżych składników.
 
 Przekąska
 Brak zdjęcia
 Składniki
-4 tortille
-4 parówki
-4 łyżki kapusty kiszonej
-2 łyżki majonezu
-2 łyżki keczupu
+500 g polędwicy wołowej lub metki tatarskiej
+2 łyżki oleju rzepakowego
+4 łyżki zimnej przegotowanej wody
+2 łyżki brandy
+4 surowe żółtka
+2 małe czerwone cebule
+4 ogórki kiszone
+4 łyżeczki musztardy
+Sól, pieprz do smaku
 Kroki przygotowania
-Ugotować parówki w wodzie.
-Wymieszać majonez z keczupem.
-Ogrzać tortille na suchej patelni po 15 sekund z każdej strony.
-Posmarować je sosem i rozłożyć na nich kapustę kiszoną.
-Na każdej tortilli ułożyć parówkę i zwinąć.
-
-
+Schłodzić mięso i drobno posiekać lub zmielić w maszynce.
+Wymieszać z olejem, wodą, brandy, musztardą, solą i pieprzem, dokładnie wyrabiając ręką.
+Dodać drobno pokrojoną cebulę i ogórki kiszone, wymieszać.
+Podzielić na 4 porcje, uformować kopczyki z wgłębieniem, wbić po jednym surowym żółtku.
+Serwować natychmiast z pieczywem i masłem, opcjonalnie udekorować kiełkami lub kaparami.
 </recipe>
 
 Requirements for the image you generate:

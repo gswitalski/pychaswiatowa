@@ -20,6 +20,21 @@ import {
 export type RecipeVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
 
 /**
+ * Recipe diet type enum.
+ */
+export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
+
+/**
+ * Recipe cuisine enum.
+ */
+export type RecipeCuisine = 'POLISH' | 'ASIAN' | 'MEXICAN' | 'MIDDLE_EASTERN';
+
+/**
+ * Recipe difficulty enum.
+ */
+export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+/**
  * DTO for an item on the recipe list.
  * Contains a minimal set of fields for display.
  */
@@ -43,6 +58,9 @@ export interface RecipeListItemDto {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 }
 
 /**
@@ -132,6 +150,9 @@ export interface RecipeDetailDto {
     in_my_plan: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 }
 
 /**
@@ -153,6 +174,9 @@ export interface GetRecipesOptions {
     tags?: string[];
     search?: string;
     termorobot?: boolean;
+    dietType?: RecipeDietType;
+    cuisine?: RecipeCuisine;
+    difficulty?: RecipeDifficulty;
 }
 
 /**
@@ -169,14 +193,17 @@ export interface GetRecipesFeedOptions {
     tags?: string[];
     search?: string;
     termorobot?: boolean;
+    dietType?: RecipeDietType;
+    cuisine?: RecipeCuisine;
+    difficulty?: RecipeDifficulty;
 }
 
 /** Columns to select for recipe list queries. */
-const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings, is_termorobot, prep_time_minutes, total_time_minutes';
+const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -304,6 +331,9 @@ export async function getRecipes(
         tags,
         search,
         termorobot,
+        dietType,
+        cuisine,
+        difficulty,
     } = options;
 
     logger.info('Fetching recipes', {
@@ -360,6 +390,9 @@ export async function getRecipes(
         p_tag_ids: tagIds ?? undefined,
         p_search: search ?? undefined,
         p_termorobot: termorobot ?? undefined,
+        p_diet_type: dietType ?? undefined,
+        p_cuisine: cuisine ?? undefined,
+        p_difficulty: difficulty ?? undefined,
     });
 
     if (error) {
@@ -419,6 +452,9 @@ export async function getRecipes(
         is_termorobot: Boolean(recipe.is_termorobot),
         prep_time_minutes: recipe.prep_time_minutes ? Number(recipe.prep_time_minutes) : null,
         total_time_minutes: recipe.total_time_minutes ? Number(recipe.total_time_minutes) : null,
+        diet_type: (recipe.diet_type as RecipeDietType) ?? null,
+        cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
+        difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
     }));
 
     return {
@@ -459,6 +495,9 @@ export async function getRecipesFeed(
         tags,
         search,
         termorobot,
+        dietType,
+        cuisine,
+        difficulty,
     } = options;
 
     logger.info('Fetching recipes feed', {
@@ -472,6 +511,9 @@ export async function getRecipesFeed(
         tagsCount: tags?.length ?? 0,
         hasSearch: !!search,
         termorobot,
+        dietType,
+        cuisine,
+        difficulty,
     });
 
     // Validate sort field to prevent injection
@@ -488,6 +530,9 @@ export async function getRecipesFeed(
         categoryId,
         tags: tags?.sort(), // Sort for deterministic hash
         termorobot,
+        dietType,
+        cuisine,
+        difficulty,
     });
 
     // Decode cursor and validate consistency
@@ -561,6 +606,9 @@ export async function getRecipesFeed(
         p_tag_ids: tagIds ?? undefined,
         p_search: search ?? undefined,
         p_termorobot: termorobot ?? undefined,
+        p_diet_type: dietType ?? undefined,
+        p_cuisine: cuisine ?? undefined,
+        p_difficulty: difficulty ?? undefined,
     });
 
     if (error) {
@@ -624,6 +672,9 @@ export async function getRecipesFeed(
         is_termorobot: Boolean(recipe.is_termorobot),
         prep_time_minutes: recipe.prep_time_minutes ? Number(recipe.prep_time_minutes) : null,
         total_time_minutes: recipe.total_time_minutes ? Number(recipe.total_time_minutes) : null,
+        diet_type: (recipe.diet_type as RecipeDietType) ?? null,
+        cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
+        difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
     }));
 
     // Create next cursor if there are more results
@@ -864,6 +915,9 @@ function mapToRecipeDetailDto(data: any, inMyPlan: boolean): RecipeDetailDto {
         in_my_plan: inMyPlan,
         prep_time_minutes: data.prep_time_minutes ? Number(data.prep_time_minutes) : null,
         total_time_minutes: data.total_time_minutes ? Number(data.total_time_minutes) : null,
+        diet_type: (data.diet_type as RecipeDietType) ?? null,
+        cuisine: (data.cuisine as RecipeCuisine) ?? null,
+        difficulty: (data.difficulty as RecipeDifficulty) ?? null,
     };
 }
 
@@ -882,6 +936,9 @@ export interface CreateRecipeInput {
     is_termorobot: boolean;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
 }
 
 /**
@@ -901,6 +958,9 @@ export interface UpdateRecipeInput {
     is_termorobot?: boolean;
     prep_time_minutes?: number | null;
     total_time_minutes?: number | null;
+    diet_type?: RecipeDietType | null;
+    cuisine?: RecipeCuisine | null;
+    difficulty?: RecipeDifficulty | null;
 }
 
 /**
@@ -939,6 +999,9 @@ export async function createRecipe(
         is_termorobot: input.is_termorobot,
         prep_time_minutes: input.prep_time_minutes,
         total_time_minutes: input.total_time_minutes,
+        diet_type: input.diet_type,
+        cuisine: input.cuisine,
+        difficulty: input.difficulty,
     });
 
     // Call the RPC function to create the recipe with tags atomically
@@ -957,6 +1020,9 @@ export async function createRecipe(
             p_is_termorobot: input.is_termorobot,
             p_prep_time_minutes: input.prep_time_minutes,
             p_total_time_minutes: input.total_time_minutes,
+            p_diet_type: input.diet_type,
+            p_cuisine: input.cuisine,
+            p_difficulty: input.difficulty,
         }
     );
 
@@ -1042,6 +1108,9 @@ export async function updateRecipe(
         updatingIsTermorobot: input.is_termorobot !== undefined,
         updatingPrepTime: input.prep_time_minutes !== undefined,
         updatingTotalTime: input.total_time_minutes !== undefined,
+        updatingDietType: input.diet_type !== undefined,
+        updatingCuisine: input.cuisine !== undefined,
+        updatingDifficulty: input.difficulty !== undefined,
     });
 
     // Determine if tags should be updated
@@ -1061,6 +1130,15 @@ export async function updateRecipe(
 
     // Determine if total time should be updated
     const updateTotalTime = input.total_time_minutes !== undefined;
+
+    // Determine if diet type should be updated
+    const updateDietType = input.diet_type !== undefined;
+
+    // Determine if cuisine should be updated
+    const updateCuisine = input.cuisine !== undefined;
+
+    // Determine if difficulty should be updated
+    const updateDifficulty = input.difficulty !== undefined;
 
     // Call the RPC function to update the recipe with tags atomically
     const { data: updatedRecipeId, error: rpcError } = await client.rpc(
@@ -1086,6 +1164,12 @@ export async function updateRecipe(
             p_update_prep_time: updatePrepTime,
             p_total_time_minutes: input.total_time_minutes ?? null,
             p_update_total_time: updateTotalTime,
+            p_diet_type: input.diet_type ?? null,
+            p_update_diet_type: updateDietType,
+            p_cuisine: input.cuisine ?? null,
+            p_update_cuisine: updateCuisine,
+            p_difficulty: input.difficulty ?? null,
+            p_update_difficulty: updateDifficulty,
         }
     );
 
@@ -1312,6 +1396,11 @@ export async function importRecipeFromText(
         visibility: 'PRIVATE', // Import always creates private recipes
         servings: null, // No servings information from import
         is_termorobot: false, // Import nie ustawia flagi termorobot
+        prep_time_minutes: null, // No time information from import
+        total_time_minutes: null, // No time information from import
+        diet_type: null, // No classification from import
+        cuisine: null, // No classification from import
+        difficulty: null, // No classification from import
     };
 
     logger.info('Creating recipe from parsed text', { name });
