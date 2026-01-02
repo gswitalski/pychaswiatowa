@@ -11,22 +11,15 @@ Oto dokumenty projektu, które musisz przeanalizować:
 Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
-dla przpisu 
-https://pychaswiatowa.pl/explore/recipes/111
 
-kóry jest przepisem na
-Biała kiełbasa z jabłkami
+chcę aby przepisy miały 3 dodatkowe pola:
+ - mięso/vege/vegan (lub podobnie)
+ - kuchnia (polsa, zajatycka, meksykańska, bliskowschodnia)
+ - stopień trudności (łatwe/średnie/trudne)
 
-chcce aby link zawierał slug:
+pola te mają się pojawić na formularzu tworzenia i edycji przepisu
 
-https://pychaswiatowa.pl/explore/recipes/111-biala-kielbasa-z-jablkami
-
-
-polskie znaki diakrytyczne mają byc zamieniione n amiedzynarodowe
-
-
-wymaganie dotyczy tez sciezki
-https://pychaswiatowa.pl/recipes/111
+wartości tych pól mają być pokazywane na szczegółach przepisu
 
 
 </nowa_funkcjonalnosc>
