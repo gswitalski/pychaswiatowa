@@ -339,7 +339,7 @@ const updateRecipeSchema = z
     .refine(
         (data) => {
             // Cross-field validation: total_time_minutes >= prep_time_minutes (when both are set)
-            if (data.prep_time_minutes !== null && data.prep_time_minutes !== undefined 
+            if (data.prep_time_minutes !== null && data.prep_time_minutes !== undefined
                 && data.total_time_minutes !== null && data.total_time_minutes !== undefined) {
                 return data.total_time_minutes >= data.prep_time_minutes;
             }
