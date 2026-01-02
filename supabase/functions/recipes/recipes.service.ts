@@ -27,7 +27,32 @@ export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
 /**
  * Recipe cuisine enum.
  */
-export type RecipeCuisine = 'POLISH' | 'ASIAN' | 'MEXICAN' | 'MIDDLE_EASTERN';
+export type RecipeCuisine = 
+    | 'AFRICAN'
+    | 'AMERICAN'
+    | 'ASIAN'
+    | 'BALKAN'
+    | 'BRAZILIAN'
+    | 'BRITISH'
+    | 'CARIBBEAN'
+    | 'CHINESE'
+    | 'FRENCH'
+    | 'GERMAN'
+    | 'GREEK'
+    | 'INDIAN'
+    | 'ITALIAN'
+    | 'JAPANESE'
+    | 'KOREAN'
+    | 'MEDITERRANEAN'
+    | 'MEXICAN'
+    | 'MIDDLE_EASTERN'
+    | 'POLISH'
+    | 'RUSSIAN'
+    | 'SCANDINAVIAN'
+    | 'SPANISH'
+    | 'THAI'
+    | 'TURKISH'
+    | 'VIETNAMESE';
 
 /**
  * Recipe difficulty enum.

@@ -137,7 +137,7 @@ Public endpoints are available without authentication:
     -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`. (API-ready; UI may not expose it in MVP.)
-    -   `filter[cuisine]` (optional, string): Filter by cuisine: `POLISH` | `ASIAN` | `MEXICAN` | `MIDDLE_EASTERN`. (API-ready; UI may not expose it in MVP.)
+    -   `filter[cuisine]` (optional, string): Filter by cuisine: `AFRICAN` | `AMERICAN` | `ASIAN` | `BALKAN` | `BRAZILIAN` | `BRITISH` | `CARIBBEAN` | `CHINESE` | `FRENCH` | `GERMAN` | `GREEK` | `INDIAN` | `ITALIAN` | `JAPANESE` | `KOREAN` | `MEDITERRANEAN` | `MEXICAN` | `MIDDLE_EASTERN` | `POLISH` | `RUSSIAN` | `SCANDINAVIAN` | `SPANISH` | `THAI` | `TURKISH` | `VIETNAMESE`. (API-ready; UI may not expose it in MVP.)
     -   `filter[difficulty]` (optional, string): Filter by difficulty: `EASY` | `MEDIUM` | `HARD`. (API-ready; UI may not expose it in MVP.)
 -   **Success Response**:
     -   **Code**: `200 OK`
@@ -212,7 +212,7 @@ Public endpoints are available without authentication:
     -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`. (API-ready; UI may not expose it in MVP.)
-    -   `filter[cuisine]` (optional, string): Filter by cuisine: `POLISH` | `ASIAN` | `MEXICAN` | `MIDDLE_EASTERN`. (API-ready; UI may not expose it in MVP.)
+    -   `filter[cuisine]` (optional, string): Filter by cuisine: `AFRICAN` | `AMERICAN` | `ASIAN` | `BALKAN` | `BRAZILIAN` | `BRITISH` | `CARIBBEAN` | `CHINESE` | `FRENCH` | `GERMAN` | `GREEK` | `INDIAN` | `ITALIAN` | `JAPANESE` | `KOREAN` | `MEDITERRANEAN` | `MEXICAN` | `MIDDLE_EASTERN` | `POLISH` | `RUSSIAN` | `SCANDINAVIAN` | `SPANISH` | `THAI` | `TURKISH` | `VIETNAMESE`. (API-ready; UI may not expose it in MVP.)
     -   `filter[difficulty]` (optional, string): Filter by difficulty: `EASY` | `MEDIUM` | `HARD`. (API-ready; UI may not expose it in MVP.)
 -   **Success Response**:
     -   **Code**: `200 OK`

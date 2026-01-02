@@ -11,21 +11,15 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-na ekranie
-http://localhost:4200/recipes/50-smoothie-zielone
+w formularzu dodaania i edycji przepisu pole "Kuchnia" ma bardzo mało opcji
 
-typ diety, kuchnia i stopień trudności są źle prezentowane (patrz obrzek)
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-zmast pilsów mają być ikonk z opisem i wartością 
-np
-[ikonka_zzielonym_listkiem] wegańskie
-
-te opisy mają być pod czasmi gotowania ale nad wierszem z kategorią i tagami
+usupełnij o najcześciej używane kuchnie śiata a samą kontrolkę zrób tak aby można było wpisywać która się automatycznie uzupełnia bez konieczności rozwijania listy (rozwijanie ma zostać)
 
 </oczekiwane_zachowanie>
 

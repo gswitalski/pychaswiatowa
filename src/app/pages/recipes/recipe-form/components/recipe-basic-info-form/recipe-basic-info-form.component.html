@@ -163,13 +163,23 @@
 
     <mat-form-field appearance="outline" class="full-width">
         <mat-label>Kuchnia</mat-label>
-        <mat-select [formControl]="cuisineControl" placeholder="Wybierz kuchnię">
-            @for (option of cuisineOptions; track option) {
+        <input
+            matInput
+            type="text"
+            [formControl]="cuisineInputControl"
+            [matAutocomplete]="cuisineAuto"
+            placeholder="Wpisz lub wybierz kuchnię"
+        />
+        <mat-autocomplete 
+            #cuisineAuto="matAutocomplete"
+            (optionSelected)="onCuisineSelected($event.option.value)"
+        >
+            @for (option of filteredCuisineOptions(); track option) {
                 <mat-option [value]="option">
                     {{ cuisineLabels[option] }}
                 </mat-option>
             }
-        </mat-select>
+        </mat-autocomplete>
         @if (cuisineControl.value !== null) {
             <button
                 mat-icon-button
@@ -181,7 +191,7 @@
                 <mat-icon>clear</mat-icon>
             </button>
         }
-        <mat-hint>Opcjonalne. Klasyfikacja ze względu na typ kuchni.</mat-hint>
+        <mat-hint>Opcjonalne. Wpisz nazwę lub rozwiń listę. Klasyfikacja ze względu na typ kuchni.</mat-hint>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">

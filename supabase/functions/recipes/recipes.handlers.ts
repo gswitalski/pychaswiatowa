@@ -137,8 +137,34 @@ const createRecipeSchema = z.object({
         .optional()
         .transform((val) => val ?? null),
     cuisine: z
-        .enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
-            invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+        .enum([
+            'AFRICAN',
+            'AMERICAN',
+            'ASIAN',
+            'BALKAN',
+            'BRAZILIAN',
+            'BRITISH',
+            'CARIBBEAN',
+            'CHINESE',
+            'FRENCH',
+            'GERMAN',
+            'GREEK',
+            'INDIAN',
+            'ITALIAN',
+            'JAPANESE',
+            'KOREAN',
+            'MEDITERRANEAN',
+            'MEXICAN',
+            'MIDDLE_EASTERN',
+            'POLISH',
+            'RUSSIAN',
+            'SCANDINAVIAN',
+            'SPANISH',
+            'THAI',
+            'TURKISH',
+            'VIETNAMESE',
+        ], {
+            invalid_type_error: 'Cuisine must be one of: AFRICAN, AMERICAN, ASIAN, BALKAN, BRAZILIAN, BRITISH, CARIBBEAN, CHINESE, FRENCH, GERMAN, GREEK, INDIAN, ITALIAN, JAPANESE, KOREAN, MEDITERRANEAN, MEXICAN, MIDDLE_EASTERN, POLISH, RUSSIAN, SCANDINAVIAN, SPANISH, THAI, TURKISH, VIETNAMESE',
         })
         .nullable()
         .optional()
@@ -263,8 +289,34 @@ const updateRecipeSchema = z
             .nullable()
             .optional(),
         cuisine: z
-            .enum(['POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'], {
-                invalid_type_error: 'Cuisine must be one of: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN',
+            .enum([
+                'AFRICAN',
+                'AMERICAN',
+                'ASIAN',
+                'BALKAN',
+                'BRAZILIAN',
+                'BRITISH',
+                'CARIBBEAN',
+                'CHINESE',
+                'FRENCH',
+                'GERMAN',
+                'GREEK',
+                'INDIAN',
+                'ITALIAN',
+                'JAPANESE',
+                'KOREAN',
+                'MEDITERRANEAN',
+                'MEXICAN',
+                'MIDDLE_EASTERN',
+                'POLISH',
+                'RUSSIAN',
+                'SCANDINAVIAN',
+                'SPANISH',
+                'THAI',
+                'TURKISH',
+                'VIETNAMESE',
+            ], {
+                invalid_type_error: 'Cuisine must be one of: AFRICAN, AMERICAN, ASIAN, BALKAN, BRAZILIAN, BRITISH, CARIBBEAN, CHINESE, FRENCH, GERMAN, GREEK, INDIAN, ITALIAN, JAPANESE, KOREAN, MEDITERRANEAN, MEXICAN, MIDDLE_EASTERN, POLISH, RUSSIAN, SCANDINAVIAN, SPANISH, THAI, TURKISH, VIETNAMESE',
             })
             .nullable()
             .optional(),
