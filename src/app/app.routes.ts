@@ -3,6 +3,10 @@ import { PublicLayoutComponent } from './layout/public-layout/public-layout.comp
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { authenticatedMatchGuard } from './core/guards/authenticated-match.guard';
 import { guestOnlyMatchGuard } from './core/guards/guest-only-match.guard';
+import {
+    exploreRecipeIdSlugMatcher,
+    exploreRecipeIdOnlyMatcher,
+} from './core/routing/recipe-url.matchers';
 
 export const routes: Routes = [
     // Grupa tras dla zalogowanych użytkowników - publiczne widoki w MainLayout (App Shell)
@@ -25,12 +29,23 @@ export const routes: Routes = [
                         (m) => m.ExplorePageComponent
                     ),
             },
+            // Kanoniczny URL z slugiem - explore/recipes/:id-:slug
             {
-                path: 'explore/recipes/:id',
+                matcher: exploreRecipeIdSlugMatcher,
                 loadComponent: () =>
                     import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
                         (m) => m.ExploreRecipeDetailPageComponent
                     ),
+                data: { urlPrefix: 'explore/recipes' },
+            },
+            // Legacy URL - explore/recipes/:id (normalizacja do formatu kanonicznego)
+            {
+                matcher: exploreRecipeIdOnlyMatcher,
+                loadComponent: () =>
+                    import('./pages/recipes/recipe-url-normalization/recipe-url-normalization-page.component').then(
+                        (m) => m.RecipeUrlNormalizationPageComponent
+                    ),
+                data: { context: 'public', urlPrefix: 'explore/recipes' },
             },
             {
                 path: 'dashboard',
@@ -155,12 +170,23 @@ export const routes: Routes = [
                         (m) => m.ExplorePageComponent
                     ),
             },
+            // Kanoniczny URL z slugiem - explore/recipes/:id-:slug
             {
-                path: 'explore/recipes/:id',
+                matcher: exploreRecipeIdSlugMatcher,
                 loadComponent: () =>
                     import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
                         (m) => m.ExploreRecipeDetailPageComponent
                     ),
+                data: { urlPrefix: 'explore/recipes' },
+            },
+            // Legacy URL - explore/recipes/:id (normalizacja do formatu kanonicznego)
+            {
+                matcher: exploreRecipeIdOnlyMatcher,
+                loadComponent: () =>
+                    import('./pages/recipes/recipe-url-normalization/recipe-url-normalization-page.component').then(
+                        (m) => m.RecipeUrlNormalizationPageComponent
+                    ),
+                data: { context: 'public', urlPrefix: 'explore/recipes' },
             },
             {
                 path: 'dashboard',

@@ -19,21 +19,17 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-### Zmienione
 
-- **Formularz Przepisu (Dodaj/Edytuj)** (`/recipes/new`, `/recipes/:id/edit`)
-    - **Co się zmieniło**: w sekcji „Dane podstawowe” dodano pola:
-        - „Czas przygotowania (min)” (opcjonalne, `0-999`)
-        - „Czas całkowity (min)” (opcjonalne, `0-999`)
-    - **Walidacja**: jeśli oba ustawione → `czas całkowity ≥ czas przygotowania` (w przeciwnym razie blokada zapisu + błąd).
+### Zmienione widoki
 
-- **Szczegóły przepisu (uniwersalny widok)** (`/recipes/:id` oraz `/explore/recipes/:id`)
-    - **Co się zmieniło**: pod opisem dodano metadane z ikonami:
-        - `schedule` — czas przygotowania
-        - `timer` — czas całkowity
-    - **Widoczność**: elementy pokazują się tylko, gdy wartość jest ustawiona.
+**3. Szczegóły przepisu (uniwersalny widok)**
+- **Zmiana:** Ścieżka kanoniczna: `/explore/recipes/:id-:slug` oraz `/recipes/:id-:slug` (warianty bez sluga traktowane jako legacy i normalizowane).
 
+### Nowe widoki
 
+**3a. Normalizacja URL przepisu (techniczny handler)**
+- **Ścieżka:** `/explore/recipes/:id` oraz `/recipes/:id` (handler wykonuje nawigację do kanonicznego URL z `replaceUrl=true`).
+- **Opis:** Zapewnia kompatybilność wsteczną i kanoniczne linki oparte o aktualną nazwę przepisu.
 </views>
 
 
@@ -42,22 +38,26 @@ Najpierw przejrzyj następujące informacje:
 <user_stories>
 
 
-### Nowe
+### Nowe historyjki
 
-- **US-040 — Ustawienie i wyświetlanie czasów przygotowania oraz czasu całkowitego**
-    - **Co doszło**: dwa opcjonalne pola w minutach (`0-999`) + walidacja `czas całkowity ≥ czas przygotowania` (gdy oba ustawione) + prezentacja w szczegółach przepisu pod opisem z ikonami.
+**US-041: Kanoniczny link do przepisu z identyfikatorem i slugiem (publiczny i prywatny)**
+- **Opis:** Jako użytkownik (gość lub zalogowany), chcę udostępniać link do przepisu w postaci zawierającej czytelną nazwę (slug), aby adres był przyjazny i jednoznaczny, a aplikacja zawsze prowadziła do kanonicznego URL.
+- **Kryteria akceptacji (skrót):**
+    1. Kanoniczny URL: `/explore/recipes/:id-:slug` oraz `/recipes/:id-:slug`.
+    2. Wejście na `/explore/recipes/:id` i `/recipes/:id` normalizuje do kanonicznego URL.
+    3. Wejście na URL z błędnym slugiem normalizuje do poprawnego sluga.
+    4. Slug bez polskich znaków diakrytycznych, lowercase, separatory `-`, limit długości, fallback gdy pusty.
 
-### Zmienione
+### Zmienione historyjki
 
-- **US-003 — Dodawanie nowego przepisu**
-    - **Co się zmieniło**: formularz tworzenia zawiera dodatkowo pola: „czas przygotowania (min)” oraz „czas całkowity (min)” (opcjonalne).
-- **US-004 — Przeglądanie szczegółów przepisu**
-    - **Co się zmieniło**: w szczegółach przepisu (prywatnych) czasy są wyświetlane **pod opisem** z ikonami, jeśli ustawione.
-- **US-005 — Edycja istniejącego przepisu**
-    - **Co się zmieniło**: dodano edycję czasów (0–999 min), czyszczenie pól oraz walidację zależności `total ≥ prep`.
-- **US-019 — Przeglądanie szczegółów publicznego przepisu**
-    - **Co się zmieniło**: w szczegółach publicznych czasy są wyświetlane **pod opisem** z ikonami, jeśli ustawione.
+**US-019: Przeglądanie szczegółów publicznego przepisu**
+- **Zmiana:** Kanoniczna ścieżka została doprecyzowana jako `/explore/recipes/:id-:slug` (z normalizacją z `/explore/recipes/:id` oraz z błędnego sluga).
 
+**US-020: Publiczne widoki w trybie zalogowanego (App Shell)**
+- **Zmiana:** Doprecyzowanie, że publiczne szczegóły przepisu funkcjonują pod `/explore/recipes/:id-:slug`.
+
+**US-024: Publiczne szczegóły przepisu bez sidebara**
+- **Zmiana:** Doprecyzowanie, że ścieżka kanoniczna to `/explore/recipes/:id-:slug`, a `/explore/recipes/:id` pozostaje jako kompatybilność wsteczna (normalizacja).
 
 </user_stories>
 

@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { recipeIdSlugMatcher, recipeIdOnlyMatcher } from '../../core/routing/recipe-url.matchers';
 
 export const recipesRoutes: Routes = [
     {
@@ -45,13 +46,23 @@ export const recipesRoutes: Routes = [
             ),
         data: { breadcrumb: 'Import przepisu' },
     },
+    // Kanoniczny URL z slugiem - :id-:slug
     {
-        path: ':id',
+        matcher: recipeIdSlugMatcher,
         loadComponent: () =>
             import('./recipe-detail/recipe-detail-page.component').then(
                 (m) => m.RecipeDetailPageComponent
             ),
-        data: { breadcrumb: 'Szczegóły' },
+        data: { breadcrumb: 'Szczegóły', urlPrefix: 'recipes' },
+    },
+    // Legacy URL - tylko :id (normalizacja do formatu kanonicznego)
+    {
+        matcher: recipeIdOnlyMatcher,
+        loadComponent: () =>
+            import('./recipe-url-normalization/recipe-url-normalization-page.component').then(
+                (m) => m.RecipeUrlNormalizationPageComponent
+            ),
+        data: { context: 'private', urlPrefix: 'recipes' },
     },
     {
         path: ':id/edit',

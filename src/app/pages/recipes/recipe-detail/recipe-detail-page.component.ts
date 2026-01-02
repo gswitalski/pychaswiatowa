@@ -16,6 +16,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { RecipesService } from '../services/recipes.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { MyPlanService } from '../../../core/services/my-plan.service';
+import { SlugService } from '../../../shared/services/slug.service';
 import {
     RecipeDetailDto,
     ApiError,
@@ -67,6 +68,7 @@ export class RecipeDetailPageComponent implements OnInit {
     private readonly recipesService = inject(RecipesService);
     private readonly supabase = inject(SupabaseService);
     private readonly myPlanService = inject(MyPlanService);
+    private readonly slugService = inject(SlugService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
@@ -124,13 +126,16 @@ export class RecipeDetailPageComponent implements OnInit {
         // Sprawdź stan uwierzytelnienia
         await this.checkAuthStatus();
 
-        // Subskrybuj się na zmiany parametru 'id' w URL
+        // Subskrybuj się na zmiany parametrów w URL
         this.route.paramMap
             .pipe(
-                map((params) => params.get('id')),
+                map((params) => ({
+                    id: params.get('id'),
+                    slug: params.get('slug'),
+                })),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe((idParam) => {
+            .subscribe(({ id: idParam, slug }) => {
                 if (!idParam) {
                     this.handleInvalidId();
                     return;
@@ -143,7 +148,7 @@ export class RecipeDetailPageComponent implements OnInit {
                     return;
                 }
 
-                this.loadRecipe(id);
+                this.loadRecipe(id, slug ?? undefined);
             });
     }
 
@@ -172,12 +177,30 @@ export class RecipeDetailPageComponent implements OnInit {
 
     /**
      * Ładuje przepis przez prywatne API (tylko dla autora)
+     * 
+     * @param id ID przepisu
+     * @param slug Slug z URL (może być niepoprawny lub undefined)
      */
-    private loadRecipe(id: number): void {
+    private loadRecipe(id: number, slug?: string): void {
         this.state.update((s) => ({ ...s, isLoading: true, error: null }));
 
         this.recipesService.getRecipeById(id).subscribe({
             next: (recipe) => {
+                // Normalizacja sluga - jeśli slug w URL różni się od oczekiwanego
+                const expectedSlug = this.slugService.slugify(recipe.name ?? 'przepis');
+                
+                if (slug !== expectedSlug) {
+                    // Nawiguj do kanonicznego URL z replaceUrl
+                    const canonicalPath = `/recipes/${id}-${expectedSlug}`;
+                    const urlTree = this.router.createUrlTree([canonicalPath], {
+                        queryParams: this.route.snapshot.queryParams,
+                        queryParamsHandling: 'merge',
+                    });
+                    
+                    this.router.navigateByUrl(urlTree, { replaceUrl: true });
+                    return;
+                }
+
                 this.state.update((s) => ({
                     ...s,
                     recipe,

@@ -42,6 +42,7 @@ import { CategoriesService } from '../../../core/services/categories.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { RecipesService } from '../services/recipes.service';
 import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
+import { SlugService } from '../../../shared/services/slug.service';
 import {
     AiRecipeImageService,
     AiImageValidationError,
@@ -105,6 +106,7 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly recipesService = inject(RecipesService);
     private readonly draftStateService = inject(RecipeDraftStateService);
     private readonly aiRecipeImageService = inject(AiRecipeImageService);
+    private readonly slugService = inject(SlugService);
 
     /** Reference to RecipeImageUploadComponent for applying AI-generated images */
     @ViewChild(RecipeImageUploadComponent)
@@ -565,11 +567,11 @@ export class RecipeFormPageComponent implements OnInit {
             next: (recipe) => {
                 // If there's a pending image, upload it now
                 if (this.pendingImageFile) {
-                    this.uploadPendingImage(recipe.id);
+                    this.uploadPendingImage(recipe.id, command.name);
                 } else {
                     // No pending image, navigate immediately
                     this.saving.set(false);
-                    this.router.navigate(['/recipes', recipe.id]);
+                    this.navigateToRecipe(recipe.id, command.name);
                 }
             },
             error: (err) => {
@@ -582,24 +584,24 @@ export class RecipeFormPageComponent implements OnInit {
     /**
      * Uploads pending image after recipe creation
      */
-    private uploadPendingImage(recipeId: number): void {
+    private uploadPendingImage(recipeId: number, recipeName: string): void {
         if (!this.pendingImageFile) {
             this.saving.set(false);
-            this.router.navigate(['/recipes', recipeId]);
+            this.navigateToRecipe(recipeId, recipeName);
             return;
         }
 
         this.recipesService.uploadRecipeImage(recipeId, this.pendingImageFile).subscribe({
             next: () => {
                 this.saving.set(false);
-                this.router.navigate(['/recipes', recipeId]);
+                this.navigateToRecipe(recipeId, recipeName);
             },
             error: (err) => {
                 // Recipe was created, but image upload failed
                 // Still navigate to the recipe, but show error
                 console.error('Failed to upload image:', err);
                 this.saving.set(false);
-                this.router.navigate(['/recipes', recipeId]);
+                this.navigateToRecipe(recipeId, recipeName);
             },
         });
     }
@@ -612,7 +614,9 @@ export class RecipeFormPageComponent implements OnInit {
         this.recipesService.updateRecipe(id, command, null).subscribe({
             next: () => {
                 this.saving.set(false);
-                this.router.navigate(['/recipes', id]);
+                // Use name from command, fallback to current form value
+                const recipeName = command.name ?? this.form.get('name')?.value ?? 'przepis';
+                this.navigateToRecipe(id, recipeName);
             },
             error: (err) => {
                 this.error.set(err.message || 'Nie udało się zaktualizować przepisu');
@@ -856,10 +860,20 @@ export class RecipeFormPageComponent implements OnInit {
 
     onCancel(): void {
         if (this.isEditMode() && this.recipeId()) {
-            this.router.navigate(['/recipes', this.recipeId()]);
+            const recipeName = this.form.get('name')?.value ?? 'przepis';
+            this.navigateToRecipe(this.recipeId()!, recipeName);
         } else {
             this.router.navigate(['/my-recipies']);
         }
+    }
+
+    /**
+     * Nawiguje do szczegółów przepisu w formacie kanonicznym :id-:slug
+     */
+    private navigateToRecipe(id: number, recipeName: string): void {
+        const slug = this.slugService.slugify(recipeName);
+        const recipeSegment = `${id}-${slug}`;
+        this.router.navigate(['/recipes', recipeSegment]);
     }
 
     /** Custom validator to check minimum array length */

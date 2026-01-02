@@ -15,6 +15,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { RecipeVisibility } from '../../../../../shared/contracts/types';
+import { SlugService } from '../../services/slug.service';
 
 /**
  * Uogólniony interfejs dla karty przepisu.
@@ -60,6 +61,7 @@ export type RecipeCardRouteType = 'private' | 'public';
 })
 export class RecipeCardComponent {
     private readonly supabase = inject(SupabaseService);
+    private readonly slugService = inject(SlugService);
 
     /** Dane przepisu do wyświetlenia */
     readonly recipe = input.required<RecipeCardData>();
@@ -126,19 +128,26 @@ export class RecipeCardComponent {
     });
 
     /**
-     * Computed: link do szczegółów przepisu
-     * - private: /recipes/:id
-     * - public: /explore/recipes/:id
+     * Computed: link do szczegółów przepisu w formacie kanonicznym :id-:slug
+     * - private: /recipes/:id-:slug
+     * - public: /explore/recipes/:id-:slug
+     * 
+     * Jeśli slug nie jest dostępny w danych, generuje go z nazwy przepisu.
+     * Fallback do legacy URL (:id) nie jest używany - zawsze generujemy slug.
      */
     readonly recipeLink = computed(() => {
         const recipe = this.recipe();
         const type = this.routeType();
 
+        // Użyj dostarczonego sluga lub wygeneruj z nazwy
+        const slug = recipe.slug ?? this.slugService.slugify(recipe.name);
+        const recipeSegment = `${recipe.id}-${slug}`;
+
         if (type === 'public') {
-            return `/explore/recipes/${recipe.id}`;
+            return `/explore/recipes/${recipeSegment}`;
         }
 
-        return `/recipes/${recipe.id}`;
+        return `/recipes/${recipeSegment}`;
     });
 
     /**

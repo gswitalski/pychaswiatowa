@@ -13,6 +13,17 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
+### Nowe endpointy
+
+**POST /utils/slugify** (Supabase Edge Function)
+- **Zmiana:** Nowy endpoint pomocniczy do spójnego generowania sluga (lowercase, transliteracja PL diakrytyków, separatory `-`, limit długości, fallback).
+
+### Zmienione endpointy
+
+**GET /public/recipes/{id}**
+- **Zmiana:** Doprecyzowanie kontraktu: frontend używa kanonicznego routingu `/explore/recipes/{id}-{slug}`; API nadal pobiera dane po `id`.
+
+
 
 </api_changes_description>
 

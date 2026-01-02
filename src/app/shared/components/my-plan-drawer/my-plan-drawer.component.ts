@@ -16,6 +16,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MyPlanService } from '../../../core/services/my-plan.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import { SlugService } from '../../services/slug.service';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../confirm-dialog/confirm-dialog.component';
 import { PlanListItemDto, ApiError } from '../../../../../shared/contracts/types';
 
@@ -53,6 +54,7 @@ export class MyPlanDrawerComponent {
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
     private readonly supabase = inject(SupabaseService);
+    private readonly slugService = inject(SlugService);
 
     /** Lista elementów planu */
     readonly items = this.myPlanService.items;
@@ -146,11 +148,16 @@ export class MyPlanDrawerComponent {
     }
 
     /**
-     * Nawiguje do szczegółów przepisu
+     * Nawiguje do szczegółów przepisu w formacie kanonicznym :id-:slug
      */
     onNavigateToRecipe(item: PlanListItemDto): void {
         this.myPlanService.closeDrawer();
-        this.router.navigate(['/explore/recipes', item.recipe_id]);
+        
+        // Generuj slug z nazwy przepisu
+        const slug = this.slugService.slugify(item.recipe.name);
+        const recipeSegment = `${item.recipe_id}-${slug}`;
+        
+        this.router.navigate(['/explore/recipes', recipeSegment]);
     }
 
     /**
