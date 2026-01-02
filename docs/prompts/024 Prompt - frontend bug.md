@@ -12,15 +12,21 @@ Zapoznaj się z dokumnetacją projektu
 <aktualne_zachowanie>
 
 na ekranie
-http://localhost:4200/recipes/new/assist
+http://localhost:4200/recipes/50-smoothie-zielone
 
-przyski "Dale" ma elementy nie wycentrowane w poziomie.
+typ diety, kuchnia i stopień trudności są źle prezentowane (patrz obrzek)
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
-elementy (napis i strzałka wycentrowane .)
+
+zmast pilsów mają być ikonk z opisem i wartością 
+np
+[ikonka_zzielonym_listkiem] wegańskie
+
+te opisy mają być pod czasmi gotowania ale nad wierszem z kategorią i tagami
+
 </oczekiwane_zachowanie>
 
 

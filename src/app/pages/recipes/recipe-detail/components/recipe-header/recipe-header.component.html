@@ -26,29 +26,43 @@
         </div>
     }
 
+    <!-- Sekcja pól klasyfikacyjnych (typ diety, kuchnia, trudność) z ikonkami -->
+    @if (shouldShowDietType() || shouldShowCuisine() || shouldShowDifficulty()) {
+        <div class="recipe-classification">
+            @if (shouldShowDietType()) {
+                <div class="classification-item">
+                    <mat-icon [attr.aria-label]="dietTypeLabels[recipe().diet_type!]">
+                        @if (recipe().diet_type === 'VEGAN' || recipe().diet_type === 'VEGETARIAN') {
+                            spa
+                        } @else {
+                            lunch_dining
+                        }
+                    </mat-icon>
+                    <span>{{ dietTypeLabels[recipe().diet_type!] }}</span>
+                </div>
+            }
+
+            @if (shouldShowCuisine()) {
+                <div class="classification-item">
+                    <mat-icon [attr.aria-label]="cuisineLabels[recipe().cuisine!]">public</mat-icon>
+                    <span>{{ cuisineLabels[recipe().cuisine!] }}</span>
+                </div>
+            }
+
+            @if (shouldShowDifficulty()) {
+                <div class="classification-item">
+                    <mat-icon [attr.aria-label]="difficultyLabels[recipe().difficulty!]">signal_cellular_alt</mat-icon>
+                    <span>{{ difficultyLabels[recipe().difficulty!] }}</span>
+                </div>
+            }
+        </div>
+    }
+
     <div class="recipe-meta">
         @if (recipe().is_termorobot) {
             <mat-chip class="termorobot-badge non-clickable">
                 <mat-icon matChipAvatar>blender</mat-icon>
                 Termorobot
-            </mat-chip>
-        }
-
-        @if (shouldShowDietType()) {
-            <mat-chip class="classification-badge non-clickable">
-                {{ dietTypeLabels[recipe().diet_type!] }}
-            </mat-chip>
-        }
-
-        @if (shouldShowCuisine()) {
-            <mat-chip class="classification-badge non-clickable">
-                {{ cuisineLabels[recipe().cuisine!] }}
-            </mat-chip>
-        }
-
-        @if (shouldShowDifficulty()) {
-            <mat-chip class="classification-badge non-clickable">
-                {{ difficultyLabels[recipe().difficulty!] }}
             </mat-chip>
         }
 
