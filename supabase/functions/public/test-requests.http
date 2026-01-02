@@ -1,0 +1,196 @@
+###
+# Public Recipes API - Test Requests
+# Endpoint: /functions/v1/public/recipes/*
+#
+# IMPORTANT: Recipe URL routing strategy
+# - Frontend UI route: /explore/recipes/{id}-{slug} (SEO-friendly with slug)
+# - Backend API route: /public/recipes/{id} (numeric ID only)
+# - The slug is frontend-only concern; API always uses numeric ID
+#
+# Prerequisites:
+# - Local Supabase running: supabase start
+# - At least one PUBLIC recipe in database
+# - Test user credentials: test@pychaswiatowa.pl / 554G5rjnbdAanGR
+# - Replace {{recipeId}} with an actual recipe ID from your database
+# - Replace {{authToken}} with a valid JWT token (see "Get Auth Token" section)
+###
+
+@baseUrl = http://localhost:54321/functions/v1
+@anonKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+
+# Replace with actual recipe ID from your database
+@recipeId = 1
+
+# To get a valid auth token, sign in first (see section below)
+@authToken = YOUR_JWT_TOKEN_HERE
+
+###
+### Section 1: Authentication (Get JWT Token)
+###
+
+### 1.1. Sign in to get JWT token
+# @name signIn
+POST http://localhost:54321/auth/v1/token?grant_type=password
+Content-Type: application/json
+apikey: {{anonKey}}
+
+{
+    "email": "test@pychaswiatowa.pl",
+    "password": "554G5rjnbdAanGR"
+}
+
+###
+### Section 2: GET /public/recipes/{id} - Success Scenarios
+###
+
+### 2.1. [200 OK] Get public recipe - Anonymous user
+# Expected: Recipe details with is_owner=false, in_my_plan=false
+GET {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+
+### 2.2. [200 OK] Get public recipe - Authenticated user (not owner)
+# Expected: Recipe details with is_owner=false, in_my_plan=false (or true if recipe is in plan)
+# IMPORTANT: Replace {{authToken}} with actual JWT from sign-in response
+GET {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+Authorization: Bearer {{authToken}}
+
+### 2.3. [200 OK] Get public recipe - Authenticated user (owner)
+# Expected: Recipe details with is_owner=true
+# Test with a recipe created by the authenticated user
+GET {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+Authorization: Bearer {{authToken}}
+
+###
+### Section 3: GET /public/recipes/{id} - Error Scenarios
+###
+
+### 3.1. [400 Bad Request] Invalid ID - Not a number
+# Expected: VALIDATION_ERROR - "Recipe ID must be a positive integer"
+GET {{baseUrl}}/public/recipes/abc
+apikey: {{anonKey}}
+
+### 3.2. [400 Bad Request] Invalid ID - Zero
+# Expected: VALIDATION_ERROR - "Recipe ID must be a positive integer"
+GET {{baseUrl}}/public/recipes/0
+apikey: {{anonKey}}
+
+### 3.3. [400 Bad Request] Invalid ID - Negative number
+# Expected: VALIDATION_ERROR - "Recipe ID must be a positive integer"
+GET {{baseUrl}}/public/recipes/-5
+apikey: {{anonKey}}
+
+### 3.4. [401 Unauthorized] Invalid JWT token
+# Expected: UNAUTHORIZED error from getOptionalAuthenticatedUser
+GET {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+Authorization: Bearer invalid_token_here
+
+### 3.5. [404 Not Found] Recipe does not exist
+# Expected: NOT_FOUND - "Recipe not found or is not publicly accessible"
+GET {{baseUrl}}/public/recipes/999999
+apikey: {{anonKey}}
+
+### 3.6. [404 Not Found] Recipe is not public (PRIVATE or SHARED)
+# Expected: NOT_FOUND - "Recipe not found or is not publicly accessible"
+# Test with a recipe that has visibility='PRIVATE' or 'SHARED'
+# Replace with actual private recipe ID
+GET {{baseUrl}}/public/recipes/999998
+apikey: {{anonKey}}
+
+### 3.7. [404 Not Found] Recipe is soft-deleted
+# Expected: NOT_FOUND - "Recipe not found or is not publicly accessible"
+# Test with a recipe that has deleted_at IS NOT NULL
+# Replace with actual soft-deleted recipe ID
+GET {{baseUrl}}/public/recipes/999997
+apikey: {{anonKey}}
+
+###
+### Section 4: Additional Edge Cases
+###
+
+### 4.1. [Optional] Test with ID containing slug (frontend error scenario)
+# NOTE: This will fail with 400 as API expects numeric ID only
+# Frontend should parse ID before sending to API
+GET {{baseUrl}}/public/recipes/1-pyszny-przepis
+apikey: {{anonKey}}
+
+### 4.2. [Optional] Test with very large ID
+# Expected: 404 if recipe doesn't exist
+GET {{baseUrl}}/public/recipes/2147483647
+apikey: {{anonKey}}
+
+###
+### Section 5: CORS and OPTIONS (Preflight)
+###
+
+### 5.1. [204 No Content] OPTIONS preflight request
+# Expected: CORS headers in response
+OPTIONS {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+Origin: http://localhost:4200
+Access-Control-Request-Method: GET
+Access-Control-Request-Headers: Authorization
+
+###
+### Section 6: Integration Tests (with other endpoints)
+###
+
+### 6.1. Get public recipes list (to find valid recipe IDs)
+# Use this to find valid public recipe IDs for testing
+GET {{baseUrl}}/public/recipes?limit=5
+apikey: {{anonKey}}
+
+### 6.2. Get public recipes feed (cursor-based)
+# Alternative way to find valid recipe IDs
+GET {{baseUrl}}/public/recipes/feed?limit=5
+apikey: {{anonKey}}
+
+###
+### Section 7: Performance and Cache Tests
+###
+
+### 7.1. Check Cache-Control headers for anonymous request
+# Expected: Cache-Control header should be set by index.ts wrapper
+# (Note: handlers don't set cache headers for single recipe, only for lists)
+GET {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+
+### 7.2. Check Cache-Control headers for authenticated request
+# Expected: Cache-Control should be no-store or similar (see index.ts addCorsHeaders)
+GET {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+Authorization: Bearer {{authToken}}
+
+### 7.3. Verify Vary header includes Authorization
+# Expected: Vary: Authorization header to prevent cache mixing
+GET {{baseUrl}}/public/recipes/{{recipeId}}
+apikey: {{anonKey}}
+
+###
+### Manual Testing Checklist
+###
+# Based on implementation plan section 9A step 3:
+#
+# [ ] Anonymous user: public recipe → 200 with correct data
+# [ ] Anonymous user: public recipe → is_owner=false, in_my_plan=false
+# [ ] Anonymous user: non-existent recipe → 404
+# [ ] Anonymous user: private/shared recipe → 404
+# [ ] Authenticated user: public recipe → 200 with correct data
+# [ ] Authenticated user (owner): public recipe → is_owner=true
+# [ ] Authenticated user (not owner): public recipe → is_owner=false
+# [ ] Authenticated user: recipe in plan → in_my_plan=true
+# [ ] Authenticated user: recipe not in plan → in_my_plan=false
+# [ ] Invalid JWT token → 401
+# [ ] Invalid ID format (non-numeric) → 400
+# [ ] Soft-deleted recipe → 404
+# [ ] CORS headers present in all responses
+# [ ] Vary header includes Authorization
+# [ ] Response includes all fields from PublicRecipeDetailDto
+# [ ] Author profile correctly populated
+# [ ] Category correctly populated (or null)
+# [ ] Tags correctly populated as string array
+# [ ] Ingredients and steps correctly parsed as RecipeContent
+###
+

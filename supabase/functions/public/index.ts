@@ -10,6 +10,13 @@
  * - GET /public/recipes/feed - Returns cursor-paginated list of public recipes (for infinite scroll)
  * - GET /public/recipes/{id} - Returns full details of a single public recipe
  *
+ * IMPORTANT: Recipe URL routing strategy:
+ * - Frontend UI route: /explore/recipes/{id}-{slug} (SEO-friendly with slug)
+ * - Backend API route: /public/recipes/{id} (identifies by numeric ID only)
+ * - The slug is a frontend-only concern for SEO and readability
+ * - API always identifies recipes by numeric ID, not slug
+ * - Frontend is responsible for parsing ID from URL and validating canonical slug
+ *
  * Cursor-based pagination example:
  * 1. First request: GET /public/recipes/feed?limit=12
  *    Response: { data: [...], pageInfo: { hasMore: true, nextCursor: "..." } }

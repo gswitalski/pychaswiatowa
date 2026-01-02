@@ -270,8 +270,14 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
  * This endpoint is accessible without authentication, but supports optional authentication
  * for additional metadata (is_owner, in_my_plan).
  *
+ * IMPORTANT: API uses numeric ID only (no slug).
+ * - Frontend UI route: /explore/recipes/{id}-{slug} (for SEO)
+ * - Backend API route: /public/recipes/{id} (numeric ID only)
+ * - Frontend must parse ID from URL before calling this endpoint
+ * - Slug is not part of the API contract
+ *
  * @param req - The incoming HTTP request (used to extract optional JWT)
- * @param recipeId - Recipe ID extracted from URL path
+ * @param recipeId - Recipe ID extracted from URL path (numeric string)
  * @returns Response with PublicRecipeDetailDto on success, or error response
  */
 export async function handleGetPublicRecipeById(req: Request, recipeId: string): Promise<Response> {
