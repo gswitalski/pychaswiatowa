@@ -12,15 +12,11 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-chcę aby przepisy miały 3 dodatkowe pola:
- - mięso/vege/vegan (lub podobnie)
- - kuchnia (polsa, zajatycka, meksykańska, bliskowschodnia)
- - stopień trudności (łatwe/średnie/trudne)
+chcę aby przepisy miały dodatkowe pole typu boolean : grill
+ chce aby na karcie przepisów pokazała si ikonka grilla jesli przepis jest na grila
+ na widoku sczegółow przepisy twer niech się pokawi  ikonka grilla z napisem "grill"
 
-pola te mają się pojawić na formularzu tworzenia i edycji przepisu
-
-wartości tych pól mają być pokazywane na szczegółach przepisu
-
+pole to ma też się pojawić w formularzu tworzenia i edycji przepisu
 
 </nowa_funkcjonalnosc>
 

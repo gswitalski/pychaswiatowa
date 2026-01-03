@@ -136,6 +136,7 @@ Public endpoints are available without authentication:
     -   `sort` (optional, string, default: `created_at.desc`): Sort order. e.g., `created_at.desc`, `name.asc`.
     -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
+    -   `filter[grill]` (optional, boolean): Filter by the "Grill" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`. (API-ready; UI may not expose it in MVP.)
     -   `filter[cuisine]` (optional, string): Filter by cuisine: `AFRICAN` | `AMERICAN` | `ASIAN` | `BALKAN` | `BRAZILIAN` | `BRITISH` | `CARIBBEAN` | `CHINESE` | `FRENCH` | `GERMAN` | `GREEK` | `INDIAN` | `ITALIAN` | `JAPANESE` | `KOREAN` | `MEDITERRANEAN` | `MEXICAN` | `MIDDLE_EASTERN` | `POLISH` | `RUSSIAN` | `SCANDINAVIAN` | `SPANISH` | `THAI` | `TURKISH` | `VIETNAMESE`. (API-ready; UI may not expose it in MVP.)
     -   `filter[difficulty]` (optional, string): Filter by difficulty: `EASY` | `MEDIUM` | `HARD`. (API-ready; UI may not expose it in MVP.)
@@ -153,6 +154,7 @@ Public endpoints are available without authentication:
               "prep_time_minutes": 30,
               "total_time_minutes": 90,
               "is_termorobot": false,
+              "is_grill": false,
               "diet_type": "VEGETARIAN",
               "cuisine": "POLISH",
               "difficulty": "EASY",
@@ -173,6 +175,7 @@ Public endpoints are available without authentication:
               "prep_time_minutes": 0,
               "total_time_minutes": 0,
               "is_termorobot": false,
+              "is_grill": false,
               "diet_type": null,
               "cuisine": null,
               "difficulty": null,
@@ -211,6 +214,7 @@ Public endpoints are available without authentication:
     -   `sort` (optional, string, default: `created_at.desc`): Sort order. Must be stable. e.g., `created_at.desc`, `name.asc`.
     -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
+    -   `filter[grill]` (optional, boolean): Filter by the "Grill" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`. (API-ready; UI may not expose it in MVP.)
     -   `filter[cuisine]` (optional, string): Filter by cuisine: `AFRICAN` | `AMERICAN` | `ASIAN` | `BALKAN` | `BRAZILIAN` | `BRITISH` | `CARIBBEAN` | `CHINESE` | `FRENCH` | `GERMAN` | `GREEK` | `INDIAN` | `ITALIAN` | `JAPANESE` | `KOREAN` | `MEDITERRANEAN` | `MEXICAN` | `MIDDLE_EASTERN` | `POLISH` | `RUSSIAN` | `SCANDINAVIAN` | `SPANISH` | `THAI` | `TURKISH` | `VIETNAMESE`. (API-ready; UI may not expose it in MVP.)
     -   `filter[difficulty]` (optional, string): Filter by difficulty: `EASY` | `MEDIUM` | `HARD`. (API-ready; UI may not expose it in MVP.)
@@ -228,6 +232,7 @@ Public endpoints are available without authentication:
               "prep_time_minutes": 30,
               "total_time_minutes": 90,
               "is_termorobot": false,
+              "is_grill": false,
               "diet_type": "VEGETARIAN",
               "cuisine": "POLISH",
               "difficulty": "EASY",
@@ -248,6 +253,7 @@ Public endpoints are available without authentication:
               "prep_time_minutes": 0,
               "total_time_minutes": 0,
               "is_termorobot": false,
+              "is_grill": false,
               "diet_type": null,
               "cuisine": null,
               "difficulty": null,
@@ -295,6 +301,7 @@ Public endpoints are available without authentication:
           "prep_time_minutes": 30,
           "total_time_minutes": 90,
           "is_termorobot": false,
+          "is_grill": false,
           "diet_type": "VEGETARIAN",
           "cuisine": "POLISH",
           "difficulty": "EASY",
@@ -385,6 +392,7 @@ Public endpoints are available without authentication:
     -   `filter[category_id]` (optional, integer): Filter by category ID.
     -   `filter[tags]` (optional, string): Comma-separated list of tag names to filter by.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`).
+    -   `filter[grill]` (optional, boolean): Filter by the "Grill" flag (`true` / `false`).
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`.
     -   `filter[cuisine]` (optional, string): Filter by cuisine: `POLISH` | `ASIAN` | `MEXICAN` | `MIDDLE_EASTERN`.
     -   `filter[difficulty]` (optional, string): Filter by difficulty: `EASY` | `MEDIUM` | `HARD`.
@@ -402,6 +410,7 @@ Public endpoints are available without authentication:
               "prep_time_minutes": 30,
               "total_time_minutes": 90,
               "is_termorobot": false,
+              "is_grill": false,
               "diet_type": "VEGETARIAN",
               "cuisine": "POLISH",
               "difficulty": "EASY",
@@ -444,6 +453,7 @@ Public endpoints are available without authentication:
     -   `filter[category_id]` (optional, integer): Filter by category ID.
     -   `filter[tags]` (optional, string): Comma-separated list of tag names to filter by.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`).
+    -   `filter[grill]` (optional, boolean): Filter by the "Grill" flag (`true` / `false`).
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`.
     -   `filter[cuisine]` (optional, string): Filter by cuisine: `POLISH` | `ASIAN` | `MEXICAN` | `MIDDLE_EASTERN`.
     -   `filter[difficulty]` (optional, string): Filter by difficulty: `EASY` | `MEDIUM` | `HARD`.
@@ -461,6 +471,7 @@ Public endpoints are available without authentication:
               "prep_time_minutes": 30,
               "total_time_minutes": 90,
               "is_termorobot": false,
+              "is_grill": false,
               "diet_type": "VEGETARIAN",
               "cuisine": "POLISH",
               "difficulty": "EASY",
@@ -497,6 +508,7 @@ Public endpoints are available without authentication:
       "prep_time_minutes": 30,
       "total_time_minutes": 90,
       "is_termorobot": false,
+      "is_grill": false,
       "diet_type": "VEGETARIAN",
       "cuisine": "POLISH",
       "difficulty": "EASY",
@@ -519,6 +531,7 @@ Public endpoints are available without authentication:
           "prep_time_minutes": 30,
           "total_time_minutes": 90,
           "is_termorobot": false,
+          "is_grill": false,
           "diet_type": "VEGETARIAN",
           "cuisine": "POLISH",
           "difficulty": "EASY",
@@ -569,6 +582,7 @@ Public endpoints are available without authentication:
           "prep_time_minutes": null,
           "total_time_minutes": null,
           "is_termorobot": false,
+          "is_grill": false,
           "diet_type": null,
           "cuisine": null,
           "difficulty": null,
@@ -692,6 +706,7 @@ Public endpoints are available without authentication:
         "prep_time_minutes": 20,
         "total_time_minutes": 90,
         "is_termorobot": false,
+        "is_grill": false,
         "category_name": "Deser",
         "ingredients": [
           { "type": "header", "content": "Masa" },
@@ -777,6 +792,7 @@ Public endpoints are available without authentication:
       "prep_time_minutes": 45,
       "total_time_minutes": 120,
       "is_termorobot": true,
+      "is_grill": false,
       "diet_type": "MEAT",
       "cuisine": "MEXICAN",
       "difficulty": "MEDIUM",
@@ -1235,6 +1251,7 @@ Public endpoints are available without authentication:
     -   `recipes.prep_time_minutes`: optional, integer, 0-999. Can be `null` (no value provided).
     -   `recipes.total_time_minutes`: optional, integer, 0-999. Can be `null` (no value provided).
     -   `recipes.is_termorobot`: optional, boolean. Default: `false`.
+    -   `recipes.is_grill`: optional, boolean. Default: `false`.
     -   `recipes.diet_type`: optional, enum: 'MEAT', 'VEGETARIAN', 'VEGAN'. Can be `null` (no value provided).
     -   `recipes.cuisine`: optional, enum: 'POLISH', 'ASIAN', 'MEXICAN', 'MIDDLE_EASTERN'. Can be `null` (no value provided).
     -   `recipes.difficulty`: optional, enum: 'EASY', 'MEDIUM', 'HARD'. Can be `null` (no value provided).
