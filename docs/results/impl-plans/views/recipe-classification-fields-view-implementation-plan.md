@@ -240,3 +240,4 @@ Frontend korzysta wyłącznie z `supabase.functions.invoke(...)` w serwisach (zg
 
 
 
+
