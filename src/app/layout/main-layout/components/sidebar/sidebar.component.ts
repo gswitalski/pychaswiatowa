@@ -31,7 +31,7 @@ export class SidebarComponent {
             icon: 'dashboard',
         },
         {
-            label: 'Przepisy',
+            label: 'Moje przepisy',
             route: '/my-recipies',
             icon: 'menu_book',
         },

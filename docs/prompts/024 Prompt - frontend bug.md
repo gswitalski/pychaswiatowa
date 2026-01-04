@@ -11,18 +11,19 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-http://localhost:4200/dashboard
-otwiera się dashboard z sidebarem z lewej strony
+strona http://localhost:4200/my-recipies
 
-potem wchodzę na http://localhost:4200/explore
-sidebar znika i pojawia się lista przepisów ale jest przesunięta w prawo tak jakby dashboard dalej am był. po odświeżeniu F5 jest już dobrze
+przewijam przepisy w dół
+ikonki i badge z kart przepisów nie chowają sie pod
+pych-page-header
 
+tylko są nad nim (patrz obraz)
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-lista przepisów jest wycentrowana .
+ikonki i budge chowają sie pod header
 
 
 </oczekiwane_zachowanie>

@@ -79,7 +79,7 @@ export const routes: Routes = [
                     import('./pages/recipes/recipes.routes').then(
                         (m) => m.recipesRoutes
                     ),
-                data: { breadcrumb: 'Przepisy' },
+                data: { breadcrumb: 'Moje przepisy' },
             },
             {
                 path: 'collections',
