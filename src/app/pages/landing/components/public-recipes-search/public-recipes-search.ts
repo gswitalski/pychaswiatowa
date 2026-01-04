@@ -3,11 +3,9 @@ import {
     ChangeDetectionStrategy,
     input,
     output,
-    signal,
     effect,
     inject,
     OnInit,
-    OnDestroy,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -23,7 +21,7 @@ import { PublicRecipeResultsComponent } from '../public-recipe-results/public-re
 /**
  * Publiczny komponent wyszukiwania przepisów.
  * Reużywalny na Landing Page (/) i Explore (/explore).
- * 
+ *
  * Obsługuje:
  * - Wyszukiwanie z debounce (300-400ms)
  * - Tryb feed (pusta fraza) vs search (≥3 znaki)

@@ -3,7 +3,6 @@ import {
     ChangeDetectionStrategy,
     inject,
     signal,
-    computed,
     OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -17,7 +16,7 @@ import { PublicRecipesSearchComponent } from '../landing/components/public-recip
 /**
  * Komponent strony Explore - publiczny katalog przepisów.
  * Umożliwia przeglądanie i wyszukiwanie publicznych przepisów.
- * 
+ *
  * Wykorzystuje pych-public-recipes-search z context="explore":
  * - Pusta fraza = feed (najnowsze przepisy)
  * - ≥3 znaki = wyszukiwanie z relevance i etykietami dopasowania

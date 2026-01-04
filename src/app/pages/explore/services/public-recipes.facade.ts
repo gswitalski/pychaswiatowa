@@ -1,13 +1,12 @@
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, of, Subject, switchMap, debounceTime, distinctUntilChanged, tap } from 'rxjs';
+import { catchError, of, Subject, debounceTime, distinctUntilChanged, tap } from 'rxjs';
 
 import { PublicRecipesService, GetPublicRecipesFeedParams } from '../../../core/services/public-recipes.service';
 import {
     PublicRecipesSearchVm,
     PublicRecipesSearchMode,
     PublicRecipesSearchContext,
-    DEFAULT_PUBLIC_RECIPES_SEARCH_VM,
 } from '../models/public-recipes-search.model';
 import { PublicRecipeListItemDto, CursorPageInfoDto } from '../../../../../shared/contracts/types';
 
