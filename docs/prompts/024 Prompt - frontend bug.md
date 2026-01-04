@@ -10,19 +10,22 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
+wchodze na szczególy przepisu który jest w moim planie
+http://localhost:4200/explore/recipes/48-panna-cotta
+lub
+http://localhost:4200/recipe
 
-na stronie http://localhost:4200/explore
-karta przepisu nie pokazuje ikonki grilla gdy przepis ma is_grill=true
+otwieram mój plan i usuwam z niego ten przepis
 
+na szagółach przepisy dalj mam przycisk "zobacz listę"
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-karta przepisu pokazuje ikonkę grilla gdy przepis ma is_grill=true
-tak jak to jset prawidlowo na stronie
-http://localhost:4200/my-recipies
+przycisk uaktualania swój status i znowu mam "dodaj do planu"
+
 
 </oczekiwane_zachowanie>
 

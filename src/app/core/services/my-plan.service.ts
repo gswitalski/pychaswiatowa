@@ -1,4 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
+import { EventEmitter } from '@angular/core';
 import { Observable, from, map, catchError, throwError, tap, finalize } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import {
@@ -46,6 +47,14 @@ const INITIAL_MUTATION_STATE: MyPlanMutationState = {
 const PLAN_CACHE_TTL_MS = 60_000;
 
 /**
+ * Zdarzenia zmian w planie
+ */
+export interface PlanChangeEvent {
+    type: 'added' | 'removed';
+    recipeId: number;
+}
+
+/**
  * Serwis zarządzający "Moim planem" użytkownika.
  * Odpowiada za komunikację z API planu oraz stan drawer'a.
  *
@@ -68,6 +77,11 @@ export class MyPlanService {
      * Stan otwarcia drawer'a "Mój plan" (globalny)
      */
     readonly isDrawerOpen = signal<boolean>(false);
+
+    /**
+     * EventEmitter dla zmian w planie - informuje o dodaniu/usunięciu przepisów
+     */
+    readonly planChanges = new EventEmitter<PlanChangeEvent>();
 
     /**
      * Stan danych planu
@@ -286,8 +300,9 @@ export class MyPlanService {
                 return;
             }),
             tap(() => {
-                // Po sukcesie odśwież plan
+                // Po sukcesie odśwież plan i emituj zdarzenie
                 this.refreshPlan();
+                this.planChanges.emit({ type: 'added', recipeId: command.recipe_id });
             }),
             catchError((err) => this.handleError(err))
         );
@@ -326,12 +341,13 @@ export class MyPlanService {
                 return;
             }),
             tap(() => {
-                // Po sukcesie usuń z lokalnego stanu
+                // Po sukcesie usuń z lokalnego stanu i emituj zdarzenie
                 this.planState.update(s => ({
                     ...s,
                     items: s.items.filter(item => item.recipe_id !== recipeId),
                     meta: { ...s.meta, total: Math.max(0, s.meta.total - 1) },
                 }));
+                this.planChanges.emit({ type: 'removed', recipeId });
             }),
             finalize(() => {
                 // Zawsze usuń z deletingRecipeIds

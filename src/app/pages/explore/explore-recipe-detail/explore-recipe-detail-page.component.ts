@@ -22,6 +22,7 @@ import {
     RecipeDetailDto,
     ApiError,
 } from '../../../../../shared/contracts/types';
+import { PlanChangeEvent } from '../../../core/services/my-plan.service';
 
 import {
     ConfirmDialogComponent,
@@ -125,6 +126,9 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
         // Sprawdź stan uwierzytelnienia
         await this.checkAuthStatus();
 
+        // Subskrybuj się na zmiany w planie
+        this.subscribeToPlanChanges();
+
         // Subskrybuj się na zmiany parametrów w URL
         this.route.paramMap
             .pipe(
@@ -148,6 +152,29 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
                 }
 
                 this.loadRecipe(id, slug ?? undefined);
+            });
+    }
+
+    /**
+     * Subskrybuje się na zmiany w planie i aktualizuje lokalny stan przepisu
+     */
+    private subscribeToPlanChanges(): void {
+        this.myPlanService.planChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((event: PlanChangeEvent) => {
+                const currentRecipe = this.recipe();
+                if (!currentRecipe || currentRecipe.id === null) {
+                    return;
+                }
+
+                // Jeśli zdarzenie dotyczy aktualnie wyświetlanego przepisu, zaktualizuj stan
+                if (event.recipeId === currentRecipe.id) {
+                    const newInMyPlan = event.type === 'added';
+                    this.state.update((s) => ({
+                        ...s,
+                        recipe: s.recipe ? { ...s.recipe, in_my_plan: newInMyPlan } : null,
+                    }));
+                }
             });
     }
 
