@@ -25,19 +25,9 @@
                     </mat-chip-set>
                 }
 
-                <!-- @if (isTermorobot() || recipe().isTermorobot) {
-                    <mat-chip-set>
-                        <mat-chip class="termorobot-chip">
-                            <mat-icon matChipAvatar>blender</mat-icon>
-                            Termorobot
-                        </mat-chip>
-                    </mat-chip-set>
-                } -->
-
                 @if (isTermorobot() || recipe().isTermorobot) {
                     <div class="icon-indicator" matTooltip="Termorobot">
                         <mat-icon>blender</mat-icon>
-
                     </div>
                 }
 
