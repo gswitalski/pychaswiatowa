@@ -96,5 +96,23 @@
             <mat-chip-option [value]="false">Bez termorobota</mat-chip-option>
         </mat-chip-listbox>
     </div>
+
+    <!-- Grill filter -->
+    <div class="grill-section">
+        <span class="grill-label">Grill:</span>
+        <mat-chip-listbox
+            class="grill-chips"
+            [value]="grill"
+            (change)="onGrillChange($event.value)"
+            aria-label="Filtr Grill"
+        >
+            <mat-chip-option [value]="null">Wszystkie</mat-chip-option>
+            <mat-chip-option [value]="true">
+                <mat-icon matChipAvatar>outdoor_grill</mat-icon>
+                Grill
+            </mat-chip-option>
+            <mat-chip-option [value]="false">Bez grilla</mat-chip-option>
+        </mat-chip-listbox>
+    </div>
 </div>
 

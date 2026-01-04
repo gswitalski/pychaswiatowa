@@ -105,6 +105,7 @@ export class RecipesListPageComponent implements OnInit {
                 imageUrl: recipe.image_path,
                 categoryName: recipe.category_name ?? null,
                 isTermorobot: recipe.is_termorobot ?? false,
+                isGrill: recipe.is_grill ?? false,
             },
             isOwnRecipe: recipe.is_owner,
             inMyCollections: recipe.in_my_collections,
@@ -207,6 +208,7 @@ export class RecipesListPageComponent implements OnInit {
             tags: filters.tags.length > 0 ? filters.tags : undefined,
             view: 'my_recipes',
             termorobot: filters.termorobot,
+            grill: filters.grill,
         };
 
         this.recipesService.getRecipesFeed(params)
@@ -261,6 +263,7 @@ export class RecipesListPageComponent implements OnInit {
             tags: currentFilters.tags.length > 0 ? currentFilters.tags : undefined,
             view: 'my_recipes',
             termorobot: currentFilters.termorobot,
+            grill: currentFilters.grill,
         };
 
         this.recipesService.getRecipesFeed(params)

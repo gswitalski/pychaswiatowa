@@ -79,3 +79,26 @@
     }
 }
 
+.grill-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .grill-label {
+        font-size: 0.875rem;
+        color: var(--mat-sys-on-surface-variant);
+        font-weight: 500;
+    }
+
+    .grill-chips {
+        mat-chip-option {
+            mat-icon {
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+            }
+        }
+    }
+}
+

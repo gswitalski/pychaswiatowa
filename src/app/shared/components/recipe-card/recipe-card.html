@@ -33,6 +33,12 @@
                         </mat-chip>
                     </mat-chip-set>
                 }
+
+                @if (recipe().isGrill) {
+                    <div class="grill-indicator" matTooltip="Grill">
+                        <mat-icon>outdoor_grill</mat-icon>
+                    </div>
+                }
             </div>
 
             @if (shouldShowVisibilityIndicator()) {

@@ -170,7 +170,7 @@
             [matAutocomplete]="cuisineAuto"
             placeholder="Wpisz lub wybierz kuchnię"
         />
-        <mat-autocomplete 
+        <mat-autocomplete
             #cuisineAuto="matAutocomplete"
             (optionSelected)="onCuisineSelected($event.option.value)"
         >
@@ -222,6 +222,13 @@
             Termorobot (Thermomix/Lidlomix)
         </mat-slide-toggle>
         <p class="toggle-hint">Zaznacz, jeśli przepis jest przeznaczony dla urządzeń typu Thermomix lub Lidlomix</p>
+    </div>
+
+    <div class="grill-toggle">
+        <mat-slide-toggle [formControl]="isGrillControl">
+            Grill
+        </mat-slide-toggle>
+        <p class="toggle-hint">Zaznacz, jeśli przepis jest przeznaczony na grilla/barbecue</p>
     </div>
 </div>
 

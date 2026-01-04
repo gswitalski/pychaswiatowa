@@ -66,6 +66,13 @@
             </mat-chip>
         }
 
+        @if (recipe().is_grill) {
+            <mat-chip class="grill-badge non-clickable">
+                <mat-icon matChipAvatar>outdoor_grill</mat-icon>
+                Grill
+            </mat-chip>
+        }
+
         @if (getCategoryName(recipe())) {
             <!-- Prywatny kontekst: kategoria jako link -->
             @if (!isPublic()) {

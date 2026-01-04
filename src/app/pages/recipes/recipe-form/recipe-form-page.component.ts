@@ -73,6 +73,7 @@ export interface RecipeFormViewModel {
     steps: FormArray<FormControl<string>>;
     servings: FormControl<number | null>;
     isTermorobot: FormControl<boolean>;
+    isGrill: FormControl<boolean>;
     prepTimeMinutes: FormControl<number | null>;
     totalTimeMinutes: FormControl<number | null>;
     dietType: FormControl<RecipeDietType | null>;
@@ -216,6 +217,11 @@ export class RecipeFormPageComponent implements OnInit {
         return this.form.controls.isTermorobot;
     }
 
+    /** Quick access to isGrill FormControl */
+    get isGrillControl(): FormControl<boolean> {
+        return this.form.controls.isGrill;
+    }
+
     /** Quick access to prepTimeMinutes FormControl */
     get prepTimeMinutesControl(): FormControl<number | null> {
         return this.form.controls.prepTimeMinutes;
@@ -283,6 +289,7 @@ export class RecipeFormPageComponent implements OnInit {
                 validators: [Validators.min(1), Validators.max(99), this.integerValidator()],
             }),
             isTermorobot: this.fb.control<boolean>(false, { nonNullable: true }),
+            isGrill: this.fb.control<boolean>(false, { nonNullable: true }),
             prepTimeMinutes: this.fb.control<number | null>(null, {
                 validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
             }),
@@ -453,6 +460,7 @@ export class RecipeFormPageComponent implements OnInit {
             visibility: recipe.visibility ?? 'PRIVATE',
             servings: recipe.servings ?? null,
             isTermorobot: recipe.is_termorobot ?? false,
+            isGrill: recipe.is_grill ?? false,
             prepTimeMinutes: recipe.prep_time_minutes ?? null,
             totalTimeMinutes: recipe.total_time_minutes ?? null,
             dietType: recipe.diet_type ?? null,
@@ -580,6 +588,7 @@ export class RecipeFormPageComponent implements OnInit {
             tags: formValue.tags,
             servings: servings,
             is_termorobot: formValue.isTermorobot,
+            is_grill: formValue.isGrill,
             prep_time_minutes: prepTimeMinutes,
             total_time_minutes: totalTimeMinutes,
             diet_type: formValue.dietType ?? null,
@@ -800,6 +809,7 @@ export class RecipeFormPageComponent implements OnInit {
                 description: formValue.description || null,
                 servings: formValue.servings ?? null,
                 is_termorobot: formValue.isTermorobot,
+                is_grill: formValue.isGrill,
                 category_name: categoryName,
                 ingredients,
                 steps,

@@ -31,6 +31,8 @@ export interface RecipeCardData {
     slug?: string;
     /** Czy przepis jest przeznaczony dla termorobota (Thermomix/Lidlomix) */
     isTermorobot?: boolean;
+    /** Czy przepis jest przeznaczony na grilla/barbecue */
+    isGrill?: boolean;
 }
 
 /**
@@ -131,7 +133,7 @@ export class RecipeCardComponent {
      * Computed: link do szczegółów przepisu w formacie kanonicznym :id-:slug
      * - private: /recipes/:id-:slug
      * - public: /explore/recipes/:id-:slug
-     * 
+     *
      * Jeśli slug nie jest dostępny w danych, generuje go z nazwy przepisu.
      * Fallback do legacy URL (:id) nie jest używany - zawsze generujemy slug.
      */

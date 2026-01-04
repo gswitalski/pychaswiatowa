@@ -1,0 +1,23 @@
+###
+# Test Recipe Grill Flag Bug Fix
+###
+
+@baseUrl = http://localhost:54321
+@anonKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+
+### 1. Sign in to get JWT token
+# @name signIn
+POST {{baseUrl}}/auth/v1/token?grant_type=password
+Content-Type: application/json
+apikey: {{anonKey}}
+
+{
+    "email": "test@pychaswiatowa.pl",
+    "password": "554G5rjnbdAanGR"
+}
+
+### 2. Get recipe by ID (should now include is_grill flag)
+GET {{baseUrl}}/functions/v1/recipes/1
+apikey: {{anonKey}}
+Authorization: Bearer {{signIn.response.body.access_token}}
+

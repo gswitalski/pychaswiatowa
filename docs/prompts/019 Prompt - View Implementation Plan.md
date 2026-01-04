@@ -19,18 +19,20 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
+### Zmienione
 
-### Zmienione widoki
+- **Formularz przepisu (Dodaj/Edytuj)** (`/recipes/new`, `/recipes/:id/edit`)
+    - **Zmiana**: dodana kontrolka **„Grill”** jako opcjonalny toggle/checkbox, domyślnie wyłączona.
 
+- **Szczegóły przepisu (uniwersalny widok)** (`/recipes/:id-:slug`, `/explore/recipes/:id-:slug`)
+    - **Zmiana**: jeśli flaga jest włączona, widoczny **badge/chip „Grill” z ikonką grilla** w metadanych.
 
-- **Formularz przepisu (Dodaj/Edytuj)**: dodano 3 pola opcjonalne w sekcji danych podstawowych:
-    - typ diety: Mięso / Wege / Vegan
-    - kuchnia: Polska / Azjatycka / Meksykańska / Bliskowschodnia
-    - stopień trudności: Łatwe / Średnie / Trudne
-  Zmiana: pola są wybierane z list kontrolowanych i można je wyczyścić (brak wartości).
+- **Lista przepisów (Moje przepisy)** (`/my-recipies` / `/my-recipes`)
+    - **Zmiana**: dodany filtr (chip) **„Grill”** oraz ikonka grilla na kartach przepisów, jeśli `is_grill=true`.
 
-- **Szczegóły przepisu**: dodano metadane (np. chipy/badge) prezentujące ustawione wartości pól klasyfikacyjnych.
-  Zmiana: brak „pustych” placeholderów — jeśli wartość nie jest ustawiona, nie jest pokazywana.
+- **Karta przepisu (`RecipeCardComponent`)**
+    - **Zmiana**: karta pokazuje **ikonkę grilla** (Material: `outdoor_grill`) z tooltipem **„Grill”** dla przepisów oznaczonych flagą.
+
 
 </views>
 
@@ -39,16 +41,25 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-### Nowe
-
-- **US-042 — Klasyfikacja przepisu (typ diety, kuchnia, trudność)**: dodano możliwość opcjonalnego ustawiania pól klasyfikacyjnych (listy kontrolowane) oraz ich wyświetlanie jako metadane w szczegółach przepisu.
-
 ### Zmienione
 
-- **US-003 — Dodawanie nowego przepisu**: formularz tworzenia rozszerzony o pola opcjonalne: typ diety, kuchnia (lista kontrolowana), stopień trudności.
-- **US-004 — Przeglądanie szczegółów przepisu**: szczegóły przepisu rozszerzone o wyświetlanie ustawionych wartości pól klasyfikacyjnych jako metadane; brak wartości nie jest wyświetlany.
-- **US-005 — Edycja istniejącego przepisu**: edycja rozszerzona o możliwość ustawiania i czyszczenia pól: typ diety, kuchnia, stopień trudności.
-ja).
+- **US-003 – Dodawanie nowego przepisu**
+    - **Zmiana**: formularz tworzenia zawiera opcjonalną flagę **„Grill”** (checkbox/toggle), domyślnie wyłączoną.
+
+- **US-004 – Przeglądanie szczegółów przepisu**
+    - **Zmiana**: jeśli flaga „Grill” jest włączona, w szczegółach widoczna jest metadana z ikonką grilla oraz etykietą **„Grill”** (np. chip/badge).
+
+- **US-005 – Edycja istniejącego przepisu**
+    - **Zmiana**: możliwość włączenia/wyłączenia flagi **„Grill”** oraz odtwarzanie stanu po ponownym wejściu w edycję.
+
+- **US-007 – Przeglądanie listy wszystkich przepisów**
+    - **Zmiana**: dodany filtr listy po fladze **„Grill”** (tak/nie) obok istniejących filtrów.
+
+### Nowe
+
+- **US-043 – Oznaczenie przepisu jako "Grill" i jego widoczna identyfikacja**
+    - **Opis**: użytkownik może oznaczyć przepis jako „Grill” i widzi to oznaczenie na kartach/listach (ikonka grilla z tooltipem „Grill”) oraz w szczegółach (ikonka + etykieta „Grill”).
+    - **Kryteria (skrót)**: toggle/checkbox w formularzu, domyślnie wyłączone, trwały zapis, ikonka na kartach/listach, metadana w szczegółach, możliwość wyłączenia.
 
 </user_stories>
 

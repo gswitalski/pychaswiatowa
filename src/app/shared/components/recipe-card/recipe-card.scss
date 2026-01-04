@@ -101,6 +101,26 @@
             }
         }
     }
+
+    .grill-indicator {
+        background-color: var(--mat-sys-surface);
+        opacity: 0.95;
+        padding: 6px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        width: 32px;
+        height: 32px;
+
+        mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+            color: var(--mat-sys-on-surface);
+        }
+    }
 }
 
 .visibility-indicator {

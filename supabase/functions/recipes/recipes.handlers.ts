@@ -818,6 +818,7 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
             diet_type: validatedData.diet_type,
             cuisine: validatedData.cuisine,
             difficulty: validatedData.difficulty,
+            is_grill: validatedData.is_grill,
         };
 
         // Call the service to create the recipe
@@ -911,6 +912,7 @@ export async function handleUpdateRecipe(
             diet_type: validatedData.diet_type,
             cuisine: validatedData.cuisine,
             difficulty: validatedData.difficulty,
+            is_grill: validatedData.is_grill,
         };
 
         // Call the service to update the recipe

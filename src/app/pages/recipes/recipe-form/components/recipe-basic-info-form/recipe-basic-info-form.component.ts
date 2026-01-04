@@ -43,6 +43,7 @@ export class RecipeBasicInfoFormComponent implements OnInit {
     @Input({ required: true }) descriptionControl!: FormControl<string>;
     @Input({ required: true }) servingsControl!: FormControl<number | null>;
     @Input({ required: true }) isTermorobotControl!: FormControl<boolean>;
+    @Input({ required: true }) isGrillControl!: FormControl<boolean>;
     @Input({ required: true }) prepTimeMinutesControl!: FormControl<number | null>;
     @Input({ required: true }) totalTimeMinutesControl!: FormControl<number | null>;
     @Input({ required: true }) dietTypeControl!: FormControl<RecipeDietType | null>;
@@ -82,7 +83,7 @@ export class RecipeBasicInfoFormComponent implements OnInit {
      */
     private filterCuisineOptions(searchText: string): void {
         const lowerSearch = searchText.toLowerCase().trim();
-        
+
         if (!lowerSearch) {
             // Jeśli pole puste, pokaż wszystkie opcje
             this.filteredCuisineOptions.set(this.cuisineOptions);

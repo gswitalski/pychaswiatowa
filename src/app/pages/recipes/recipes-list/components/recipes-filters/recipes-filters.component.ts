@@ -62,6 +62,7 @@ export class RecipesFiltersComponent implements OnInit {
     private readonly _selectedTags = signal<string[]>([]);
     private readonly _sortOption = signal<SortOption>('created_at_desc');
     private readonly _termorobot = signal<boolean | null>(null);
+    private readonly _grill = signal<boolean | null>(null);
 
     /** Input dla nowego tagu */
     readonly tagInput = signal<string>('');
@@ -107,6 +108,10 @@ export class RecipesFiltersComponent implements OnInit {
         return this._termorobot();
     }
 
+    get grill(): boolean | null {
+        return this._grill();
+    }
+
     constructor() {
         // Inicjalizacja stanu z initialFilters
         effect(() => {
@@ -118,6 +123,7 @@ export class RecipesFiltersComponent implements OnInit {
                 `${filters.sortBy}_${filters.sortDirection}` as SortOption
             );
             this._termorobot.set(filters.termorobot);
+            this._grill.set(filters.grill);
         }, { allowSignalWrites: true });
     }
 
@@ -173,6 +179,11 @@ export class RecipesFiltersComponent implements OnInit {
         this.emitFilters();
     }
 
+    onGrillChange(value: boolean | null): void {
+        this._grill.set(value);
+        this.emitFilters();
+    }
+
     private emitFilters(): void {
         const sortOption = this._sortOption();
         // Znajdź ostatni underscore żeby poprawnie rozdzielić 'created_at_desc'
@@ -187,6 +198,7 @@ export class RecipesFiltersComponent implements OnInit {
             sortBy,
             sortDirection,
             termorobot: this._termorobot(),
+            grill: this._grill(),
         };
 
         this.filtersChange.emit(filters);

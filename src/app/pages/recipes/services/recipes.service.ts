@@ -33,6 +33,8 @@ export interface GetRecipesParams {
     view?: 'my_recipes';
     /** Filtr termorobot: true = tylko termorobot, false = bez termorobota, null/undefined = wszystkie */
     termorobot?: boolean | null;
+    /** Filtr grill: true = tylko grill, false = bez grilla, null/undefined = wszystkie */
+    grill?: boolean | null;
 }
 
 /**
@@ -55,6 +57,8 @@ export interface GetRecipesFeedParams {
     view?: 'my_recipes';
     /** Filtr termorobot: true = tylko termorobot, false = bez termorobota, null/undefined = wszystkie */
     termorobot?: boolean | null;
+    /** Filtr grill: true = tylko grill, false = bez grilla, null/undefined = wszystkie */
+    grill?: boolean | null;
 }
 
 @Injectable({
@@ -126,6 +130,10 @@ export class RecipesService {
             queryParams.append('filter[termorobot]', params.termorobot.toString());
         }
 
+        if (params.grill !== null && params.grill !== undefined) {
+            queryParams.append('filter[grill]', params.grill.toString());
+        }
+
         const queryString = queryParams.toString();
         const endpoint = queryString ? `recipes?${queryString}` : 'recipes';
 
@@ -192,6 +200,10 @@ export class RecipesService {
 
         if (params.termorobot !== null && params.termorobot !== undefined) {
             queryParams.append('filter[termorobot]', params.termorobot.toString());
+        }
+
+        if (params.grill !== null && params.grill !== undefined) {
+            queryParams.append('filter[grill]', params.grill.toString());
         }
 
         const queryString = queryParams.toString();
