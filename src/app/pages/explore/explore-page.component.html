@@ -3,71 +3,19 @@
     <header class="explore-header">
         <h1>Przeglądaj przepisy</h1>
         <p class="explore-description">
-
+            Odkryj publiczne przepisy innych użytkowników
         </p>
     </header>
 
-    <!-- Wyszukiwarka -->
+    <!-- Wyszukiwarka z wynikami -->
     <div class="search-section">
         <pych-public-recipes-search
-            [initialQuery]="currentQuery()"
+            context="explore"
+            [initialQuery]="initialQuery()"
             placeholder="Szukaj przepisów po nazwie, składnikach, tagach..."
-            (searchSubmit)="onSearchSubmit($event)"
+            [showResults]="true"
+            [debounceMs]="350"
+            [pageSize]="12"
         />
     </div>
-
-    <!-- Komunikat walidacji -->
-    @if (pageState().validationMessage) {
-        <div class="validation-message" role="alert">
-            <mat-icon>info</mat-icon>
-            <span>{{ pageState().validationMessage }}</span>
-        </div>
-    }
-
-    <!-- Stan błędu -->
-    @if (pageState().errorMessage && !pageState().isInitialLoading) {
-        <div class="error-state" role="alert">
-            <mat-icon class="error-icon">error_outline</mat-icon>
-            <h2>Coś poszło nie tak</h2>
-            <p>{{ pageState().errorMessage }}</p>
-            <button mat-raised-button color="primary" (click)="onRetry()">
-                <mat-icon>refresh</mat-icon>
-                Spróbuj ponownie
-            </button>
-        </div>
-    }
-
-    <!-- Skeleton loader - tylko przy pierwszym ładowaniu -->
-    @if (pageState().isInitialLoading) {
-        <div class="recipes-grid skeleton-grid" aria-busy="true" aria-label="Ładowanie przepisów">
-            @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track item) {
-                <div class="skeleton-card">
-                    <div class="skeleton-image"></div>
-                    <div class="skeleton-content">
-                        <div class="skeleton-title"></div>
-                        <div class="skeleton-category"></div>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-
-    <!-- Główna zawartość - siatka przepisów -->
-    @if (!pageState().isInitialLoading && !pageState().errorMessage) {
-        <div class="content-wrapper">
-            <pych-recipe-list
-                [recipes]="recipeListItems()"
-                [isLoading]="false"
-                [useLoadMore]="true"
-                [hasMore]="pageState().pageInfo.hasMore"
-                [isLoadingMore]="pageState().isLoadingMore"
-                [usePaginator]="false"
-                routeType="public"
-                [emptyStateTitle]="'Nie znaleziono przepisów'"
-                [emptyStateDescription]="emptyStateDescription()"
-                [emptyStateIcon]="'search_off'"
-                (loadMore)="onLoadMore()"
-            />
-        </div>
-    }
 </div>

@@ -43,7 +43,10 @@ interface LandingSectionConfig {
 
 /**
  * Główny komponent landing page.
- * Wyświetla hero, wyszukiwarkę i sekcje z kuratorowanymi listami publicznych przepisów.<p
+ * Wyświetla hero, wyszukiwarkę i sekcje z kuratorowanymi listami publicznych przepisów.
+ * 
+ * Na landing page wyszukiwarka nie pokazuje wyników bezpośrednio (showResults=false),
+ * ale nawiguje do /explore z parametrem q.
  */
 @Component({
     selector: 'pych-landing-page',
@@ -122,16 +125,11 @@ export class LandingPageComponent implements OnInit {
     }
 
     /**
-     * Obsługa submitu wyszukiwania
+     * Obsługa submitu wyszukiwania - nawigacja do /explore z parametrem q
      */
     onSearchSubmit(query: string): void {
-        console.log('🔍 Landing page - onSearchSubmit wywołany z query:', query);
-
         // Nawigacja do /explore z parametrem q (jeśli niepuste)
         const queryParams = query ? { q: query } : {};
-
-        console.log('📍 Nawigacja do /explore z parametrami:', queryParams);
-
         this.router.navigate(['/explore'], { queryParams });
     }
 
@@ -240,5 +238,3 @@ export class LandingPageComponent implements OnInit {
             .replace(/^-+|-+$/g, ''); // usuń myślniki z początku/końca
     }
 }
-
-

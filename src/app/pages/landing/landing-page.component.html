@@ -6,13 +6,15 @@
     <section class="search-section">
         <div class="container">
             <pych-public-recipes-search
+                context="landing"
                 placeholder="Czego dzisiaj poszukujesz?"
+                [showResults]="false"
                 (searchSubmit)="onSearchSubmit($event)"
             />
         </div>
     </section>
 
-    <!-- Recipes Sections -->
+    <!-- Recipes Sections (kuratorowane listy) -->
     <div class="container">
         <!-- Najnowsze -->
         <pych-public-recipes-section
@@ -42,6 +44,3 @@
         /> -->
     </div>
 </main>
-
-
-

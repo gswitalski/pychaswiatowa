@@ -23,10 +23,22 @@
 .search-button {
     margin-top: 4px; // Wyrównanie z polem input
     min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    mat-spinner {
+        display: inline-block;
+    }
 }
 
 // Responsywność - mobile
 @media (max-width: 599px) {
+    .public-search-container {
+        padding: 1rem;
+    }
+
     .search-form {
         flex-direction: column;
         gap: 0.5rem;

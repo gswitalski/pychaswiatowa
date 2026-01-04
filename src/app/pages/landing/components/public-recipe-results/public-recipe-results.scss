@@ -1,0 +1,188 @@
+// Siatka przepisów
+.recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    transition: opacity 0.3s ease;
+
+    &.loading-more {
+        opacity: 0.6;
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (min-width: 1025px) and (max-width: 1400px) {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (min-width: 1401px) {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+// Skeleton loader
+.skeleton-grid {
+    .skeleton-card {
+        background-color: var(--mat-sys-surface-container);
+        border-radius: 8px;
+        overflow: hidden;
+        animation: pulse 1.5s ease-in-out infinite;
+
+        .skeleton-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(
+                90deg,
+                var(--mat-sys-surface-container) 25%,
+                var(--mat-sys-surface-container-high) 50%,
+                var(--mat-sys-surface-container) 75%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        .skeleton-content {
+            padding: 1rem;
+
+            .skeleton-title {
+                height: 1.25rem;
+                background: linear-gradient(
+                    90deg,
+                    var(--mat-sys-surface-container) 25%,
+                    var(--mat-sys-surface-container-high) 50%,
+                    var(--mat-sys-surface-container) 75%
+                );
+                background-size: 200% 100%;
+                animation: shimmer 1.5s infinite;
+                border-radius: 4px;
+                margin-bottom: 0.75rem;
+                width: 80%;
+            }
+
+            .skeleton-category {
+                height: 1rem;
+                background: linear-gradient(
+                    90deg,
+                    var(--mat-sys-surface-container) 25%,
+                    var(--mat-sys-surface-container-high) 50%,
+                    var(--mat-sys-surface-container) 75%
+                );
+                background-size: 200% 100%;
+                animation: shimmer 1.5s infinite;
+                border-radius: 4px;
+                width: 50%;
+            }
+        }
+    }
+}
+
+// Stan błędu
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    gap: 1rem;
+
+    .error-icon {
+        font-size: 4rem;
+        width: 4rem;
+        height: 4rem;
+        color: var(--mat-sys-error);
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface);
+    }
+
+    p {
+        margin: 0;
+        color: var(--mat-sys-on-surface-variant);
+        max-width: 500px;
+    }
+
+    button {
+        margin-top: 0.5rem;
+    }
+}
+
+// Empty state
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    gap: 1rem;
+
+    .empty-icon {
+        font-size: 4rem;
+        width: 4rem;
+        height: 4rem;
+        color: var(--mat-sys-on-surface-variant);
+    }
+
+    p {
+        margin: 0;
+        font-size: 1.125rem;
+        color: var(--mat-sys-on-surface-variant);
+        max-width: 500px;
+    }
+}
+
+// Przycisk "Więcej"
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+
+    button {
+        min-width: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        mat-spinner {
+            display: inline-block;
+        }
+    }
+}
+
+// Animacje
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+

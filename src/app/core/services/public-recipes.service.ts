@@ -32,7 +32,7 @@ export interface GetPublicRecipesFeedParams {
     limit?: number;
     /** Format: 'column.direction' np. 'created_at.desc' */
     sort?: string;
-    /** Fraza do wyszukiwania (min. 2 znaki) */
+    /** Fraza do wyszukiwania (min. 3 znaki) */
     q?: string;
 }
 
@@ -129,8 +129,8 @@ export class PublicRecipesService {
             queryParams.append('sort', params.sort);
         }
 
-        // Tylko wysyłaj q jeśli ma co najmniej 2 znaki
-        if (params.q && params.q.length >= 2) {
+        // Tylko wysyłaj q jeśli ma co najmniej 3 znaki
+        if (params.q && params.q.length >= 3) {
             queryParams.append('q', params.q);
         }
 

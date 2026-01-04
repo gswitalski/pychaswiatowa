@@ -5,17 +5,30 @@ import {
     output,
     signal,
     effect,
+    inject,
+    OnInit,
+    OnDestroy,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+import { PublicRecipesFacade } from '../../../explore/services/public-recipes.facade';
+import { PublicRecipesSearchContext } from '../../../explore/models/public-recipes-search.model';
+import { PublicRecipeResultsComponent } from '../public-recipe-results/public-recipe-results';
 
 /**
- * Publiczny komponent wyszukiwania przepisów na landing page.
- * Zawiera pole tekstowe z walidacją (min. 2 znaki dla niepustego query).
- * Emituje zdarzenie searchSubmit z poprawnym zapytaniem.
+ * Publiczny komponent wyszukiwania przepisów.
+ * Reużywalny na Landing Page (/) i Explore (/explore).
+ * 
+ * Obsługuje:
+ * - Wyszukiwanie z debounce (300-400ms)
+ * - Tryb feed (pusta fraza) vs search (≥3 znaki)
+ * - Renderowanie wyników z paginacją cursor-based
+ * - Wskazówki dla krótkiej frazy (1-2 znaki)
  */
 @Component({
     selector: 'pych-public-recipes-search',
@@ -26,76 +39,137 @@ import { MatIconModule } from '@angular/material/icon';
         MatInputModule,
         MatButtonModule,
         MatIconModule,
+        MatProgressSpinnerModule,
+        PublicRecipeResultsComponent,
     ],
+    providers: [PublicRecipesFacade],
     templateUrl: './public-recipes-search.html',
     styleUrl: './public-recipes-search.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PublicRecipesSearchComponent {
-    /** Placeholder dla pola wyszukiwania */
-    placeholder = input<string>('Wyszukaj przepis...');
+export class PublicRecipesSearchComponent implements OnInit {
+    private readonly facade = inject(PublicRecipesFacade);
+
+    // ==================== Inputs ====================
+
+    /** Kontekst wyszukiwania (wymagane) - determinuje zachowanie pustej frazy */
+    readonly context = input.required<PublicRecipesSearchContext>();
 
     /** Początkowe zapytanie (opcjonalne) */
-    initialQuery = input<string>('');
+    readonly initialQuery = input<string>('');
 
-    /** Emituje poprawne zapytanie wyszukiwania (min. 2 znaki) */
-    searchSubmit = output<string>();
+    /** Placeholder dla pola wyszukiwania */
+    readonly placeholder = input<string>('Szukaj przepisów...');
+
+    /** Czas debounce w ms (opcjonalne, domyślnie 350) */
+    readonly debounceMs = input<number>(350);
+
+    /** Rozmiar strony (opcjonalne, domyślnie 12) */
+    readonly pageSize = input<number>(12);
+
+    /** Czy pokazywać wyniki (false = tylko input, deleguje wyświetlanie wyników do rodzica) */
+    readonly showResults = input<boolean>(true);
+
+    // ==================== Outputs ====================
+
+    /** Emituje zapytanie po walidacji (dla trybu bez showResults) */
+    readonly searchSubmit = output<string>();
+
+    // ==================== FormControl ====================
 
     /** FormControl dla pola wyszukiwania */
-    queryControl = new FormControl<string>('', {
+    readonly queryControl = new FormControl<string>('', {
         nonNullable: true,
     });
 
-    /** Signal przechowujący błąd walidacji */
-    validationError = signal<string | null>(null);
+    // ==================== Exposed Facade State ====================
+
+    /** ViewModel z facade */
+    readonly vm = this.facade.vm;
+
+    /** Tryb wyszukiwania */
+    readonly mode = this.facade.mode;
+
+    /** Czy widoczna wskazówka krótkiej frazy */
+    readonly shortQueryHintVisible = this.facade.shortQueryHintVisible;
+
+    /** Lista przepisów */
+    readonly items = this.facade.items;
+
+    /** Informacje o paginacji */
+    readonly pageInfo = this.facade.pageInfo;
+
+    /** Loading states */
+    readonly loadingInitial = this.facade.loadingInitial;
+    readonly loadingMore = this.facade.loadingMore;
+
+    /** Błąd */
+    readonly errorMessage = this.facade.errorMessage;
 
     constructor() {
-        // Effect do ustawienia początkowej wartości z initialQuery
+        // Effect do synchronizacji initialQuery z FormControl
         effect(() => {
             const initial = this.initialQuery();
-            if (initial !== this.queryControl.value) {
+            if (initial && initial !== this.queryControl.value) {
                 this.queryControl.setValue(initial, { emitEvent: false });
             }
         });
     }
 
+    ngOnInit(): void {
+        // Inicjalizuj facade
+        this.facade.initialize(
+            this.context(),
+            this.debounceMs(),
+            this.pageSize(),
+            this.initialQuery()
+        );
+    }
+
+    // ==================== Event Handlers ====================
+
+    /**
+     * Obsługa zmiany wartości w polu input.
+     * Aktualizuje queryDraft w facade (uruchamia debounced processing).
+     */
+    onInputChange(): void {
+        const query = this.queryControl.value;
+        this.facade.updateQueryDraft(query);
+    }
+
     /**
      * Obsługa submitu wyszukiwania (Enter lub klik przycisku).
-     * Waliduje długość zapytania i emituje zdarzenie jeśli poprawne.
+     * Wymusza natychmiastowe przetworzenie (pomija debounce).
      */
     onSearchSubmit(): void {
         const query = this.queryControl.value.trim();
 
-        console.log('🔍 PublicRecipesSearch - onSearchSubmit wywołany, query:', query);
-
-        // Resetuj poprzedni błąd
-        this.validationError.set(null);
-
-        // Jeśli puste - emituj pusty string (umożliwia nawigację do /explore bez filtra)
-        if (query.length === 0) {
-            console.log('✅ Emituję pusty query');
-            this.searchSubmit.emit('');
+        // Walidacja: min. 3 znaki dla niepustego zapytania
+        if (query.length >= 1 && query.length < 3) {
+            // Nie robimy nic - wskazówka jest widoczna przez shortQueryHintVisible
             return;
         }
 
-        // Walidacja: min. 2 znaki dla niepustego zapytania
-        if (query.length === 1) {
-            console.log('❌ Query za krótki (1 znak)');
-            this.validationError.set('Wpisz co najmniej 2 znaki');
-            return;
-        }
+        // Wymusz natychmiastowe przetworzenie
+        this.facade.submitQueryImmediate(query);
 
-        // Emituj poprawne zapytanie
-        console.log('✅ Emituję query:', query);
-        this.searchSubmit.emit(query);
+        // Emituj dla trybu bez showResults (legacy support dla landing)
+        if (!this.showResults()) {
+            this.searchSubmit.emit(query);
+        }
     }
 
     /**
-     * Czyści błąd walidacji przy zmianie wartości pola
+     * Obsługa kliknięcia "Więcej".
      */
-    onInputChange(): void {
-        if (this.validationError()) {
-            this.validationError.set(null);
-        }
+    onLoadMore(): void {
+        this.facade.loadMore();
+    }
+
+    /**
+     * Obsługa ponowienia po błędzie.
+     */
+    onRetry(): void {
+        this.facade.retry();
     }
 }

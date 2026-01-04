@@ -19,19 +19,21 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-### Zmienione
+### Landing Page (`/`)
+- **Status**: zmieniony opis
+- **Co się zmieniło**:
+    - doprecyzowano, że pasek wyszukiwania publicznego to komponent **`pych-public-recipes-search`**,
+    - zdefiniowano zasady uruchamiania wyszukiwania: **min 3 znaki**, debounce ~300–400 ms,
+    - dla pustej frazy (po trim) landing nie wykonuje wyszukiwania (zachowuje się jak feed/sekcje kuratorowane),
+    - sortowanie wyników (gdy `q` jest poprawne) po **najlepszym dopasowaniu**.
 
-- **Formularz przepisu (Dodaj/Edytuj)** (`/recipes/new`, `/recipes/:id/edit`)
-    - **Zmiana**: dodana kontrolka **„Grill”** jako opcjonalny toggle/checkbox, domyślnie wyłączona.
-
-- **Szczegóły przepisu (uniwersalny widok)** (`/recipes/:id-:slug`, `/explore/recipes/:id-:slug`)
-    - **Zmiana**: jeśli flaga jest włączona, widoczny **badge/chip „Grill” z ikonką grilla** w metadanych.
-
-- **Lista przepisów (Moje przepisy)** (`/my-recipies` / `/my-recipes`)
-    - **Zmiana**: dodany filtr (chip) **„Grill”** oraz ikonka grilla na kartach przepisów, jeśli `is_grill=true`.
-
-- **Karta przepisu (`RecipeCardComponent`)**
-    - **Zmiana**: karta pokazuje **ikonkę grilla** (Material: `outdoor_grill`) z tooltipem **„Grill”** dla przepisów oznaczonych flagą.
+### Publiczny katalog przepisów (Explore) (`/explore`)
+- **Status**: zmieniony opis
+- **Co się zmieniło**:
+    - doprecyzowano: **min 3 znaki**, **AND**, tag exact/prefix,
+    - dla niepustej frazy: sortowanie domyślne po **relevance (3/2/1)**,
+    - dla pustej frazy: widok działa jak feed (np. `created_at.desc`),
+    - dodano wymóg etykiety na kartach: **„Dopasowanie: …”** (jedno najlepsze źródło dopasowania).
 
 
 </views>
@@ -41,25 +43,20 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
-### Zmienione
+### US-018 — Wyszukiwanie publicznych przepisów (MVP: tylko tekst)
+- **Status**: zmieniona
+- **Co się zmieniło**:
+    - dodano minimalną długość frazy: **3 znaki** (po trim),
+    - zdefiniowano semantykę wielowyrazową jako **AND**,
+    - doprecyzowano dopasowanie tagów: **pełna nazwa** lub **prefix**,
+    - dodano domyślny ranking **najlepszego dopasowania** (nazwa → składniki → tagi; wagi 3/2/1),
+    - dla pustej frazy widok zachowuje się jak feed,
+    - UI pokazuje etykietę: „Dopasowanie: nazwa / składniki / tagi”.
 
-- **US-003 – Dodawanie nowego przepisu**
-    - **Zmiana**: formularz tworzenia zawiera opcjonalną flagę **„Grill”** (checkbox/toggle), domyślnie wyłączoną.
+### US-044 — Ranking wyników wyszukiwania publicznych przepisów (relevance)
+- **Status**: nowa
+- **Opis skrócony**: wyniki dla zapytań ≥ 3 znaki są sortowane domyślnie po relevance (wagi 3/2/1), z rozstrzyganiem remisów stabilnie (np. `created_at.desc`) oraz z etykietą źródła dopasowania w UI.
 
-- **US-004 – Przeglądanie szczegółów przepisu**
-    - **Zmiana**: jeśli flaga „Grill” jest włączona, w szczegółach widoczna jest metadana z ikonką grilla oraz etykietą **„Grill”** (np. chip/badge).
-
-- **US-005 – Edycja istniejącego przepisu**
-    - **Zmiana**: możliwość włączenia/wyłączenia flagi **„Grill”** oraz odtwarzanie stanu po ponownym wejściu w edycję.
-
-- **US-007 – Przeglądanie listy wszystkich przepisów**
-    - **Zmiana**: dodany filtr listy po fladze **„Grill”** (tak/nie) obok istniejących filtrów.
-
-### Nowe
-
-- **US-043 – Oznaczenie przepisu jako "Grill" i jego widoczna identyfikacja**
-    - **Opis**: użytkownik może oznaczyć przepis jako „Grill” i widzi to oznaczenie na kartach/listach (ikonka grilla z tooltipem „Grill”) oraz w szczegółach (ikonka + etykieta „Grill”).
-    - **Kryteria (skrót)**: toggle/checkbox w formularzu, domyślnie wyłączone, trwały zapis, ikonka na kartach/listach, metadana w szczegółach, możliwość wyłączenia.
 
 </user_stories>
 
