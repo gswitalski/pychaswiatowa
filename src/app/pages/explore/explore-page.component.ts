@@ -288,6 +288,8 @@ export class ExplorePageComponent {
             categoryName: dto.category?.name ?? null,
             slug: this.slugify(dto.name),
             isTermorobot: dto.is_termorobot ?? false,
+            // mapowanie flagi grilla (API zwraca is_grill)
+            isGrill: dto.is_grill ?? false,
         };
     }
 

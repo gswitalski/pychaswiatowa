@@ -11,7 +11,8 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-w formularzu dodaania i edycji przepisu pole "Kuchnia" ma bardzo mało opcji
+na stronie http://localhost:4200/explore
+karta przepisu nie pokazuje ikonki grilla gdy przepis ma is_grill=true
 
 
 
@@ -19,7 +20,9 @@ w formularzu dodaania i edycji przepisu pole "Kuchnia" ma bardzo mało opcji
 
 <oczekiwane_zachowanie>
 
-usupełnij o najcześciej używane kuchnie śiata a samą kontrolkę zrób tak aby można było wpisywać która się automatycznie uzupełnia bez konieczności rozwijania listy (rozwijanie ma zostać)
+karta przepisu pokazuje ikonkę grilla gdy przepis ma is_grill=true
+tak jak to jset prawidlowo na stronie
+http://localhost:4200/my-recipies
 
 </oczekiwane_zachowanie>
 
