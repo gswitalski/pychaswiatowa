@@ -35,12 +35,9 @@
     }
 }
 
-// Sekcja wyszukiwarki
+// Sekcja wyszukiwarki - pełna szerokość (kontener formularza jest wewnątrz komponentu)
 .search-section {
-    margin-bottom: 2rem;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
 }
 
 // Komunikat walidacji

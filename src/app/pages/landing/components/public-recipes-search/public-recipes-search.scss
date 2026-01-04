@@ -1,8 +1,14 @@
-.public-search-container {
+// Główny wrapper - pełna szerokość
+.public-search-wrapper {
+    width: 100%;
+}
+
+// Kontener formularza wyszukiwania - ograniczona szerokość
+.search-form-container {
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 0 1rem;
 }
 
 .search-form {
@@ -35,8 +41,8 @@
 
 // Responsywność - mobile
 @media (max-width: 599px) {
-    .public-search-container {
-        padding: 1rem;
+    .search-form-container {
+        padding: 0 1rem;
     }
 
     .search-form {

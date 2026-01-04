@@ -1,42 +1,44 @@
-<div class="public-search-container">
-    <!-- Search Form -->
-    <form class="search-form" (ngSubmit)="onSearchSubmit(); $event.preventDefault()">
-        <mat-form-field appearance="outline" class="search-field">
-            <mat-label>{{ placeholder() }}</mat-label>
-            <input
-                matInput
-                [formControl]="queryControl"
-                (input)="onInputChange()"
-                (keydown.enter)="onSearchSubmit(); $event.preventDefault()"
-                type="text"
-                autocomplete="off"
-                aria-label="Pole wyszukiwania przepisów"
-            />
-            <mat-icon matPrefix>search</mat-icon>
-            
-            @if (shortQueryHintVisible()) {
-                <mat-hint>Wpisz min. 3 znaki, aby wyszukać</mat-hint>
-            }
-        </mat-form-field>
+<div class="public-search-wrapper">
+    <!-- Search Form Container (limited width) -->
+    <div class="search-form-container">
+        <form class="search-form" (ngSubmit)="onSearchSubmit(); $event.preventDefault()">
+            <mat-form-field appearance="outline" class="search-field">
+                <mat-label>{{ placeholder() }}</mat-label>
+                <input
+                    matInput
+                    [formControl]="queryControl"
+                    (input)="onInputChange()"
+                    (keydown.enter)="onSearchSubmit(); $event.preventDefault()"
+                    type="text"
+                    autocomplete="off"
+                    aria-label="Pole wyszukiwania przepisów"
+                />
+                <mat-icon matPrefix>search</mat-icon>
+                
+                @if (shortQueryHintVisible()) {
+                    <mat-hint>Wpisz min. 3 znaki, aby wyszukać</mat-hint>
+                }
+            </mat-form-field>
 
-        <button
-            mat-raised-button
-            color="primary"
-            type="button"
-            class="search-button"
-            (click)="onSearchSubmit()"
-            [disabled]="loadingInitial()"
-            aria-label="Szukaj przepisów"
-        >
-            @if (loadingInitial() && !showResults()) {
-                <mat-spinner diameter="20"></mat-spinner>
-            } @else {
-                Szukaj
-            }
-        </button>
-    </form>
+            <button
+                mat-raised-button
+                color="primary"
+                type="button"
+                class="search-button"
+                (click)="onSearchSubmit()"
+                [disabled]="loadingInitial()"
+                aria-label="Szukaj przepisów"
+            >
+                @if (loadingInitial() && !showResults()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                } @else {
+                    Szukaj
+                }
+            </button>
+        </form>
+    </div>
 
-    <!-- Results Section (only if showResults is true) -->
+    <!-- Results Section (full width, only if showResults is true) -->
     @if (showResults()) {
         <pych-public-recipe-results
             [items]="items()"
