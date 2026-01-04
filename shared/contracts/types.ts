@@ -164,6 +164,23 @@ export type RecipeListItemDto = Pick<
 };
 
 /**
+ * Match source for search relevance.
+ * Indicates which field provided the best match.
+ */
+export type SearchMatchSource = 'name' | 'ingredients' | 'tags';
+
+/**
+ * Search metadata for relevance scoring.
+ * Included in recipe list items when search query is provided.
+ */
+export interface RecipeSearchMeta {
+    /** Relevance score (higher = better match) */
+    relevance_score: number;
+    /** Field that provided the best match */
+    match: SearchMatchSource;
+}
+
+/**
  * DTO for a public recipe list item.
  * Used for public recipes (supports optional authentication).
  * When user is authenticated, includes information about collections.
@@ -191,6 +208,8 @@ export interface PublicRecipeListItemDto {
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    /** Search relevance metadata. Present when q parameter is provided and valid, null otherwise. */
+    search: RecipeSearchMeta | null;
 }
 
 /**

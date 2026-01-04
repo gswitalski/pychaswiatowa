@@ -38,15 +38,15 @@ const GetPublicRecipesQuerySchema = z.object({
         }
         const [field, direction] = parts;
 
-        if (!['created_at', 'name'].includes(field)) {
-            throw new Error('Sort field must be one of: created_at, name');
+        if (!['created_at', 'name', 'relevance'].includes(field)) {
+            throw new Error('Sort field must be one of: created_at, name, relevance');
         }
         if (!['asc', 'desc'].includes(direction)) {
             throw new Error('Sort direction must be one of: asc, desc');
         }
 
         return {
-            field: field as 'created_at' | 'name',
+            field: field as 'created_at' | 'name' | 'relevance',
             direction: direction as 'asc' | 'desc',
         };
     }),
@@ -54,8 +54,11 @@ const GetPublicRecipesQuerySchema = z.object({
         if (val === undefined) return undefined;
         const trimmed = val.trim();
         if (trimmed.length === 0) return undefined;
-        if (trimmed.length < 2) {
-            throw new Error('Search query must be at least 2 characters');
+        if (trimmed.length < 3) {
+            throw new Error('Search query must be at least 3 characters');
+        }
+        if (trimmed.length > 150) {
+            throw new Error('Search query cannot exceed 150 characters');
         }
         return trimmed;
     }),
@@ -141,15 +144,15 @@ const GetPublicRecipesFeedQuerySchema = z.object({
         }
         const [field, direction] = parts;
 
-        if (!['created_at', 'name'].includes(field)) {
-            throw new Error('Sort field must be one of: created_at, name');
+        if (!['created_at', 'name', 'relevance'].includes(field)) {
+            throw new Error('Sort field must be one of: created_at, name, relevance');
         }
         if (!['asc', 'desc'].includes(direction)) {
             throw new Error('Sort direction must be one of: asc, desc');
         }
 
         return {
-            field: field as 'created_at' | 'name',
+            field: field as 'created_at' | 'name' | 'relevance',
             direction: direction as 'asc' | 'desc',
         };
     }),
@@ -157,8 +160,11 @@ const GetPublicRecipesFeedQuerySchema = z.object({
         if (val === undefined) return undefined;
         const trimmed = val.trim();
         if (trimmed.length === 0) return undefined;
-        if (trimmed.length < 2) {
-            throw new Error('Search query must be at least 2 characters');
+        if (trimmed.length < 3) {
+            throw new Error('Search query must be at least 3 characters');
+        }
+        if (trimmed.length > 150) {
+            throw new Error('Search query cannot exceed 150 characters');
         }
         return trimmed;
     }),

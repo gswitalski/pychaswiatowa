@@ -88,6 +88,23 @@ export type RecipeCuisine =
 export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 /**
+ * Match source for search relevance.
+ * Indicates which field provided the best match.
+ */
+export type SearchMatchSource = 'name' | 'ingredients' | 'tags';
+
+/**
+ * Search metadata for relevance scoring.
+ * Included in recipe list items when search query is provided.
+ */
+export interface RecipeSearchMeta {
+    /** Relevance score (higher = better match) */
+    relevance_score: number;
+    /** Field that provided the best match */
+    match: SearchMatchSource;
+}
+
+/**
  * DTO for a public recipe list item.
  */
 export interface PublicRecipeListItemDto {
@@ -112,6 +129,9 @@ export interface PublicRecipeListItemDto {
     diet_type: RecipeDietType | null;
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
+    /** Search relevance metadata. Present when q parameter is provided and valid, null otherwise. */
+    search: RecipeSearchMeta | null;
 }
 
 /**
@@ -180,6 +200,7 @@ interface RecipeDetailsRow {
     category_id: number | null;
     category_name: string | null;
     tags: Array<{ id: number; name: string }> | null;
+    ingredients: RecipeContent | null;
     created_at: string;
     servings: number | null;
     is_termorobot: boolean;
@@ -225,13 +246,199 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, ingredients';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
 const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
+
+/** Relevance weights for different match sources */
+const RELEVANCE_WEIGHTS = {
+    name: 3,
+    ingredients: 2,
+    tags: 1,
+} as const;
+
+/** Maximum number of search tokens allowed (DoS protection) */
+const MAX_SEARCH_TOKENS = 10;
+
+/**
+ * Tokenizes a search query into individual words.
+ * Normalizes to lowercase and removes empty tokens.
+ * Limits number of tokens for DoS protection.
+ *
+ * @param query - The search query string
+ * @returns Array of normalized tokens
+ */
+function tokenizeSearchQuery(query: string): string[] {
+    const tokens = query
+        .toLowerCase()
+        .split(/\s+/)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+
+    // Limit tokens to prevent DoS
+    return tokens.slice(0, MAX_SEARCH_TOKENS);
+}
+
+/**
+ * Checks if text contains all search tokens (AND semantics).
+ *
+ * @param text - The text to search in (normalized to lowercase)
+ * @param tokens - Array of search tokens
+ * @returns True if all tokens are found in the text
+ */
+function textContainsAllTokens(text: string, tokens: string[]): boolean {
+    const lowerText = text.toLowerCase();
+    return tokens.every((token) => lowerText.includes(token));
+}
+
+/**
+ * Checks if any tag matches all search tokens.
+ * Supports exact match or prefix match for each token.
+ *
+ * @param tags - Array of tag names
+ * @param tokens - Array of search tokens
+ * @returns True if at least one tag matches (exact or prefix) all tokens
+ */
+function tagsMatchTokens(tags: string[], tokens: string[]): boolean {
+    if (tags.length === 0 || tokens.length === 0) {
+        return false;
+    }
+
+    const lowerTags = tags.map((t) => t.toLowerCase());
+
+    // Check if all tokens match at least one tag (exact or prefix)
+    return tokens.every((token) =>
+        lowerTags.some((tag) => tag === token || tag.startsWith(token))
+    );
+}
+
+/**
+ * Extracts text content from recipe ingredients JSONB.
+ *
+ * @param ingredients - Recipe ingredients in JSONB format
+ * @returns Concatenated text of all ingredient items
+ */
+function extractIngredientsText(ingredients: RecipeContent | null): string {
+    if (!ingredients || !Array.isArray(ingredients)) {
+        return '';
+    }
+
+    return ingredients
+        .filter((item) => item.type === 'item')
+        .map((item) => item.content)
+        .join(' ');
+}
+
+/**
+ * Result of relevance calculation for a recipe.
+ */
+interface RelevanceResult {
+    /** Total relevance score */
+    score: number;
+    /** Primary match source (highest weight) */
+    match: SearchMatchSource;
+    /** Whether the recipe matches all search tokens (AND semantics) */
+    matches: boolean;
+}
+
+/**
+ * Calculates relevance score for a recipe based on search tokens.
+ * Implements AND semantics: recipe must match ALL tokens in at least one field.
+ *
+ * Weights:
+ * - name: 3
+ * - ingredients: 2
+ * - tags: 1
+ *
+ * @param recipe - The recipe to score
+ * @param tokens - Search tokens (normalized)
+ * @returns Relevance result with score, match source, and match status
+ */
+function calculateRelevance(
+    recipe: RecipeDetailsRow,
+    tokens: string[]
+): RelevanceResult {
+    if (tokens.length === 0) {
+        return { score: 0, match: 'name', matches: true };
+    }
+
+    let totalScore = 0;
+    let bestMatch: SearchMatchSource = 'name';
+    let bestWeight = 0;
+    let hasAnyMatch = false;
+
+    // Check name match (weight: 3)
+    const nameMatches = textContainsAllTokens(recipe.name, tokens);
+    if (nameMatches) {
+        totalScore += RELEVANCE_WEIGHTS.name;
+        hasAnyMatch = true;
+        if (RELEVANCE_WEIGHTS.name > bestWeight) {
+            bestWeight = RELEVANCE_WEIGHTS.name;
+            bestMatch = 'name';
+        }
+    }
+
+    // Check ingredients match (weight: 2)
+    const ingredientsText = extractIngredientsText(recipe.ingredients);
+    const ingredientsMatch = textContainsAllTokens(ingredientsText, tokens);
+    if (ingredientsMatch) {
+        totalScore += RELEVANCE_WEIGHTS.ingredients;
+        hasAnyMatch = true;
+        if (RELEVANCE_WEIGHTS.ingredients > bestWeight) {
+            bestWeight = RELEVANCE_WEIGHTS.ingredients;
+            bestMatch = 'ingredients';
+        }
+    }
+
+    // Check tags match (weight: 1)
+    const tagNames = recipe.tags ? recipe.tags.map((t) => t.name) : [];
+    const tagsMatch = tagsMatchTokens(tagNames, tokens);
+    if (tagsMatch) {
+        totalScore += RELEVANCE_WEIGHTS.tags;
+        hasAnyMatch = true;
+        if (RELEVANCE_WEIGHTS.tags > bestWeight) {
+            bestWeight = RELEVANCE_WEIGHTS.tags;
+            bestMatch = 'tags';
+        }
+    }
+
+    return {
+        score: totalScore,
+        match: bestMatch,
+        matches: hasAnyMatch,
+    };
+}
+
+/**
+ * Compares two recipes for sorting by relevance (descending), then by created_at (descending), then by id (descending).
+ *
+ * @param a - First recipe with relevance data
+ * @param b - Second recipe with relevance data
+ * @returns Comparison result for sort
+ */
+function compareByRelevance(
+    a: { relevance: RelevanceResult; recipe: RecipeDetailsRow },
+    b: { relevance: RelevanceResult; recipe: RecipeDetailsRow }
+): number {
+    // Primary: relevance score descending
+    if (b.relevance.score !== a.relevance.score) {
+        return b.relevance.score - a.relevance.score;
+    }
+
+    // Secondary: created_at descending
+    const aDate = new Date(a.recipe.created_at).getTime();
+    const bDate = new Date(b.recipe.created_at).getTime();
+    if (bDate !== aDate) {
+        return bDate - aDate;
+    }
+
+    // Tertiary: id descending (stable tie-breaker)
+    return b.recipe.id - a.recipe.id;
+}
 
 /**
  * Checks which recipes from the given list are in the authenticated user's plan.
@@ -299,6 +506,11 @@ async function getRecipeIdsInPlan(
  * Supports optional authentication - when user is authenticated, includes collection information
  * and returns user's own recipes regardless of visibility.
  *
+ * Search behavior:
+ * - When q is provided: uses AND semantics (all tokens must match in at least one field)
+ * - Relevance scoring: name=3, ingredients=2, tags=1
+ * - Default sort with q: relevance.desc with created_at.desc and id.desc tie-breakers
+ *
  * Security:
  * - For anonymous users: filters for visibility='PUBLIC' and deleted_at IS NULL
  * - For authenticated users: filters for (visibility='PUBLIC' OR user_id=userId) and deleted_at IS NULL
@@ -317,22 +529,28 @@ export async function getPublicRecipes(
     data: PublicRecipeListItemDto[];
     pagination: PaginationDetails;
 }> {
+    const hasSearch = !!query.q;
+    const tokens = query.q ? tokenizeSearchQuery(query.q) : [];
+
+    // Determine effective sort: when searching, default to relevance
+    const effectiveSortField = hasSearch && query.sortField === 'created_at' ? 'relevance' : query.sortField;
+    const useRelevanceSort = effectiveSortField === 'relevance';
+
     logger.info('Fetching public recipes', {
         page: query.page,
         limit: query.limit,
-        sort: `${query.sortField}.${query.sortDirection}`,
-        hasSearch: !!query.q,
+        sort: `${effectiveSortField}.${query.sortDirection}`,
+        hasSearch,
+        tokenCount: tokens.length,
+        useRelevanceSort,
         isAuthenticated: userId !== null,
         userId: userId ?? 'anonymous',
     });
 
-    // Calculate offset for pagination
-    const offset = (query.page - 1) * query.limit;
-
-    // Build base query
+    // Build base query - when searching with relevance, we need to fetch all matching and filter in app
     let dbQuery = client
         .from('recipe_details')
-        .select(RECIPE_SELECT_COLUMNS, { count: 'exact' })
+        .select(RECIPE_SELECT_COLUMNS, { count: hasSearch ? 'estimated' : 'exact' })
         .is('deleted_at', null);
 
     // Apply visibility filter based on authentication status
@@ -349,13 +567,6 @@ export async function getPublicRecipes(
         logger.info('Applied anonymous user filter', {
             filter: 'visibility=PUBLIC',
         });
-    }
-
-    // Apply search filter if provided
-    if (query.q) {
-        // MVP: Search by name using ILIKE
-        // TODO: Implement full-text search with search_vector for better performance
-        dbQuery = dbQuery.ilike('name', `%${query.q}%`);
     }
 
     // Apply termorobot filter if provided
@@ -383,12 +594,21 @@ export async function getPublicRecipes(
         dbQuery = dbQuery.eq('is_grill', query.grill);
     }
 
-    // Apply sorting
-    const ascending = query.sortDirection === 'asc';
-    dbQuery = dbQuery.order(query.sortField, { ascending });
+    // For search queries: fetch all results to filter and sort by relevance in app
+    // For non-search queries: use DB-level pagination
+    if (hasSearch) {
+        // Fetch more records to filter in app - use a reasonable limit
+        // We'll apply pagination after filtering
+        dbQuery = dbQuery.order('created_at', { ascending: false }).limit(1000);
+    } else {
+        // No search - use DB-level sorting and pagination
+        const ascending = query.sortDirection === 'asc';
+        const sortField = query.sortField === 'relevance' ? 'created_at' : query.sortField;
+        dbQuery = dbQuery.order(sortField, { ascending });
 
-    // Apply pagination
-    dbQuery = dbQuery.range(offset, offset + query.limit - 1);
+        const offset = (query.page - 1) * query.limit;
+        dbQuery = dbQuery.range(offset, offset + query.limit - 1);
+    }
 
     // Execute query
     const { data, error, count } = await dbQuery;
@@ -402,7 +622,7 @@ export async function getPublicRecipes(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch public recipes');
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
         logger.info('No public recipes found - returning empty array');
         return {
             data: [],
@@ -414,7 +634,133 @@ export async function getPublicRecipes(
         };
     }
 
-    const recipeRows = data as RecipeDetailsRow[];
+    let recipeRows = data as RecipeDetailsRow[];
+
+    // For search queries: apply relevance filtering and sorting
+    let relevanceMap = new Map<number, RelevanceResult>();
+
+    if (hasSearch && tokens.length > 0) {
+        // Calculate relevance for each recipe
+        const recipesWithRelevance = recipeRows.map((recipe) => ({
+            recipe,
+            relevance: calculateRelevance(recipe, tokens),
+        }));
+
+        // Filter to only recipes that match ALL tokens (AND semantics)
+        const matchingRecipes = recipesWithRelevance.filter((r) => r.relevance.matches);
+
+        logger.info('Filtered recipes by search relevance', {
+            beforeFilter: recipeRows.length,
+            afterFilter: matchingRecipes.length,
+            tokens,
+        });
+
+        // Sort by relevance (or by specified field)
+        if (useRelevanceSort) {
+            matchingRecipes.sort(compareByRelevance);
+        } else {
+            // Sort by specified field with tie-breakers
+            matchingRecipes.sort((a, b) => {
+                const ascending = query.sortDirection === 'asc';
+                const sortField = query.sortField === 'relevance' ? 'created_at' : query.sortField;
+
+                let comparison = 0;
+                if (sortField === 'name') {
+                    comparison = a.recipe.name.localeCompare(b.recipe.name);
+                } else {
+                    // created_at
+                    comparison = new Date(a.recipe.created_at).getTime() - new Date(b.recipe.created_at).getTime();
+                }
+
+                if (!ascending) {
+                    comparison = -comparison;
+                }
+
+                // Tie-breaker: id
+                if (comparison === 0) {
+                    comparison = b.recipe.id - a.recipe.id;
+                }
+
+                return comparison;
+            });
+        }
+
+        // Build relevance map for later use
+        matchingRecipes.forEach((r) => {
+            relevanceMap.set(r.recipe.id, r.relevance);
+        });
+
+        // Apply pagination
+        const offset = (query.page - 1) * query.limit;
+        const paginatedRecipes = matchingRecipes.slice(offset, offset + query.limit);
+
+        recipeRows = paginatedRecipes.map((r) => r.recipe);
+
+        // Update count for pagination
+        const totalItems = matchingRecipes.length;
+        const totalPages = Math.ceil(totalItems / query.limit);
+
+        logger.info('Search pagination applied', {
+            totalMatching: matchingRecipes.length,
+            page: query.page,
+            returning: recipeRows.length,
+        });
+
+        // Continue with remaining logic using updated recipeRows
+        // We need to return early here with proper pagination
+        return await buildRecipeListResponse(
+            client,
+            recipeRows,
+            relevanceMap,
+            hasSearch,
+            userId,
+            {
+                currentPage: query.page,
+                totalPages,
+                totalItems,
+            }
+        );
+    }
+
+    // Non-search path: use DB-level count
+    const totalItems = count ?? 0;
+    const totalPages = Math.ceil(totalItems / query.limit);
+
+    return await buildRecipeListResponse(
+        client,
+        recipeRows,
+        relevanceMap,
+        hasSearch,
+        userId,
+        {
+            currentPage: query.page,
+            totalPages,
+            totalItems,
+        }
+    );
+}
+
+/**
+ * Helper function to build recipe list response with profiles, collections, and plan data.
+ * Extracted to avoid code duplication between search and non-search paths.
+ */
+async function buildRecipeListResponse(
+    client: TypedSupabaseClient,
+    recipeRows: RecipeDetailsRow[],
+    relevanceMap: Map<number, RelevanceResult>,
+    hasSearch: boolean,
+    userId: string | null,
+    pagination: PaginationDetails
+): Promise<{
+    data: PublicRecipeListItemDto[];
+    pagination: PaginationDetails;
+}> {
+    if (recipeRows.length === 0) {
+        return {
+            data: [],
+            pagination,
+        };
+    }
 
     // Extract unique user IDs from recipes
     const uniqueUserIds = [...new Set(recipeRows.map((recipe) => recipe.user_id))];
@@ -511,6 +857,12 @@ export async function getPublicRecipes(
             throw new ApplicationError('INTERNAL_ERROR', `Author profile not found for user_id: ${recipe.user_id}`);
         }
 
+        // Get relevance data if available
+        const relevance = relevanceMap.get(recipe.id);
+        const searchMeta: RecipeSearchMeta | null = hasSearch && relevance
+            ? { relevance_score: relevance.score, match: relevance.match }
+            : null;
+
         return {
             id: recipe.id,
             name: recipe.name,
@@ -537,27 +889,20 @@ export async function getPublicRecipes(
             cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
             difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
             is_grill: Boolean(recipe.is_grill),
+            search: searchMeta,
         };
     });
 
-    // Calculate pagination
-    const totalItems = count ?? 0;
-    const totalPages = Math.ceil(totalItems / query.limit);
-
-    logger.info('Public recipes fetched successfully', {
+    logger.info('Public recipes list built successfully', {
         count: recipes.length,
-        totalItems,
-        totalPages,
-        currentPage: query.page,
+        totalItems: pagination.totalItems,
+        totalPages: pagination.totalPages,
+        currentPage: pagination.currentPage,
     });
 
     return {
         data: recipes,
-        pagination: {
-            currentPage: query.page,
-            totalPages,
-            totalItems,
-        },
+        pagination,
     };
 }
 
@@ -705,6 +1050,11 @@ export async function getPublicRecipeById(
  * Supports optional authentication - when user is authenticated, includes collection information
  * and returns user's own recipes regardless of visibility.
  *
+ * Search behavior:
+ * - When q is provided: uses AND semantics (all tokens must match in at least one field)
+ * - Relevance scoring: name=3, ingredients=2, tags=1
+ * - Default sort with q: relevance.desc with created_at.desc and id.desc tie-breakers
+ *
  * Security:
  * - For anonymous users: filters for visibility='PUBLIC' and deleted_at IS NULL
  * - For authenticated users: filters for (visibility='PUBLIC' OR user_id=userId) and deleted_at IS NULL
@@ -721,17 +1071,26 @@ export async function getPublicRecipesFeed(
     query: GetPublicRecipesFeedQuery,
     userId: string | null = null
 ): Promise<CursorPaginatedResponse<PublicRecipeListItemDto>> {
+    const hasSearch = !!query.q;
+    const tokens = query.q ? tokenizeSearchQuery(query.q) : [];
+
+    // Determine effective sort: when searching, default to relevance
+    const effectiveSortField = hasSearch && query.sortField === 'created_at' ? 'relevance' : query.sortField;
+    const useRelevanceSort = effectiveSortField === 'relevance';
+
     logger.info('Fetching public recipes feed', {
         limit: query.limit,
-        sort: `${query.sortField}.${query.sortDirection}`,
-        hasSearch: !!query.q,
+        sort: `${effectiveSortField}.${query.sortDirection}`,
+        hasSearch,
+        tokenCount: tokens.length,
+        useRelevanceSort,
         hasCursor: !!query.cursor,
         isAuthenticated: userId !== null,
         userId: userId ?? 'anonymous',
     });
 
     // Build filters hash for cursor validation (include userId to distinguish anonymous vs authenticated)
-    const sortString = `${query.sortField}.${query.sortDirection}`;
+    const sortString = `${effectiveSortField}.${query.sortDirection}`;
     const filtersHash = await buildFiltersHash({
         sort: sortString,
         q: query.q,
@@ -740,7 +1099,7 @@ export async function getPublicRecipesFeed(
         cuisine: query.cuisine,
         difficulty: query.difficulty,
         grill: query.grill,
-        userId: userId ?? undefined, // Include userId in hash to separate anonymous/authenticated cursors
+        userId: userId ?? undefined,
     });
 
     // Decode cursor and validate consistency
@@ -787,13 +1146,6 @@ export async function getPublicRecipesFeed(
         });
     }
 
-    // Apply search filter if provided
-    if (query.q) {
-        // MVP: Search by name using ILIKE
-        // TODO: Implement full-text search with search_vector for better performance
-        dbQuery = dbQuery.ilike('name', `%${query.q}%`);
-    }
-
     // Apply termorobot filter if provided
     if (query.termorobot !== undefined) {
         dbQuery = dbQuery.eq('is_termorobot', query.termorobot);
@@ -819,15 +1171,23 @@ export async function getPublicRecipesFeed(
         dbQuery = dbQuery.eq('is_grill', query.grill);
     }
 
-    // Apply stable sorting (includes id as tie-breaker)
-    const ascending = query.sortDirection === 'asc';
-    dbQuery = dbQuery
-        .order(query.sortField, { ascending })
-        .order('id', { ascending }); // Stable sort tie-breaker
+    // For search queries: fetch all results to filter and sort by relevance in app
+    // For non-search queries: use DB-level pagination
+    if (hasSearch) {
+        // Fetch more records to filter in app - use a reasonable limit
+        dbQuery = dbQuery.order('created_at', { ascending: false }).limit(1000);
+    } else {
+        // No search - use DB-level sorting and pagination
+        const ascending = query.sortDirection === 'asc';
+        const sortField = query.sortField === 'relevance' ? 'created_at' : query.sortField;
+        dbQuery = dbQuery
+            .order(sortField, { ascending })
+            .order('id', { ascending }); // Stable sort tie-breaker
 
-    // Fetch limit+1 to determine if there are more results
-    const fetchLimit = query.limit + 1;
-    dbQuery = dbQuery.range(offset, offset + fetchLimit - 1);
+        // Fetch limit+1 to determine if there are more results
+        const fetchLimit = query.limit + 1;
+        dbQuery = dbQuery.range(offset, offset + fetchLimit - 1);
+    }
 
     // Execute query
     const { data, error } = await dbQuery;
@@ -852,19 +1212,100 @@ export async function getPublicRecipesFeed(
         };
     }
 
-    const recipeRows = data as RecipeDetailsRow[];
+    let recipeRows = data as RecipeDetailsRow[];
+    let relevanceMap = new Map<number, RelevanceResult>();
+    let hasMore = false;
+    let recipesToReturn: RecipeDetailsRow[];
 
-    // Determine if there are more results
-    const hasMore = recipeRows.length > query.limit;
+    if (hasSearch && tokens.length > 0) {
+        // Calculate relevance for each recipe
+        const recipesWithRelevance = recipeRows.map((recipe) => ({
+            recipe,
+            relevance: calculateRelevance(recipe, tokens),
+        }));
 
-    // Trim to actual limit (remove the +1 item)
-    const recipesToReturn = hasMore ? recipeRows.slice(0, query.limit) : recipeRows;
+        // Filter to only recipes that match ALL tokens (AND semantics)
+        const matchingRecipes = recipesWithRelevance.filter((r) => r.relevance.matches);
 
-    logger.info('Recipes fetched from database', {
-        fetchedCount: recipeRows.length,
-        returningCount: recipesToReturn.length,
-        hasMore,
-    });
+        logger.info('Filtered recipes by search relevance', {
+            beforeFilter: recipeRows.length,
+            afterFilter: matchingRecipes.length,
+            tokens,
+        });
+
+        // Sort by relevance (or by specified field)
+        if (useRelevanceSort) {
+            matchingRecipes.sort(compareByRelevance);
+        } else {
+            // Sort by specified field with tie-breakers
+            matchingRecipes.sort((a, b) => {
+                const ascending = query.sortDirection === 'asc';
+                const sortField = query.sortField === 'relevance' ? 'created_at' : query.sortField;
+
+                let comparison = 0;
+                if (sortField === 'name') {
+                    comparison = a.recipe.name.localeCompare(b.recipe.name);
+                } else {
+                    // created_at
+                    comparison = new Date(a.recipe.created_at).getTime() - new Date(b.recipe.created_at).getTime();
+                }
+
+                if (!ascending) {
+                    comparison = -comparison;
+                }
+
+                // Tie-breaker: id
+                if (comparison === 0) {
+                    comparison = b.recipe.id - a.recipe.id;
+                }
+
+                return comparison;
+            });
+        }
+
+        // Build relevance map for later use
+        matchingRecipes.forEach((r) => {
+            relevanceMap.set(r.recipe.id, r.relevance);
+        });
+
+        // Apply cursor-based pagination
+        const allMatchingRecipes = matchingRecipes.map((r) => r.recipe);
+
+        // Determine if there are more results (fetch limit+1)
+        const startIndex = offset;
+        const endIndex = offset + query.limit + 1;
+        const paginatedSlice = allMatchingRecipes.slice(startIndex, endIndex);
+
+        hasMore = paginatedSlice.length > query.limit;
+        recipesToReturn = hasMore ? paginatedSlice.slice(0, query.limit) : paginatedSlice;
+
+        logger.info('Search cursor pagination applied', {
+            totalMatching: matchingRecipes.length,
+            offset,
+            returning: recipesToReturn.length,
+            hasMore,
+        });
+    } else {
+        // Non-search path: use DB-level pagination (already applied)
+        hasMore = recipeRows.length > query.limit;
+        recipesToReturn = hasMore ? recipeRows.slice(0, query.limit) : recipeRows;
+
+        logger.info('Recipes fetched from database', {
+            fetchedCount: recipeRows.length,
+            returningCount: recipesToReturn.length,
+            hasMore,
+        });
+    }
+
+    if (recipesToReturn.length === 0) {
+        return {
+            data: [],
+            pageInfo: {
+                hasMore: false,
+                nextCursor: null,
+            },
+        };
+    }
 
     // Extract unique user IDs from recipes
     const uniqueUserIds = [...new Set(recipesToReturn.map((recipe) => recipe.user_id))];
@@ -961,6 +1402,12 @@ export async function getPublicRecipesFeed(
             throw new ApplicationError('INTERNAL_ERROR', `Author profile not found for user_id: ${recipe.user_id}`);
         }
 
+        // Get relevance data if available
+        const relevance = relevanceMap.get(recipe.id);
+        const searchMeta: RecipeSearchMeta | null = hasSearch && relevance
+            ? { relevance_score: relevance.score, match: relevance.match }
+            : null;
+
         return {
             id: recipe.id,
             name: recipe.name,
@@ -987,6 +1434,7 @@ export async function getPublicRecipesFeed(
             cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
             difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
             is_grill: Boolean(recipe.is_grill),
+            search: searchMeta,
         };
     });
 

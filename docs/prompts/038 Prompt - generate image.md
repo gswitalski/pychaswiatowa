@@ -5,29 +5,30 @@ Here is the reference image to help you understand the dish
 Here is the recipe for the dish you need to photograph:
 <recipe>
 
-Tatar wołowy
+Szaszłyki z wątróbek w czerwonym winie
 4 porcje
 
-Klasyczny tatar wołowy, idealny na wyjątkowe okazje. Przygotuj go z wysokiej jakości mięsa i delektuj się jego smakiem z dodatkiem świeżych składników.
+Pyszne szaszłyki z wątróbek drobiowych, idealne na grilla. Połączenie wątróbki z wędzonym boczkiem i czerwonym winem sprawia, że danie nabiera wyjątkowego smaku.
 
-Przekąska
+Mięso
+Łatwe
+Danie główne
 Brak zdjęcia
 Składniki
-500 g polędwicy wołowej lub metki tatarskiej
-2 łyżki oleju rzepakowego
-4 łyżki zimnej przegotowanej wody
-2 łyżki brandy
-4 surowe żółtka
-2 małe czerwone cebule
-4 ogórki kiszone
-4 łyżeczki musztardy
-Sól, pieprz do smaku
+500 g wątróbek drobiowych
+60 ml czerwonego wina
+300 g wędzonego boczku
+2 łyżki oleju
+sól
+pieprz
 Kroki przygotowania
-Schłodzić mięso i drobno posiekać lub zmielić w maszynce.
-Wymieszać z olejem, wodą, brandy, musztardą, solą i pieprzem, dokładnie wyrabiając ręką.
-Dodać drobno pokrojoną cebulę i ogórki kiszone, wymieszać.
-Podzielić na 4 porcje, uformować kopczyki z wgłębieniem, wbić po jednym surowym żółtku.
-Serwować natychmiast z pieczywem i masłem, opcjonalnie udekorować kiełkami lub kaparami.
+Skrócić wątróbki czerwonym winem i odstawić na godzinę.
+Pokroić boczek w plasterki.
+Na szpadki nadziewać na przemian kilka kawałków wątróbki i boczku, smarować olejem, oprószyć solą i pieprzem.
+Grillować.
+Podawać z pieczywem i surówką z pora i ogórków kiszonych.
+
+
 </recipe>
 
 Requirements for the image you generate:

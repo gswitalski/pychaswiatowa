@@ -49,7 +49,7 @@ export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 export interface GetPublicRecipesQuery {
     page: number;
     limit: number;
-    sortField: 'created_at' | 'name';
+    sortField: 'created_at' | 'name' | 'relevance';
     sortDirection: 'asc' | 'desc';
     q?: string;
     termorobot?: boolean;
@@ -72,7 +72,7 @@ export interface GetPublicRecipeByIdParams {
 export interface GetPublicRecipesFeedQuery {
     cursor?: string;
     limit: number;
-    sortField: 'created_at' | 'name';
+    sortField: 'created_at' | 'name' | 'relevance';
     sortDirection: 'asc' | 'desc';
     q?: string;
     termorobot?: boolean;
@@ -80,4 +80,21 @@ export interface GetPublicRecipesFeedQuery {
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
     grill?: boolean;
+}
+
+/**
+ * Match source for search relevance.
+ * Indicates which field provided the best match.
+ */
+export type SearchMatchSource = 'name' | 'ingredients' | 'tags';
+
+/**
+ * Search metadata for relevance scoring.
+ * Included in recipe list items when search query is provided.
+ */
+export interface RecipeSearchMeta {
+    /** Relevance score (higher = better match) */
+    relevance_score: number;
+    /** Field that provided the best match */
+    match: SearchMatchSource;
 }

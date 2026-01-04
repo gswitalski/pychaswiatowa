@@ -12,43 +12,23 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-### Zmienione
-
-- **Public recipes – `GET /public/recipes`**
-    - **Zmiana**: dodane pole `is_grill` w obiekcie przepisu.
-    - **Zmiana**: dodany parametr `filter[grill]` (boolean) – API-ready.
-
-- **Public recipes – `GET /public/recipes/feed`**
-    - **Zmiana**: dodane pole `is_grill` w obiektach listy.
-    - **Zmiana**: dodany parametr `filter[grill]` (boolean) – API-ready.
-
-- **Public recipes – `GET /public/recipes/{id}`**
-    - **Zmiana**: dodane pole `is_grill` w odpowiedzi.
-
-- **Recipes – `GET /recipes`**
-    - **Zmiana**: dodane pole `is_grill` w obiektach listy.
-    - **Zmiana**: dodany parametr `filter[grill]` (boolean).
-
-- **Recipes – `GET /recipes/feed`**
-    - **Zmiana**: dodane pole `is_grill` w obiektach listy.
-    - **Zmiana**: dodany parametr `filter[grill]` (boolean).
-
-- **Recipes – `POST /recipes`**
-    - **Zmiana**: request wspiera `is_grill` (boolean), a response zwraca `is_grill`.
-
-- **Recipes – `POST /recipes/import`**
-    - **Zmiana**: response zwraca `is_grill` (domyślnie `false`).
-
-- **Recipes – `PUT /recipes/{id}`**
-    - **Zmiana**: request wspiera `is_grill` (boolean).
-
-- **AI – `POST /ai/recipes/image`**
-    - **Zmiana**: request payload wspiera przekazanie `is_grill` w obiekcie `recipe` (dla spójności kontraktu danych wejściowych).
-
-- **Walidacja**
-    - **Zmiana**: dodana reguła `recipes.is_grill`: optional boolean, default `false`.
 
 
+### `GET /public/recipes`
+- **Status**: zmieniony
+- **Co się zmieniło**:
+    - `q`: minimalna długość zmieniona z **2** na **3** znaki (po trim),
+    - doprecyzowano semantykę wielowyrazową jako **AND**,
+    - doprecyzowano dopasowanie tagów jako exact/prefix,
+    - doprecyzowano zachowanie sortowania: dla poprawnego `q` domyślnie **relevance** (wagi 3/2/1), dla pustego/krótkiego `q` — feed,
+    - dodano pole pomocnicze w odpowiedzi: `search` (np. `relevance_score`, `match`) do zasilenia etykiety UI „Dopasowanie: …”.
+
+### `GET /public/recipes/feed`
+- **Status**: zmieniony
+- **Co się zmieniło**:
+    - analogicznie jak w `GET /public/recipes`: `q` min **3**, AND, tag exact/prefix,
+    - domyślne sortowanie po relevance dla poprawnego `q` (wagi 3/2/1),
+    - dodano `search` w odpowiedzi dla UI.
 
 
 </api_changes_description>
