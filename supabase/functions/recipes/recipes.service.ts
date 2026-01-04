@@ -86,6 +86,7 @@ export interface RecipeListItemDto {
     diet_type: RecipeDietType | null;
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
 }
 
 /**
@@ -485,6 +486,7 @@ export async function getRecipes(
         diet_type: (recipe.diet_type as RecipeDietType) ?? null,
         cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
+        is_grill: Boolean(recipe.is_grill),
     }));
 
     return {
@@ -709,6 +711,7 @@ export async function getRecipesFeed(
         diet_type: (recipe.diet_type as RecipeDietType) ?? null,
         cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
+        is_grill: Boolean(recipe.is_grill),
     }));
 
     // Create next cursor if there are more results
@@ -952,6 +955,7 @@ function mapToRecipeDetailDto(data: any, inMyPlan: boolean): RecipeDetailDto {
         diet_type: (data.diet_type as RecipeDietType) ?? null,
         cuisine: (data.cuisine as RecipeCuisine) ?? null,
         difficulty: (data.difficulty as RecipeDifficulty) ?? null,
+        is_grill: Boolean(data.is_grill),
     };
 }
 

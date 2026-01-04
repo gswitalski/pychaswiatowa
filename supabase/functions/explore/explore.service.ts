@@ -54,6 +54,11 @@ export interface RecipeDetailDto {
     servings: number | null;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
+    is_termorobot: boolean;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
     created_at: string;
     updated_at: string;
     /** True if recipe is in authenticated user's plan (false for anonymous users) */
@@ -89,7 +94,7 @@ interface RecipeDetailFullRow {
  */
 const RECIPE_DETAIL_SELECT_COLUMNS =
     'id, user_id, name, description, image_path, visibility, category_id, category_name, ' +
-    'ingredients, steps, tags, servings, prep_time_minutes, total_time_minutes, created_at, updated_at, deleted_at';
+    'ingredients, steps, tags, servings, prep_time_minutes, total_time_minutes, is_termorobot, diet_type, cuisine, difficulty, is_grill, created_at, updated_at, deleted_at';
 
 /**
  * Checks which recipes from the given list are in the authenticated user's plan.
@@ -300,6 +305,11 @@ function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean): RecipeDetailD
         servings: recipe.servings ?? null,
         prep_time_minutes: recipe.prep_time_minutes ?? null,
         total_time_minutes: recipe.total_time_minutes ?? null,
+        is_termorobot: Boolean(recipe.is_termorobot),
+        diet_type: (recipe.diet_type as RecipeDietType) ?? null,
+        cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
+        difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
+        is_grill: Boolean(recipe.is_grill),
         created_at: recipe.created_at,
         updated_at: recipe.updated_at,
         in_my_plan: inMyPlan,

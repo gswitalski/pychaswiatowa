@@ -225,7 +225,7 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
 const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
@@ -536,6 +536,7 @@ export async function getPublicRecipes(
             diet_type: (recipe.diet_type as RecipeDietType) ?? null,
             cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
             difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
+            is_grill: Boolean(recipe.is_grill),
         };
     });
 
@@ -685,6 +686,7 @@ export async function getPublicRecipeById(
         diet_type: (recipe.diet_type as RecipeDietType) ?? null,
         cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
+        is_grill: Boolean(recipe.is_grill),
     };
 
     logger.info('Public recipe fetched successfully', {
@@ -984,6 +986,7 @@ export async function getPublicRecipesFeed(
             diet_type: (recipe.diet_type as RecipeDietType) ?? null,
             cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
             difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
+            is_grill: Boolean(recipe.is_grill),
         };
     });
 
