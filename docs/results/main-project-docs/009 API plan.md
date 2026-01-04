@@ -134,7 +134,9 @@ Public endpoints are available without authentication:
     -   `page` (optional, integer, default: 1): The page number for pagination.
     -   `limit` (optional, integer, default: 20): The number of items per page.
     -   `sort` (optional, string, default: `created_at.desc`): Sort order. e.g., `created_at.desc`, `name.asc`.
-    -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
+    -   `q` (optional, string): Text search query (min 3 characters, after trim). Searches across name, ingredients, and tags.
+        - Token semantics (MVP): multi-word queries are treated as **AND**.
+        - Tag matching (MVP): exact match or prefix match.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[grill]` (optional, boolean): Filter by the "Grill" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`. (API-ready; UI may not expose it in MVP.)
@@ -162,6 +164,10 @@ Public endpoints are available without authentication:
               "visibility": "PUBLIC",
               "is_owner": false,
               "in_my_plan": false,
+              "search": {
+                "relevance_score": 7,
+                "match": "name"
+              },
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
@@ -183,6 +189,7 @@ Public endpoints are available without authentication:
               "visibility": "PRIVATE",
               "is_owner": true,
               "in_my_plan": true,
+              "search": null,
               "category": { "id": 1, "name": "Dinner" },
               "tags": [],
               "author": { "id": "me-uuid-...", "username": "me" },
@@ -196,9 +203,14 @@ Public endpoints are available without authentication:
           }
         }
         ```
+-   **Sorting / relevance behavior (MVP)**:
+    - If `q` is provided and valid (min 3 chars), the default sort becomes **best match (relevance)**:
+        - priority / weights: `name` (3) > `ingredients` (2) > `tags` (1)
+        - ties are resolved with a stable secondary sort (recommended: `created_at.desc`)
+    - If `q` is empty/omitted (or shorter than 3 after trim), treat the request as a feed and use the default `sort` (by default `created_at.desc`).
 -   **Error Response**:
     -   **Code**: `400 Bad Request` (if `q` is provided and too short)
-    -   **Payload**: `{ "message": "Query must be at least 2 characters" }`
+    -   **Payload**: `{ "message": "Query must be at least 3 characters" }`
 
 ---
 
@@ -212,7 +224,9 @@ Public endpoints are available without authentication:
     -   `cursor` (optional, string): Opaque cursor returned by the previous response (`pageInfo.nextCursor`).
     -   `limit` (optional, integer, default: 12): The number of items to return per batch. (UI uses 12 as the default batch size.)
     -   `sort` (optional, string, default: `created_at.desc`): Sort order. Must be stable. e.g., `created_at.desc`, `name.asc`.
-    -   `q` (optional, string): Text search query (min 2 characters). Searches across name, ingredients, and tags.
+    -   `q` (optional, string): Text search query (min 3 characters, after trim). Searches across name, ingredients, and tags.
+        - Token semantics (MVP): multi-word queries are treated as **AND**.
+        - Tag matching (MVP): exact match or prefix match.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[grill]` (optional, boolean): Filter by the "Grill" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
     -   `filter[diet_type]` (optional, string): Filter by diet type: `MEAT` | `VEGETARIAN` | `VEGAN`. (API-ready; UI may not expose it in MVP.)
@@ -240,6 +254,10 @@ Public endpoints are available without authentication:
               "visibility": "PUBLIC",
               "is_owner": false,
               "in_my_plan": false,
+              "search": {
+                "relevance_score": 7,
+                "match": "name"
+              },
               "category": { "id": 2, "name": "Dessert" },
               "tags": ["sweet", "baking"],
               "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
@@ -261,6 +279,7 @@ Public endpoints are available without authentication:
               "visibility": "SHARED",
               "is_owner": true,
               "in_my_plan": true,
+              "search": null,
               "category": { "id": 2, "name": "Dessert" },
               "tags": [],
               "author": { "id": "me-uuid-...", "username": "me" },
@@ -273,9 +292,14 @@ Public endpoints are available without authentication:
           }
         }
         ```
+-   **Sorting / relevance behavior (MVP)**:
+    - If `q` is provided and valid (min 3 chars), the default sort becomes **best match (relevance)**:
+        - priority / weights: `name` (3) > `ingredients` (2) > `tags` (1)
+        - ties are resolved with a stable secondary sort (recommended: `created_at.desc`)
+    - If `q` is empty/omitted (or shorter than 3 after trim), treat the request as a feed and use the default `sort` (by default `created_at.desc`).
 -   **Error Response**:
     -   **Code**: `400 Bad Request` (invalid cursor, `q` too short)
-    -   **Payload**: `{ "message": "Query must be at least 2 characters" }`
+    -   **Payload**: `{ "message": "Query must be at least 3 characters" }`
 
 ---
 

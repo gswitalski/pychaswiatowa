@@ -12,11 +12,9 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-chcę aby przepisy miały dodatkowe pole typu boolean : grill
- chce aby na karcie przepisów pokazała si ikonka grilla jesli przepis jest na grila
- na widoku sczegółow przepisy twer niech się pokawi  ikonka grilla z napisem "grill"
-
-pole to ma też się pojawić w formularzu tworzenia i edycji przepisu
+chcę aby komponent do wyszukiwania przpeisów publicznych
+pych-public-recipes-search
+wyszukiwał nie tylko po nazwach al też po składnikach i tagach. kolejniosc zwracanych przepisów domyślnie ma być po nalepszym dopasowaniu (najpierw nazwy potem skłądniki a na końcu tagi)
 
 </nowa_funkcjonalnosc>
 

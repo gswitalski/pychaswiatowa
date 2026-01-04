@@ -24,8 +24,14 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Główny cel:** Powitanie użytkownika i przedstawienie aplikacji oraz natychmiastowe udostępnienie wartościowego contentu (publiczne przepisy) z możliwością wyszukiwania.
 - **Kluczowe informacje do wyświetlenia (gość):** Nazwa i logo aplikacji, krótkie hasło, pole wyszukiwania publicznych przepisów, sekcje z publicznymi przepisami (np. Najnowsze, Popularne, Sezonowe), przyciski "Zaloguj się" i "Zarejestruj się".
 - **Kluczowe informacje do wyświetlenia (zalogowany):** Te same sekcje contentowe + nawigacja zalogowanego użytkownika w Topbarze (profil + link "Moja Pycha" prowadzący do `/dashboard`). Brak przycisków "Zaloguj się" i "Zarejestruj się". **Sidebar na widokach publicznych nie jest wyświetlany.**
-- **Kluczowe komponenty widoku:** Główny nagłówek, sekcja "hero", publiczny pasek wyszukiwania, sekcje z `RecipeCardComponent`, CTA do logowania/rejestracji.
+- **Kluczowe komponenty widoku:** Główny nagłówek, sekcja "hero", publiczny pasek wyszukiwania (**`pych-public-recipes-search`**), sekcje z `RecipeCardComponent`, CTA do logowania/rejestracji.
 - **Względy UX, dostępności i bezpieczeństwa:** Prosty i czytelny układ, wyraźne wezwania do akcji. Treści wyłącznie dla przepisów publicznych. W trybie zalogowanego zachować spójność z App Shell i nie powielać CTA do logowania.
+    - **Zachowanie wyszukiwania (MVP):**
+        - wyszukiwanie uruchamia się od **3 znaków** (po trim) + debounce (ok. 300–400 ms),
+        - zapytania wielowyrazowe działają jako **AND**,
+        - tagi dopasowują się jako **pełna nazwa** lub **prefix**,
+        - domyślnie wyniki są sortowane po **najlepszym dopasowaniu** (relevance: nazwa > składniki > tagi; wagi 3/2/1),
+        - dla pustej frazy (po trim) landing nie wykonuje wyszukiwania — zachowuje się jak feed/sekcje kuratorowane.
 
 **2. Publiczny katalog przepisów (Explore)**
 - **Ścieżka:** `/explore`
@@ -34,6 +40,13 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `mat-form-field` (search), `RecipeCardComponent`, `mat-button` ("Więcej"), wskaźniki ładowania (Skeletons).
 - **Względy UX, dostępności i bezpieczeństwa:** Wyniki zawierają wyłącznie przepisy o widoczności `PUBLIC`. Obsługa stanu pustego ("Brak wyników"). W trybie zalogowanego: oznaczyć na kartach przepisy użytkownika jako "Twój przepis". Dla przepisu, którego autorem jest zalogowany użytkownik (`is_owner=true`), karta pokazuje dodatkową ikonkę widoczności (na podstawie pola `visibility`) z tooltipem: `Prywatny` / `Współdzielony` / `Publiczny`. Dla cudzych przepisów ikonka widoczności nie jest wyświetlana.
     - (Przyszłościowo / API-ready) Aplikacja może zostać rozszerzona o filtrowanie publicznych przepisów po metadanych (np. "Termorobot"), jednak w MVP pozostaje **wyłącznie wyszukiwanie tekstowe**.
+    - **Zachowanie wyszukiwania (MVP):**
+        - wyszukiwanie uruchamia się od **3 znaków** (po trim) + debounce (ok. 300–400 ms),
+        - zapytania wielowyrazowe działają jako **AND**,
+        - tagi dopasowują się jako **pełna nazwa** lub **prefix**,
+        - przy niepustej frazie domyślne sortowanie jest po **najlepszym dopasowaniu** (relevance: nazwa > składniki > tagi; wagi 3/2/1),
+        - dla pustej frazy (po trim) widok działa jak feed (np. `created_at.desc`) i nie pokazuje stanu „Brak wyników” (zamiast tego standardowy feed).
+    - **Transparentność dopasowania:** Na każdej karcie wyniku (lub w jej stopce) pokazujemy krótki tekst: **„Dopasowanie: nazwa / składniki / tagi”** (jedna etykieta — wskazujemy najlepsze źródło dopasowania), aby zwiększyć zaufanie do rankingu.
     - **Load more (zamiast paginacji):** Domyślnie ładowane jest **12 przepisów**. Pod listą widoczny jest przycisk **"Więcej"**, który:
         - doładowuje kolejne **12** i **dopina** je pod już widocznymi,
         - pokazuje stan ładowania (np. label "Ładowanie…" + `disabled`),
