@@ -56,6 +56,7 @@ export interface GetPublicRecipesQuery {
     dietType?: RecipeDietType;
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
+    grill?: boolean;
 }
 
 /**
@@ -78,4 +79,5 @@ export interface GetPublicRecipesFeedQuery {
     dietType?: RecipeDietType;
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
+    grill?: boolean;
 }

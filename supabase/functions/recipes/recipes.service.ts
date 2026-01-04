@@ -202,6 +202,7 @@ export interface GetRecipesOptions {
     dietType?: RecipeDietType;
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
+    grill?: boolean;
 }
 
 /**
@@ -221,10 +222,11 @@ export interface GetRecipesFeedOptions {
     dietType?: RecipeDietType;
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
+    grill?: boolean;
 }
 
 /** Columns to select for recipe list queries. */
-const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
+const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
@@ -359,6 +361,7 @@ export async function getRecipes(
         dietType,
         cuisine,
         difficulty,
+        grill,
     } = options;
 
     logger.info('Fetching recipes', {
@@ -418,6 +421,7 @@ export async function getRecipes(
         p_diet_type: dietType ?? undefined,
         p_cuisine: cuisine ?? undefined,
         p_difficulty: difficulty ?? undefined,
+        p_grill: grill ?? undefined,
     });
 
     if (error) {
@@ -523,6 +527,7 @@ export async function getRecipesFeed(
         dietType,
         cuisine,
         difficulty,
+        grill,
     } = options;
 
     logger.info('Fetching recipes feed', {
@@ -539,6 +544,7 @@ export async function getRecipesFeed(
         dietType,
         cuisine,
         difficulty,
+        grill,
     });
 
     // Validate sort field to prevent injection
@@ -558,6 +564,7 @@ export async function getRecipesFeed(
         dietType,
         cuisine,
         difficulty,
+        grill,
     });
 
     // Decode cursor and validate consistency
@@ -634,6 +641,7 @@ export async function getRecipesFeed(
         p_diet_type: dietType ?? undefined,
         p_cuisine: cuisine ?? undefined,
         p_difficulty: difficulty ?? undefined,
+        p_grill: grill ?? undefined,
     });
 
     if (error) {
@@ -964,6 +972,7 @@ export interface CreateRecipeInput {
     diet_type: RecipeDietType | null;
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
 }
 
 /**
@@ -986,6 +995,7 @@ export interface UpdateRecipeInput {
     diet_type?: RecipeDietType | null;
     cuisine?: RecipeCuisine | null;
     difficulty?: RecipeDifficulty | null;
+    is_grill?: boolean;
 }
 
 /**
@@ -1027,6 +1037,7 @@ export async function createRecipe(
         diet_type: input.diet_type,
         cuisine: input.cuisine,
         difficulty: input.difficulty,
+        is_grill: input.is_grill,
     });
 
     // Call the RPC function to create the recipe with tags atomically
@@ -1048,6 +1059,7 @@ export async function createRecipe(
             p_diet_type: input.diet_type,
             p_cuisine: input.cuisine,
             p_difficulty: input.difficulty,
+            p_is_grill: input.is_grill,
         }
     );
 
@@ -1136,6 +1148,7 @@ export async function updateRecipe(
         updatingDietType: input.diet_type !== undefined,
         updatingCuisine: input.cuisine !== undefined,
         updatingDifficulty: input.difficulty !== undefined,
+        updatingIsGrill: input.is_grill !== undefined,
     });
 
     // Determine if tags should be updated
@@ -1164,6 +1177,9 @@ export async function updateRecipe(
 
     // Determine if difficulty should be updated
     const updateDifficulty = input.difficulty !== undefined;
+
+    // Determine if grill flag should be updated
+    const updateIsGrill = input.is_grill !== undefined;
 
     // Call the RPC function to update the recipe with tags atomically
     const { data: updatedRecipeId, error: rpcError } = await client.rpc(
@@ -1195,6 +1211,8 @@ export async function updateRecipe(
             p_update_cuisine: updateCuisine,
             p_difficulty: input.difficulty ?? null,
             p_update_difficulty: updateDifficulty,
+            p_is_grill: input.is_grill ?? null,
+            p_update_is_grill: updateIsGrill,
         }
     );
 

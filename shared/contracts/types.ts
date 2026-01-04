@@ -160,6 +160,7 @@ export type RecipeListItemDto = Pick<
     diet_type: RecipeDietType | null;
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
 };
 
 /**
@@ -189,6 +190,7 @@ export interface PublicRecipeListItemDto {
     diet_type: RecipeDietType | null;
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
 }
 
 /**
@@ -218,6 +220,7 @@ export interface PublicRecipeDetailDto {
     diet_type: RecipeDietType | null;
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
 }
 
 /**
@@ -263,6 +266,8 @@ export type RecipeDetailDto = Omit<
     cuisine: RecipeCuisine | null;
     /** Difficulty level (nullable). */
     difficulty: RecipeDifficulty | null;
+    /** Flag indicating recipe is designed for grill/barbecue cooking. */
+    is_grill: boolean;
 };
 
 /**
@@ -293,6 +298,8 @@ export type CreateRecipeCommand = Pick<
     cuisine?: RecipeCuisine | null;
     /** Difficulty level (optional, nullable). */
     difficulty?: RecipeDifficulty | null;
+    /** Flag indicating recipe is designed for grill/barbecue cooking. Defaults to false if not provided. */
+    is_grill?: boolean;
 };
 
 /**
@@ -675,6 +682,7 @@ export interface AiRecipeImageRecipeDto {
     description?: string | null;
     servings?: number | null;
     is_termorobot?: boolean;
+    is_grill?: boolean;
     category_name?: string | null;
     ingredients: AiRecipeImageContentItem[];
     steps: AiRecipeImageContentItem[];

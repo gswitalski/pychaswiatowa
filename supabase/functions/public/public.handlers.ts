@@ -105,6 +105,17 @@ const GetPublicRecipesQuerySchema = z.object({
     'filter[difficulty]': z.enum(['EASY', 'MEDIUM', 'HARD'], {
         invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
     }).optional(),
+    'filter[grill]': z.string().optional().transform((val) => {
+        if (val === undefined) return undefined;
+        const lowerVal = val.toLowerCase().trim();
+        if (lowerVal === 'true' || lowerVal === '1') {
+            return true;
+        }
+        if (lowerVal === 'false' || lowerVal === '0') {
+            return false;
+        }
+        throw new Error('filter[grill] must be true, false, 1, or 0');
+    }),
 });
 
 /**
@@ -197,6 +208,17 @@ const GetPublicRecipesFeedQuerySchema = z.object({
     'filter[difficulty]': z.enum(['EASY', 'MEDIUM', 'HARD'], {
         invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
     }).optional(),
+    'filter[grill]': z.string().optional().transform((val) => {
+        if (val === undefined) return undefined;
+        const lowerVal = val.toLowerCase().trim();
+        if (lowerVal === 'true' || lowerVal === '1') {
+            return true;
+        }
+        if (lowerVal === 'false' || lowerVal === '0') {
+            return false;
+        }
+        throw new Error('filter[grill] must be true, false, 1, or 0');
+    }),
 });
 
 /**
@@ -319,6 +341,7 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             dietType: validatedParams['filter[diet_type]'],
             cuisine: validatedParams['filter[cuisine]'],
             difficulty: validatedParams['filter[difficulty]'],
+            grill: validatedParams['filter[grill]'],
         };
 
         // Create service role client for public access
@@ -476,6 +499,7 @@ export async function handleGetPublicRecipesFeed(req: Request): Promise<Response
             dietType: validatedParams['filter[diet_type]'],
             cuisine: validatedParams['filter[cuisine]'],
             difficulty: validatedParams['filter[difficulty]'],
+            grill: validatedParams['filter[grill]'],
         };
 
         // Create service role client for public access

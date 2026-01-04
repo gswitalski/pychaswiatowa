@@ -12,28 +12,42 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
-
-
 ### Zmienione
 
-- **Obiekty `Recipe` w odpowiedziach**: rozszerzono o pola:
-    - `diet_type`: `MEAT | VEGETARIAN | VEGAN` (nullable)
-    - `cuisine`: `POLISH | ASIAN | MEXICAN | MIDDLE_EASTERN` (nullable)
-    - `difficulty`: `EASY | MEDIUM | HARD` (nullable)
-  Zmiana: pola są zwracane w listach oraz w szczegółach przepisu.
+- **Public recipes – `GET /public/recipes`**
+    - **Zmiana**: dodane pole `is_grill` w obiekcie przepisu.
+    - **Zmiana**: dodany parametr `filter[grill]` (boolean) – API-ready.
 
-- **`POST /recipes`**: request payload rozszerzony o `diet_type`, `cuisine`, `difficulty` (opcjonalne).
-- **`PUT /recipes/{id}`**: request payload rozszerzony o `diet_type`, `cuisine`, `difficulty` (opcjonalne).
+- **Public recipes – `GET /public/recipes/feed`**
+    - **Zmiana**: dodane pole `is_grill` w obiektach listy.
+    - **Zmiana**: dodany parametr `filter[grill]` (boolean) – API-ready.
 
-- **Endpointy listujące**: dodano „API-ready” filtry:
-    - `filter[diet_type]`
-    - `filter[cuisine]`
-    - `filter[difficulty]`
-  Dotyczy:
-    - `GET /recipes`
-    - `GET /recipes/feed`
-    - `GET /public/recipes`
-    - `GET /public/recipes/feed`
+- **Public recipes – `GET /public/recipes/{id}`**
+    - **Zmiana**: dodane pole `is_grill` w odpowiedzi.
+
+- **Recipes – `GET /recipes`**
+    - **Zmiana**: dodane pole `is_grill` w obiektach listy.
+    - **Zmiana**: dodany parametr `filter[grill]` (boolean).
+
+- **Recipes – `GET /recipes/feed`**
+    - **Zmiana**: dodane pole `is_grill` w obiektach listy.
+    - **Zmiana**: dodany parametr `filter[grill]` (boolean).
+
+- **Recipes – `POST /recipes`**
+    - **Zmiana**: request wspiera `is_grill` (boolean), a response zwraca `is_grill`.
+
+- **Recipes – `POST /recipes/import`**
+    - **Zmiana**: response zwraca `is_grill` (domyślnie `false`).
+
+- **Recipes – `PUT /recipes/{id}`**
+    - **Zmiana**: request wspiera `is_grill` (boolean).
+
+- **AI – `POST /ai/recipes/image`**
+    - **Zmiana**: request payload wspiera przekazanie `is_grill` w obiekcie `recipe` (dla spójności kontraktu danych wejściowych).
+
+- **Walidacja**
+    - **Zmiana**: dodana reguła `recipes.is_grill`: optional boolean, default `false`.
+
 
 
 

@@ -236,6 +236,7 @@ const AiRecipeImageRecipeSchema = z.object({
         .nullable()
         .optional(),
     is_termorobot: z.boolean().optional().default(false),
+    is_grill: z.boolean().optional().default(false),
     category_name: z.string()
         .min(1)
         .max(MAX_CATEGORY_NAME_LENGTH, `Category name cannot exceed ${MAX_CATEGORY_NAME_LENGTH} characters`)

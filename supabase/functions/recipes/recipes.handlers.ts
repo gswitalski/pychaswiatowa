@@ -176,6 +176,12 @@ const createRecipeSchema = z.object({
         .nullable()
         .optional()
         .transform((val) => val ?? null),
+    is_grill: z
+        .boolean({
+            invalid_type_error: 'is_grill must be a boolean',
+        })
+        .optional()
+        .default(false),
 }).refine(
     (data) => {
         // Cross-field validation: total_time_minutes >= prep_time_minutes (when both are set)
@@ -326,6 +332,11 @@ const updateRecipeSchema = z
             })
             .nullable()
             .optional(),
+        is_grill: z
+            .boolean({
+                invalid_type_error: 'is_grill must be a boolean',
+            })
+            .optional(),
     })
     .refine(
         (data) => {
@@ -446,6 +457,16 @@ const getRecipesQuerySchema = z.object({
             invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
         })
         .optional(),
+    'filter[grill]': z
+        .string()
+        .optional()
+        .transform((val) => {
+            if (!val) return undefined;
+            const lowerVal = val.toLowerCase().trim();
+            if (lowerVal === 'true' || lowerVal === '1') return true;
+            if (lowerVal === 'false' || lowerVal === '0') return false;
+            throw new Error('filter[grill] must be true, false, 1, or 0');
+        }),
 });
 
 /**
@@ -546,6 +567,16 @@ const getRecipesFeedQuerySchema = z.object({
             invalid_type_error: 'Difficulty must be one of: EASY, MEDIUM, HARD',
         })
         .optional(),
+    'filter[grill]': z
+        .string()
+        .optional()
+        .transform((val) => {
+            if (!val) return undefined;
+            const lowerVal = val.toLowerCase().trim();
+            if (lowerVal === 'true' || lowerVal === '1') return true;
+            if (lowerVal === 'false' || lowerVal === '0') return false;
+            throw new Error('filter[grill] must be true, false, 1, or 0');
+        }),
 });
 
 /**
@@ -624,6 +655,7 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
                 dietType: params['filter[diet_type]'],
                 cuisine: params['filter[cuisine]'],
                 difficulty: params['filter[difficulty]'],
+                grill: params['filter[grill]'],
             }
         );
 
@@ -1270,6 +1302,7 @@ export async function handleGetRecipesFeed(req: Request): Promise<Response> {
             dietType: params['filter[diet_type]'],
             cuisine: params['filter[cuisine]'],
             difficulty: params['filter[difficulty]'],
+            grill: params['filter[grill]'],
         });
 
         logger.info('GET /recipes/feed completed successfully', {

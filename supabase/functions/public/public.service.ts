@@ -378,6 +378,11 @@ export async function getPublicRecipes(
         dbQuery = dbQuery.eq('difficulty', query.difficulty);
     }
 
+    // Apply grill filter if provided
+    if (query.grill !== undefined) {
+        dbQuery = dbQuery.eq('is_grill', query.grill);
+    }
+
     // Apply sorting
     const ascending = query.sortDirection === 'asc';
     dbQuery = dbQuery.order(query.sortField, { ascending });
@@ -732,6 +737,7 @@ export async function getPublicRecipesFeed(
         dietType: query.dietType,
         cuisine: query.cuisine,
         difficulty: query.difficulty,
+        grill: query.grill,
         userId: userId ?? undefined, // Include userId in hash to separate anonymous/authenticated cursors
     });
 
@@ -804,6 +810,11 @@ export async function getPublicRecipesFeed(
     // Apply difficulty filter if provided
     if (query.difficulty !== undefined) {
         dbQuery = dbQuery.eq('difficulty', query.difficulty);
+    }
+
+    // Apply grill filter if provided
+    if (query.grill !== undefined) {
+        dbQuery = dbQuery.eq('is_grill', query.grill);
     }
 
     // Apply stable sorting (includes id as tie-breaker)
