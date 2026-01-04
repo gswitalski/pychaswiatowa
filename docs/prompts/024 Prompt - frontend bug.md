@@ -10,21 +10,19 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
-wchodze na szczególy przepisu który jest w moim planie
-http://localhost:4200/explore/recipes/48-panna-cotta
-lub
-http://localhost:4200/recipe
 
-otwieram mój plan i usuwam z niego ten przepis
+http://localhost:4200/dashboard
+otwiera się dashboard z sidebarem z lewej strony
 
-na szagółach przepisy dalj mam przycisk "zobacz listę"
+potem wchodzę na http://localhost:4200/explore
+sidebar znika i pojawia się lista przepisów ale jest przesunięta w prawo tak jakby dashboard dalej am był. po odświeżeniu F5 jest już dobrze
 
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-przycisk uaktualania swój status i znowu mam "dodaj do planu"
+lista przepisów jest wycentrowana .
 
 
 </oczekiwane_zachowanie>
