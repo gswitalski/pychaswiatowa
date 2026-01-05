@@ -2,6 +2,7 @@
 // Lista kolekcji ma własny scrolling, więc dialog nie potrzebuje dodatkowego
 mat-dialog-content {
     overflow: visible;
+    min-height: 200px;
 }
 
 .dialog-description {
@@ -10,23 +11,119 @@ mat-dialog-content {
     font-size: 0.875rem;
 }
 
+// Loading state
 .loading-state {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
     padding: 32px;
+    gap: 16px;
+
+    p {
+        margin: 0;
+        color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+// Error state
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px;
+    gap: 12px;
+    text-align: center;
+
+    mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+    }
+
+    p {
+        margin: 0;
+        color: var(--mat-sys-error);
+    }
+}
+
+// Search field
+.search-field {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+// Collections container with scrolling
+.collections-container {
+    margin-bottom: 16px;
 }
 
 .collections-list {
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
-    margin-bottom: 16px;
     border: 1px solid var(--mat-sys-outline-variant);
     border-radius: 8px;
+    padding: 8px 0;
+
+    mat-list-item {
+        padding: 4px 16px;
+
+        mat-checkbox {
+            width: 100%;
+
+            .collection-name {
+                display: block;
+                font-weight: 500;
+            }
+
+            .collection-description {
+                display: block;
+                font-size: 0.875rem;
+                color: var(--mat-sys-on-surface-variant);
+                margin-top: 4px;
+            }
+        }
+    }
 }
 
-.new-collection-field {
-    width: 100%;
+// No results message
+.no-results {
+    padding: 24px;
+    text-align: center;
+    color: var(--mat-sys-on-surface-variant);
+    font-style: italic;
+}
+
+// Empty state message
+.empty-state {
+    padding: 24px;
+    text-align: center;
+    color: var(--mat-sys-on-surface-variant);
+    background-color: var(--mat-sys-surface-variant);
+    border-radius: 8px;
     margin-bottom: 16px;
+}
+
+// Selection count
+.selection-count {
+    margin: 0 0 16px;
+    padding: 8px 12px;
+    background-color: var(--mat-sys-surface-variant);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant);
+
+    .hint-text {
+        font-style: italic;
+        opacity: 0.8;
+    }
+}
+
+// Create new section
+.create-new-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
 .toggle-create-btn {
@@ -37,8 +134,49 @@ mat-dialog-content {
     }
 }
 
+.new-collection-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.new-collection-field {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.new-collection-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    button {
+        mat-spinner {
+            display: inline-block;
+            margin-right: 8px;
+        }
+    }
+}
+
+// Dialog actions
 mat-dialog-actions {
     gap: 8px;
     padding: 16px 24px;
+
+    button {
+        mat-spinner {
+            display: inline-block;
+            margin-right: 8px;
+        }
+    }
 }
 
+// Loading indicator opacity (no white overlay)
+:host {
+    &.loading {
+        .collections-container {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    }
+}

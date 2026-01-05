@@ -19,22 +19,6 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-### Landing Page (`/`)
-- **Status**: zmieniony opis
-- **Co się zmieniło**:
-    - doprecyzowano, że pasek wyszukiwania publicznego to komponent **`pych-public-recipes-search`**,
-    - zdefiniowano zasady uruchamiania wyszukiwania: **min 3 znaki**, debounce ~300–400 ms,
-    - dla pustej frazy (po trim) landing nie wykonuje wyszukiwania (zachowuje się jak feed/sekcje kuratorowane),
-    - sortowanie wyników (gdy `q` jest poprawne) po **najlepszym dopasowaniu**.
-
-### Publiczny katalog przepisów (Explore) (`/explore`)
-- **Status**: zmieniony opis
-- **Co się zmieniło**:
-    - doprecyzowano: **min 3 znaki**, **AND**, tag exact/prefix,
-    - dla niepustej frazy: sortowanie domyślne po **relevance (3/2/1)**,
-    - dla pustej frazy: widok działa jak feed (np. `created_at.desc`),
-    - dodano wymóg etykiety na kartach: **„Dopasowanie: …”** (jedno najlepsze źródło dopasowania).
-
 
 </views>
 
@@ -42,20 +26,6 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-
-### US-018 — Wyszukiwanie publicznych przepisów (MVP: tylko tekst)
-- **Status**: zmieniona
-- **Co się zmieniło**:
-    - dodano minimalną długość frazy: **3 znaki** (po trim),
-    - zdefiniowano semantykę wielowyrazową jako **AND**,
-    - doprecyzowano dopasowanie tagów: **pełna nazwa** lub **prefix**,
-    - dodano domyślny ranking **najlepszego dopasowania** (nazwa → składniki → tagi; wagi 3/2/1),
-    - dla pustej frazy widok zachowuje się jak feed,
-    - UI pokazuje etykietę: „Dopasowanie: nazwa / składniki / tagi”.
-
-### US-044 — Ranking wyników wyszukiwania publicznych przepisów (relevance)
-- **Status**: nowa
-- **Opis skrócony**: wyniki dla zapytań ≥ 3 znaki są sortowane domyślnie po relevance (wagi 3/2/1), z rozstrzyganiem remisów stabilnie (np. `created_at.desc`) oraz z etykietą źródła dopasowania w UI.
 
 
 </user_stories>

@@ -334,26 +334,32 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
         const dialogData: AddToCollectionDialogData = {
             recipeId: recipe.id,
             recipeName: recipe.name ?? 'Bez nazwy',
+            initialCollectionIds: recipe.collection_ids ?? [],
         };
 
         const dialogRef = this.dialog.open(AddToCollectionDialogComponent, {
             data: dialogData,
-            width: '450px',
+            width: '600px',
+            maxWidth: '90vw',
         });
 
         dialogRef.afterClosed().subscribe((result: AddToCollectionDialogResult) => {
-            if (result?.action === 'added') {
+            if (result?.action === 'saved') {
                 this.snackBar.open(
-                    `Dodano do kolekcji "${result.collectionName}"`,
+                    'Zapisano kolekcje dla przepisu',
                     'OK',
                     { duration: 3000 }
                 );
-            } else if (result?.action === 'created') {
-                this.snackBar.open(
-                    `Utworzono kolekcję "${result.collectionName}" i dodano przepis`,
-                    'OK',
-                    { duration: 3000 }
-                );
+                // Zaktualizuj collection_ids w aktualnym stanie przepisu
+                if (result.collection_ids !== undefined) {
+                    this.state.update((s) => ({
+                        ...s,
+                        recipe: s.recipe ? {
+                            ...s.recipe,
+                            collection_ids: result.collection_ids!,
+                        } : null,
+                    }));
+                }
             }
         });
     }

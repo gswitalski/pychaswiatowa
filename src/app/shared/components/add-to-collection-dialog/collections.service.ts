@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, map, switchMap } from 'rxjs';
 import { SupabaseService } from '../../../core/services/supabase.service';
-import { CollectionListItemDto } from '../../../../../shared/contracts/types';
+import {
+    CollectionListItemDto,
+    SetRecipeCollectionsCommand,
+    SetRecipeCollectionsResponseDto,
+    CreateCollectionCommand,
+} from '../../../../../shared/contracts/types';
 
 @Injectable({
     providedIn: 'root',
@@ -100,6 +105,62 @@ export class CollectionsService {
                     })
                 )
             )
+        );
+    }
+
+    /**
+     * Atomically sets the target list of collections for a recipe
+     * PUT /recipes/{recipeId}/collections
+     */
+    setRecipeCollections(
+        recipeId: number,
+        command: SetRecipeCollectionsCommand
+    ): Observable<SetRecipeCollectionsResponseDto> {
+        return from(
+            this.supabase.functions.invoke<SetRecipeCollectionsResponseDto>(
+                `recipes/${recipeId}/collections`,
+                {
+                    method: 'PUT',
+                    body: command,
+                }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    const error = new Error(response.error.message) as Error & { status: number };
+                    error.status = this.extractStatusFromError(response.error) || 500;
+                    throw error;
+                }
+                if (!response.data) {
+                    throw new Error('Nie udało się zapisać kolekcji');
+                }
+                return response.data;
+            })
+        );
+    }
+
+    /**
+     * Creates a new collection (without adding recipe)
+     * POST /collections
+     */
+    createCollection(command: CreateCollectionCommand): Observable<CollectionListItemDto> {
+        return from(
+            this.supabase.functions.invoke<CollectionListItemDto>('collections', {
+                method: 'POST',
+                body: command,
+            })
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    const error = new Error(response.error.message) as Error & { status: number };
+                    error.status = this.extractStatusFromError(response.error) || 500;
+                    throw error;
+                }
+                if (!response.data) {
+                    throw new Error('Nie udało się utworzyć kolekcji');
+                }
+                return response.data;
+            })
         );
     }
 

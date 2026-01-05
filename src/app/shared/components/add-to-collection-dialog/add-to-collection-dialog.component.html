@@ -2,65 +2,135 @@
 
 <mat-dialog-content>
     <p class="dialog-description">
-        Dodaj przepis "{{ data.recipeName }}" do kolekcji
+        Zarządzaj kolekcjami dla przepisu "{{ data.recipeName }}"
     </p>
 
     @if (isLoading()) {
         <div class="loading-state">
             <mat-spinner diameter="32"></mat-spinner>
+            <p>Ładowanie kolekcji...</p>
+        </div>
+    } @else if (loadError()) {
+        <div class="error-state">
+            <mat-icon color="warn">error</mat-icon>
+            <p>{{ loadError() }}</p>
         </div>
     } @else {
-        @if (collections().length > 0 && !isCreatingNew()) {
-            <mat-selection-list [multiple]="false" class="collections-list">
-                @for (collection of collections(); track collection.id) {
-                    <mat-list-option
-                        [value]="collection.id"
-                        [selected]="selectedCollectionId() === collection.id"
-                        (click)="selectCollection(collection.id)"
-                    >
-                        <mat-icon matListItemIcon>folder</mat-icon>
-                        <span matListItemTitle>{{ collection.name }}</span>
-                        @if (collection.description) {
-                            <span matListItemLine>{{ collection.description }}</span>
-                        }
-                    </mat-list-option>
+        <!-- Pole wyszukiwania kolekcji -->
+        <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Szukaj kolekcji</mat-label>
+            <input
+                matInput
+                [ngModel]="searchQuery()"
+                (ngModelChange)="onSearchChange($event)"
+                placeholder="Wpisz nazwę kolekcji..."
+            />
+            <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Lista kolekcji z checkboxami -->
+        @if (collections().length > 0) {
+            <div class="collections-container">
+                <mat-list class="collections-list">
+                    @for (collection of filteredCollections(); track collection.id) {
+                        <mat-list-item>
+                            <mat-checkbox
+                                [checked]="isCollectionSelected(collection.id)"
+                                (change)="onToggleCollection(collection.id, $event.checked)"
+                                [disabled]="isSaving()"
+                            >
+                                <span class="collection-name">{{ collection.name }}</span>
+                                @if (collection.description) {
+                                    <span class="collection-description">{{ collection.description }}</span>
+                                }
+                            </mat-checkbox>
+                        </mat-list-item>
+                    } @empty {
+                        <p class="no-results">Nie znaleziono kolekcji pasujących do "{{ searchQuery() }}"</p>
+                    }
+                </mat-list>
+            </div>
+
+            <!-- Licznik zaznaczonych -->
+            <p class="selection-count">
+                Zaznaczono: {{ selectedCount() }}
+                @if (selectedCount() === 0) {
+                    <span class="hint-text">(przepis nie będzie należeć do żadnej kolekcji)</span>
                 }
-            </mat-selection-list>
+            </p>
+        } @else {
+            <p class="empty-state">
+                Nie masz jeszcze żadnych kolekcji. Utwórz pierwszą poniżej!
+            </p>
         }
 
-        @if (isCreatingNew()) {
-            <mat-form-field appearance="outline" class="new-collection-field">
-                <mat-label>Nazwa nowej kolekcji</mat-label>
-                <input
-                    matInput
-                    [ngModel]="newCollectionName()"
-                    (ngModelChange)="newCollectionName.set($event)"
-                    placeholder="Np. Ulubione desery"
-                />
-            </mat-form-field>
-        }
+        <!-- Sekcja tworzenia nowej kolekcji -->
+        <div class="create-new-section">
+            @if (!isCreatingNew()) {
+                <button
+                    mat-stroked-button
+                    type="button"
+                    class="toggle-create-btn"
+                    (click)="toggleCreateNew()"
+                    [disabled]="isSaving()"
+                >
+                    <mat-icon>add</mat-icon>
+                    Utwórz nową kolekcję
+                </button>
+            } @else {
+                <div class="new-collection-form">
+                    <mat-form-field appearance="outline" class="new-collection-field">
+                        <mat-label>Nazwa nowej kolekcji</mat-label>
+                        <input
+                            matInput
+                            [ngModel]="newCollectionName()"
+                            (ngModelChange)="newCollectionName.set($event)"
+                            placeholder="Np. Ulubione desery"
+                            [disabled]="isCreatingCollection()"
+                        />
+                    </mat-form-field>
 
-        <button
-            mat-stroked-button
-            type="button"
-            class="toggle-create-btn"
-            (click)="toggleCreateNew()"
-        >
-            <mat-icon>{{ isCreatingNew() ? 'list' : 'add' }}</mat-icon>
-            {{ isCreatingNew() ? 'Wybierz istniejącą' : 'Utwórz nową kolekcję' }}
-        </button>
+                    <div class="new-collection-actions">
+                        <button
+                            mat-button
+                            type="button"
+                            (click)="toggleCreateNew()"
+                            [disabled]="isCreatingCollection()"
+                        >
+                            Anuluj
+                        </button>
+                        <button
+                            mat-raised-button
+                            color="accent"
+                            type="button"
+                            [disabled]="!canCreateCollection"
+                            (click)="onCreateCollection()"
+                        >
+                            @if (isCreatingCollection()) {
+                                <mat-spinner diameter="16"></mat-spinner>
+                            }
+                            Utwórz
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
     }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    <button mat-stroked-button (click)="onCancel()">Anuluj</button>
+    <button mat-stroked-button (click)="onCancel()" [disabled]="isSaving()">
+        Anuluj
+    </button>
     <button
         mat-raised-button
         color="primary"
-        [disabled]="!canConfirm"
-        (click)="onConfirm()"
+        [disabled]="!canSave"
+        (click)="onSave()"
     >
-        {{ isCreatingNew() ? 'Utwórz i dodaj' : 'Dodaj' }}
+        @if (isSaving()) {
+            <mat-spinner diameter="16"></mat-spinner>
+        }
+        Zapisz
     </button>
 </mat-dialog-actions>
-
