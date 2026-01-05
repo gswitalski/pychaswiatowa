@@ -1,4 +1,4 @@
-Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest stworzenie szczegółowego planu wdrożenia punktó końcowych REST API. Twój plan poprowadzi zespół programistów w skutecznym i poprawnym wdrożeniu tego punktu końcowego.
+Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest stworzenie szczegółowego planu wdrożenia punktów końcowych REST API. Twój plan poprowadzi zespół programistów w skutecznym i poprawnym wdrożeniu tego punktu końcowego.
 
 Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
@@ -12,23 +12,18 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
+ 
+
+- **`GET /recipes/{id}` (zmiana)**:
+    - **Co się zmieniło**: dopisano pole `collection_ids: integer[]` (może być puste) do pre-selekcji checkboxów w modalu.
+
+- **`PUT /recipes/{id}/collections` (nowe)**:
+    - **Nowe**: atomowe i idempotentne ustawienie docelowej listy kolekcji dla przepisu, w tym wsparcie dla pustej listy `collection_ids`.
+
+- **`POST /collections/{id}/recipes` (zmiana)**:
+    - **Co się zmieniło**: dopisano notkę, że dla checkboxowego modala preferowany jest endpoint `PUT /recipes/{id}/collections`.
 
 
-### `GET /public/recipes`
-- **Status**: zmieniony
-- **Co się zmieniło**:
-    - `q`: minimalna długość zmieniona z **2** na **3** znaki (po trim),
-    - doprecyzowano semantykę wielowyrazową jako **AND**,
-    - doprecyzowano dopasowanie tagów jako exact/prefix,
-    - doprecyzowano zachowanie sortowania: dla poprawnego `q` domyślnie **relevance** (wagi 3/2/1), dla pustego/krótkiego `q` — feed,
-    - dodano pole pomocnicze w odpowiedzi: `search` (np. `relevance_score`, `match`) do zasilenia etykiety UI „Dopasowanie: …”.
-
-### `GET /public/recipes/feed`
-- **Status**: zmieniony
-- **Co się zmieniło**:
-    - analogicznie jak w `GET /public/recipes`: `q` min **3**, AND, tag exact/prefix,
-    - domyślne sortowanie po relevance dla poprawnego `q` (wagi 3/2/1),
-    - dodano `search` w odpowiedzi dla UI.
 
 
 </api_changes_description>

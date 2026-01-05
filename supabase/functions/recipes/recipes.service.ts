@@ -180,6 +180,8 @@ export interface RecipeDetailDto {
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    /** Array of collection IDs (owned by authenticated user) that contain this recipe. */
+    collection_ids: number[];
 }
 
 /**
@@ -239,6 +241,56 @@ const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
 
 /** Default sort field. */
 const DEFAULT_SORT_FIELD = 'created_at';
+
+/**
+ * Gets the collection IDs (owned by user) that contain the specified recipe.
+ * Returns sorted array of collection IDs.
+ * If query fails, logs error and returns empty array (non-blocking, defensive approach).
+ *
+ * @param client - Authenticated Supabase client
+ * @param recipeId - Recipe ID to check
+ * @param userId - User ID (owner of collections)
+ * @returns Sorted array of collection IDs that contain the recipe
+ */
+async function getCollectionIdsForRecipe(
+    client: TypedSupabaseClient,
+    recipeId: number,
+    userId: string
+): Promise<number[]> {
+    try {
+        const { data, error } = await client
+            .from('recipe_collections')
+            .select('collection_id, collections!inner(user_id)')
+            .eq('recipe_id', recipeId)
+            .eq('collections.user_id', userId);
+
+        if (error) {
+            logger.warn('Failed to fetch collection IDs for recipe (non-critical)', {
+                recipeId,
+                userId,
+                errorCode: error.code,
+                errorMessage: error.message,
+            });
+            return [];
+        }
+
+        const collectionIds = data.map((r) => r.collection_id).sort((a, b) => a - b);
+
+        logger.info('Collection IDs fetched for recipe', {
+            recipeId,
+            collectionCount: collectionIds.length,
+        });
+
+        return collectionIds;
+    } catch (err) {
+        logger.warn('Exception while fetching collection IDs for recipe (non-critical)', {
+            recipeId,
+            userId,
+            error: err instanceof Error ? err.message : 'Unknown error',
+        });
+        return [];
+    }
+}
 
 /**
  * Checks which recipes from the given list are in the authenticated user's plan.
@@ -831,7 +883,10 @@ export async function getRecipeById(
         const recipeIdsInPlan = await getRecipeIdsInPlan(client, [id], requesterUserId);
         const inMyPlan = recipeIdsInPlan.has(id);
 
-        return mapToRecipeDetailDto(data, inMyPlan);
+        // Get collection IDs that contain this recipe (owned by user)
+        const collectionIds = await getCollectionIdsForRecipe(client, id, requesterUserId);
+
+        return mapToRecipeDetailDto(data, inMyPlan, collectionIds);
     }
 
     // Step B: If PGRST116 (not found by RLS), distinguish between 403 and 404
@@ -916,7 +971,10 @@ export async function getRecipeById(
         const recipeIdsInPlan = await getRecipeIdsInPlan(client, [id], requesterUserId);
         const inMyPlan = recipeIdsInPlan.has(id);
 
-        return mapToRecipeDetailDto(publicRecipe, inMyPlan);
+        // Get collection IDs that contain this recipe (owned by user)
+        const collectionIds = await getCollectionIdsForRecipe(client, id, requesterUserId);
+
+        return mapToRecipeDetailDto(publicRecipe, inMyPlan, collectionIds);
     }
 
     // Other database errors
@@ -932,7 +990,7 @@ export async function getRecipeById(
  * Maps raw recipe_details view data to RecipeDetailDto.
  * Helper function to avoid code duplication.
  */
-function mapToRecipeDetailDto(data: any, inMyPlan: boolean): RecipeDetailDto {
+function mapToRecipeDetailDto(data: any, inMyPlan: boolean, collectionIds: number[]): RecipeDetailDto {
     return {
         id: data.id!,
         user_id: data.user_id!,
@@ -956,6 +1014,7 @@ function mapToRecipeDetailDto(data: any, inMyPlan: boolean): RecipeDetailDto {
         cuisine: (data.cuisine as RecipeCuisine) ?? null,
         difficulty: (data.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(data.is_grill),
+        collection_ids: collectionIds,
     };
 }
 
@@ -1010,6 +1069,34 @@ export interface UploadRecipeImageInput {
     recipeId: number;
     userId: string;
     file: File;
+}
+
+/**
+ * Input data for setting recipe collections.
+ * Used by PUT /recipes/{id}/collections endpoint.
+ */
+export interface SetRecipeCollectionsInput {
+    /** Recipe ID to update. */
+    recipeId: number;
+    /** Target list of collection IDs (owned by user). Can be empty array. */
+    collectionIds: number[];
+    /** ID of the user making the request. */
+    requesterUserId: string;
+}
+
+/**
+ * Result of setting recipe collections.
+ * Contains final state and diff information.
+ */
+export interface SetRecipeCollectionsResult {
+    /** Recipe ID that was updated. */
+    recipe_id: number;
+    /** Final list of collection IDs after the operation (sorted ascending). */
+    collection_ids: number[];
+    /** Collection IDs that were added in this operation. */
+    added_ids: number[];
+    /** Collection IDs that were removed in this operation. */
+    removed_ids: number[];
 }
 
 /**
@@ -1854,5 +1941,236 @@ export async function deleteRecipeImage(
     logger.info('Recipe image deletion completed successfully', {
         recipeId,
     });
+}
+
+/**
+ * Atomically sets the target list of collections for a recipe.
+ * This is an idempotent operation that computes the diff from current state.
+ * 
+ * Process:
+ * 1. Verify recipe exists, is not soft-deleted, and user has access (owner)
+ * 2. Validate all target collections exist and belong to the user
+ * 3. Read current state of recipe_collections
+ * 4. Compute diff (added/removed)
+ * 5. Execute atomic update (DELETE removed, INSERT added)
+ * 6. Return final state with diff information
+ *
+ * @param client - The authenticated Supabase client
+ * @param input - SetRecipeCollectionsInput with recipeId, collectionIds, requesterUserId
+ * @returns SetRecipeCollectionsResult with final state and diff
+ * @throws ApplicationError on validation or access control failures
+ */
+export async function setRecipeCollections(
+    client: TypedSupabaseClient,
+    input: SetRecipeCollectionsInput
+): Promise<SetRecipeCollectionsResult> {
+    const { recipeId, collectionIds, requesterUserId } = input;
+
+    logger.info('Starting set recipe collections operation', {
+        recipeId,
+        requesterUserId,
+        targetCollectionCount: collectionIds.length,
+    });
+
+    // Step 1: Verify recipe exists, is not deleted, and user is owner
+    const { data: recipe, error: recipeError } = await client
+        .from('recipes')
+        .select('id, user_id')
+        .eq('id', recipeId)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+    if (recipeError) {
+        logger.error('Database error while fetching recipe', {
+            recipeId,
+            errorCode: recipeError.code,
+            errorMessage: recipeError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to verify recipe access');
+    }
+
+    if (!recipe) {
+        logger.warn('Recipe not found or is soft-deleted', {
+            recipeId,
+            requesterUserId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            `Recipe with ID ${recipeId} not found`
+        );
+    }
+
+    if (recipe.user_id !== requesterUserId) {
+        logger.warn('User does not own the recipe', {
+            recipeId,
+            ownerId: recipe.user_id,
+            requesterId: requesterUserId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            `Recipe with ID ${recipeId} not found`
+        );
+    }
+
+    logger.info('Recipe access verified', { recipeId });
+
+    // Step 2: Validate all target collections exist and belong to user (if any provided)
+    if (collectionIds.length > 0) {
+        const { data: collections, error: collectionsError } = await client
+            .from('collections')
+            .select('id')
+            .eq('user_id', requesterUserId)
+            .in('id', collectionIds);
+
+        if (collectionsError) {
+            logger.error('Database error while fetching collections', {
+                errorCode: collectionsError.code,
+                errorMessage: collectionsError.message,
+            });
+            throw new ApplicationError(
+                'INTERNAL_ERROR',
+                'Failed to validate collections'
+            );
+        }
+
+        const foundCollectionIds = new Set(collections.map((c) => c.id));
+        const missingIds = collectionIds.filter((id) => !foundCollectionIds.has(id));
+
+        if (missingIds.length > 0) {
+            logger.warn('Some collection IDs not found or not owned by user', {
+                recipeId,
+                requesterUserId,
+                missingIds,
+            });
+            throw new ApplicationError(
+                'NOT_FOUND',
+                `Collection(s) not found: ${missingIds.join(', ')}`
+            );
+        }
+
+        logger.info('All target collections validated', {
+            collectionCount: collectionIds.length,
+        });
+    }
+
+    // Step 3: Read current state of recipe_collections for this recipe (user's collections only)
+    const { data: currentRelations, error: currentError } = await client
+        .from('recipe_collections')
+        .select('collection_id, collections!inner(user_id)')
+        .eq('recipe_id', recipeId)
+        .eq('collections.user_id', requesterUserId);
+
+    if (currentError) {
+        logger.error('Database error while fetching current recipe_collections', {
+            recipeId,
+            errorCode: currentError.code,
+            errorMessage: currentError.message,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to read current collections state'
+        );
+    }
+
+    const currentCollectionIds = currentRelations.map((r) => r.collection_id);
+
+    logger.info('Current collections state read', {
+        recipeId,
+        currentCount: currentCollectionIds.length,
+        currentIds: currentCollectionIds,
+    });
+
+    // Step 4: Compute diff
+    const currentSet = new Set(currentCollectionIds);
+    const targetSet = new Set(collectionIds);
+
+    const toAdd = collectionIds.filter((id) => !currentSet.has(id));
+    const toRemove = currentCollectionIds.filter((id) => !targetSet.has(id));
+
+    logger.info('Computed diff for recipe collections', {
+        recipeId,
+        toAddCount: toAdd.length,
+        toRemoveCount: toRemove.length,
+        toAdd,
+        toRemove,
+    });
+
+    // Step 5: Execute atomic update - DELETE removed, INSERT added
+    // Use transaction-like approach: do deletes first, then inserts
+    // If both are no-ops, this is idempotent
+
+    if (toRemove.length > 0) {
+        const { error: deleteError } = await client
+            .from('recipe_collections')
+            .delete()
+            .eq('recipe_id', recipeId)
+            .in('collection_id', toRemove);
+
+        if (deleteError) {
+            logger.error('Database error while removing collections from recipe', {
+                recipeId,
+                toRemove,
+                errorCode: deleteError.code,
+                errorMessage: deleteError.message,
+            });
+            throw new ApplicationError(
+                'INTERNAL_ERROR',
+                'Failed to remove collections from recipe'
+            );
+        }
+
+        logger.info('Removed collections from recipe', {
+            recipeId,
+            removedCount: toRemove.length,
+        });
+    }
+
+    if (toAdd.length > 0) {
+        const rowsToInsert = toAdd.map((collectionId) => ({
+            recipe_id: recipeId,
+            collection_id: collectionId,
+        }));
+
+        const { error: insertError } = await client
+            .from('recipe_collections')
+            .insert(rowsToInsert);
+
+        if (insertError) {
+            logger.error('Database error while adding collections to recipe', {
+                recipeId,
+                toAdd,
+                errorCode: insertError.code,
+                errorMessage: insertError.message,
+            });
+            throw new ApplicationError(
+                'INTERNAL_ERROR',
+                'Failed to add collections to recipe'
+            );
+        }
+
+        logger.info('Added collections to recipe', {
+            recipeId,
+            addedCount: toAdd.length,
+        });
+    }
+
+    // Step 6: Return final state with diff
+    const finalCollectionIds = [...collectionIds].sort((a, b) => a - b);
+
+    const result: SetRecipeCollectionsResult = {
+        recipe_id: recipeId,
+        collection_ids: finalCollectionIds,
+        added_ids: toAdd.sort((a, b) => a - b),
+        removed_ids: toRemove.sort((a, b) => a - b),
+    };
+
+    logger.info('Set recipe collections completed successfully', {
+        recipeId,
+        finalCount: finalCollectionIds.length,
+        addedCount: toAdd.length,
+        removedCount: toRemove.length,
+    });
+
+    return result;
 }
 

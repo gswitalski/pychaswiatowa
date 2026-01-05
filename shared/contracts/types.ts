@@ -287,6 +287,8 @@ export type RecipeDetailDto = Omit<
     difficulty: RecipeDifficulty | null;
     /** Flag indicating recipe is designed for grill/barbecue cooking. */
     is_grill: boolean;
+    /** Array of collection IDs (owned by authenticated user) that contain this recipe. */
+    collection_ids: number[];
 };
 
 /**
@@ -414,6 +416,31 @@ export type UpdateCollectionCommand = Partial<CreateCollectionCommand>;
 export type AddRecipeToCollectionCommand = {
     recipe_id: number;
 };
+
+/**
+ * Command model for setting recipe collections (PUT /recipes/{id}/collections).
+ * Atomically sets the target list of collections for a recipe.
+ * Empty array removes recipe from all user's collections.
+ */
+export interface SetRecipeCollectionsCommand {
+    /** Array of collection IDs (must be unique, positive integers). Can be empty. */
+    collection_ids: number[];
+}
+
+/**
+ * Response DTO for PUT /recipes/{id}/collections endpoint.
+ * Returns the final state and diff information.
+ */
+export interface SetRecipeCollectionsResponseDto {
+    /** Recipe ID that was updated. */
+    recipe_id: number;
+    /** Final list of collection IDs after the operation (sorted ascending). */
+    collection_ids: number[];
+    /** Collection IDs that were added in this operation. */
+    added_ids: number[];
+    /** Collection IDs that were removed in this operation. */
+    removed_ids: number[];
+}
 
 // #endregion
 

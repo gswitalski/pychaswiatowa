@@ -30,6 +30,7 @@
  *
  * GET /functions/v1/recipes/{id}
  * Returns detailed information about a single recipe.
+ * Response includes collection_ids array (user's collections that contain this recipe).
  *
  * POST /functions/v1/recipes
  * Creates a new recipe for the authenticated user.
@@ -81,6 +82,16 @@
  * - tags (string[]) - Array of tag names (replaces all existing tags)
  * - visibility (string) - Recipe visibility: PRIVATE, SHARED, or PUBLIC
  * - image_path (string, nullable) - URL or storage path to recipe image
+ *
+ * PUT /functions/v1/recipes/{id}/collections
+ * Atomically sets the target list of collections for a recipe (idempotent).
+ * Request Body (JSON):
+ * - collection_ids (number[]) - Array of collection IDs (can be empty to remove from all)
+ * Response (200 OK):
+ * - recipe_id (number) - Recipe ID
+ * - collection_ids (number[]) - Final list of collection IDs (sorted)
+ * - added_ids (number[]) - Collection IDs added in this operation
+ * - removed_ids (number[]) - Collection IDs removed in this operation
  *
  * DELETE /functions/v1/recipes/{id}
  * Soft-deletes an existing recipe for the authenticated user.

@@ -17,12 +17,15 @@ import {
     uploadRecipeImage,
     deleteRecipeImage,
     getRecipesFeed,
+    setRecipeCollections,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
     CreateRecipeInput,
     UpdateRecipeInput,
     UploadRecipeImageResponseDto,
+    SetRecipeCollectionsInput,
+    SetRecipeCollectionsResult,
 } from './recipes.service.ts';
 
 /** Maximum allowed limit for pagination. */
@@ -374,6 +377,46 @@ const importRecipeSchema = z.object({
         })
         .min(1, 'Raw text cannot be empty')
         .transform((val) => val.trim()),
+});
+
+/**
+ * Maximum number of collections that can be set in a single request.
+ * Prevents abuse and DoS attacks.
+ */
+const MAX_COLLECTIONS_PER_REQUEST = 200;
+
+/**
+ * Schema for validating PUT /recipes/{id}/collections request body.
+ * Validates the SetRecipeCollectionsCommand model.
+ */
+const setRecipeCollectionsSchema = z.object({
+    collection_ids: z
+        .array(
+            z
+                .number({
+                    invalid_type_error: 'Collection IDs must be numbers',
+                })
+                .int('Collection IDs must be integers')
+                .positive('Collection IDs must be positive integers'),
+            {
+                required_error: 'collection_ids is required',
+                invalid_type_error: 'collection_ids must be an array',
+            }
+        )
+        .max(
+            MAX_COLLECTIONS_PER_REQUEST,
+            `Cannot set more than ${MAX_COLLECTIONS_PER_REQUEST} collections at once`
+        )
+        .refine(
+            (ids) => {
+                // Check for duplicates
+                const uniqueIds = new Set(ids);
+                return uniqueIds.size === ids.length;
+            },
+            {
+                message: 'collection_ids must not contain duplicates',
+            }
+        ),
 });
 
 /**
@@ -1041,6 +1084,95 @@ export async function handleDeleteRecipe(
 }
 
 /**
+ * Handles PUT /recipes/{id}/collections request.
+ * Atomically sets the target list of collections for a recipe.
+ * 
+ * This is an idempotent operation that:
+ * - Accepts an array of collection IDs (can be empty)
+ * - Validates all collections exist and belong to the authenticated user
+ * - Computes the diff (added/removed) from the current state
+ * - Updates the recipe_collections junction table atomically
+ * - Returns the final state with diff information
+ *
+ * Validation:
+ * - Recipe ID must be a positive integer
+ * - collection_ids must be an array of unique positive integers
+ * - Maximum 200 collections per request
+ * - Recipe must exist, not be soft-deleted, and be accessible by user
+ * - All collection IDs must exist and belong to the authenticated user
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - The recipe ID extracted from the URL path
+ * @returns Response with SetRecipeCollectionsResponseDto on success (200), or error response
+ */
+export async function handleSetRecipeCollections(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling PUT /recipes/{id}/collections request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        // Parse and validate request body
+        let requestBody: unknown;
+        try {
+            requestBody = await req.json();
+        } catch {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'Invalid JSON in request body'
+            );
+        }
+
+        const validationResult = setRecipeCollectionsSchema.safeParse(requestBody);
+
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+
+            logger.warn('Invalid request body for PUT /recipes/{id}/collections', {
+                recipeId,
+                errors: errorDetails,
+            });
+
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                `Invalid input: ${errorDetails}`
+            );
+        }
+
+        const { collection_ids } = validationResult.data;
+
+        // Call the service to set recipe collections
+        const result: SetRecipeCollectionsResult = await setRecipeCollections(client, {
+            recipeId,
+            collectionIds: collection_ids,
+            requesterUserId: user.id,
+        });
+
+        logger.info('PUT /recipes/{id}/collections completed successfully', {
+            userId: user.id,
+            recipeId,
+            collectionCount: result.collection_ids.length,
+            addedCount: result.added_ids.length,
+            removedCount: result.removed_ids.length,
+        });
+
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Handles POST /recipes/{id}/image request.
  * Uploads or replaces a recipe image for the authenticated user.
  * Accepts multipart/form-data with a 'file' field containing the image.
@@ -1202,6 +1334,23 @@ function extractRecipeIdFromImagePath(url: URL): string | null {
 }
 
 /**
+ * Extracts the recipe ID from /recipes/{id}/collections path.
+ * Used to route PUT /recipes/{id}/collections requests.
+ */
+function extractRecipeIdFromCollectionsPath(url: URL): string | null {
+    // Match pattern: /recipes/{id}/collections where id is captured
+    // This handles both local (/recipes/123/collections) and deployed (/functions/v1/recipes/123/collections) paths
+    const pathname = url.pathname;
+    const collectionsPathMatch = pathname.match(/\/recipes\/([^/]+)\/collections\/?$/);
+
+    if (collectionsPathMatch && collectionsPathMatch[1]) {
+        return collectionsPathMatch[1];
+    }
+
+    return null;
+}
+
+/**
  * Handles DELETE /recipes/{id}/image request.
  * Removes the image from a recipe by setting image_path to NULL.
  * Also performs best-effort deletion of the image file from Storage.
@@ -1347,12 +1496,15 @@ function extractRecipeIdFromPath(url: URL): string | null {
  * Recipes router - routes HTTP methods to appropriate handlers.
  * Supports:
  * - GET /recipes - List all recipes (paginated)
+ * - GET /recipes/feed - List recipes with cursor-based pagination
  * - GET /recipes/{id} - Get single recipe by ID
  * - POST /recipes - Create a new recipe
  * - POST /recipes/import - Import a recipe from raw text
  * - POST /recipes/{id}/image - Upload or replace recipe image
  * - PUT /recipes/{id} - Update an existing recipe
+ * - PUT /recipes/{id}/collections - Set recipe collections (atomic)
  * - DELETE /recipes/{id} - Soft-delete a recipe
+ * - DELETE /recipes/{id}/image - Remove recipe image
  *
  * @param req - The incoming HTTP request
  * @returns Response from the appropriate handler, or 405 Method Not Allowed
@@ -1367,6 +1519,9 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Check for /recipes/import path first (before checking for recipe ID)
     const isImport = isImportPath(url);
+
+    // Check for /recipes/{id}/collections path (must be checked before extracting simple recipe ID)
+    const collectionsRecipeId = extractRecipeIdFromCollectionsPath(url);
 
     // Check for /recipes/{id}/image path (must be checked before extracting simple recipe ID)
     const imageRecipeId = extractRecipeIdFromImagePath(url);
@@ -1456,6 +1611,11 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Route PUT requests (only for /recipes/{id} path)
     if (method === 'PUT') {
+        // PUT /recipes/{id}/collections - set recipe collections (most specific, check first)
+        if (collectionsRecipeId) {
+            return handleSetRecipeCollections(req, collectionsRecipeId);
+        }
+
         // PUT /recipes/import is not allowed
         if (isImport) {
             logger.warn('PUT /recipes/import not allowed');
