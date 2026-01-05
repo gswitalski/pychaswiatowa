@@ -326,7 +326,18 @@ Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności o
 - **Karta przepisu (`RecipeCardComponent`):** Komponent wyświetlający miniaturę przepisu (zdjęcie, nazwa, kategoria) na listach (`/my-recipies`, `/collections/:id`, `/explore`). Jeśli przepis ma flagę "Termorobot", karta pokazuje dodatkowy badge/chip "Termorobot" odpowiednią ikonką. Jeśli przepis ma flagę **"Grill"**, karta pokazuje **ikonkę grilla** (Material: `outdoor_grill`) z tooltipem **„Grill”**. Dla przepisu mojego autorstwa (`is_owner=true`) karta pokazuje również ikonkę widoczności odpowiadającą polu `visibility` (Prywatny / Współdzielony / Publiczny) wraz z tooltipem.
 - **Komponent "stanu pustego" (`EmptyStateComponent`):** Generyczny komponent wyświetlający informację (np. "Nie masz jeszcze żadnych przepisów") i przycisk z wezwaniem do akcji (np. "Dodaj pierwszy przepis"). Używany na listach przepisów i kolekcji.
 - **Komponent przesyłania pliku (`ImageUploadComponent`):** Komponent obsługujący wybór, walidację i podgląd zdjęcia w formularzu przepisu, z obsługą **wklejania ze schowka (Ctrl+V)** oraz **drag&drop** (plik z dysku) w trybie edycji. Umożliwia auto-upload, pokazuje progres oraz udostępnia akcje: "Wybierz plik" (fallback), "Usuń zdjęcie", "Cofnij" (Undo).
-- **Modal dodawania do kolekcji (`AddToCollectionDialogComponent`):** Okno modalne pozwalające na wybranie istniejącej kolekcji z listy lub stworzenie nowej i dodanie do niej bieżącego przepisu.
+- **Modal dodawania do kolekcji (`AddToCollectionDialogComponent`):** Okno modalne do zarządzania przynależnością przepisu do kolekcji (multi-select).
+    - **Rozmiar (desktop-first):** modal jest wyraźnie większy niż standardowe małe dialogi; lista kolekcji ma własny scroll (nie przewijamy całej strony). Na mobile modal przechodzi w pełnoekranowy bottom-sheet / full-screen dialog (zgodnie z Material).
+    - **Wybór kolekcji:** lista kolekcji prezentowana jako **checkboxy** (można zaznaczyć wiele pozycji). Kolekcje, w których przepis już jest, są **zaznaczone** po otwarciu modala.
+    - **Stan 0:** użytkownik może zapisać stan z **0 zaznaczonych** kolekcji (przepis nie należy do żadnej kolekcji); UI pokazuje wtedy krótką, czytelną informację (np. tekst pomocniczy) przed zapisem.
+    - **Wyszukiwanie (frontend):** pole „Szukaj kolekcji” filtruje listę **po nazwie** po stronie klienta (endpoint `GET /collections` zwraca wszystkie kolekcje).
+    - **Tworzenie nowej kolekcji w modalu:** sekcja „Nowa kolekcja” (nazwa + akcja „Utwórz”). Po sukcesie:
+        - nowa kolekcja pojawia się na liście,
+        - jest automatycznie zaznaczona,
+        - użytkownik może kontynuować wybór innych kolekcji bez zamykania okna.
+    - **Akcje:** `Anuluj` (zamyka bez zmian) oraz `Zapisz` (ustawia docelową listę kolekcji dla przepisu).
+    - **Stany:** podczas `Zapisz` pokazujemy loader i blokujemy ponowne wysłanie; po sukcesie modal się zamyka i pojawia się potwierdzenie (Snackbar/Toast).
+    - **Dostępność:** focus trap, `Esc` zamyka, checkboxy dostępne z klawiatury, aria-labels dla akcji.
 - **Drawer „Mój plan” (`MyPlanDrawerComponent`):** Panel wysuwany z prawej strony pokazujący listę przepisów w planie (miniatura + nazwa + kosz), z akcjami: „Wyczyść” i „Zamknij” oraz z overlay zamykającym po kliknięciu.
 - **Pływający przycisk „Mój plan” (`MyPlanFabComponent`):** Globalny przycisk widoczny po zalogowaniu, gdy plan ma ≥ 1 element. Umieszczony w prawym dolnym rogu i otwierający drawer „Mój plan”.
 - **Serwis planu (`MyPlanService`):** Warstwa komunikacji z API planu oraz źródło stanu UI (czy drawer jest otwarty, czy plan ma elementy) wykorzystywana w komponentach globalnych (App Shell) i na szczegółach przepisu.

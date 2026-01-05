@@ -794,6 +794,8 @@ Public endpoints are available without authentication:
         - `is_owner`
         - `in_my_collections`
         - `in_my_plan`
+    - For collection assignment UI (AddToCollectionDialogComponent), the response SHOULD include the list of collection IDs (owned by the authenticated user) that currently contain this recipe:
+        - `collection_ids`: `integer[]` (may be empty)
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**: (Similar to the `POST /recipes` success response, plus helper fields)
@@ -801,6 +803,39 @@ Public endpoints are available without authentication:
     -   **Code**: `401 Unauthorized`
     -   **Code**: `403 Forbidden` - If the recipe is not public and the user does not own the recipe.
     -   **Code**: `404 Not Found` - If the recipe does not exist.
+
+---
+
+#### `PUT /recipes/{id}/collections`
+
+-   **Description**: Atomically set the target list of collections (owned by the authenticated user) that should contain the recipe. This endpoint is designed for the "Add to collection" modal with multi-select checkboxes.
+-   **Notes**:
+    - The operation is **idempotent**: sending the same `collection_ids` multiple times yields the same result.
+    - The operation supports **empty** `collection_ids` (the recipe will not belong to any collection).
+    - The operation is **atomic**: if any `collection_id` is invalid or not owned by the user, the whole update fails and no partial changes are applied.
+    - The client is expected to load the full list of collections via `GET /collections` and filter/search locally in the UI.
+-   **Request Payload**:
+    ```json
+    {
+      "collection_ids": [1, 2, 3]
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "recipe_id": 123,
+          "collection_ids": [1, 2, 3],
+          "added_ids": [2],
+          "removed_ids": [5]
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (missing/invalid payload, non-integer IDs, duplicates)
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden` (recipe not accessible or one of the collections is not owned by the user)
+    -   **Code**: `404 Not Found` (recipe does not exist)
 
 ---
 
@@ -1036,6 +1071,8 @@ Public endpoints are available without authentication:
 #### `POST /collections/{id}/recipes`
 
 -   **Description**: Add a recipe to a collection.
+-   **Notes**:
+    - For the checkbox-based "Add to collection" modal, prefer using `PUT /recipes/{id}/collections` to set the target state in one atomic operation.
 -   **Request Payload**:
     ```json
     {

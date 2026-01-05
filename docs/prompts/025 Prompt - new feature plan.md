@@ -12,9 +12,6 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-chcę aby komponent do wyszukiwania przpeisów publicznych
-pych-public-recipes-search
-wyszukiwał nie tylko po nazwach al też po składnikach i tagach. kolejniosc zwracanych przepisów domyślnie ma być po nalepszym dopasowaniu (najpierw nazwy potem skłądniki a na końcu tagi)
 
 </nowa_funkcjonalnosc>
 

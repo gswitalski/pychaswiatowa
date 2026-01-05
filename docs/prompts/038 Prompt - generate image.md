@@ -5,28 +5,6 @@ Here is the reference image to help you understand the dish
 Here is the recipe for the dish you need to photograph:
 <recipe>
 
-Szaszłyki z wątróbek w czerwonym winie
-4 porcje
-
-Pyszne szaszłyki z wątróbek drobiowych, idealne na grilla. Połączenie wątróbki z wędzonym boczkiem i czerwonym winem sprawia, że danie nabiera wyjątkowego smaku.
-
-Mięso
-Łatwe
-Danie główne
-Brak zdjęcia
-Składniki
-500 g wątróbek drobiowych
-60 ml czerwonego wina
-300 g wędzonego boczku
-2 łyżki oleju
-sól
-pieprz
-Kroki przygotowania
-Skrócić wątróbki czerwonym winem i odstawić na godzinę.
-Pokroić boczek w plasterki.
-Na szpadki nadziewać na przemian kilka kawałków wątróbki i boczku, smarować olejem, oprószyć solą i pieprzem.
-Grillować.
-Podawać z pieczywem i surówką z pora i ogórków kiszonych.
 
 
 </recipe>
