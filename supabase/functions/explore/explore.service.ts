@@ -6,6 +6,7 @@
 import { createServiceRoleClient, TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
+import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -36,6 +37,46 @@ export type RecipeContentItem =
 export type RecipeContent = RecipeContentItem[];
 
 /**
+ * Recipe diet type enum.
+ */
+export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
+
+/**
+ * Recipe cuisine enum.
+ */
+export type RecipeCuisine = 
+    | 'AFRICAN'
+    | 'AMERICAN'
+    | 'ASIAN'
+    | 'BALKAN'
+    | 'BRAZILIAN'
+    | 'BRITISH'
+    | 'CARIBBEAN'
+    | 'CHINESE'
+    | 'FRENCH'
+    | 'GERMAN'
+    | 'GREEK'
+    | 'INDIAN'
+    | 'ITALIAN'
+    | 'JAPANESE'
+    | 'KOREAN'
+    | 'MEDITERRANEAN'
+    | 'MEXICAN'
+    | 'MIDDLE_EASTERN'
+    | 'POLISH'
+    | 'RUSSIAN'
+    | 'SCANDINAVIAN'
+    | 'SPANISH'
+    | 'THAI'
+    | 'TURKISH'
+    | 'VIETNAMESE';
+
+/**
+ * Recipe difficulty enum.
+ */
+export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+/**
  * DTO for detailed view of a single recipe (from /explore endpoint).
  * This matches RecipeDetailDto from shared/contracts/types.ts.
  */
@@ -63,6 +104,8 @@ export interface RecipeDetailDto {
     updated_at: string;
     /** True if recipe is in authenticated user's plan (false for anonymous users) */
     in_my_plan: boolean;
+    /** Array of collection IDs (owned by authenticated user) that contain this recipe. Empty array for anonymous users. */
+    collection_ids: number[];
 }
 
 /**
@@ -241,7 +284,12 @@ export async function getExploreRecipeById(params: {
         const recipeIdsInPlan = await getRecipeIdsInPlan(client, [recipeId], requesterUserId);
         const inMyPlan = recipeIdsInPlan.has(recipeId);
         
-        return mapToDto(recipe, inMyPlan);
+        // Get collection IDs for authenticated users
+        const collectionIds = requesterUserId 
+            ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
+            : [];
+        
+        return mapToDto(recipe, inMyPlan, collectionIds);
     }
 
     // Rule 2: If not PUBLIC, require authentication and author match
@@ -276,7 +324,12 @@ export async function getExploreRecipeById(params: {
     const recipeIdsInPlan = await getRecipeIdsInPlan(client, [recipeId], requesterUserId);
     const inMyPlan = recipeIdsInPlan.has(recipeId);
 
-    return mapToDto(recipe, inMyPlan);
+    // Get collection IDs for authenticated users
+    const collectionIds = requesterUserId 
+        ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
+        : [];
+
+    return mapToDto(recipe, inMyPlan, collectionIds);
 }
 
 /**
@@ -285,9 +338,10 @@ export async function getExploreRecipeById(params: {
  *
  * @param recipe - Raw database record
  * @param inMyPlan - Whether recipe is in authenticated user's plan
+ * @param collectionIds - Array of collection IDs that contain this recipe (empty for anonymous)
  * @returns RecipeDetailDto
  */
-function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean): RecipeDetailDto {
+function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean, collectionIds: number[]): RecipeDetailDto {
     return {
         id: recipe.id,
         user_id: recipe.user_id,
@@ -313,5 +367,6 @@ function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean): RecipeDetailD
         created_at: recipe.created_at,
         updated_at: recipe.updated_at,
         in_my_plan: inMyPlan,
+        collection_ids: collectionIds,
     };
 }

@@ -13,6 +13,7 @@ import {
     createNextCursor,
     validateCursorConsistency,
 } from '../_shared/cursor.ts';
+import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -153,6 +154,8 @@ export interface PublicRecipeDetailDto {
     is_owner: boolean;
     /** True if recipe is in authenticated user's plan (always false for anonymous) */
     in_my_plan: boolean;
+    /** Array of collection IDs (owned by authenticated user) that contain this recipe. Empty array for anonymous users. */
+    collection_ids: number[];
     servings: number | null;
     is_termorobot: boolean;
     prep_time_minutes: number | null;
@@ -160,6 +163,7 @@ export interface PublicRecipeDetailDto {
     diet_type: RecipeDietType | null;
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
+    is_grill: boolean;
 }
 
 /**
@@ -994,14 +998,18 @@ export async function getPublicRecipeById(
 
     const profile = profileData as ProfileRow;
 
-    // Calculate is_owner and in_my_plan for authenticated users
+    // Calculate is_owner, in_my_plan, and collection_ids for authenticated users
     const isOwner = userId !== null && recipe.user_id === userId;
     let inMyPlan = false;
+    let collectionIds: number[] = [];
 
     if (userId !== null) {
         // Check if recipe is in user's plan
         const recipeIdsInPlan = await getRecipeIdsInPlan(client, [params.id], userId);
         inMyPlan = recipeIdsInPlan.has(params.id);
+
+        // Get collection IDs that contain this recipe (owned by user)
+        collectionIds = await getCollectionIdsForRecipe(client, params.id, userId);
     }
 
     // Map to DTO
@@ -1024,6 +1032,7 @@ export async function getPublicRecipeById(
         created_at: recipe.created_at,
         is_owner: isOwner,
         in_my_plan: inMyPlan,
+        collection_ids: collectionIds,
         servings: recipe.servings,
         is_termorobot: recipe.is_termorobot,
         prep_time_minutes: recipe.prep_time_minutes,
@@ -1040,6 +1049,7 @@ export async function getPublicRecipeById(
         authorId: recipeDto.author.id,
         isOwner,
         inMyPlan,
+        collectionCount: collectionIds.length,
     });
 
     return recipeDto;

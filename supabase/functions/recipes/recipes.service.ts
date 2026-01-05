@@ -252,7 +252,16 @@ const DEFAULT_SORT_FIELD = 'created_at';
  * @param userId - User ID (owner of collections)
  * @returns Sorted array of collection IDs that contain the recipe
  */
-async function getCollectionIdsForRecipe(
+/**
+ * Retrieves the IDs of all collections (owned by the specified user) that contain the given recipe.
+ * Returns an empty array if no collections are found or if an error occurs.
+ *
+ * @param client - The Supabase client
+ * @param recipeId - The recipe ID to check
+ * @param userId - The user ID whose collections to check
+ * @returns Array of collection IDs (sorted ascending)
+ */
+export async function getCollectionIdsForRecipe(
     client: TypedSupabaseClient,
     recipeId: number,
     userId: string

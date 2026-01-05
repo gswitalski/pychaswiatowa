@@ -232,6 +232,8 @@ export interface PublicRecipeDetailDto {
     is_owner: boolean;
     /** True if recipe is in authenticated user's plan (always false for anonymous) */
     in_my_plan: boolean;
+    /** Array of collection IDs (owned by authenticated user) that contain this recipe. Empty array for anonymous users. */
+    collection_ids: number[];
     servings: number | null;
     is_termorobot: boolean;
     prep_time_minutes: number | null;

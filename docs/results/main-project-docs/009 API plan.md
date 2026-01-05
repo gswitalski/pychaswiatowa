@@ -308,7 +308,7 @@ Public endpoints are available without authentication:
 -   **Description**: Retrieve a single public recipe by its ID. Intended for public, shareable, SEO-friendly recipe pages (the frontend uses canonical routes like `/explore/recipes/{id}-{slug}`, but the API uses the numeric `id`).
 -   **Notes**:
     - Public access is allowed without authentication, but the client MAY include an `Authorization: Bearer <JWT>` header.
-    - If the request is authenticated, the API returns the helper fields `is_owner` and `in_my_plan`.
+    - If the request is authenticated, the API returns the helper fields `is_owner`, `in_my_plan`, and `collection_ids`.
     - **Canonical URL (frontend concern)**:
         - Canonical public route: `/explore/recipes/{id}-{slug}`
         - Backward-compatible route: `/explore/recipes/{id}` (should be normalized/redirected to the canonical URL)
@@ -333,6 +333,7 @@ Public endpoints are available without authentication:
           "visibility": "PUBLIC",
           "is_owner": false,
           "in_my_plan": false,
+          "collection_ids": [],
           "category": { "id": 2, "name": "Dessert" },
           "ingredients": [
             { "type": "header", "content": "Dough" },

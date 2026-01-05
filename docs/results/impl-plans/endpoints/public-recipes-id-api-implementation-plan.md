@@ -27,7 +27,7 @@ W repozytorium endpoint jest już zaimplementowany w Edge Function `public`:
 ### Kontrakt (frontend/shared)
 - `PublicRecipeDetailDto` (`shared/contracts/types.ts`)
   - `id`, `name`, `description`, `image_path`, `visibility`, `category`, `ingredients`, `steps`, `tags`, `author`, `created_at`
-  - pola pomocnicze: `is_owner`, `in_my_plan`
+  - pola pomocnicze: `is_owner`, `in_my_plan`, `collection_ids`
 
 ### Backend (Edge Function `public`)
 - `GetPublicRecipeByIdParams` (`supabase/functions/public/public.types.ts`)
@@ -47,6 +47,9 @@ Wymagane zachowanie:
 - `in_my_plan`:
   - `false` dla anon
   - `true` tylko jeśli przepis znajduje się w `plan_recipes` użytkownika
+- `collection_ids`:
+  - `[]` (pusta tablica) dla anon
+  - tablica ID kolekcji (należących do użytkownika), w których znajduje się przepis
 
 ### Błędy (minimalny wymagany zestaw)
 - **`400 Bad Request`**: `id` nie jest dodatnią liczbą całkowitą
@@ -74,7 +77,9 @@ Wymagane zachowanie:
      - `visibility = 'PUBLIC'`
      - `deleted_at IS NULL`
    - pobiera autora z `profiles`
-   - jeśli JWT: sprawdza, czy przepis jest w `plan_recipes` użytkownika
+   - jeśli JWT: 
+     - sprawdza, czy przepis jest w `plan_recipes` użytkownika
+     - pobiera IDs kolekcji użytkownika, które zawierają przepis (`getCollectionIdsForRecipe`)
    - mapuje wynik do `PublicRecipeDetailDto`
 
 ## 6. Względy bezpieczeństwa
@@ -111,6 +116,7 @@ Wymagane zachowanie:
 - Dodatkowe zapytania:
   - `profiles` (1 zapytanie)
   - `plan_recipes` (opcjonalnie, tylko gdy JWT)
+  - `recipe_collections` + join z `collections` (opcjonalnie, tylko gdy JWT) - pobiera IDs kolekcji użytkownika zawierających przepis
 - Rekomendacja: utrzymać caching publiczny dla anon i `no-store` dla authenticated (w repo jest to już zaadresowane w `createCachedResponse` dla list; dla detalu można rozważyć identyczną politykę cache, jeśli potrzebne).
 
 ## 9. Kroki implementacji
