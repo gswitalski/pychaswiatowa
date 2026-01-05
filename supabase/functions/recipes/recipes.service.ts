@@ -1981,10 +1981,10 @@ export async function setRecipeCollections(
         targetCollectionCount: collectionIds.length,
     });
 
-    // Step 1: Verify recipe exists, is not deleted, and user is owner
+    // Step 1: Verify recipe exists, is not deleted, and user has access (owner or public)
     const { data: recipe, error: recipeError } = await client
         .from('recipes')
-        .select('id, user_id')
+        .select('id, user_id, visibility')
         .eq('id', recipeId)
         .is('deleted_at', null)
         .maybeSingle();
@@ -2009,16 +2009,17 @@ export async function setRecipeCollections(
         );
     }
 
-    if (recipe.user_id !== requesterUserId) {
-        logger.warn('User does not own the recipe', {
+    const isOwner = recipe.user_id === requesterUserId;
+    const isPublic = recipe.visibility === 'PUBLIC';
+
+    if (!isOwner && !isPublic) {
+        logger.warn('User cannot access recipe for collection assignment', {
             recipeId,
             ownerId: recipe.user_id,
             requesterId: requesterUserId,
+            visibility: recipe.visibility,
         });
-        throw new ApplicationError(
-            'NOT_FOUND',
-            `Recipe with ID ${recipeId} not found`
-        );
+        throw new ApplicationError('FORBIDDEN', 'Recipe is not accessible');
     }
 
     logger.info('Recipe access verified', { recipeId });

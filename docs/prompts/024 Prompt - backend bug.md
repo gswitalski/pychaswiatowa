@@ -13,17 +13,32 @@ Zapoznaj się z dokumentamu projektu
 <aktualne_zachowanie>
 
 endpoit
-GET /public/recipes/{id}
+GET 
+http://127.0.0.1:54331/functions/v1/recipes/40/collections
 
-nie zwraca informacji o ty do jakich kolecji zalogowanego użytkownika należy przepis 
+z body
+{
+  "collection_ids": [
+    4
+  ]
+}
 
+nie pozwala dodać przepisu do kolekcji użytkownika
+{
+  "code": "NOT_FOUND",
+  "message": "Recipe with ID 40 not found"
+}
+
+
+zalogowany użytkownik nie jest autorem przpisu
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-zrwca informacje o tym d których kolekcji zalogowanego użytkownika nalezy przepis, tak samo jak to robi endpoint GET /recipes/{id}
+uzytkownik może dopdać do swojek kolekcji przepis innego autora jesli 
+przepis ma widocnosc PUBLIC 
 
 </oczekiwane_zachowanie>
 
