@@ -95,6 +95,7 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    - Każdy krok w osobnej linii (separator: \n)
    - Sekcje/nagłówki poprzedź znakiem # (np. "# Przygotowanie ciasta")
    - ZAWSZE używaj bezokoliczników: "Wymieszaj" → "Wymieszać", "Dodaj" → "Dodać"
+   - tam gdzie to ma sens używaj trybu dokonanego np. "Wymieszać" zamiast "Mieszać". Ale gdy pada faza "podawać" to zachowaj formę niedokonaną.
    - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
    - wykrywaj nagłówki w sekcji kroków i przed nimi umieszczaj znak #
    - Lista NIE MOŻE być pusta
@@ -113,6 +114,7 @@ OBSŁUGA NIECZYTELNYCH FORMATÓW:
 - Jeśli format źródłowy jest chaotyczny, samodzielnie zrekonstruuj logiczną strukturę
 - Napraw oczywiste błędy ortograficzne i formatowanie
 - Zgaduj intencje autora na podstawie kontekstu
+- zawsze przetłumacz przepis na język polski
 
 PROCES ANALIZY:
 
