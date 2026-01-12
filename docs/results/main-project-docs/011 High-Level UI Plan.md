@@ -44,9 +44,9 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - wyszukiwanie uruchamia się od **3 znaków** (po trim) + debounce (ok. 300–400 ms),
         - zapytania wielowyrazowe działają jako **AND**,
         - tagi dopasowują się jako **pełna nazwa** lub **prefix**,
-        - przy niepustej frazie domyślne sortowanie jest po **najlepszym dopasowaniu** (relevance: nazwa > składniki > tagi; wagi 3/2/1),
+        - przy niepustej frazie domyślne sortowanie jest po **najlepszym dopasowaniu** (relevance: nazwa > składniki > tagi > wskazówki; wagi 3/2/1/0.5),
         - dla pustej frazy (po trim) widok działa jak feed (np. `created_at.desc`) i nie pokazuje stanu „Brak wyników” (zamiast tego standardowy feed).
-    - **Transparentność dopasowania:** Na każdej karcie wyniku (lub w jej stopce) pokazujemy krótki tekst: **„Dopasowanie: nazwa / składniki / tagi”** (jedna etykieta — wskazujemy najlepsze źródło dopasowania), aby zwiększyć zaufanie do rankingu.
+    - **Transparentność dopasowania:** Na każdej karcie wyniku (lub w jej stopce) pokazujemy krótki tekst: **„Dopasowanie: nazwa / składniki / tagi / wskazówki”** (jedna etykieta — wskazujemy najlepsze źródło dopasowania), aby zwiększyć zaufanie do rankingu.
     - **Load more (zamiast paginacji):** Domyślnie ładowane jest **12 przepisów**. Pod listą widoczny jest przycisk **"Więcej"**, który:
         - doładowuje kolejne **12** i **dopina** je pod już widocznymi,
         - pokazuje stan ładowania (np. label "Ładowanie…" + `disabled`),
@@ -74,7 +74,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - Przy próbie dostępu do niepublicznego przepisu innego autora: komunikat o braku dostępu
     - **Zalogowany (własny przepis):**
         - Pełna funkcjonalność: przyciski "Dodaj do kolekcji", "Dodaj do planu", "Edytuj", "Usuń"
-- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, metadane w formie chipów/badge (jeśli ustawione): **typ diety (Mięso/Wege/Vegan)**, **kuchnia (lista kontrolowana)**, **stopień trudności (Łatwe/Średnie/Trudne)**, **badge/chip "Termorobot" (jeśli ustawione)**, **badge/chip "Grill" z ikonką grilla (jeśli ustawione)**, opis, **czasy (jeśli ustawione) pod opisem z ikonkami**: czas przygotowania (`schedule`) i czas całkowity (`timer`), zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
+- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, metadane w formie chipów/badge (jeśli ustawione): **typ diety (Mięso/Wege/Vegan)**, **kuchnia (lista kontrolowana)**, **stopień trudności (Łatwe/Średnie/Trudne)**, **badge/chip "Termorobot" (jeśli ustawione)**, **badge/chip "Grill" z ikonką grilla (jeśli ustawione)**, opis, **czasy (jeśli ustawione) pod opisem z ikonkami**: czas przygotowania (`schedule`) i czas całkowity (`timer`), zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), **wskazówki (osobna sekcja pod krokami przygotowania; ukryta, gdy pusta)**, kategoria, tagi, autor i data utworzenia (dla publicznych przepisów innych autorów).
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy na desktopie (składniki / kroki). Dynamiczne dostosowanie akcji w zależności od kontekstu użytkownika. Normalizacja URL w warstwie frontendu:
     - `/explore/recipes/:id` -> `/explore/recipes/:id-:slug`
@@ -160,7 +160,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - Zalogowany użytkownik przeglądający cudzy publiczny przepis
     - Zalogowany użytkownik przeglądający własny przepis (pełne akcje)
 - **Header:** Tytuł przepisu. Akcje zależne od kontekstu (patrz punkt 3).
-- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, metadane w formie chipów/badge (jeśli ustawione): **typ diety (Mięso/Wege/Vegan)**, **kuchnia (lista kontrolowana)**, **stopień trudności (Łatwe/Średnie/Trudne)**, **badge/chip "Termorobot" (jeśli ustawione)**, **badge/chip "Grill" z ikonką grilla (jeśli ustawione)**, opis, **czasy (jeśli ustawione) pod opisem z ikonkami**: czas przygotowania (`schedule`) i czas całkowity (`timer`), zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), kategoria, tagi.
+- **Kluczowe informacje do wyświetlenia:** Nazwa, **liczba porcji (jeśli ustawiona) pod tytułem**, metadane w formie chipów/badge (jeśli ustawione): **typ diety (Mięso/Wege/Vegan)**, **kuchnia (lista kontrolowana)**, **stopień trudności (Łatwe/Średnie/Trudne)**, **badge/chip "Termorobot" (jeśli ustawione)**, **badge/chip "Grill" z ikonką grilla (jeśli ustawione)**, opis, **czasy (jeśli ustawione) pod opisem z ikonkami**: czas przygotowania (`schedule`) i czas całkowity (`timer`), zdjęcie, listy składników i kroków (kroki numerowane w sposób ciągły), **wskazówki (osobna sekcja pod krokami przygotowania; ukryta, gdy pusta)**, kategoria, tagi.
 - **Kluczowe komponenty widoku:** `PageHeaderComponent`, `RecipeHeaderComponent`, `RecipeImageComponent`, `RecipeContentListComponent`, `mat-chip-list`.
 - **Względy UX, dostępności i bezpieczeństwa:** Układ 2-kolumnowy (składniki / kroki) na desktopie. Feedback "Toast" po usunięciu. Numeracja kroków nie resetuje się po nagłówkach sekcji. Dla zalogowanego nie-autora przyciski "Edytuj" i "Usuń" nie są wyświetlane (również gdy wejście nastąpiło z listy `/my-recipies`). Dla zalogowanego w nagłówku dostępna jest również akcja „Dodaj do planu” / „Zobacz listę” otwierająca drawer „Mój plan”.
 
@@ -185,7 +185,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - Komunikaty błędów w miejscu + Snackbar.
 - **Zachowanie:**
     - Jeśli wejście jest puste (brak tekstu i brak obrazu), kliknięcie „Dalej” przenosi do pustego formularza `/recipes/new`.
-    - Jeśli wejście jest niepuste, „Dalej” uruchamia przetwarzanie AI (loader, `disabled`), a po sukcesie przenosi do `/recipes/new` z wstępnie wypełnionymi polami (draft w stanie aplikacji).
+    - Jeśli wejście jest niepuste, „Dalej” uruchamia przetwarzanie AI (loader, `disabled`), a po sukcesie przenosi do `/recipes/new` z wstępnie wypełnionymi polami (draft w stanie aplikacji; w tym wskazówki, jeśli zostały wywnioskowane).
     - Jeśli AI zwróci błąd „to nie jest pojedynczy przepis”, widok zostaje na `/recipes/new/assist` i pokazuje czytelny komunikat + krótką podpowiedź.
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-button`, `mat-form-field` (textarea), dedykowany komponent do wklejania obrazu (clipboard paste) + podgląd.
 - **Względy UX, dostępności i bezpieczeństwa:** Jasne stany ładowania, brak auto-nawigacji przy błędach, komunikaty bez ujawniania danych technicznych. Wszelkie klucze i integracja z LLM wyłącznie po stronie backendu (Edge Function).
@@ -194,8 +194,8 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Ścieżka:** `/recipes/new`, `/recipes/:id/edit`
 - **Główny cel:** Tworzenie i modyfikacja przepisu.
 - **Header:** Tytuł "Nowy przepis" / "Edycja". Akcje: "Anuluj", "Zapisz" (Sticky - zawsze widoczny).
-- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, **liczba porcji (opcjonalnie)**, **czas przygotowania (opcjonalnie)**, **czas całkowity (opcjonalnie)**, **Termorobot (toggle/checkbox, opcjonalnie, domyślnie wyłączone)**, **Grill (toggle/checkbox, opcjonalnie, domyślnie wyłączone)**, **typ diety (opcjonalnie: Mięso/Wege/Vegan)**, **kuchnia (opcjonalnie; lista kontrolowana)**, **stopień trudności (opcjonalnie: Łatwe/Średnie/Trudne)**, kategoria, widoczność), Składniki, Kroki, Zdjęcie.
-- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), `ImageUploadComponent` (strefa paste/drop + fallback file picker), `EditableListComponent` (składniki/kroki).
+- **Kluczowe informacje do wyświetlenia:** Formularz podzielony na sekcje: Dane podstawowe (nazwa, opis, **liczba porcji (opcjonalnie)**, **czas przygotowania (opcjonalnie)**, **czas całkowity (opcjonalnie)**, **Termorobot (toggle/checkbox, opcjonalnie, domyślnie wyłączone)**, **Grill (toggle/checkbox, opcjonalnie, domyślnie wyłączone)**, **typ diety (opcjonalnie: Mięso/Wege/Vegan)**, **kuchnia (opcjonalnie; lista kontrolowana)**, **stopień trudności (opcjonalnie: Łatwe/Średnie/Trudne)**, kategoria, widoczność), Składniki, Kroki, **Wskazówki (opcjonalnie)**, Zdjęcie.
+- **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), `ImageUploadComponent` (strefa paste/drop + fallback file picker), `EditableListComponent` (składniki/kroki/wskazówki).
 - **Względy UX, dostępności i bezpieczeństwa:**
     - Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
     - Pole **"Liczba porcji"** jest opcjonalne, przyjmuje tylko liczbę całkowitą w zakresie `1-99`, może zostać wyczyszczone (brak wartości). W szczegółach przepisu wartość jest wyświetlana pod tytułem (np. `4 porcje`, `6 porcji`).
@@ -341,4 +341,4 @@ Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności o
 - **Drawer „Mój plan” (`MyPlanDrawerComponent`):** Panel wysuwany z prawej strony pokazujący listę przepisów w planie (miniatura + nazwa + kosz), z akcjami: „Wyczyść” i „Zamknij” oraz z overlay zamykającym po kliknięciu.
 - **Pływający przycisk „Mój plan” (`MyPlanFabComponent`):** Globalny przycisk widoczny po zalogowaniu, gdy plan ma ≥ 1 element. Umieszczony w prawym dolnym rogu i otwierający drawer „Mój plan”.
 - **Serwis planu (`MyPlanService`):** Warstwa komunikacji z API planu oraz źródło stanu UI (czy drawer jest otwarty, czy plan ma elementy) wykorzystywana w komponentach globalnych (App Shell) i na szczegółach przepisu.
-- **Lista edytowalnych elementów (`EditableListComponent`):** Komponent do zarządzania listą składników/kroków w formularzu, wspierający dodawanie, usuwanie, edycję "in-line" oraz zmianę kolejności za pomocą "przeciągnij i upuść".
+- **Lista edytowalnych elementów (`EditableListComponent`):** Komponent do zarządzania listą składników/kroków/wskazówek w formularzu, wspierający dodawanie, usuwanie, edycję "in-line" oraz zmianę kolejności za pomocą "przeciągnij i upuść".

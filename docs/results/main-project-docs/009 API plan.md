@@ -134,7 +134,7 @@ Public endpoints are available without authentication:
     -   `page` (optional, integer, default: 1): The page number for pagination.
     -   `limit` (optional, integer, default: 20): The number of items per page.
     -   `sort` (optional, string, default: `created_at.desc`): Sort order. e.g., `created_at.desc`, `name.asc`.
-    -   `q` (optional, string): Text search query (min 3 characters, after trim). Searches across name, ingredients, and tags.
+    -   `q` (optional, string): Text search query (min 3 characters, after trim). Searches across name, ingredients, tags, and tips.
         - Token semantics (MVP): multi-word queries are treated as **AND**.
         - Tag matching (MVP): exact match or prefix match.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
@@ -205,7 +205,7 @@ Public endpoints are available without authentication:
         ```
 -   **Sorting / relevance behavior (MVP)**:
     - If `q` is provided and valid (min 3 chars), the default sort becomes **best match (relevance)**:
-        - priority / weights: `name` (3) > `ingredients` (2) > `tags` (1)
+        - priority / weights: `name` (3) > `ingredients` (2) > `tags` (1) > `tips` (0.5)
         - ties are resolved with a stable secondary sort (recommended: `created_at.desc`)
     - If `q` is empty/omitted (or shorter than 3 after trim), treat the request as a feed and use the default `sort` (by default `created_at.desc`).
 -   **Error Response**:
@@ -224,7 +224,7 @@ Public endpoints are available without authentication:
     -   `cursor` (optional, string): Opaque cursor returned by the previous response (`pageInfo.nextCursor`).
     -   `limit` (optional, integer, default: 12): The number of items to return per batch. (UI uses 12 as the default batch size.)
     -   `sort` (optional, string, default: `created_at.desc`): Sort order. Must be stable. e.g., `created_at.desc`, `name.asc`.
-    -   `q` (optional, string): Text search query (min 3 characters, after trim). Searches across name, ingredients, and tags.
+    -   `q` (optional, string): Text search query (min 3 characters, after trim). Searches across name, ingredients, tags, and tips.
         - Token semantics (MVP): multi-word queries are treated as **AND**.
         - Tag matching (MVP): exact match or prefix match.
     -   `filter[termorobot]` (optional, boolean): Filter by the "Termorobot" flag (`true` / `false`). (API-ready; UI may not expose it in MVP.)
@@ -294,7 +294,7 @@ Public endpoints are available without authentication:
         ```
 -   **Sorting / relevance behavior (MVP)**:
     - If `q` is provided and valid (min 3 chars), the default sort becomes **best match (relevance)**:
-        - priority / weights: `name` (3) > `ingredients` (2) > `tags` (1)
+        - priority / weights: `name` (3) > `ingredients` (2) > `tags` (1) > `tips` (0.5)
         - ties are resolved with a stable secondary sort (recommended: `created_at.desc`)
     - If `q` is empty/omitted (or shorter than 3 after trim), treat the request as a feed and use the default `sort` (by default `created_at.desc`).
 -   **Error Response**:
@@ -342,6 +342,10 @@ Public endpoints are available without authentication:
           "steps": [
             { "type": "header", "content": "Preparation" },
             { "type": "item", "content": "Mix flour and water." }
+          ],
+          "tips": [
+            { "type": "header", "content": "Tips" },
+            { "type": "item", "content": "Use cold butter for a flakier crust." }
           ],
           "tags": ["sweet", "baking"],
           "author": { "id": "a1b2c3d4-...", "username": "john.doe" },
@@ -523,7 +527,7 @@ Public endpoints are available without authentication:
 
 #### `POST /recipes`
 
--   **Description**: Create a new recipe. The raw text for ingredients and steps will be parsed server-side into JSONB format.
+-   **Description**: Create a new recipe. The raw text for ingredients, steps, and tips will be parsed server-side into JSONB format. The `tips_raw` field is optional.
 -   **Request Payload**:
     ```json
     {
@@ -541,6 +545,7 @@ Public endpoints are available without authentication:
       "visibility": "PRIVATE",
       "ingredients_raw": "# Dough\n- 500g flour\n- 250ml water",
       "steps_raw": "# Preparation\n1. Mix flour and water.\n2. Knead the dough.",
+      "tips_raw": "# Tips\n- Use cold butter for a flakier crust.",
       "tags": ["vegan", "quick"]
     }
     ```
@@ -572,6 +577,10 @@ Public endpoints are available without authentication:
             {"type": "item", "content": "1. Mix flour and water."},
             {"type": "item", "content": "2. Knead the dough."}
           ],
+          "tips": [
+            {"type": "header", "content": "Tips"},
+            {"type": "item", "content": "Use cold butter for a flakier crust."}
+          ],
           "tags": [
             {"id": 5, "name": "vegan"},
             {"id": 12, "name": "quick"}
@@ -589,6 +598,8 @@ Public endpoints are available without authentication:
 #### `POST /recipes/import`
 
 -   **Description**: Create a new recipe from a raw text block. The server is responsible for parsing the text and structuring it into the required JSONB format.
+-   **Notes (MVP)**:
+    - Tips / "wskazówki" are **not** imported in MVP. The created recipe will have an empty `tips` list and the user can add tips later in the edit form.
 -   **Request Payload**:
     ```json
     {
@@ -621,6 +632,7 @@ Public endpoints are available without authentication:
           "steps": [
             {"type": "item", "content": "krok 1"}
           ],
+          "tips": [],
           "tags": [],
           "created_at": "2023-10-28T10:00:00Z"
         }
@@ -641,6 +653,7 @@ Public endpoints are available without authentication:
 -   **Notes**:
     - The frontend MUST NOT call this endpoint when both text and image are empty. In that case it should open an empty recipe form (`/recipes/new`) directly.
     - The endpoint enforces "single recipe" validation. If the input looks like multiple recipes or unrelated content, it returns a validation error and the UI stays on the input step.
+    - The draft MAY include `tips_raw` (wskazówki) if the model can infer them from the input. If not available, the field may be omitted or returned as an empty string.
     - Category handling: the draft may include `category_name` which the client maps to the predefined categories list. If no match exists, the client should leave `category_id` empty and prompt the user to choose.
     - Rate limiting SHOULD be enforced per user to control costs (implementation detail of the Edge Function).
 -   **Request Payload**:
@@ -674,6 +687,7 @@ Public endpoints are available without authentication:
             "description": "Kremowy sernik na spodzie z herbatników.",
             "ingredients_raw": "# Składniki\n- twaróg\n- jajka\n- cukier",
             "steps_raw": "# Kroki\n1. Wymieszaj składniki.\n2. Upiecz.",
+            "tips_raw": "# Wskazówki\n- Wszystkie składniki powinny mieć temperaturę pokojową.",
             "category_name": "Deser",
             "tags": ["wypieki", "sernik"]
           },
@@ -1319,6 +1333,7 @@ Public endpoints are available without authentication:
     -   `recipes.difficulty`: optional, enum: 'EASY', 'MEDIUM', 'HARD'. Can be `null` (no value provided).
     -   `recipes.visibility`: required, enum: 'PRIVATE', 'SHARED', 'PUBLIC'. Default: 'PRIVATE'.
     -   `recipes.ingredients_raw`, `recipes.steps_raw`: required.
+    -   `recipes.tips_raw`: optional. Can be omitted or empty (the stored `tips` list becomes empty).
     -   `POST /recipes/{id}/image`:
         - `file`: required
         - allowed mime types: `image/png`, `image/jpeg`, `image/webp`
@@ -1327,6 +1342,6 @@ Public endpoints are available without authentication:
     -   `collections.name`: required, 1-100 characters.
 -   **Business Logic**:
     -   **Recipe time consistency**: If both `prep_time_minutes` and `total_time_minutes` are provided (non-null), then `total_time_minutes` MUST be greater than or equal to `prep_time_minutes`. Otherwise the API MUST return `400 Bad Request` with a clear validation error payload.
-    -   **Text Parsing**: For `POST /recipes` and `PUT /recipes`, the API will accept `ingredients_raw` and `steps_raw` as plain text. A dedicated PostgreSQL function, called via RPC, will parse this text into the structured `jsonb` format required by the database. Lines starting with `#` will be converted to `{"type": "header", ...}` objects. For lines in `steps_raw`, the parser will strip leading numbering (like "1.", "2.") and bullet points to ensure clean data storage. This allows the frontend to implement automatic, continuous numbering across sections without duplication.
+    -   **Text Parsing**: For `POST /recipes` and `PUT /recipes`, the API will accept `ingredients_raw` and `steps_raw` as plain text, and MAY accept `tips_raw` (optional) as plain text. A dedicated PostgreSQL function, called via RPC, will parse this text into the structured `jsonb` format required by the database (`ingredients`, `steps`, `tips`). Lines starting with `#` will be converted to `{"type": "header", ...}` objects. For lines in `steps_raw`, the parser will strip leading numbering (like "1.", "2.") and bullet points to ensure clean data storage. This allows the frontend to implement automatic, continuous numbering across sections without duplication.
     -   **Tag Management**: When creating/updating a recipe, the list of tag names provided will be used to find existing tags or create new ones for the user, and then associate them with the recipe. This logic will be handled within the database transaction for creating/updating the recipe.
     -   **Soft Deletes**: `DELETE /recipes/{id}` performs a soft delete by setting the `deleted_at` field. All `GET` requests for recipes will automatically filter out records where `deleted_at` is not null.
