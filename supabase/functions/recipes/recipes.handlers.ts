@@ -82,6 +82,12 @@ const createRecipeSchema = z.object({
             invalid_type_error: 'Steps must be a string',
         })
         .min(1, 'Steps cannot be empty'),
+    tips_raw: z
+        .string({
+            invalid_type_error: 'Tips must be a string',
+        })
+        .optional()
+        .transform((val) => val?.trim() || null),
     tags: z
         .array(
             z
@@ -238,6 +244,12 @@ const updateRecipeSchema = z
                 invalid_type_error: 'Steps must be a string',
             })
             .min(1, 'Steps cannot be empty')
+            .optional(),
+        tips_raw: z
+            .string({
+                invalid_type_error: 'Tips must be a string',
+            })
+            .transform((val) => val?.trim() || null)
             .optional(),
         tags: z
             .array(
@@ -852,6 +864,7 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
             category_id: validatedData.category_id,
             ingredients_raw: validatedData.ingredients_raw,
             steps_raw: validatedData.steps_raw,
+            tips_raw: validatedData.tips_raw,
             tags: validatedData.tags,
             visibility: validatedData.visibility,
             servings: validatedData.servings,
@@ -945,6 +958,7 @@ export async function handleUpdateRecipe(
             category_id: validatedData.category_id,
             ingredients_raw: validatedData.ingredients_raw,
             steps_raw: validatedData.steps_raw,
+            tips_raw: validatedData.tips_raw,
             tags: validatedData.tags,
             visibility: validatedData.visibility,
             image_path: validatedData.image_path,

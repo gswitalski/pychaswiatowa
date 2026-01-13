@@ -169,6 +169,7 @@ export interface RecipeDetailDto {
     visibility: RecipeVisibility;
     ingredients: RecipeContent;
     steps: RecipeContent;
+    tips: RecipeContent;
     tags: TagDto[];
     servings: number | null;
     is_termorobot: boolean;
@@ -234,7 +235,7 @@ const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tips, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -1013,6 +1014,7 @@ function mapToRecipeDetailDto(data: any, inMyPlan: boolean, collectionIds: numbe
         visibility: data.visibility as RecipeVisibility,
         ingredients: parseRecipeContent(data.ingredients),
         steps: parseRecipeContent(data.steps),
+        tips: parseRecipeContent(data.tips),
         tags: parseTagsContent(data.tags),
         servings: data.servings ? Number(data.servings) : null,
         is_termorobot: Boolean(data.is_termorobot),
@@ -1036,6 +1038,7 @@ export interface CreateRecipeInput {
     category_id: number | null;
     ingredients_raw: string;
     steps_raw: string;
+    tips_raw: string | null;
     tags: string[];
     visibility: RecipeVisibility;
     servings: number | null;
@@ -1058,6 +1061,7 @@ export interface UpdateRecipeInput {
     category_id?: number | null;
     ingredients_raw?: string;
     steps_raw?: string;
+    tips_raw?: string | null;
     tags?: string[];
     visibility?: RecipeVisibility;
     image_path?: string | null;
@@ -1161,6 +1165,7 @@ export async function createRecipe(
             p_cuisine: input.cuisine,
             p_difficulty: input.difficulty,
             p_is_grill: input.is_grill,
+            p_tips_raw: input.tips_raw,
         }
     );
 
@@ -1240,6 +1245,7 @@ export async function updateRecipe(
         updatingCategory: input.category_id !== undefined,
         updatingIngredients: input.ingredients_raw !== undefined,
         updatingSteps: input.steps_raw !== undefined,
+        updatingTips: input.tips_raw !== undefined,
         updatingTags: input.tags !== undefined,
         updatingImagePath: input.image_path !== undefined,
         updatingServings: input.servings !== undefined,
@@ -1282,6 +1288,9 @@ export async function updateRecipe(
     // Determine if grill flag should be updated
     const updateIsGrill = input.is_grill !== undefined;
 
+    // Determine if tips should be updated
+    const updateTips = input.tips_raw !== undefined;
+
     // Call the RPC function to update the recipe with tags atomically
     const { data: updatedRecipeId, error: rpcError } = await client.rpc(
         'update_recipe_with_tags',
@@ -1314,6 +1323,8 @@ export async function updateRecipe(
             p_update_difficulty: updateDifficulty,
             p_is_grill: input.is_grill ?? null,
             p_update_is_grill: updateIsGrill,
+            p_tips_raw: input.tips_raw ?? null,
+            p_update_tips: updateTips,
         }
     );
 

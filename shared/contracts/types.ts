@@ -225,6 +225,7 @@ export interface PublicRecipeDetailDto {
     category: CategoryDto | null;
     ingredients: RecipeContent;
     steps: RecipeContent;
+    tips: RecipeContent;
     tags: string[];
     author: ProfileDto;
     created_at: string;
@@ -269,6 +270,8 @@ export type RecipeDetailDto = Omit<
     ingredients: RecipeContent;
     /** Structured steps list. */
     steps: RecipeContent;
+    /** Structured tips/hints list (can be empty). */
+    tips: RecipeContent;
     /** Array of tags associated with the recipe. */
     tags: TagDto[];
     /** Recipe visibility setting. */
@@ -303,6 +306,8 @@ export type CreateRecipeCommand = Pick<
 > & {
     ingredients_raw: string;
     steps_raw: string;
+    /** Optional raw text for recipe tips/hints (newline-separated, # for headers). */
+    tips_raw?: string;
     /** A list of tag names to associate with the recipe. */
     tags: string[];
     /** Recipe visibility setting (required). */

@@ -14,15 +14,6 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 <api_changes_description>
  
 
-- **`GET /recipes/{id}` (zmiana)**:
-    - **Co się zmieniło**: dopisano pole `collection_ids: integer[]` (może być puste) do pre-selekcji checkboxów w modalu.
-
-- **`PUT /recipes/{id}/collections` (nowe)**:
-    - **Nowe**: atomowe i idempotentne ustawienie docelowej listy kolekcji dla przepisu, w tym wsparcie dla pustej listy `collection_ids`.
-
-- **`POST /collections/{id}/recipes` (zmiana)**:
-    - **Co się zmieniło**: dopisano notkę, że dla checkboxowego modala preferowany jest endpoint `PUT /recipes/{id}/collections`.
-
 
 
 
