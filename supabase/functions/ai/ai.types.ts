@@ -118,6 +118,7 @@ export const AiRecipeDraftOutputSchema = z.object({
     description: z.string().nullable(),
     ingredients_raw: z.string().min(1, 'Ingredients are required'),
     steps_raw: z.string().min(1, 'Steps are required'),
+    tips_raw: z.string().optional(),
     category_name: z.string().nullable(),
     tags: z.array(z.string()).default([]),
 });

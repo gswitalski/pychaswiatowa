@@ -326,6 +326,7 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
             userId: user.id,
             recipeName: result.data.draft.name,
             tagsCount: result.data.draft.tags.length,
+            hasTips: !!result.data.draft.tips_raw,
             confidence: result.data.meta.confidence,
             duration,
         });

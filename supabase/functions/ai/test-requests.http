@@ -1,0 +1,76 @@
+### AI Recipe Draft - Test Requests
+### Local endpoint: http://localhost:54321/functions/v1/ai/recipes/draft
+
+### Variables
+@baseUrl = http://localhost:54321/functions/v1/ai
+@token = {{$processenv SUPABASE_LOCAL_TOKEN}}
+
+### Test 1: Recipe with tips (text source)
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "text": "Naleśniki z serem\n\nSkładniki:\n2 jajka\n250 ml mleka\n150 g mąki\n500 g sera białego\n3 łyżki cukru\n\nWykonanie:\nWymieszać jajka z mlekiem.\nDodać mąkę i wymieszać na gładkie ciasto.\nUsmażyć cienkie naleśniki.\nSer wymieszać z cukrem.\nNałożyć farsz na naleśniki i zrolować.\n\nWskazówki:\nNaleśniki można zamrozić.\nPodawać z owocami lub sosem czekoladowym.\nZamiast sera można użyć dżemu.",
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
+### Test 2: Recipe without tips (text source)
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "text": "Jajecznica\n\nSkładniki:\n3 jajka\nsól\nmasło\n\nWykonanie:\nRozbić jajka do miski.\nDodać sól.\nRoztopić masło na patelni.\nWlać jajka i mieszać.",
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
+### Test 3: Recipe with structured tips (text source)
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "text": "Pierogi z kapustą i grzybami\n\nSKŁADNIKI:\n\nCiasto:\n500 g mąki\n250 ml wody\n1 jajko\n\nFarsz:\n500 g kapusty kiszonej\n100 g suszonych grzybów\n2 cebule\nsól, pieprz\n\nWYKONANIE:\n1. Wymieszać składniki na ciasto i odstawić na 30 minut.\n2. Namoczone grzyby ugotować i pokroić.\n3. Kapustę pokroić drobno.\n4. Cebulę pokroić w kostkę i zeszklić.\n5. Wymieszać farsz: kapustę, grzyby, cebulę.\n6. Wyrobić ciasto i wyciąć kółka.\n7. Nałożyć farsz i skleić pierogi.\n8. Ugotować w osolonej wodzie.\n\nWSKAZÓWKI:\n\nPrzechowywanie:\n- Pierogi można zamrozić na surowo\n- Zamrożone gotować bez rozmrażania\n\nPodawanie:\n- Podawać ze skwarkami\n- Smakują też z cebulką i grzybkami\n\nWarianty:\n- Można dodać suszone śliwki do farszu\n- Zamiast wody użyć wywaru z grzybów",
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
+### Test 4: Invalid request - missing required field
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "output_format": "pycha_recipe_draft_v1"
+}
+
+### Test 5: Invalid request - not a recipe
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "text": "To jest zwykły tekst, który nie zawiera żadnego przepisu kulinarnego. Jest to tylko test obsługi błędów.",
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
+### Test 6: Recipe with tips in English
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "text": "Chocolate Chip Cookies\n\nIngredients:\n200g butter\n150g sugar\n2 eggs\n300g flour\n200g chocolate chips\n\nInstructions:\nCream butter and sugar.\nAdd eggs and mix.\nAdd flour and chocolate chips.\nForm small balls and place on baking sheet.\nBake at 180°C for 12 minutes.\n\nTips:\nCookies are best when slightly underbaked.\nStore in airtight container.\nYou can use dark or milk chocolate.",
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "en"
+}

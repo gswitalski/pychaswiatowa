@@ -652,6 +652,8 @@ export interface AiRecipeDraftDto {
     ingredients_raw: string;
     /** Raw steps text (newline-separated, # for headers) */
     steps_raw: string;
+    /** Optional raw tips/hints text (newline-separated, # for headers) */
+    tips_raw?: string;
     /** Suggested category name (if recognized) */
     category_name: string | null;
     /** Suggested tags (deduplicated, max 20) */

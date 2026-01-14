@@ -100,7 +100,15 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    - wykrywaj nagłówki w sekcji kroków i przed nimi umieszczaj znak #
    - Lista NIE MOŻE być pusta
 
-5. KATEGORIA (category_name):
+5. WSKAZÓWKI (tips_raw) - OPCJONALNE:
+   - Jeśli tekst zawiera dodatkowe wskazówki, porady lub ciekawostki kulinarne - wyekstrahuj je
+   - Każda wskazówka w osobnej linii (separator: \n)
+   - Sekcje/nagłówki poprzedź znakiem # (np. "# Przechowywanie", "# Warianty")
+   - Wskazówki mogą dotyczyć: przechowywania, podawania, wariantów, substytucji składników, technicznych porad
+   - Jeśli brak wskazówek w źródle - POMIŃ to pole całkowicie (nie generuj własnych wskazówek)
+   - To pole jest całkowicie opcjonalne
+
+6. KATEGORIA (category_name):
    - Wybierz JEDNĄ z: Śniadanie, Obiad, Kolacja, Deser, Przekąska, Napój, Zupa, Sałatka, Pieczywo
    - Jeśli nie pasuje do żadnej, użyj null
 
@@ -142,6 +150,7 @@ json
     "description": "Krótki, przyjazny opis lub null",
     "ingredients_raw": "Składnik 1\nSkładnik 2\n# Sekcja opcjonalna\nSkładnik 3",
     "steps_raw": "Krok 1\nKrok 2\n# Sekcja opcjonalna\nKrok 3",
+    "tips_raw": "Wskazówka 1\nWskazówka 2\n# Sekcja opcjonalna\nWskazówka 3",
     "category_name": "Obiad",
     "tags": ["tag1", "tag2", "tag3"]
   },
@@ -150,6 +159,8 @@ json
     "warnings": ["Opcjonalne ostrzeżenia o jakości danych"]
   }
 }
+
+UWAGA: Pole "tips_raw" jest OPCJONALNE - dodaj je TYLKO jeśli źródło zawiera wskazówki. Jeśli brak wskazówek - po prostu POMIŃ to pole w JSON.
 
 
 Dla NIEPOPRAWNEJ treści:
@@ -329,6 +340,7 @@ async function callOpenAI(
  * - Trims strings
  * - Limits name length
  * - Deduplicates and limits tags
+ * - Normalizes optional tips_raw field
  *
  * @param draft - Raw draft from LLM
  * @returns Normalized draft
@@ -357,11 +369,21 @@ function normalizeDraft(draft: AiRecipeDraftDto): AiRecipeDraftDto {
         if (normalizedTags.length >= MAX_TAGS_COUNT) break;
     }
 
+    // Normalize tips_raw: trim, convert empty to undefined
+    let normalizedTipsRaw: string | undefined = undefined;
+    if (draft.tips_raw !== undefined) {
+        const trimmed = draft.tips_raw.trim();
+        if (trimmed.length > 0) {
+            normalizedTipsRaw = trimmed;
+        }
+    }
+
     return {
         name,
         description: draft.description?.trim() || null,
         ingredients_raw: draft.ingredients_raw.trim(),
         steps_raw: draft.steps_raw.trim(),
+        tips_raw: normalizedTipsRaw,
         category_name: draft.category_name?.trim() || null,
         tags: normalizedTags,
     };
