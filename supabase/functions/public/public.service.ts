@@ -92,7 +92,7 @@ export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
  * Match source for search relevance.
  * Indicates which field provided the best match.
  */
-export type SearchMatchSource = 'name' | 'ingredients' | 'tags';
+export type SearchMatchSource = 'name' | 'ingredients' | 'tags' | 'tips';
 
 /**
  * Search metadata for relevance scoring.
@@ -147,6 +147,7 @@ export interface PublicRecipeDetailDto {
     category: CategoryDto | null;
     ingredients: RecipeContent;
     steps: RecipeContent;
+    tips: RecipeContent;
     tags: string[];
     author: ProfileDto;
     created_at: string;
@@ -205,6 +206,7 @@ interface RecipeDetailsRow {
     category_name: string | null;
     tags: Array<{ id: number; name: string }> | null;
     ingredients: RecipeContent | null;
+    tips: RecipeContent | null;
     created_at: string;
     servings: number | null;
     is_termorobot: boolean;
@@ -229,6 +231,7 @@ interface RecipeDetailFullRow {
     category_name: string | null;
     ingredients: RecipeContent;
     steps: RecipeContent;
+    tips: RecipeContent;
     tags: Array<{ id: number; name: string }> | null;
     created_at: string;
     deleted_at: string | null;
@@ -250,10 +253,10 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, ingredients';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, ingredients, tips';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
-const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty';
+const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tips, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
@@ -263,6 +266,7 @@ const RELEVANCE_WEIGHTS = {
     name: 3,
     ingredients: 2,
     tags: 1,
+    tips: 0.5,
 } as const;
 
 /** Maximum number of search tokens allowed (DoS protection) */
@@ -338,6 +342,23 @@ function extractIngredientsText(ingredients: RecipeContent | null): string {
 }
 
 /**
+ * Extracts text content from recipe tips JSONB.
+ *
+ * @param tips - Recipe tips in JSONB format
+ * @returns Concatenated text of all tip items
+ */
+function extractTipsText(tips: RecipeContent | null): string {
+    if (!tips || !Array.isArray(tips)) {
+        return '';
+    }
+
+    return tips
+        .filter((item) => item.type === 'item')
+        .map((item) => item.content)
+        .join(' ');
+}
+
+/**
  * Result of relevance calculation for a recipe.
  */
 interface RelevanceResult {
@@ -357,6 +378,7 @@ interface RelevanceResult {
  * - name: 3
  * - ingredients: 2
  * - tags: 1
+ * - tips: 0.5
  *
  * @param recipe - The recipe to score
  * @param tokens - Search tokens (normalized)
@@ -407,6 +429,18 @@ function calculateRelevance(
         if (RELEVANCE_WEIGHTS.tags > bestWeight) {
             bestWeight = RELEVANCE_WEIGHTS.tags;
             bestMatch = 'tags';
+        }
+    }
+
+    // Check tips match (weight: 0.5)
+    const tipsText = extractTipsText(recipe.tips);
+    const tipsMatch = textContainsAllTokens(tipsText, tokens);
+    if (tipsMatch) {
+        totalScore += RELEVANCE_WEIGHTS.tips;
+        hasAnyMatch = true;
+        if (RELEVANCE_WEIGHTS.tips > bestWeight) {
+            bestWeight = RELEVANCE_WEIGHTS.tips;
+            bestMatch = 'tips';
         }
     }
 
@@ -1024,6 +1058,7 @@ export async function getPublicRecipeById(
             : null,
         ingredients: recipe.ingredients,
         steps: recipe.steps,
+        tips: recipe.tips ?? [],
         tags: recipe.tags ? recipe.tags.map((tag) => tag.name) : [],
         author: {
             id: profile.id,

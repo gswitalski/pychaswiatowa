@@ -167,7 +167,7 @@ export type RecipeListItemDto = Pick<
  * Match source for search relevance.
  * Indicates which field provided the best match.
  */
-export type SearchMatchSource = 'name' | 'ingredients' | 'tags';
+export type SearchMatchSource = 'name' | 'ingredients' | 'tags' | 'tips';
 
 /**
  * Search metadata for relevance scoring.

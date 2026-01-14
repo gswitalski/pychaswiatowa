@@ -149,6 +149,32 @@ apikey: {{anonKey}}
 GET {{baseUrl}}/public/recipes/feed?limit=5
 apikey: {{anonKey}}
 
+### 6.3. [200 OK] Search recipes by query - Anonymous
+# Expected: Recipes matching search query with relevance scoring
+GET {{baseUrl}}/public/recipes?q=makaron&limit=5
+apikey: {{anonKey}}
+
+### 6.4. [200 OK] Search recipes with tips match
+# Expected: Recipe with tips containing query should return match='tips'
+# Test with a query that matches only tips content
+GET {{baseUrl}}/public/recipes?q=porada&limit=10
+apikey: {{anonKey}}
+
+### 6.5. [200 OK] Search recipes feed with cursor
+# Expected: Cursor-based pagination with search
+GET {{baseUrl}}/public/recipes/feed?q=obiad&limit=5
+apikey: {{anonKey}}
+
+### 6.6. [400 Bad Request] Search query too short
+# Expected: VALIDATION_ERROR - "Search query must be at least 3 characters"
+GET {{baseUrl}}/public/recipes?q=ab&limit=5
+apikey: {{anonKey}}
+
+### 6.7. [200 OK] Search with multiple filters
+# Expected: Recipes matching search AND filters
+GET {{baseUrl}}/public/recipes?q=makaron&filter[diet_type]=VEGETARIAN&limit=5
+apikey: {{anonKey}}
+
 ###
 ### Section 7: Performance and Cache Tests
 ###
@@ -191,11 +217,19 @@ apikey: {{anonKey}}
 # [ ] Soft-deleted recipe → 404
 # [ ] CORS headers present in all responses
 # [ ] Vary header includes Authorization
-# [ ] Response includes all fields from PublicRecipeDetailDto (including collection_ids)
+# [ ] Response includes all fields from PublicRecipeDetailDto (including collection_ids, tips)
 # [ ] Author profile correctly populated
 # [ ] Category correctly populated (or null)
 # [ ] Tags correctly populated as string array
 # [ ] Ingredients and steps correctly parsed as RecipeContent
+# [ ] Tips field correctly populated as RecipeContent (can be empty array)
+# [ ] Search: query too short (< 3 chars) → 400
+# [ ] Search: match in name → search.match='name', relevance_score includes 3
+# [ ] Search: match in ingredients → search.match='ingredients', relevance_score includes 2
+# [ ] Search: match in tags → search.match='tags', relevance_score includes 1
+# [ ] Search: match in tips → search.match='tips', relevance_score includes 0.5
+# [ ] Search: no match → recipe not in results (AND semantics)
+# [ ] Search: relevance sort → higher scores appear first
 ###
 
 
