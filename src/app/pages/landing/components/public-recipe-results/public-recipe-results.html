@@ -38,12 +38,19 @@
 @if (!loadingInitial() && !errorMessage() && items().length > 0) {
     <div class="recipes-grid" [class.loading-more]="loadingMore()">
         @for (recipe of items(); track trackById($index, recipe)) {
-            <pych-recipe-card
-                [recipe]="mapToCardData(recipe)"
-                [isOwnRecipe]="recipe.is_owner"
-                [inMyCollections]="recipe.in_my_collections"
-                routeType="public"
-            />
+            <div class="recipe-card-wrapper">
+                <pych-recipe-card
+                    [recipe]="mapToCardData(recipe)"
+                    [isOwnRecipe]="recipe.is_owner"
+                    [inMyCollections]="recipe.in_my_collections"
+                    routeType="public"
+                />
+                @if (getMatchLabel(recipe)) {
+                    <div class="match-label">
+                        Dopasowanie: {{ getMatchLabel(recipe) }}
+                    </div>
+                }
+            </div>
         }
     </div>
 

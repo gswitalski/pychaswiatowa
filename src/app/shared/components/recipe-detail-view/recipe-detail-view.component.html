@@ -178,6 +178,14 @@
                     [content]="recipe()!.steps"
                     [isNumbered]="true"
                 />
+
+                @if (recipe()?.tips && recipe()!.tips.length > 0) {
+                    <pych-recipe-content-list
+                        title="Wskazówki"
+                        [content]="recipe()!.tips"
+                        [isNumbered]="false"
+                    />
+                }
             </div>
 
             @if (showGuestCta() && headerMode() === 'guest') {

@@ -6,6 +6,7 @@
 import {
     PublicRecipeListItemDto,
     CursorPageInfoDto,
+    SearchMatchSource,
 } from '../../../../../shared/contracts/types';
 
 /**
@@ -84,9 +85,10 @@ export const DEFAULT_PUBLIC_RECIPES_SEARCH_VM: PublicRecipesSearchVm = {
 /**
  * Mapowanie źródła dopasowania na etykietę UI.
  */
-export const MATCH_SOURCE_LABELS: Record<'name' | 'ingredients' | 'tags', string> = {
+export const MATCH_SOURCE_LABELS: Record<SearchMatchSource, string> = {
     name: 'nazwa',
     ingredients: 'składniki',
     tags: 'tagi',
+    tips: 'wskazówki',
 };
 

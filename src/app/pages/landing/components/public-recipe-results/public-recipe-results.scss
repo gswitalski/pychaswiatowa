@@ -17,6 +17,23 @@
     }
 }
 
+// Wrapper dla karty przepisu z etykietą dopasowania
+.recipe-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .match-label {
+        font-size: 0.75rem;
+        color: var(--mat-sys-on-surface-variant);
+        padding: 4px 8px;
+        background-color: var(--mat-sys-surface-container-high);
+        border-radius: 4px;
+        text-align: center;
+        font-weight: 500;
+    }
+}
+
 // Skeleton loader
 .skeleton-grid {
     .skeleton-card {

@@ -16,6 +16,7 @@ import { PublicRecipeListItemDto } from '../../../../../../shared/contracts/type
 import {
     PublicRecipesSearchMode,
     PublicRecipesSearchContext,
+    MATCH_SOURCE_LABELS,
 } from '../../../explore/models/public-recipes-search.model';
 
 /**
@@ -145,6 +146,18 @@ export class PublicRecipeResultsComponent {
      */
     trackById(index: number, item: PublicRecipeListItemDto): number {
         return item.id;
+    }
+
+    /**
+     * Pobiera etykietę dopasowania dla przepisu w trybie wyszukiwania.
+     * Zwraca null jeśli nie jest w trybie search lub brak metadanych wyszukiwania.
+     */
+    getMatchLabel(recipe: PublicRecipeListItemDto): string | null {
+        if (this.mode() !== 'search' || !recipe.search?.match) {
+            return null;
+        }
+
+        return MATCH_SOURCE_LABELS[recipe.search.match] ?? null;
     }
 }
 

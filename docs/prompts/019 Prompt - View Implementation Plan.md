@@ -33,17 +33,13 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-### Nowe
-
-- **US-045 — Dodawanie i edycja wskazówek do przepisu**
-    - **Co doszło**: opcjonalna lista „Wskazówki” (jak składniki: elementy + nagłówki `#`) edytowalna w formularzu; w szczegółach przepisu wyświetlana jako osobna sekcja **pod krokami** (ukryta, gdy pusta).
 
 ### Zmienione
 
-- **US-003 — Dodawanie nowego przepisu**
-    - **Co się zmieniło**: w formularzu dodawania dodano pole/sekcję „Wskazówki” (opcjonalne) oraz reguły parsowania analogiczne jak dla składników/kroków (nowe linie = elementy, `#` = nagłówki).
-- **US-005 — Edycja istniejącego przepisu**
-    - **Co się zmieniło**: dodano możliwość dodawania/edycji/usuwania wskazówek tak samo jak składników i kroków.
+- **US-004 — Przeglądanie szczegółów przepisu**
+    - **Co się zmieniło**: w szczegółach przepisu wskazówki (jeśli istnieją) są widoczne jako osobna sekcja **pod listą kroków przygotowania**; brak wskazówek → brak sekcji.
+- **US-009 — Wyszukiwanie przepisów**
+    - **Co się zmieniło**: wyszukiwanie obejmuje także wskazówki; priorytet dopasowania wskazówek jest najniższy.
 
 
 
