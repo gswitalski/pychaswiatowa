@@ -71,6 +71,7 @@ export interface RecipeFormViewModel {
     tags: FormArray<FormControl<string>>;
     ingredients: FormArray<FormControl<string>>;
     steps: FormArray<FormControl<string>>;
+    tips: FormArray<FormControl<string>>;
     servings: FormControl<number | null>;
     isTermorobot: FormControl<boolean>;
     isGrill: FormControl<boolean>;
@@ -202,6 +203,11 @@ export class RecipeFormPageComponent implements OnInit {
         return this.form.controls.steps;
     }
 
+    /** Quick access to tips FormArray */
+    get tipsArray(): FormArray<FormControl<string>> {
+        return this.form.controls.tips;
+    }
+
     /** Quick access to tags FormArray */
     get tagsArray(): FormArray<FormControl<string>> {
         return this.form.controls.tags;
@@ -285,6 +291,7 @@ export class RecipeFormPageComponent implements OnInit {
             steps: this.fb.array<FormControl<string>>([], {
                 validators: [Validators.required, this.minArrayLength(1)],
             }),
+            tips: this.fb.array<FormControl<string>>([]),
             servings: this.fb.control<number | null>(null, {
                 validators: [Validators.min(1), Validators.max(99), this.integerValidator()],
             }),
@@ -381,6 +388,21 @@ export class RecipeFormPageComponent implements OnInit {
             steps.forEach((step) => {
                 this.stepsArray.push(
                     this.fb.control(step, { nonNullable: true })
+                );
+            });
+        }
+
+        // Parse and populate tips (split by newline)
+        this.tipsArray.clear();
+        if (draft.tips_raw && draft.tips_raw.trim().length > 0) {
+            const tips = draft.tips_raw
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => line.length > 0);
+
+            tips.forEach((tip) => {
+                this.tipsArray.push(
+                    this.fb.control(tip, { nonNullable: true })
                 );
             });
         }
@@ -508,6 +530,19 @@ export class RecipeFormPageComponent implements OnInit {
                 );
             });
         }
+
+        // Clear and populate tips
+        this.tipsArray.clear();
+        if (recipe.tips && recipe.tips.length > 0) {
+            recipe.tips.forEach((item) => {
+                const value = item.type === 'header'
+                    ? `# ${item.content}`
+                    : item.content;
+                this.tipsArray.push(
+                    this.fb.control(value, { nonNullable: true })
+                );
+            });
+        }
     }
 
     /**
@@ -578,6 +613,11 @@ export class RecipeFormPageComponent implements OnInit {
             ? Math.round(formValue.totalTimeMinutes)
             : null;
 
+        // Normalizacja tips_raw: join z \n, pusty string jeśli brak wskazówek
+        const tipsRaw = formValue.tips.length > 0
+            ? formValue.tips.join('\n')
+            : undefined;
+
         return {
             name: formValue.name,
             description: formValue.description || null,
@@ -585,6 +625,7 @@ export class RecipeFormPageComponent implements OnInit {
             visibility: formValue.visibility,
             ingredients_raw: formValue.ingredients.join('\n'),
             steps_raw: formValue.steps.join('\n'),
+            tips_raw: tipsRaw,
             tags: formValue.tags,
             servings: servings,
             is_termorobot: formValue.isTermorobot,

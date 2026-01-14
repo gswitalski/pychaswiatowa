@@ -136,6 +136,18 @@
                 }
             </mat-card-content>
         </mat-card>
+
+        <mat-card class="form-section">
+            <mat-card-header>
+                <mat-card-title>Wskazówki (opcjonalnie)</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <pych-editable-list
+                    [formArray]="tipsArray"
+                    label="Wskazówka"
+                    placeholder="Dodaj wskazówkę (użyj # na początku dla nagłówka)" />
+            </mat-card-content>
+        </mat-card>
     </form>
     }
 </div>

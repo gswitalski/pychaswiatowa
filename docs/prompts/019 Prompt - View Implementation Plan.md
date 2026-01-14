@@ -18,7 +18,14 @@ Najpierw przejrzyj następujące informacje:
 
 3. Widok do implementacji / zmiany w widokach
 <views>
+- **Szczegóły przepisu (uniwersalny widok)** (`/recipes/:id-:slug`, `/explore/recipes/:id-:slug`)
+    - **Co się zmieniło**: dodano sekcję **„Wskazówki”** jako odrębny blok **pod krokami przygotowania**; sekcja jest ukryta, gdy lista jest pusta.
 
+- **Publiczny katalog przepisów (Explore)** (`/explore`)
+    - **Co się zmieniło**: w opisie transparentności dopasowania rozszerzono etykietę o **„wskazówki”**; relevance uwzględnia wskazówki jako najniższy priorytet.
+
+- **Dodaj przepis (Kreator – AI z tekstu/zdjęcia)** (`/recipes/new/assist`)
+    - **Co się zmieniło**: draft z AI może wstępnie wypełnić także wskazówki (jeśli zostaną wywnioskowane).
 
 </views>
 
@@ -26,6 +33,18 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
+### Nowe
+
+- **US-045 — Dodawanie i edycja wskazówek do przepisu**
+    - **Co doszło**: opcjonalna lista „Wskazówki” (jak składniki: elementy + nagłówki `#`) edytowalna w formularzu; w szczegółach przepisu wyświetlana jako osobna sekcja **pod krokami** (ukryta, gdy pusta).
+
+### Zmienione
+
+- **US-003 — Dodawanie nowego przepisu**
+    - **Co się zmieniło**: w formularzu dodawania dodano pole/sekcję „Wskazówki” (opcjonalne) oraz reguły parsowania analogiczne jak dla składników/kroków (nowe linie = elementy, `#` = nagłówki).
+- **US-005 — Edycja istniejącego przepisu**
+    - **Co się zmieniło**: dodano możliwość dodawania/edycji/usuwania wskazówek tak samo jak składników i kroków.
+
 
 
 </user_stories>
