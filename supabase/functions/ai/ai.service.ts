@@ -610,6 +610,24 @@ function buildIngredientsSummary(
 }
 
 /**
+ * Builds a condensed description of preparation steps for the prompt.
+ * Limits to key steps to reduce token usage.
+ *
+ * @param steps - Array of step content items
+ * @returns Condensed steps description
+ */
+function buildStepsSummary(
+    steps: Array<{ type: string; content: string }>,
+): string {
+    const items = steps
+        .filter((s) => s.type === "item")
+        .map((s) => s.content)
+        .slice(0, 8); // Limit to 8 key steps
+
+    return items.join("\n");
+}
+
+/**
  * Validates if recipe has enough information to generate a sensible image.
  * Returns array of reasons if insufficient, empty array if valid.
  *
@@ -649,7 +667,7 @@ function validateRecipeForImageGeneration(
 
 /**
  * Builds the image generation prompt for OpenAI Images API.
- * Follows the style contract guidelines.
+ * Follows the style contract guidelines based on the standardized prompt template.
  *
  * @param recipe - Recipe data
  * @param language - Output language
@@ -660,6 +678,7 @@ function buildImagePrompt(
     _language: string,
 ): string {
     const ingredientsSummary = buildIngredientsSummary(recipe.ingredients);
+    const stepsSummary = buildStepsSummary(recipe.steps);
 
     // Build dish description
     let dishDescription = recipe.name;
@@ -670,29 +689,51 @@ function buildImagePrompt(
         dishDescription += ` (${recipe.category_name})`;
     }
 
-    // Add termorobot context if applicable
-    const cookingMethod = recipe.is_termorobot
-        ? "prepared using a kitchen robot (Thermomix-style)"
+    // Add cooking method context if applicable
+    const cookingMethodNote = recipe.is_termorobot
+        ? "\nNote: This dish is prepared using a kitchen robot (Thermomix-style)."
         : "";
 
-    // Build the prompt with style contract requirements
-    const prompt = `Professional food photography of ${dishDescription}.
+    // Build the standardized prompt
+    const prompt = `You will be generating an image of a dish based on a recipe provided below.
 
-Main ingredients visible: ${ingredientsSummary}.
-${cookingMethod}
+Here is the recipe for the dish you need to photograph:
+<recipe>
+${recipe.name}
 
-STYLE REQUIREMENTS (MUST FOLLOW):
-- Photorealistic, high-quality food photography
-- Served on a rustic wooden table with natural textures
-- Soft, natural daylight illumination from the side
-- Shallow depth of field, dish in sharp focus
-- NO people, NO hands, NO human body parts visible
-- NO text, NO labels, NO watermarks, NO logos
-- NO artificial overlays or graphic elements
-- Clean, appetizing presentation
-- Shot from a 45-degree angle, slightly above
+${recipe.description || ''}
 
-The image should look like it belongs in a premium cookbook or food magazine.`;
+Main ingredients: ${ingredientsSummary}
+
+Preparation steps:
+${stepsSummary}
+${cookingMethodNote}
+</recipe>
+
+Requirements for the image you generate:
+
+WHAT TO INCLUDE:
+- The finished dish from the recipe as the main subject
+- An elegant kitchen or dining setting/arrangement
+- Professional food photography composition
+- Appropriate lighting that makes the food look appetizing
+- Complementary props like plates, utensils, ingredients, or table settings that enhance the presentation
+
+WHAT NOT TO INCLUDE:
+- Do not include any text, words, or writing of any kind
+- Do not include any logos or brand names
+- Do not include any people or parts of people (hands, faces, etc.)
+
+STYLE GUIDELINES:
+- Create a fresh, original composition
+- Use an elegant, sophisticated kitchen or dining aesthetic
+- Ensure the dish is the clear focal point
+- Make the image look professional and appetizing
+- Consider interesting angles, depth of field, and artistic plating
+
+- Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inna zieleniną - nie rób tego!
+
+Generate the image now based on these instructions.`;
 
     return prompt;
 }
