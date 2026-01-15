@@ -9,6 +9,7 @@ import { logger } from "../_shared/logger.ts";
 import {
     AiRecipeDraftDto,
     AiRecipeDraftResponseDto,
+    AiRecipeImageStyleContract,
     GenerateRecipeDraftParams,
     GenerateRecipeImageParams,
     ImageGenerationResult,
@@ -579,17 +580,36 @@ const IMAGE_MODEL = "gpt-image-1.5";
 const IMAGE_API_TIMEOUT_MS = 60_000;
 
 /**
- * Style contract constants - these define the visual style guidelines
- * that the generated image must adhere to.
+ * Returns style contract for the given generation mode.
+ * Different modes have different visual style guidelines.
+ *
+ * @param mode - Generation mode (recipe_only or with_reference)
+ * @returns Style contract object
  */
-const IMAGE_STYLE_CONTRACT = {
-    photorealistic: true,
-    rustic_table: true,
-    natural_light: true,
-    no_people: true,
-    no_text: true,
-    no_watermark: true,
-} as const;
+function getStyleContract(
+    mode: 'recipe_only' | 'with_reference',
+): AiRecipeImageStyleContract {
+    if (mode === 'recipe_only') {
+        return {
+            photorealistic: true,
+            rustic_table: true,
+            natural_light: true,
+            no_people: true,
+            no_text: true,
+            no_watermark: true,
+        };
+    } else {
+        // with_reference mode uses elegant kitchen/dining aesthetic
+        return {
+            photorealistic: true,
+            rustic_table: false,
+            natural_light: true,
+            no_people: true,
+            no_text: true,
+            no_watermark: true,
+        };
+    }
+}
 
 /**
  * Builds a condensed description of ingredients for the prompt.
@@ -666,58 +686,152 @@ function validateRecipeForImageGeneration(
 }
 
 /**
- * Builds the image generation prompt for OpenAI Images API.
- * Follows the style contract guidelines based on the standardized prompt template.
+ * Builds common recipe context section for prompts.
  *
  * @param recipe - Recipe data
- * @param language - Output language
- * @returns Prompt string for image generation
+ * @returns Recipe context string
  */
-function buildImagePrompt(
+function buildRecipeContext(
     recipe: GenerateRecipeImageParams["recipe"],
-    _language: string,
 ): string {
     const ingredientsSummary = buildIngredientsSummary(recipe.ingredients);
     const stepsSummary = buildStepsSummary(recipe.steps);
 
     // Build dish description
-    let dishDescription = recipe.name;
+    let dishInfo = recipe.name;
     if (recipe.description) {
-        dishDescription += `. ${recipe.description}`;
+        dishInfo += `. ${recipe.description}`;
     }
     if (recipe.category_name) {
-        dishDescription += ` (${recipe.category_name})`;
+        dishInfo += ` (${recipe.category_name})`;
     }
 
     // Add cooking method context if applicable
-    const cookingMethodNote = recipe.is_termorobot
-        ? "\nNote: This dish is prepared using a kitchen robot (Thermomix-style)."
-        : "";
+    let cookingMethodNote = "";
+    if (recipe.is_termorobot) {
+        cookingMethodNote += "\nNote: This dish is prepared using a kitchen robot (Thermomix-style).";
+    }
+    if (recipe.is_grill) {
+        cookingMethodNote += "\nNote: This dish is prepared on a grill/barbecue.";
+    }
 
-    // Build the standardized prompt
-    const prompt = `You will be generating an image of a dish based on a recipe provided below.
+    // Add timing context if available
+    let timingNote = "";
+    if (recipe.prep_time_minutes || recipe.total_time_minutes) {
+        timingNote = "\nTiming: ";
+        if (recipe.prep_time_minutes) {
+            timingNote += `Prep ${recipe.prep_time_minutes} min`;
+        }
+        if (recipe.total_time_minutes) {
+            if (recipe.prep_time_minutes) timingNote += ", ";
+            timingNote += `Total ${recipe.total_time_minutes} min`;
+        }
+    }
 
-Here is the recipe for the dish you need to photograph:
-<recipe>
-${recipe.name}
+    // Add tags context if available
+    let tagsNote = "";
+    if (recipe.tags && recipe.tags.length > 0) {
+        tagsNote = `\nTags: ${recipe.tags.slice(0, 5).join(", ")}`;
+    }
 
-${recipe.description || ''}
+    return `<recipe>
+${dishInfo}
 
 Main ingredients: ${ingredientsSummary}
 
 Preparation steps:
 ${stepsSummary}
-${cookingMethodNote}
-</recipe>
+${cookingMethodNote}${timingNote}${tagsNote}
+</recipe>`;
+}
+
+/**
+ * Builds the image generation prompt for recipe_only mode.
+ * Uses rustic table aesthetic with natural light.
+ *
+ * @param recipe - Recipe data
+ * @param _language - Output language (reserved for future use)
+ * @returns Prompt string for image generation
+ */
+function buildImagePromptRecipeOnly(
+    recipe: GenerateRecipeImageParams["recipe"],
+    _language: string,
+): string {
+    const recipeContext = buildRecipeContext(recipe);
+
+    const prompt = `You will be generating an image of a dish based on a recipe provided below.
+
+Here is the recipe for the dish you need to photograph:
+${recipeContext}
 
 Requirements for the image you generate:
 
 WHAT TO INCLUDE:
 - The finished dish from the recipe as the main subject
-- An elegant kitchen or dining setting/arrangement
+- A rustic, homey table setting with natural wood surfaces
+- Natural lighting that makes the food look warm and inviting
 - Professional food photography composition
-- Appropriate lighting that makes the food look appetizing
-- Complementary props like plates, utensils, ingredients, or table settings that enhance the presentation
+- Simple, authentic props like wooden boards, linen napkins, or rustic dishware
+- Complementary raw ingredients placed naturally around the dish
+
+WHAT NOT TO INCLUDE:
+- Do not include any text, words, or writing of any kind
+- Do not include any logos or brand names
+- Do not include any people or parts of people (hands, faces, etc.)
+- Do not include any modern, sleek, or overly styled elements
+
+STYLE GUIDELINES:
+- Create a fresh, original composition with a rustic, homemade feel
+- Use warm, natural lighting (think golden hour or soft window light)
+- Ensure the dish is the clear focal point on a natural wood table
+- Make the image look homey, comforting, and appetizing
+- Consider overhead shots or 45-degree angles that show the dish well
+- Keep styling authentic and not overly staged
+
+CRITICAL INGREDIENT RULES:
+- Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inną zielenią - NIE dodawaj tego do zdjęcia!
+- Only include ingredients that are explicitly mentioned in the recipe
+- Do not add decorative herbs or garnishes unless specified in the recipe
+
+Generate the image now based on these instructions.`;
+
+    return prompt;
+}
+
+/**
+ * Builds the image generation prompt for with_reference mode.
+ * Uses elegant kitchen/dining aesthetic with explicit no-copy constraints.
+ *
+ * @param recipe - Recipe data
+ * @param _language - Output language (reserved for future use)
+ * @param hasReference - Whether reference image is provided
+ * @returns Prompt string for image generation
+ */
+function buildImagePromptWithReference(
+    recipe: GenerateRecipeImageParams["recipe"],
+    _language: string,
+    hasReference: boolean,
+): string {
+    const recipeContext = buildRecipeContext(recipe);
+
+    const referenceNote = hasReference
+        ? `\n\nIMPORTANT: You may have been provided with a reference image showing a similar dish or plating style. The reference is ONLY for understanding the general appearance or style of the dish. You MUST NOT copy the composition, camera angle, background, or specific arrangement from the reference. Create an entirely new, original composition that looks professional and elegant, but completely different from any reference provided.`
+        : "";
+
+    const prompt = `You will be generating an image of a dish based on a recipe provided below.
+
+Here is the recipe for the dish you need to photograph:
+${recipeContext}${referenceNote}
+
+Requirements for the image you generate:
+
+WHAT TO INCLUDE:
+- The finished dish from the recipe as the main subject
+- An elegant, sophisticated kitchen or dining room setting
+- Professional food photography composition with artistic styling
+- Refined lighting that makes the food look premium and appetizing
+- Elegant props like fine dishware, polished cutlery, marble surfaces, or contemporary table settings
+- Tastefully arranged complementary elements
 
 WHAT NOT TO INCLUDE:
 - Do not include any text, words, or writing of any kind
@@ -725,13 +839,24 @@ WHAT NOT TO INCLUDE:
 - Do not include any people or parts of people (hands, faces, etc.)
 
 STYLE GUIDELINES:
-- Create a fresh, original composition
-- Use an elegant, sophisticated kitchen or dining aesthetic
-- Ensure the dish is the clear focal point
-- Make the image look professional and appetizing
-- Consider interesting angles, depth of field, and artistic plating
+- Create a completely fresh, original composition
+- Use an elegant, upscale aesthetic (modern kitchen or refined dining room)
+- Ensure the dish is the clear focal point with sophisticated styling
+- Make the image look professional, premium, and restaurant-quality
+- Consider interesting angles, perfect depth of field, and artistic plating
+- Use contemporary, elegant styling with attention to detail
 
-- Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inna zieleniną - nie rób tego!
+NO-COPY CONSTRAINTS (if reference image provided):
+- DO NOT replicate the camera angle or viewpoint from any reference
+- DO NOT copy the background setting or environment
+- DO NOT mimic the specific arrangement or composition
+- DO NOT use the same color palette or lighting style as the reference
+- CREATE an entirely new, unique photograph that happens to show the same type of dish
+
+CRITICAL INGREDIENT RULES:
+- Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inną zielenią - NIE dodawaj tego do zdjęcia!
+- Only include ingredients that are explicitly mentioned in the recipe
+- Do not add decorative herbs or garnishes unless specified in the recipe
 
 Generate the image now based on these instructions.`;
 
@@ -853,20 +978,26 @@ async function callImageAPI(prompt: string): Promise<string> {
  * This is a premium feature that creates a photorealistic image
  * of the dish described by the recipe data.
  *
- * @param params - Generation parameters including recipe data
+ * Supports two modes:
+ * - recipe_only: Generate from recipe text only (rustic style)
+ * - with_reference: Generate with optional reference image (elegant style, no-copy constraint)
+ *
+ * @param params - Generation parameters including recipe data, mode, and optional reference image
  * @returns ImageGenerationResult with either success data or failure reasons
  * @throws ApplicationError for infrastructure/configuration errors
  */
 export async function generateRecipeImage(
     params: GenerateRecipeImageParams,
 ): Promise<ImageGenerationResult> {
-    const { userId, recipe, language } = params;
+    const { userId, recipe, language, resolvedMode, referenceImage } = params;
 
     logger.info("Starting recipe image generation", {
         userId,
         recipeId: recipe.id,
         recipeName: recipe.name,
         language,
+        mode: resolvedMode,
+        hasReferenceImage: !!referenceImage,
         ingredientsCount: recipe.ingredients.length,
         stepsCount: recipe.steps.length,
     });
@@ -885,25 +1016,57 @@ export async function generateRecipeImage(
         };
     }
 
-    // Step 2: Build the prompt
-    const prompt = buildImagePrompt(recipe, language);
+    // Step 2: Build the prompt based on mode
+    let prompt: string;
+    if (resolvedMode === 'recipe_only') {
+        prompt = buildImagePromptRecipeOnly(recipe, language);
+        logger.debug("Built recipe_only prompt", {
+            userId,
+            recipeId: recipe.id,
+            promptLength: prompt.length,
+        });
+    } else {
+        // with_reference mode
+        prompt = buildImagePromptWithReference(recipe, language, !!referenceImage);
+        logger.debug("Built with_reference prompt", {
+            userId,
+            recipeId: recipe.id,
+            promptLength: prompt.length,
+            hasReferenceImage: !!referenceImage,
+        });
+    }
 
-    logger.debug("Built image generation prompt", {
-        userId,
-        recipeId: recipe.id,
-        promptLength: prompt.length,
-    });
+    // Step 3: Call OpenAI Images API
+    // Note: For MVP, we use gpt-image-1.5 which doesn't support image input directly.
+    // Reference image (if provided) serves as context for the prompt, but we generate
+    // a fresh composition without copying. This is the fallback approach mentioned in the plan.
+    // Future enhancement: If OpenAI Images API adds image input support, integrate it here.
+    
+    if (referenceImage) {
+        logger.debug("Reference image provided (using prompt-based approach)", {
+            userId,
+            recipeId: recipe.id,
+            referenceImageSize: referenceImage.bytes.length,
+            referenceMimeType: referenceImage.mimeType,
+            referenceSource: referenceImage.source,
+        });
+        // For MVP, reference image info is already embedded in prompt instructions
+        // In future: could use multimodal chat to describe reference, then inject description
+    }
 
-    // Step 3: Call OpenAI Images API (gpt-image-1 with webp output)
     const imageBase64 = await callImageAPI(prompt);
 
     logger.info("Recipe image generated successfully", {
         userId,
         recipeId: recipe.id,
+        mode: resolvedMode,
         imageSize: imageBase64.length,
     });
 
-    // Step 4: Return successful result (webp format from gpt-image-1)
+    // Step 4: Get style contract for the mode
+    const styleContract = getStyleContract(resolvedMode);
+
+    // Step 5: Return successful result (webp format from gpt-image-1)
     return {
         success: true,
         data: {
@@ -912,7 +1075,8 @@ export async function generateRecipeImage(
                 data_base64: imageBase64,
             },
             meta: {
-                style_contract: IMAGE_STYLE_CONTRACT,
+                mode: resolvedMode,
+                style_contract: styleContract,
                 warnings: [],
             },
         },

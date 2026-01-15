@@ -54,6 +54,9 @@ export type AllowedImageOutputMimeType = typeof ALLOWED_IMAGE_OUTPUT_MIME_TYPES[
 export const IMAGE_OUTPUT_WIDTH = 1024;
 export const IMAGE_OUTPUT_HEIGHT = 1024;
 
+/** Maximum reference image size after base64 decoding (bytes) - 2 MB */
+export const MAX_REFERENCE_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+
 // #endregion
 
 // #region --- Validation Schemas ---
@@ -209,6 +212,12 @@ export type LlmGenerationResult =
 // #region --- Recipe Image Generation Types ---
 
 /**
+ * AI recipe image generation mode enum.
+ */
+export const AI_RECIPE_IMAGE_MODES = ['auto', 'recipe_only', 'with_reference'] as const;
+export type AiRecipeImageMode = typeof AI_RECIPE_IMAGE_MODES[number];
+
+/**
  * Schema for recipe content item (ingredient or step).
  */
 const RecipeContentItemSchema = z.object({
@@ -234,6 +243,18 @@ const AiRecipeImageRecipeSchema = z.object({
         .int()
         .min(1, 'Servings must be at least 1')
         .max(99, 'Servings cannot exceed 99')
+        .nullable()
+        .optional(),
+    prep_time_minutes: z.number()
+        .int()
+        .min(0, 'Prep time must be at least 0')
+        .max(999, 'Prep time cannot exceed 999')
+        .nullable()
+        .optional(),
+    total_time_minutes: z.number()
+        .int()
+        .min(0, 'Total time must be at least 0')
+        .max(999, 'Total time cannot exceed 999')
         .nullable()
         .optional(),
     is_termorobot: z.boolean().optional().default(false),
@@ -272,7 +293,27 @@ const AiRecipeImageOutputSchema = z.object({
 });
 
 /**
+ * Schema for reference image - discriminated union by source.
+ */
+const AiRecipeImageReferenceImageSchema = z.discriminatedUnion('source', [
+    z.object({
+        source: z.literal('storage_path'),
+        image_path: z.string().min(1, 'Image path cannot be empty'),
+    }),
+    z.object({
+        source: z.literal('base64'),
+        mime_type: z.enum(ALLOWED_IMAGE_MIME_TYPES, {
+            errorMap: () => ({ 
+                message: `Unsupported image format. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}` 
+            }),
+        }),
+        data_base64: z.string().min(1, 'Image data cannot be empty'),
+    }),
+]);
+
+/**
  * Main request schema for POST /ai/recipes/image endpoint.
+ * Uses superRefine for cross-field validation of mode and reference_image.
  */
 export const AiRecipeImageRequestSchema = z.object({
     recipe: AiRecipeImageRecipeSchema,
@@ -281,6 +322,19 @@ export const AiRecipeImageRequestSchema = z.object({
     output_format: z.literal(REQUIRED_IMAGE_OUTPUT_FORMAT, {
         errorMap: () => ({ message: `output_format must be "${REQUIRED_IMAGE_OUTPUT_FORMAT}"` }),
     }),
+    mode: z.enum(AI_RECIPE_IMAGE_MODES, {
+        errorMap: () => ({ message: `Mode must be one of: ${AI_RECIPE_IMAGE_MODES.join(', ')}` }),
+    }).optional().default('auto'),
+    reference_image: AiRecipeImageReferenceImageSchema.optional(),
+}).superRefine((data, ctx) => {
+    // Validation: mode='with_reference' requires reference_image
+    if (data.mode === 'with_reference' && !data.reference_image) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'reference_image is required when mode is "with_reference"',
+            path: ['reference_image'],
+        });
+    }
 });
 
 /** Type for recipe image generation request body */
@@ -304,8 +358,10 @@ export interface AiRecipeImageStyleContract {
 
 /**
  * Meta information for image generation response.
+ * Includes resolved mode (never 'auto').
  */
 export interface AiRecipeImageMeta {
+    mode: Exclude<AiRecipeImageMode, 'auto'>;
     style_contract: AiRecipeImageStyleContract;
     warnings: string[];
 }
@@ -330,12 +386,23 @@ export interface AiRecipeImageUnprocessableEntityDto {
 }
 
 /**
+ * Processed reference image data (post-validation).
+ */
+export interface ReferenceImageData {
+    bytes: Uint8Array;
+    mimeType: string;
+    source: 'storage_path' | 'base64';
+}
+
+/**
  * Parameters for the generateRecipeImage service function.
  */
 export interface GenerateRecipeImageParams {
     userId: string;
     recipe: AiRecipeImageRecipeData;
     language: string;
+    resolvedMode: Exclude<AiRecipeImageMode, 'auto'>;
+    referenceImage?: ReferenceImageData;
 }
 
 /**

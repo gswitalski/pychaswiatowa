@@ -17,8 +17,11 @@ import {
     AiRecipeImageRequestSchema,
     AiRecipeImageResponseDto,
     AiRecipeImageUnprocessableEntityDto,
+    AiRecipeImageMode,
+    ReferenceImageData,
     MAX_IMAGE_SIZE_BYTES,
     MAX_IMAGE_REQUEST_PAYLOAD_SIZE,
+    MAX_REFERENCE_IMAGE_SIZE_BYTES,
 } from './ai.types.ts';
 
 // #region --- Response Helpers ---
@@ -460,16 +463,172 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
             recipeId: requestData.recipe.id,
         });
 
-        // Step 6: Call service to generate recipe image
+        // Step 6: Resolve mode (auto -> recipe_only or with_reference)
+        const requestMode = requestData.mode || 'auto';
+        const hasReferenceImage = !!requestData.reference_image;
+        
+        let resolvedMode: Exclude<AiRecipeImageMode, 'auto'>;
+        if (requestMode === 'auto') {
+            resolvedMode = hasReferenceImage ? 'with_reference' : 'recipe_only';
+            logger.info('Mode auto-resolved', {
+                userId: user.id,
+                recipeId: requestData.recipe.id,
+                hasReferenceImage,
+                resolvedMode,
+            });
+        } else {
+            resolvedMode = requestMode as Exclude<AiRecipeImageMode, 'auto'>;
+            logger.info('Mode explicitly set', {
+                userId: user.id,
+                recipeId: requestData.recipe.id,
+                resolvedMode,
+            });
+        }
+
+        // Step 7: Handle reference image (if present)
+        let referenceImageData: ReferenceImageData | undefined;
+        const warnings: string[] = [];
+
+        if (requestData.reference_image) {
+            try {
+                if (requestData.reference_image.source === 'storage_path') {
+                    // Download from Supabase Storage
+                    const imagePath = requestData.reference_image.image_path;
+                    
+                    logger.info('Downloading reference image from storage', {
+                        userId: user.id,
+                        recipeId: requestData.recipe.id,
+                        imagePath: imagePath.substring(0, 50) + '...', // log prefix only for security
+                    });
+
+                    // Extract bucket from path (assuming format: bucket-name/path/to/file)
+                    const bucketMatch = imagePath.match(/^([^/]+)\//);
+                    const bucket = bucketMatch ? bucketMatch[1] : 'recipe-images';
+                    const filePath = imagePath.replace(/^[^/]+\//, '');
+
+                    const { data: imageBlob, error: downloadError } = await supabase
+                        .storage
+                        .from(bucket)
+                        .download(filePath);
+
+                    if (downloadError || !imageBlob) {
+                        logger.warn('Failed to download reference image from storage', {
+                            userId: user.id,
+                            recipeId: requestData.recipe.id,
+                            error: downloadError?.message,
+                        });
+                        
+                        // Fallback: if mode=auto, switch to recipe_only
+                        if (requestMode === 'auto') {
+                            resolvedMode = 'recipe_only';
+                            warnings.push('Reference image could not be loaded, using recipe_only mode');
+                            logger.info('Falling back to recipe_only mode', {
+                                userId: user.id,
+                                recipeId: requestData.recipe.id,
+                            });
+                        } else {
+                            return createNotFoundResponse(
+                                'Reference image not found or you do not have access to it'
+                            );
+                        }
+                    } else {
+                        // Convert Blob to Uint8Array
+                        const arrayBuffer = await imageBlob.arrayBuffer();
+                        const bytes = new Uint8Array(arrayBuffer);
+
+                        // Validate size
+                        if (bytes.length > MAX_REFERENCE_IMAGE_SIZE_BYTES) {
+                            const maxSizeMB = MAX_REFERENCE_IMAGE_SIZE_BYTES / (1024 * 1024);
+                            logger.warn('Reference image from storage exceeds size limit', {
+                                userId: user.id,
+                                recipeId: requestData.recipe.id,
+                                imageSize: bytes.length,
+                                maxSize: MAX_REFERENCE_IMAGE_SIZE_BYTES,
+                            });
+                            return createPayloadTooLargeResponse(
+                                `Reference image size exceeds maximum allowed size of ${maxSizeMB} MB`
+                            );
+                        }
+
+                        referenceImageData = {
+                            bytes,
+                            mimeType: imageBlob.type || 'image/jpeg', // default fallback
+                            source: 'storage_path',
+                        };
+
+                        logger.info('Reference image loaded from storage', {
+                            userId: user.id,
+                            recipeId: requestData.recipe.id,
+                            imageSize: bytes.length,
+                            mimeType: referenceImageData.mimeType,
+                        });
+                    }
+                } else if (requestData.reference_image.source === 'base64') {
+                    // Decode base64
+                    logger.info('Decoding reference image from base64', {
+                        userId: user.id,
+                        recipeId: requestData.recipe.id,
+                    });
+
+                    const bytes = decodeBase64(requestData.reference_image.data_base64);
+
+                    // Validate size
+                    if (bytes.length > MAX_REFERENCE_IMAGE_SIZE_BYTES) {
+                        const maxSizeMB = MAX_REFERENCE_IMAGE_SIZE_BYTES / (1024 * 1024);
+                        logger.warn('Reference image from base64 exceeds size limit', {
+                            userId: user.id,
+                            recipeId: requestData.recipe.id,
+                            imageSize: bytes.length,
+                            maxSize: MAX_REFERENCE_IMAGE_SIZE_BYTES,
+                        });
+                        return createPayloadTooLargeResponse(
+                            `Reference image size exceeds maximum allowed size of ${maxSizeMB} MB`
+                        );
+                    }
+
+                    referenceImageData = {
+                        bytes,
+                        mimeType: requestData.reference_image.mime_type,
+                        source: 'base64',
+                    };
+
+                    logger.info('Reference image decoded from base64', {
+                        userId: user.id,
+                        recipeId: requestData.recipe.id,
+                        imageSize: bytes.length,
+                        mimeType: referenceImageData.mimeType,
+                    });
+                }
+            } catch (error) {
+                logger.error('Error processing reference image', {
+                    userId: user.id,
+                    recipeId: requestData.recipe.id,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+
+                // Fallback: if mode=auto, switch to recipe_only
+                if (requestMode === 'auto') {
+                    resolvedMode = 'recipe_only';
+                    warnings.push('Reference image processing failed, using recipe_only mode');
+                    referenceImageData = undefined;
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        // Step 8: Call service to generate recipe image
         const result = await generateRecipeImage({
             userId: user.id,
             recipe: requestData.recipe,
             language: requestData.language,
+            resolvedMode,
+            referenceImage: referenceImageData,
         });
 
         const duration = Date.now() - startTime;
 
-        // Step 7: Handle service result
+        // Step 9: Handle service result
         if (!result.success) {
             logger.warn('Recipe image generation failed - insufficient information', {
                 userId: user.id,
@@ -483,9 +642,16 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
             });
         }
 
+        // Merge handler warnings with service warnings
+        if (warnings.length > 0) {
+            result.data.meta.warnings = [...warnings, ...result.data.meta.warnings];
+        }
+
         logger.info('Recipe image generated successfully', {
             userId: user.id,
             recipeId: requestData.recipe.id,
+            mode: result.data.meta.mode,
+            hasWarnings: result.data.meta.warnings.length > 0,
             duration,
         });
 

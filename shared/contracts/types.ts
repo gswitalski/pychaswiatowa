@@ -721,6 +721,14 @@ export interface SlugifyResponseDto {
 export type AiRecipeImageMimeType = 'image/webp' | 'image/png';
 
 /**
+ * AI recipe image generation mode.
+ * - auto: automatically choose based on presence of reference_image
+ * - recipe_only: generate only from recipe text data
+ * - with_reference: generate with optional reference image (for understanding appearance, not copying composition)
+ */
+export type AiRecipeImageMode = 'auto' | 'recipe_only' | 'with_reference';
+
+/**
  * Recipe content item for image generation request.
  */
 export interface AiRecipeImageContentItem {
@@ -742,6 +750,8 @@ export interface AiRecipeImageRecipeDto {
     ingredients: AiRecipeImageContentItem[];
     steps: AiRecipeImageContentItem[];
     tags?: string[];
+    prep_time_minutes?: number | null;
+    total_time_minutes?: number | null;
 }
 
 /**
@@ -754,6 +764,22 @@ export interface AiRecipeImageOutputDto {
 }
 
 /**
+ * Reference image for AI generation - discriminated union by source.
+ * - storage_path: reference existing image from Supabase Storage
+ * - base64: provide image data directly as base64-encoded string
+ */
+export type AiRecipeImageReferenceImageDto =
+    | {
+          source: 'storage_path';
+          image_path: string;
+      }
+    | {
+          source: 'base64';
+          mime_type: AiRecipeDraftImageMimeType;
+          data_base64: string;
+      };
+
+/**
  * Request DTO for AI recipe image generation endpoint.
  */
 export interface AiRecipeImageRequestDto {
@@ -761,6 +787,8 @@ export interface AiRecipeImageRequestDto {
     output: AiRecipeImageOutputDto;
     language?: string;
     output_format: 'pycha_recipe_image_v1';
+    mode?: AiRecipeImageMode;
+    reference_image?: AiRecipeImageReferenceImageDto;
 }
 
 /**
@@ -778,8 +806,10 @@ export interface AiRecipeImageStyleContractDto {
 
 /**
  * Meta information for image generation response.
+ * Includes resolved mode (never 'auto', always 'recipe_only' or 'with_reference').
  */
 export interface AiRecipeImageMetaDto {
+    mode: Exclude<AiRecipeImageMode, 'auto'>;
     style_contract: AiRecipeImageStyleContractDto;
     warnings: string[];
 }
