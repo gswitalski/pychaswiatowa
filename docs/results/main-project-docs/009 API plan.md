@@ -715,14 +715,19 @@ Public endpoints are available without authentication:
 
 #### `POST /ai/recipes/image` (Supabase Edge Function)
 
--   **Description**: Generate a **photorealistic** recipe image based on the **current recipe form state** (including unsaved edits). This endpoint returns an image preview (base64). The client applies it only after explicit confirmation, by uploading it via the existing `POST /recipes/{id}/image` endpoint.
+-   **Description**: Generate a **photorealistic** recipe image based on the **current recipe form state** (including unsaved edits). The endpoint supports two modes:
+    - **Recipe-only**: generate from recipe text only (current behavior).
+    - **With reference image**: if a reference image is available, use it only to understand how the dish looks, but generate a completely new photo (different composition/angle/setting; do not copy the reference).
+    This endpoint returns an image preview (base64). The client applies it only after explicit confirmation, by uploading it via the existing `POST /recipes/{id}/image` endpoint.
 -   **Auth**: Required (`Authorization: Bearer <JWT>`).
 -   **Authorization (premium gating)**:
     - The caller MUST have `app_role` claim set to `premium` or `admin`.
     - If `app_role = user`, the endpoint MUST return `403 Forbidden`.
 -   **Notes**:
     - Intended for the recipe edit form (AI icon button next to the image field).
-    - **Style contract (MVP)**: photorealistic, rustic wooden table, natural light, no people/hands, no text, no watermark.
+    - **Style contract (MVP)**:
+        - **recipe_only**: photorealistic, rustic wooden table, natural light, no people/hands, no text, no watermark.
+        - **with_reference**: photorealistic, elegant kitchen or dining setting, professional food photography composition, appetizing lighting; no people/hands, no text, no logos/brands.
     - Output format is fixed for MVP: `image/webp`, recommended `1024x1024`.
     - **Image model (MVP)**: OpenAI Images API (`POST /v1/images/generations`) using model `gpt-image-1.5`.
     - **OpenAI parameters (MVP)**:
@@ -756,6 +761,11 @@ Public endpoints are available without authentication:
         ],
         "tags": ["wypieki", "sernik"]
       },
+      "mode": "auto",
+      "reference_image": {
+        "source": "storage_path",
+        "image_path": "recipes/123/cover_1700000000.webp"
+      },
       "output": {
         "mime_type": "image/webp",
         "width": 1024,
@@ -765,6 +775,15 @@ Public endpoints are available without authentication:
       "output_format": "pycha_recipe_image_v1"
     }
     ```
+    - **Mode semantics**:
+        - `mode` (optional): `auto | recipe_only | with_reference`. Default: `auto`.
+        - If `mode = auto`: the function uses `with_reference` when `reference_image` is provided, otherwise `recipe_only`.
+        - If `mode = with_reference`: `reference_image` is required.
+    - **Reference image**:
+        - `reference_image` (optional): the image used only as a visual reference (must not be copied).
+        - Supported sources (MVP):
+            - `source = storage_path`: provide `image_path` (Supabase Storage path). The function loads the image server-side.
+            - `source = base64`: provide `mime_type` + `data_base64` (for images currently loaded in the form but not uploaded yet).
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
@@ -775,6 +794,7 @@ Public endpoints are available without authentication:
             "data_base64": "UklGRiQAAABXRUJQVlA4..."
           },
           "meta": {
+            "mode": "with_reference",
             "style_contract": {
               "photorealistic": true,
               "rustic_table": true,
@@ -798,6 +818,7 @@ Public endpoints are available without authentication:
             }
             ```
     -   **Code**: `422 Unprocessable Entity` (insufficient information to generate a single dish image)
+    -   **Code**: `413 Payload Too Large` (reference image too large; if `source = base64`)
 
 ---
 

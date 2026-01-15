@@ -218,6 +218,12 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - Przy polu zdjęcia (np. w prawym górnym rogu komponentu `ImageUploadComponent` lub jako akcja przy etykiecie „Zdjęcie”) znajduje się przycisk z ikoną **AI**.
         - Przycisk jest widoczny/aktywny wyłącznie dla użytkowników z rolą `premium` (lub `admin`). Dla roli `user` przycisk nie jest dostępny (alternatywnie: disabled z tooltipem „Funkcja Premium”).
         - Kliknięcie uruchamia generowanie na podstawie **aktualnego stanu formularza** (również niezapisanych zmian) i otwiera modal podglądu.
+        - Przycisk działa w **dwóch trybach (automatyczny wybór)**:
+            - **Tryb 1 (bez zdjęcia):** jeśli w formularzu nie ma dostępnego zdjęcia (ani zapisanego, ani wgranego/wklejonego w trakcie edycji), generowanie odbywa się wyłącznie na podstawie treści przepisu (jak dotychczas).
+            - **Tryb 2 (z referencją zdjęcia):** jeśli w formularzu jest dostępne zdjęcie (zapisane w przepisie lub wgrane/wklejone w trakcie edycji), generowanie używa go jako **referencji** wyglądu potrawy, ale tworzy **całkowicie nową** fotografię (inna kompozycja/ujęcie/aranżacja; bez kopiowania zdjęcia).
+        - UI sygnalizuje tryb przed uruchomieniem (np. tooltip na przycisku AI):
+            - „Generuj z przepisu” (Tryb 1)
+            - „Generuj z referencją zdjęcia” (Tryb 2)
         - W trakcie generowania widoczny jest loader, a akcje w modalu są zablokowane.
         - Po sukcesie użytkownik widzi podgląd oraz akcje: **„Zastosuj”** (ustawia jako główne zdjęcie) i **„Odrzuć”** (zamyka modal bez zmian).
         - Po „Zastosuj” zdjęcie zostaje ustawione w formularzu i traktowane jak standardowa zmiana zdjęcia (Snackbar z akcją **„Cofnij”** do czasu zapisu).
@@ -226,7 +232,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 **9a. Modal: Podgląd wygenerowanego zdjęcia (AI)**
 - **Ścieżka:** (modal/dialog) w kontekście `/recipes/:id/edit`
 - **Główny cel:** Pokazać rezultat generowania zdjęcia AI i wymusić świadomą decyzję użytkownika przed zastąpieniem zdjęcia.
-- **Kluczowe informacje do wyświetlenia:** Podgląd wygenerowanego zdjęcia, krótka notatka o stylu („Realistyczne, rustykalny stół, naturalne światło”), komunikaty błędów.
+- **Kluczowe informacje do wyświetlenia:** Podgląd wygenerowanego zdjęcia, krótka notatka o trybie/stylu (np. „Generowanie z przepisu” lub „Generowanie z referencją zdjęcia”; styl zależny od trybu), komunikaty błędów.
 - **Akcje:** „Zastosuj”, „Odrzuć”, (opcjonalnie) „Wygeneruj ponownie”.
 - **Względy UX:** Brak automatycznego nadpisania istniejącego zdjęcia; czytelne stany: `loading` / `success` / `error`. Akcja „Wygeneruj ponownie” oznacza ponowne wywołanie generowania (kolejna próba), nadal w trybie `n=1`.
 
