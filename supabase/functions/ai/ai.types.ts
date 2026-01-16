@@ -1,7 +1,7 @@
 /**
  * AI Types
  * Data Transfer Objects (DTOs) and validation schemas for AI-powered recipe draft endpoint.
- * 
+ *
  * Supported operations:
  * - POST /ai/recipes/draft - Generate recipe draft from text or image
  */
@@ -66,8 +66,8 @@ export const MAX_REFERENCE_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
  */
 const AiRecipeDraftImageSchema = z.object({
     mime_type: z.enum(ALLOWED_IMAGE_MIME_TYPES, {
-        errorMap: () => ({ 
-            message: `Unsupported image format. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}` 
+        errorMap: () => ({
+            message: `Unsupported image format. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}`
         }),
     }),
     data_base64: z.string().min(1, 'Image data cannot be empty'),
@@ -78,8 +78,8 @@ const AiRecipeDraftImageSchema = z.object({
  */
 const BaseRequestSchema = z.object({
     output_format: z.literal(REQUIRED_OUTPUT_FORMAT, {
-        errorMap: () => ({ 
-            message: `output_format must be "${REQUIRED_OUTPUT_FORMAT}"` 
+        errorMap: () => ({
+            message: `output_format must be "${REQUIRED_OUTPUT_FORMAT}"`
         }),
     }),
     language: z.string().default('pl'),
@@ -203,7 +203,7 @@ export interface GenerateRecipeDraftParams {
 /**
  * Result from LLM generation - either success or validation failure.
  */
-export type LlmGenerationResult = 
+export type LlmGenerationResult =
     | { success: true; data: AiRecipeDraftResponseDto }
     | { success: false; reasons: string[] };
 
@@ -303,8 +303,8 @@ const AiRecipeImageReferenceImageSchema = z.discriminatedUnion('source', [
     z.object({
         source: z.literal('base64'),
         mime_type: z.enum(ALLOWED_IMAGE_MIME_TYPES, {
-            errorMap: () => ({ 
-                message: `Unsupported image format. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}` 
+            errorMap: () => ({
+                message: `Unsupported image format. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}`
             }),
         }),
         data_base64: z.string().min(1, 'Image data cannot be empty'),

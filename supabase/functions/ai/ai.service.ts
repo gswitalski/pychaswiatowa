@@ -419,6 +419,114 @@ function validateDraftContent(draft: AiRecipeDraftDto): string[] {
 // #region --- Main Service Function ---
 
 /**
+ * Calls OpenAI Vision API to analyze an image.
+ * Returns text description (not JSON).
+ */
+async function analyzeImageWithVision(
+    imageBytes: Uint8Array,
+    mimeType: string,
+    prompt: string,
+): Promise<string> {
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+
+    if (!apiKey) {
+        throw new ApplicationError("INTERNAL_ERROR", "OpenAI API key not configured");
+    }
+
+    // Convert to base64
+    const CHUNK_SIZE = 8192;
+    let binaryString = "";
+    for (let i = 0; i < imageBytes.length; i += CHUNK_SIZE) {
+        const chunk = imageBytes.slice(i, i + CHUNK_SIZE);
+        binaryString += String.fromCharCode(...chunk);
+    }
+    const base64 = btoa(binaryString);
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    try {
+        const response = await fetch(OPENAI_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model: OPENAI_MODEL, // gpt-4o-mini is multimodal
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            { type: "image_url", image_url: { url: dataUrl } },
+                        ],
+                    },
+                ],
+                max_tokens: 500,
+                temperature: 0.3,
+            }),
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            logger.error("OpenAI Vision API error", {
+                status: response.status,
+                body: errorBody.substring(0, 500),
+            });
+            throw new ApplicationError("INTERNAL_ERROR", "AI vision service failed");
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+
+        if (!content) {
+            throw new ApplicationError("INTERNAL_ERROR", "AI vision returned empty response");
+        }
+
+        return content;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof ApplicationError) throw error;
+        logger.error("Vision analysis failed", { error });
+        throw new ApplicationError("INTERNAL_ERROR", "Vision analysis failed");
+    }
+}
+
+/**
+ * Extracts visual description of the dish from reference image.
+ * Focuses ONLY on the food itself, ignoring background/style.
+ */
+async function describeDishFromImage(
+    referenceImage: ReferenceImageData
+): Promise<string> {
+    const prompt = `Analyze this food image and describe ONLY the visual appearance of the dish itself.
+
+Focus on:
+1. Shape and form of the food (e.g. round cake, stacked pancakes, stew in a bowl)
+2. Visible textures (e.g. crispy crust, smooth sauce, fluffy crumb)
+3. Key colors of the food elements
+4. Visible ingredients and garnishes on the food
+5. How the food is arranged/plated (e.g. scattered, piled high, geometric)
+
+CRITICAL INSTRUCTIONS:
+- IGNORE the background, table, cutlery, and lighting.
+- IGNORE the artistic style of the photo.
+- DESCRIBE ONLY THE FOOD OBJECT.
+- Be concise and descriptive.`;
+
+    return await analyzeImageWithVision(
+        referenceImage.bytes,
+        referenceImage.mimeType,
+        prompt
+    );
+}
+
+/**
  * Generates a recipe draft from text or image using AI.
  *
  * @param params - Generation parameters including source type and content
@@ -800,63 +908,54 @@ Generate the image now based on these instructions.`;
 
 /**
  * Builds the image generation prompt for with_reference mode.
- * Uses elegant kitchen/dining aesthetic with explicit no-copy constraints.
+ * Uses elegant kitchen/dining aesthetic BUT uses visual description from reference for the food itself.
  *
  * @param recipe - Recipe data
- * @param _language - Output language (reserved for future use)
- * @param hasReference - Whether reference image is provided
+ * @param _language - Output language
+ * @param visualDescription - Visual description of the dish from reference image
  * @returns Prompt string for image generation
  */
 function buildImagePromptWithReference(
     recipe: GenerateRecipeImageParams["recipe"],
     _language: string,
-    hasReference: boolean,
+    visualDescription: string | null,
 ): string {
     const recipeContext = buildRecipeContext(recipe);
 
-    const referenceNote = hasReference
-        ? `\n\nIMPORTANT: You may have been provided with a reference image showing a similar dish or plating style. The reference is ONLY for understanding the general appearance or style of the dish. You MUST NOT copy the composition, camera angle, background, or specific arrangement from the reference. Create an entirely new, original composition that looks professional and elegant, but completely different from any reference provided.`
+    // If we have a visual description from Vision API, we inject it as a strict instruction for the dish appearance
+    const visualInstruction = visualDescription
+        ? `\n\nVISUAL DESCRIPTION OF THE DISH (STRICTLY FOLLOW THIS FOR THE FOOD APPEARANCE):\n${visualDescription}\n\nIMPORTANT: Use the visual description above for the LOOK of the food, but place it in the new environment described below.`
         : "";
 
     const prompt = `You will be generating an image of a dish based on a recipe provided below.
 
 Here is the recipe for the dish you need to photograph:
-${recipeContext}${referenceNote}
+${recipeContext}${visualInstruction}
 
 Requirements for the image you generate:
 
 WHAT TO INCLUDE:
-- The finished dish from the recipe as the main subject
+- The finished dish (matching the visual description above) as the main subject
 - An elegant, sophisticated kitchen or dining room setting
 - Professional food photography composition with artistic styling
 - Refined lighting that makes the food look premium and appetizing
 - Elegant props like fine dishware, polished cutlery, marble surfaces, or contemporary table settings
-- Tastefully arranged complementary elements
 
 WHAT NOT TO INCLUDE:
 - Do not include any text, words, or writing of any kind
 - Do not include any logos or brand names
 - Do not include any people or parts of people (hands, faces, etc.)
 
-STYLE GUIDELINES:
+STYLE GUIDELINES (Use OUR style, NOT the reference photo's style):
 - Create a completely fresh, original composition
 - Use an elegant, upscale aesthetic (modern kitchen or refined dining room)
 - Ensure the dish is the clear focal point with sophisticated styling
 - Make the image look professional, premium, and restaurant-quality
 - Consider interesting angles, perfect depth of field, and artistic plating
-- Use contemporary, elegant styling with attention to detail
-
-NO-COPY CONSTRAINTS (if reference image provided):
-- DO NOT replicate the camera angle or viewpoint from any reference
-- DO NOT copy the background setting or environment
-- DO NOT mimic the specific arrangement or composition
-- DO NOT use the same color palette or lighting style as the reference
-- CREATE an entirely new, unique photograph that happens to show the same type of dish
 
 CRITICAL INGREDIENT RULES:
 - Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inną zielenią - NIE dodawaj tego do zdjęcia!
 - Only include ingredients that are explicitly mentioned in the recipe
-- Do not add decorative herbs or garnishes unless specified in the recipe
 
 Generate the image now based on these instructions.`;
 
@@ -1027,33 +1126,43 @@ export async function generateRecipeImage(
         });
     } else {
         // with_reference mode
-        prompt = buildImagePromptWithReference(recipe, language, !!referenceImage);
+        // 1. Analyze image to get visual description of the food (Vision API)
+        let visualDescription: string | null = null;
+
+        if (referenceImage) {
+            try {
+                logger.info("Analyzing reference image with Vision API", {
+                    userId,
+                    recipeId: recipe.id,
+                });
+
+                visualDescription = await describeDishFromImage(referenceImage);
+
+                logger.info("Visual description extracted", {
+                    userId,
+                    descriptionLength: visualDescription.length,
+                });
+            } catch (error) {
+                logger.warn("Failed to analyze reference image, falling back to recipe context only", {
+                    userId,
+                    error: error instanceof Error ? error.message : "Unknown error",
+                });
+                // Continue without visual description (fallback)
+            }
+        }
+
+        // 2. Build prompt using the extracted description
+        prompt = buildImagePromptWithReference(recipe, language, visualDescription);
+
         logger.debug("Built with_reference prompt", {
             userId,
             recipeId: recipe.id,
             promptLength: prompt.length,
-            hasReferenceImage: !!referenceImage,
+            hasVisualDescription: !!visualDescription,
         });
     }
 
     // Step 3: Call OpenAI Images API
-    // Note: For MVP, we use gpt-image-1.5 which doesn't support image input directly.
-    // Reference image (if provided) serves as context for the prompt, but we generate
-    // a fresh composition without copying. This is the fallback approach mentioned in the plan.
-    // Future enhancement: If OpenAI Images API adds image input support, integrate it here.
-    
-    if (referenceImage) {
-        logger.debug("Reference image provided (using prompt-based approach)", {
-            userId,
-            recipeId: recipe.id,
-            referenceImageSize: referenceImage.bytes.length,
-            referenceMimeType: referenceImage.mimeType,
-            referenceSource: referenceImage.source,
-        });
-        // For MVP, reference image info is already embedded in prompt instructions
-        // In future: could use multimodal chat to describe reference, then inject description
-    }
-
     const imageBase64 = await callImageAPI(prompt);
 
     logger.info("Recipe image generated successfully", {
