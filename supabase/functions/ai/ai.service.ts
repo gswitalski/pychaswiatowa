@@ -16,6 +16,7 @@ import {
     LlmGenerationResult,
     MAX_RECIPE_NAME_LENGTH,
     MAX_TAGS_COUNT,
+    ReferenceImageData,
 } from "./ai.types.ts";
 
 // #region --- Constants ---
@@ -419,114 +420,6 @@ function validateDraftContent(draft: AiRecipeDraftDto): string[] {
 // #region --- Main Service Function ---
 
 /**
- * Calls OpenAI Vision API to analyze an image.
- * Returns text description (not JSON).
- */
-async function analyzeImageWithVision(
-    imageBytes: Uint8Array,
-    mimeType: string,
-    prompt: string,
-): Promise<string> {
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
-
-    if (!apiKey) {
-        throw new ApplicationError("INTERNAL_ERROR", "OpenAI API key not configured");
-    }
-
-    // Convert to base64
-    const CHUNK_SIZE = 8192;
-    let binaryString = "";
-    for (let i = 0; i < imageBytes.length; i += CHUNK_SIZE) {
-        const chunk = imageBytes.slice(i, i + CHUNK_SIZE);
-        binaryString += String.fromCharCode(...chunk);
-    }
-    const base64 = btoa(binaryString);
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
-    try {
-        const response = await fetch(OPENAI_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: OPENAI_MODEL, // gpt-4o-mini is multimodal
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: prompt },
-                            { type: "image_url", image_url: { url: dataUrl } },
-                        ],
-                    },
-                ],
-                max_tokens: 500,
-                temperature: 0.3,
-            }),
-            signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            logger.error("OpenAI Vision API error", {
-                status: response.status,
-                body: errorBody.substring(0, 500),
-            });
-            throw new ApplicationError("INTERNAL_ERROR", "AI vision service failed");
-        }
-
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-
-        if (!content) {
-            throw new ApplicationError("INTERNAL_ERROR", "AI vision returned empty response");
-        }
-
-        return content;
-    } catch (error) {
-        clearTimeout(timeoutId);
-        if (error instanceof ApplicationError) throw error;
-        logger.error("Vision analysis failed", { error });
-        throw new ApplicationError("INTERNAL_ERROR", "Vision analysis failed");
-    }
-}
-
-/**
- * Extracts visual description of the dish from reference image.
- * Focuses ONLY on the food itself, ignoring background/style.
- */
-async function describeDishFromImage(
-    referenceImage: ReferenceImageData
-): Promise<string> {
-    const prompt = `Analyze this food image and describe ONLY the visual appearance of the dish itself.
-
-Focus on:
-1. Shape and form of the food (e.g. round cake, stacked pancakes, stew in a bowl)
-2. Visible textures (e.g. crispy crust, smooth sauce, fluffy crumb)
-3. Key colors of the food elements
-4. Visible ingredients and garnishes on the food
-5. How the food is arranged/plated (e.g. scattered, piled high, geometric)
-
-CRITICAL INSTRUCTIONS:
-- IGNORE the background, table, cutlery, and lighting.
-- IGNORE the artistic style of the photo.
-- DESCRIBE ONLY THE FOOD OBJECT.
-- Be concise and descriptive.`;
-
-    return await analyzeImageWithVision(
-        referenceImage.bytes,
-        referenceImage.mimeType,
-        prompt
-    );
-}
-
-/**
  * Generates a recipe draft from text or image using AI.
  *
  * @param params - Generation parameters including source type and content
@@ -686,6 +579,21 @@ const IMAGE_MODEL = "gpt-image-1.5";
 
 /** Timeout for Image API calls in milliseconds */
 const IMAGE_API_TIMEOUT_MS = 60_000;
+
+// #region --- Gemini API Constants ---
+
+/** Gemini API endpoint (for image-to-image generation) */
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+/** Gemini image generation model (image-to-image with reference) */
+// const GEMINI_IMAGE_MODEL = "gemini-2.0-flash-exp-image-generation";
+const GEMINI_IMAGE_MODEL = "gemini-3-pro-image-preview";
+
+
+/** Timeout for Gemini API calls in milliseconds */
+const GEMINI_API_TIMEOUT_MS = 90_000;
+
+// #endregion
 
 /**
  * Returns style contract for the given generation mode.
@@ -907,57 +815,58 @@ Generate the image now based on these instructions.`;
 }
 
 /**
- * Builds the image generation prompt for with_reference mode.
- * Uses elegant kitchen/dining aesthetic BUT uses visual description from reference for the food itself.
+ * Builds the image generation prompt for with_reference mode (Gemini).
+ * The reference image is passed directly to Gemini alongside this prompt.
+ * The prompt instructs Gemini to use the reference for understanding the dish appearance
+ * but create a new, original photograph.
  *
  * @param recipe - Recipe data
  * @param _language - Output language
- * @param visualDescription - Visual description of the dish from reference image
- * @returns Prompt string for image generation
+ * @returns Prompt string for Gemini image-to-image generation
  */
-function buildImagePromptWithReference(
+function buildImagePromptWithReferenceGemini(
     recipe: GenerateRecipeImageParams["recipe"],
     _language: string,
-    visualDescription: string | null,
 ): string {
     const recipeContext = buildRecipeContext(recipe);
 
-    // If we have a visual description from Vision API, we inject it as a strict instruction for the dish appearance
-    const visualInstruction = visualDescription
-        ? `\n\nVISUAL DESCRIPTION OF THE DISH (STRICTLY FOLLOW THIS FOR THE FOOD APPEARANCE):\n${visualDescription}\n\nIMPORTANT: Use the visual description above for the LOOK of the food, but place it in the new environment described below.`
-        : "";
+    const prompt = `You are given a REFERENCE IMAGE of a dish. Your task is to generate a NEW, ORIGINAL photograph of the same dish but with a completely different composition, angle, and setting.
 
-    const prompt = `You will be generating an image of a dish based on a recipe provided below.
+Here is the recipe for the dish:
+${recipeContext}
 
-Here is the recipe for the dish you need to photograph:
-${recipeContext}${visualInstruction}
+CRITICAL INSTRUCTIONS:
 
-Requirements for the image you generate:
+1. REFERENCE IMAGE USAGE:
+   - Use the reference image ONLY to understand what the dish looks like (shape, texture, colors, ingredients visible)
+   - DO NOT copy the composition, angle, background, or styling of the reference
+   - Create an entirely NEW photograph as if you were a professional food photographer
 
-WHAT TO INCLUDE:
-- The finished dish (matching the visual description above) as the main subject
-- An elegant, sophisticated kitchen or dining room setting
-- Professional food photography composition with artistic styling
-- Refined lighting that makes the food look premium and appetizing
-- Elegant props like fine dishware, polished cutlery, marble surfaces, or contemporary table settings
+2. WHAT TO INCLUDE IN THE NEW IMAGE:
+   - The same dish from the recipe, looking like the reference but photographed differently
+   - An elegant, sophisticated kitchen or dining room setting
+   - Professional food photography composition with artistic styling
+   - Refined lighting that makes the food look premium and appetizing
+   - Elegant props: fine dishware, polished cutlery, marble or wooden surfaces, or contemporary table settings
 
-WHAT NOT TO INCLUDE:
-- Do not include any text, words, or writing of any kind
-- Do not include any logos or brand names
-- Do not include any people or parts of people (hands, faces, etc.)
+3. WHAT NOT TO INCLUDE:
+   - Do not include any text, words, or writing
+   - Do not include any logos or brand names
+   - Do not include any people or parts of people (hands, faces)
+   - Do not copy the exact composition or setting from the reference image
 
-STYLE GUIDELINES (Use OUR style, NOT the reference photo's style):
-- Create a completely fresh, original composition
-- Use an elegant, upscale aesthetic (modern kitchen or refined dining room)
-- Ensure the dish is the clear focal point with sophisticated styling
-- Make the image look professional, premium, and restaurant-quality
-- Consider interesting angles, perfect depth of field, and artistic plating
+4. STYLE GUIDELINES:
+   - Create a completely fresh, original composition
+   - Use an elegant, upscale aesthetic (modern kitchen or refined dining room)
+   - Ensure the dish is the clear focal point with sophisticated styling
+   - Make the image look professional, premium, and restaurant-quality
+   - Use interesting angles, perfect depth of field, and artistic plating
 
-CRITICAL INGREDIENT RULES:
-- Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inną zielenią - NIE dodawaj tego do zdjęcia!
-- Only include ingredients that are explicitly mentioned in the recipe
+5. CRITICAL INGREDIENT RULES:
+   - Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inną zielenią - NIE dodawaj tego do zdjęcia!
+   - Only include garnishes and ingredients that are visible in the reference image or explicitly mentioned in the recipe
 
-Generate the image now based on these instructions.`;
+Generate the new photograph now based on the reference image and these instructions.`;
 
     return prompt;
 }
@@ -1072,6 +981,155 @@ async function callImageAPI(prompt: string): Promise<string> {
 }
 
 /**
+ * Calls Gemini API for image-to-image generation.
+ * Takes a prompt and a reference image, returns a newly generated image.
+ *
+ * @param prompt - The image generation prompt
+ * @param referenceImage - Reference image data (bytes + mimeType)
+ * @returns Base64 encoded image data and mime type
+ * @throws ApplicationError on API or processing errors
+ */
+async function callGeminiImageAPI(
+    prompt: string,
+    referenceImage: ReferenceImageData,
+): Promise<{ imageBase64: string; mimeType: string }> {
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+
+    if (!apiKey) {
+        logger.error("Gemini API key not configured");
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Gemini AI service is not configured",
+        );
+    }
+
+    // Convert image bytes to base64
+    const CHUNK_SIZE = 8192;
+    let binaryString = "";
+    for (let i = 0; i < referenceImage.bytes.length; i += CHUNK_SIZE) {
+        const chunk = referenceImage.bytes.slice(i, i + CHUNK_SIZE);
+        binaryString += String.fromCharCode(...chunk);
+    }
+    const imageBase64 = btoa(binaryString);
+
+    // Build Gemini API payload (image-to-image format)
+    const geminiPayload = {
+        contents: [
+            {
+                parts: [
+                    { text: prompt },
+                    {
+                        inline_data: {
+                            mime_type: referenceImage.mimeType,
+                            data: imageBase64,
+                        },
+                    },
+                ],
+            },
+        ],
+        generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"],
+        },
+    };
+
+    // log payload
+    logger.info("Gemini API payload", { geminiPayload });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GEMINI_API_TIMEOUT_MS);
+
+    try {
+        const geminiUrl = `${GEMINI_API_URL}/${GEMINI_IMAGE_MODEL}:generateContent`;
+
+        const response = await fetch(geminiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey,
+            },
+            body: JSON.stringify(geminiPayload),
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            logger.error("Gemini API error", {
+                status: response.status,
+                body: errorBody.substring(0, 500),
+            });
+
+            if (response.status === 429) {
+                throw new ApplicationError(
+                    "TOO_MANY_REQUESTS",
+                    "Gemini AI service rate limit exceeded. Please try again later.",
+                );
+            }
+
+            if (response.status === 400) {
+                throw new ApplicationError(
+                    "VALIDATION_ERROR",
+                    "Image generation request was rejected. The content may violate policies.",
+                );
+            }
+
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "Gemini AI service temporarily unavailable",
+            );
+        }
+
+        const geminiJson = await response.json();
+
+        // Extract image from response: candidates[0].content.parts[n].inline_data
+        const candidate = geminiJson.candidates?.[0];
+        const parts = candidate?.content?.parts ?? [];
+
+        // deno-lint-ignore no-explicit-any
+        const imagePart = parts.find((p: any) => p.inline_data?.data);
+
+        if (!imagePart) {
+            logger.error("No image in Gemini response", { geminiJson });
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "Gemini AI service did not return an image",
+            );
+        }
+
+        const generatedBase64 = imagePart.inline_data.data as string;
+        const generatedMime = imagePart.inline_data.mime_type ?? "image/png";
+
+        return {
+            imageBase64: generatedBase64,
+            mimeType: generatedMime,
+        };
+    } catch (error) {
+        clearTimeout(timeoutId);
+
+        if (error instanceof ApplicationError) {
+            throw error;
+        }
+
+        if (error instanceof Error && error.name === "AbortError") {
+            logger.error("Gemini API timeout");
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "Gemini AI service request timed out",
+            );
+        }
+
+        logger.error("Gemini API request failed", {
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to connect to Gemini AI service",
+        );
+    }
+}
+
+/**
  * Generates a preview image of a recipe dish using AI.
  *
  * This is a premium feature that creates a photorealistic image
@@ -1115,78 +1173,92 @@ export async function generateRecipeImage(
         };
     }
 
-    // Step 2: Build the prompt based on mode
-    let prompt: string;
+    // Step 2: Generate image based on mode
+    let imageBase64: string;
+    let imageMimeType: string;
+
     if (resolvedMode === 'recipe_only') {
-        prompt = buildImagePromptRecipeOnly(recipe, language);
+        // Recipe-only mode: use OpenAI Images API
+        const prompt = buildImagePromptRecipeOnly(recipe, language);
         logger.debug("Built recipe_only prompt", {
             userId,
             recipeId: recipe.id,
             promptLength: prompt.length,
         });
+
+        // Call OpenAI Images API
+        imageBase64 = await callImageAPI(prompt);
+        imageMimeType = "image/webp";
+
+        logger.info("Recipe image generated successfully (OpenAI)", {
+            userId,
+            recipeId: recipe.id,
+            mode: resolvedMode,
+            imageSize: imageBase64.length,
+        });
     } else {
-        // with_reference mode
-        // 1. Analyze image to get visual description of the food (Vision API)
-        let visualDescription: string | null = null;
-
-        if (referenceImage) {
-            try {
-                logger.info("Analyzing reference image with Vision API", {
-                    userId,
-                    recipeId: recipe.id,
-                });
-
-                visualDescription = await describeDishFromImage(referenceImage);
-
-                logger.info("Visual description extracted", {
-                    userId,
-                    descriptionLength: visualDescription.length,
-                });
-            } catch (error) {
-                logger.warn("Failed to analyze reference image, falling back to recipe context only", {
-                    userId,
-                    error: error instanceof Error ? error.message : "Unknown error",
-                });
-                // Continue without visual description (fallback)
-            }
+        // with_reference mode: use Gemini API for image-to-image generation
+        if (!referenceImage) {
+            logger.error("with_reference mode requires a reference image", {
+                userId,
+                recipeId: recipe.id,
+            });
+            return {
+                success: false,
+                reasons: ["Reference image is required for with_reference mode"],
+            };
         }
 
-        // 2. Build prompt using the extracted description
-        prompt = buildImagePromptWithReference(recipe, language, visualDescription);
+        // Build prompt for Gemini (image is passed directly)
+        const prompt = buildImagePromptWithReferenceGemini(recipe, language);
 
-        logger.debug("Built with_reference prompt", {
+        logger.debug("Built with_reference prompt for Gemini", {
             userId,
             recipeId: recipe.id,
             promptLength: prompt.length,
-            hasVisualDescription: !!visualDescription,
+        });
+
+        // Call Gemini API with both prompt and reference image
+        logger.info("Generating image with Gemini (image-to-image)", {
+            userId,
+            recipeId: recipe.id,
+            referenceImageSize: referenceImage.bytes.length,
+        });
+
+        const geminiResult = await callGeminiImageAPI(prompt, referenceImage);
+        imageBase64 = geminiResult.imageBase64;
+        imageMimeType = geminiResult.mimeType;
+
+        logger.info("Recipe image generated successfully (Gemini)", {
+            userId,
+            recipeId: recipe.id,
+            mode: resolvedMode,
+            imageSize: imageBase64.length,
+            mimeType: imageMimeType,
         });
     }
 
-    // Step 3: Call OpenAI Images API
-    const imageBase64 = await callImageAPI(prompt);
-
-    logger.info("Recipe image generated successfully", {
-        userId,
-        recipeId: recipe.id,
-        mode: resolvedMode,
-        imageSize: imageBase64.length,
-    });
-
-    // Step 4: Get style contract for the mode
+    // Step 3: Get style contract for the mode
     const styleContract = getStyleContract(resolvedMode);
 
-    // Step 5: Return successful result (webp format from gpt-image-1)
+    // Step 4: Determine output mime type (normalize if needed)
+    // Gemini may return different formats, but we prefer webp
+    const outputMimeType = imageMimeType === "image/webp" ? "image/webp" : "image/webp";
+
+    // Step 5: Return successful result
     return {
         success: true,
         data: {
             image: {
-                mime_type: "image/webp",
+                mime_type: outputMimeType,
                 data_base64: imageBase64,
             },
             meta: {
                 mode: resolvedMode,
                 style_contract: styleContract,
-                warnings: [],
+                warnings: imageMimeType !== "image/webp"
+                    ? [`Original format was ${imageMimeType}, served as webp`]
+                    : [],
             },
         },
     };
