@@ -57,16 +57,41 @@ Musisz posiadać:
 
 ### Opcja A: Konfiguracja przez GitHub Secrets (ZALECANA)
 
-GitHub Actions automatycznie ustawi klucz Gemini jako secret w Supabase podczas wdrożenia, jeśli dodasz go do GitHub Secrets.
+GitHub Actions automatycznie ustawi klucze API jako sekrety w Supabase podczas wdrożenia, jeśli dodasz je do GitHub Secrets.
 
-#### Krok 1: Dodaj klucz do GitHub Secrets
+#### ⚠️ WAŻNE: Najpierw sprawdź istniejący klucz OpenAI
+
+Przed aktualizacją workflow, **koniecznie** sprawdź czy `OPENAI_API_KEY` już istnieje w Supabase:
+
+```bash
+# Połącz z projektem produkcyjnym
+supabase link --project-ref <TWOJ_PROJECT_ID>
+
+# Sprawdź sekrety
+supabase secrets list
+```
+
+Jeśli widzisz `OPENAI_API_KEY` na liście, **musisz dodać go również do GitHub Secrets**, w przeciwnym razie workflow może nadpisać go pustą wartością!
+
+#### Krok 1: Dodaj klucze do GitHub Secrets
+
+**Dla klucza OpenAI (jeśli istnieje w Supabase):**
 
 1. Przejdź do repozytorium na GitHub
 2. Kliknij **Settings** → **Secrets and variables** → **Actions**
-3. Kliknij **New repository secret**
-4. Jako **Name** wpisz: `GEMINI_API_KEY`
-5. Jako **Secret** wklej skopiowany klucz API Gemini (np. `AIza...`)
-6. Kliknij **Add secret**
+3. Sprawdź, czy `OPENAI_API_KEY` już istnieje w sekretach
+4. Jeśli **NIE** istnieje:
+   - Kliknij **New repository secret**
+   - Jako **Name** wpisz: `OPENAI_API_KEY`
+   - Jako **Secret** wklej wartość klucza z Supabase lub nowy klucz z OpenAI
+   - Kliknij **Add secret**
+
+**Dla nowego klucza Gemini:**
+
+1. Na tej samej stronie kliknij **New repository secret**
+2. Jako **Name** wpisz: `GEMINI_API_KEY`
+3. Jako **Secret** wklej skopiowany klucz API Gemini (np. `AIza...`)
+4. Kliknij **Add secret**
 
 #### Krok 2: Zaktualizuj workflow GitHub Actions
 

@@ -12,13 +12,27 @@ Ten dokument zawiera najważniejsze kroki potrzebne do wdrożenia nowej wersji a
 → "Get API key" → Skopiuj klucz (AIza...)
 ```
 
-### 2. Dodaj klucz do GitHub Secrets
+### 2. Dodaj klucze do GitHub Secrets
 
+**⚠️ WAŻNE:** Sprawdź najpierw czy `OPENAI_API_KEY` istnieje w Supabase:
+```bash
+supabase secrets list
+```
+
+**Jeśli tak, dodaj OPENAI_API_KEY do GitHub Secrets:**
+```
+GitHub → Settings → Secrets and variables → Actions
+→ New repository secret (jeśli nie istnieje)
+Name: OPENAI_API_KEY
+Secret: <wartość z Supabase lub nowy klucz>
+```
+
+**Dodaj GEMINI_API_KEY:**
 ```
 GitHub → Settings → Secrets and variables → Actions
 → New repository secret
 Name: GEMINI_API_KEY
-Secret: <wklej klucz>
+Secret: <wklej klucz Gemini>
 ```
 
 ### 3. Zaktualizuj workflow GitHub Actions
