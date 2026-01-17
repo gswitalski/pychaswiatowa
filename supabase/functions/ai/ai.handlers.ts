@@ -501,10 +501,9 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                         imagePath: imagePath.substring(0, 50) + '...', // log prefix only for security
                     });
 
-                    // Extract bucket from path (assuming format: bucket-name/path/to/file)
-                    const bucketMatch = imagePath.match(/^([^/]+)\//);
-                    const bucket = bucketMatch ? bucketMatch[1] : 'recipe-images';
-                    const filePath = imagePath.replace(/^[^/]+\//, '');
+                    // Bucket name is fixed (image_path contains only the file path within the bucket)
+                    const bucket = 'recipe-images';
+                    const filePath = imagePath;
 
                     const { data: imageBlob, error: downloadError } = await supabase
                         .storage
@@ -515,7 +514,9 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                         logger.warn('Failed to download reference image from storage', {
                             userId: user.id,
                             recipeId: requestData.recipe.id,
-                            error: downloadError?.message,
+                            bucket,
+                            filePath,
+                            error: downloadError,
                         });
                         
                         // Fallback: if mode=auto, switch to recipe_only

@@ -586,8 +586,10 @@ const IMAGE_API_TIMEOUT_MS = 60_000;
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 /** Gemini image generation model (image-to-image with reference) */
-// const GEMINI_IMAGE_MODEL = "gemini-2.0-flash-exp-image-generation";
+// Note: Use latest stable model from Gemini documentation
+// const GEMINI_IMAGE_MODEL = "gemini-2.0-flash-exp";
 const GEMINI_IMAGE_MODEL = "gemini-3-pro-image-preview";
+
 
 
 /** Timeout for Gemini API calls in milliseconds */
@@ -1013,14 +1015,15 @@ async function callGeminiImageAPI(
     const imageBase64 = btoa(binaryString);
 
     // Build Gemini API payload (image-to-image format)
+    // Note: Gemini REST API uses camelCase for field names
     const geminiPayload = {
         contents: [
             {
                 parts: [
                     { text: prompt },
                     {
-                        inline_data: {
-                            mime_type: referenceImage.mimeType,
+                        inlineData: {
+                            mimeType: referenceImage.mimeType,
                             data: imageBase64,
                         },
                     },
@@ -1082,23 +1085,28 @@ async function callGeminiImageAPI(
 
         const geminiJson = await response.json();
 
-        // Extract image from response: candidates[0].content.parts[n].inline_data
+        // Extract image from response: candidates[0].content.parts[n].inlineData
+        // Note: Gemini REST API uses camelCase for field names in responses
         const candidate = geminiJson.candidates?.[0];
         const parts = candidate?.content?.parts ?? [];
 
         // deno-lint-ignore no-explicit-any
-        const imagePart = parts.find((p: any) => p.inline_data?.data);
+        const imagePart = parts.find((p: any) => p.inlineData?.data);
 
         if (!imagePart) {
-            logger.error("No image in Gemini response", { geminiJson });
+            logger.error("No image in Gemini response", {
+                geminiJson,
+                candidatesCount: geminiJson.candidates?.length ?? 0,
+                partsCount: parts.length,
+            });
             throw new ApplicationError(
                 "INTERNAL_ERROR",
                 "Gemini AI service did not return an image",
             );
         }
 
-        const generatedBase64 = imagePart.inline_data.data as string;
-        const generatedMime = imagePart.inline_data.mime_type ?? "image/png";
+        const generatedBase64 = imagePart.inlineData.data as string;
+        const generatedMime = imagePart.inlineData.mimeType ?? "image/png";
 
         return {
             imageBase64: generatedBase64,
