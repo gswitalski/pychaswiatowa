@@ -9,12 +9,14 @@ import { logger } from "../_shared/logger.ts";
 import {
     AiRecipeDraftDto,
     AiRecipeDraftResponseDto,
+    AiRecipeImageStyleContract,
     GenerateRecipeDraftParams,
     GenerateRecipeImageParams,
     ImageGenerationResult,
     LlmGenerationResult,
     MAX_RECIPE_NAME_LENGTH,
     MAX_TAGS_COUNT,
+    ReferenceImageData,
 } from "./ai.types.ts";
 
 // #region --- Constants ---
@@ -578,18 +580,54 @@ const IMAGE_MODEL = "gpt-image-1.5";
 /** Timeout for Image API calls in milliseconds */
 const IMAGE_API_TIMEOUT_MS = 60_000;
 
+// #region --- Gemini API Constants ---
+
+/** Gemini API endpoint (for image-to-image generation) */
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+/** Gemini image generation model (image-to-image with reference) */
+// Note: Use latest stable model from Gemini documentation
+// const GEMINI_IMAGE_MODEL = "gemini-2.0-flash-exp";
+const GEMINI_IMAGE_MODEL = "gemini-3-pro-image-preview";
+
+
+
+/** Timeout for Gemini API calls in milliseconds */
+const GEMINI_API_TIMEOUT_MS = 90_000;
+
+// #endregion
+
 /**
- * Style contract constants - these define the visual style guidelines
- * that the generated image must adhere to.
+ * Returns style contract for the given generation mode.
+ * Different modes have different visual style guidelines.
+ *
+ * @param mode - Generation mode (recipe_only or with_reference)
+ * @returns Style contract object
  */
-const IMAGE_STYLE_CONTRACT = {
-    photorealistic: true,
-    rustic_table: true,
-    natural_light: true,
-    no_people: true,
-    no_text: true,
-    no_watermark: true,
-} as const;
+function getStyleContract(
+    mode: 'recipe_only' | 'with_reference',
+): AiRecipeImageStyleContract {
+    if (mode === 'recipe_only') {
+        return {
+            photorealistic: true,
+            rustic_table: true,
+            natural_light: true,
+            no_people: true,
+            no_text: true,
+            no_watermark: true,
+        };
+    } else {
+        // with_reference mode uses elegant kitchen/dining aesthetic
+        return {
+            photorealistic: true,
+            rustic_table: false,
+            natural_light: true,
+            no_people: true,
+            no_text: true,
+            no_watermark: true,
+        };
+    }
+}
 
 /**
  * Builds a condensed description of ingredients for the prompt.
@@ -666,74 +704,171 @@ function validateRecipeForImageGeneration(
 }
 
 /**
- * Builds the image generation prompt for OpenAI Images API.
- * Follows the style contract guidelines based on the standardized prompt template.
+ * Builds common recipe context section for prompts.
  *
  * @param recipe - Recipe data
- * @param language - Output language
- * @returns Prompt string for image generation
+ * @returns Recipe context string
  */
-function buildImagePrompt(
+function buildRecipeContext(
     recipe: GenerateRecipeImageParams["recipe"],
-    _language: string,
 ): string {
     const ingredientsSummary = buildIngredientsSummary(recipe.ingredients);
     const stepsSummary = buildStepsSummary(recipe.steps);
 
     // Build dish description
-    let dishDescription = recipe.name;
+    let dishInfo = recipe.name;
     if (recipe.description) {
-        dishDescription += `. ${recipe.description}`;
+        dishInfo += `. ${recipe.description}`;
     }
     if (recipe.category_name) {
-        dishDescription += ` (${recipe.category_name})`;
+        dishInfo += ` (${recipe.category_name})`;
     }
 
     // Add cooking method context if applicable
-    const cookingMethodNote = recipe.is_termorobot
-        ? "\nNote: This dish is prepared using a kitchen robot (Thermomix-style)."
-        : "";
+    let cookingMethodNote = "";
+    if (recipe.is_termorobot) {
+        cookingMethodNote += "\nNote: This dish is prepared using a kitchen robot (Thermomix-style).";
+    }
+    if (recipe.is_grill) {
+        cookingMethodNote += "\nNote: This dish is prepared on a grill/barbecue.";
+    }
 
-    // Build the standardized prompt
-    const prompt = `You will be generating an image of a dish based on a recipe provided below.
+    // Add timing context if available
+    let timingNote = "";
+    if (recipe.prep_time_minutes || recipe.total_time_minutes) {
+        timingNote = "\nTiming: ";
+        if (recipe.prep_time_minutes) {
+            timingNote += `Prep ${recipe.prep_time_minutes} min`;
+        }
+        if (recipe.total_time_minutes) {
+            if (recipe.prep_time_minutes) timingNote += ", ";
+            timingNote += `Total ${recipe.total_time_minutes} min`;
+        }
+    }
 
-Here is the recipe for the dish you need to photograph:
-<recipe>
-${recipe.name}
+    // Add tags context if available
+    let tagsNote = "";
+    if (recipe.tags && recipe.tags.length > 0) {
+        tagsNote = `\nTags: ${recipe.tags.slice(0, 5).join(", ")}`;
+    }
 
-${recipe.description || ''}
+    return `<recipe>
+${dishInfo}
 
 Main ingredients: ${ingredientsSummary}
 
 Preparation steps:
 ${stepsSummary}
-${cookingMethodNote}
-</recipe>
+${cookingMethodNote}${timingNote}${tagsNote}
+</recipe>`;
+}
+
+/**
+ * Builds the image generation prompt for recipe_only mode.
+ * Uses rustic table aesthetic with natural light.
+ *
+ * @param recipe - Recipe data
+ * @param _language - Output language (reserved for future use)
+ * @returns Prompt string for image generation
+ */
+function buildImagePromptRecipeOnly(
+    recipe: GenerateRecipeImageParams["recipe"],
+    _language: string,
+): string {
+    const recipeContext = buildRecipeContext(recipe);
+
+    const prompt = `You will be generating an image of a dish based on a recipe provided below.
+
+Here is the recipe for the dish you need to photograph:
+${recipeContext}
 
 Requirements for the image you generate:
 
 WHAT TO INCLUDE:
 - The finished dish from the recipe as the main subject
-- An elegant kitchen or dining setting/arrangement
+- A rustic, homey table setting with natural wood surfaces
+- Natural lighting that makes the food look warm and inviting
 - Professional food photography composition
-- Appropriate lighting that makes the food look appetizing
-- Complementary props like plates, utensils, ingredients, or table settings that enhance the presentation
+- Simple, authentic props like wooden boards, linen napkins, or rustic dishware
+- Complementary raw ingredients placed naturally around the dish
 
 WHAT NOT TO INCLUDE:
 - Do not include any text, words, or writing of any kind
 - Do not include any logos or brand names
 - Do not include any people or parts of people (hands, faces, etc.)
+- Do not include any modern, sleek, or overly styled elements
 
 STYLE GUIDELINES:
-- Create a fresh, original composition
-- Use an elegant, sophisticated kitchen or dining aesthetic
-- Ensure the dish is the clear focal point
-- Make the image look professional and appetizing
-- Consider interesting angles, depth of field, and artistic plating
+- Create a fresh, original composition with a rustic, homemade feel
+- Use warm, natural lighting (think golden hour or soft window light)
+- Ensure the dish is the clear focal point on a natural wood table
+- Make the image look homey, comforting, and appetizing
+- Consider overhead shots or 45-degree angles that show the dish well
+- Keep styling authentic and not overly staged
 
-- Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inna zieleniną - nie rób tego!
+CRITICAL INGREDIENT RULES:
+- Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inną zielenią - NIE dodawaj tego do zdjęcia!
+- Only include ingredients that are explicitly mentioned in the recipe
+- Do not add decorative herbs or garnishes unless specified in the recipe
 
 Generate the image now based on these instructions.`;
+
+    return prompt;
+}
+
+/**
+ * Builds the image generation prompt for with_reference mode (Gemini).
+ * The reference image is passed directly to Gemini alongside this prompt.
+ * The prompt instructs Gemini to use the reference for understanding the dish appearance
+ * but create a new, original photograph.
+ *
+ * @param recipe - Recipe data
+ * @param _language - Output language
+ * @returns Prompt string for Gemini image-to-image generation
+ */
+function buildImagePromptWithReferenceGemini(
+    recipe: GenerateRecipeImageParams["recipe"],
+    _language: string,
+): string {
+    const recipeContext = buildRecipeContext(recipe);
+
+    const prompt = `You are given a REFERENCE IMAGE of a dish. Your task is to generate a NEW, ORIGINAL photograph of the same dish but with a completely different composition, angle, and setting.
+
+Here is the recipe for the dish:
+${recipeContext}
+
+CRITICAL INSTRUCTIONS:
+
+1. REFERENCE IMAGE USAGE:
+   - Use the reference image ONLY to understand what the dish looks like (shape, texture, colors, ingredients visible)
+   - DO NOT copy the composition, angle, background, or styling of the reference
+   - Create an entirely NEW photograph as if you were a professional food photographer
+
+2. WHAT TO INCLUDE IN THE NEW IMAGE:
+   - The same dish from the recipe, looking like the reference but photographed differently
+   - An elegant, sophisticated kitchen or dining room setting
+   - Professional food photography composition with artistic styling
+   - Refined lighting that makes the food look premium and appetizing
+   - Elegant props: fine dishware, polished cutlery, marble or wooden surfaces, or contemporary table settings
+
+3. WHAT NOT TO INCLUDE:
+   - Do not include any text, words, or writing
+   - Do not include any logos or brand names
+   - Do not include any people or parts of people (hands, faces)
+   - Do not copy the exact composition or setting from the reference image
+
+4. STYLE GUIDELINES:
+   - Create a completely fresh, original composition
+   - Use an elegant, upscale aesthetic (modern kitchen or refined dining room)
+   - Ensure the dish is the clear focal point with sophisticated styling
+   - Make the image look professional, premium, and restaurant-quality
+   - Use interesting angles, perfect depth of field, and artistic plating
+
+5. CRITICAL INGREDIENT RULES:
+   - Jeśli w przepisie nie ma nic o posypaniu potrawy pietruszką czy inną zielenią - NIE dodawaj tego do zdjęcia!
+   - Only include garnishes and ingredients that are visible in the reference image or explicitly mentioned in the recipe
+
+Generate the new photograph now based on the reference image and these instructions.`;
 
     return prompt;
 }
@@ -848,25 +983,186 @@ async function callImageAPI(prompt: string): Promise<string> {
 }
 
 /**
+ * Calls Gemini API for image-to-image generation.
+ * Takes a prompt and a reference image, returns a newly generated image.
+ *
+ * @param prompt - The image generation prompt
+ * @param referenceImage - Reference image data (bytes + mimeType)
+ * @returns Base64 encoded image data and mime type
+ * @throws ApplicationError on API or processing errors
+ */
+async function callGeminiImageAPI(
+    prompt: string,
+    referenceImage: ReferenceImageData,
+): Promise<{ imageBase64: string; mimeType: string }> {
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+
+    if (!apiKey) {
+        logger.error("Gemini API key not configured");
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Gemini AI service is not configured",
+        );
+    }
+
+    // Convert image bytes to base64
+    const CHUNK_SIZE = 8192;
+    let binaryString = "";
+    for (let i = 0; i < referenceImage.bytes.length; i += CHUNK_SIZE) {
+        const chunk = referenceImage.bytes.slice(i, i + CHUNK_SIZE);
+        binaryString += String.fromCharCode(...chunk);
+    }
+    const imageBase64 = btoa(binaryString);
+
+    // Build Gemini API payload (image-to-image format)
+    // Note: Gemini REST API uses camelCase for field names
+    const geminiPayload = {
+        contents: [
+            {
+                parts: [
+                    { text: prompt },
+                    {
+                        inlineData: {
+                            mimeType: referenceImage.mimeType,
+                            data: imageBase64,
+                        },
+                    },
+                ],
+            },
+        ],
+        generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"],
+        },
+    };
+
+    // log payload
+    logger.info("Gemini API payload", { geminiPayload });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GEMINI_API_TIMEOUT_MS);
+
+    try {
+        const geminiUrl = `${GEMINI_API_URL}/${GEMINI_IMAGE_MODEL}:generateContent`;
+
+        const response = await fetch(geminiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey,
+            },
+            body: JSON.stringify(geminiPayload),
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            logger.error("Gemini API error", {
+                status: response.status,
+                body: errorBody.substring(0, 500),
+            });
+
+            if (response.status === 429) {
+                throw new ApplicationError(
+                    "TOO_MANY_REQUESTS",
+                    "Gemini AI service rate limit exceeded. Please try again later.",
+                );
+            }
+
+            if (response.status === 400) {
+                throw new ApplicationError(
+                    "VALIDATION_ERROR",
+                    "Image generation request was rejected. The content may violate policies.",
+                );
+            }
+
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "Gemini AI service temporarily unavailable",
+            );
+        }
+
+        const geminiJson = await response.json();
+
+        // Extract image from response: candidates[0].content.parts[n].inlineData
+        // Note: Gemini REST API uses camelCase for field names in responses
+        const candidate = geminiJson.candidates?.[0];
+        const parts = candidate?.content?.parts ?? [];
+
+        // deno-lint-ignore no-explicit-any
+        const imagePart = parts.find((p: any) => p.inlineData?.data);
+
+        if (!imagePart) {
+            logger.error("No image in Gemini response", {
+                geminiJson,
+                candidatesCount: geminiJson.candidates?.length ?? 0,
+                partsCount: parts.length,
+            });
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "Gemini AI service did not return an image",
+            );
+        }
+
+        const generatedBase64 = imagePart.inlineData.data as string;
+        const generatedMime = imagePart.inlineData.mimeType ?? "image/png";
+
+        return {
+            imageBase64: generatedBase64,
+            mimeType: generatedMime,
+        };
+    } catch (error) {
+        clearTimeout(timeoutId);
+
+        if (error instanceof ApplicationError) {
+            throw error;
+        }
+
+        if (error instanceof Error && error.name === "AbortError") {
+            logger.error("Gemini API timeout");
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "Gemini AI service request timed out",
+            );
+        }
+
+        logger.error("Gemini API request failed", {
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to connect to Gemini AI service",
+        );
+    }
+}
+
+/**
  * Generates a preview image of a recipe dish using AI.
  *
  * This is a premium feature that creates a photorealistic image
  * of the dish described by the recipe data.
  *
- * @param params - Generation parameters including recipe data
+ * Supports two modes:
+ * - recipe_only: Generate from recipe text only (rustic style)
+ * - with_reference: Generate with optional reference image (elegant style, no-copy constraint)
+ *
+ * @param params - Generation parameters including recipe data, mode, and optional reference image
  * @returns ImageGenerationResult with either success data or failure reasons
  * @throws ApplicationError for infrastructure/configuration errors
  */
 export async function generateRecipeImage(
     params: GenerateRecipeImageParams,
 ): Promise<ImageGenerationResult> {
-    const { userId, recipe, language } = params;
+    const { userId, recipe, language, resolvedMode, referenceImage } = params;
 
     logger.info("Starting recipe image generation", {
         userId,
         recipeId: recipe.id,
         recipeName: recipe.name,
         language,
+        mode: resolvedMode,
+        hasReferenceImage: !!referenceImage,
         ingredientsCount: recipe.ingredients.length,
         stepsCount: recipe.steps.length,
     });
@@ -885,35 +1181,92 @@ export async function generateRecipeImage(
         };
     }
 
-    // Step 2: Build the prompt
-    const prompt = buildImagePrompt(recipe, language);
+    // Step 2: Generate image based on mode
+    let imageBase64: string;
+    let imageMimeType: string;
 
-    logger.debug("Built image generation prompt", {
-        userId,
-        recipeId: recipe.id,
-        promptLength: prompt.length,
-    });
+    if (resolvedMode === 'recipe_only') {
+        // Recipe-only mode: use OpenAI Images API
+        const prompt = buildImagePromptRecipeOnly(recipe, language);
+        logger.debug("Built recipe_only prompt", {
+            userId,
+            recipeId: recipe.id,
+            promptLength: prompt.length,
+        });
 
-    // Step 3: Call OpenAI Images API (gpt-image-1 with webp output)
-    const imageBase64 = await callImageAPI(prompt);
+        // Call OpenAI Images API
+        imageBase64 = await callImageAPI(prompt);
+        imageMimeType = "image/webp";
 
-    logger.info("Recipe image generated successfully", {
-        userId,
-        recipeId: recipe.id,
-        imageSize: imageBase64.length,
-    });
+        logger.info("Recipe image generated successfully (OpenAI)", {
+            userId,
+            recipeId: recipe.id,
+            mode: resolvedMode,
+            imageSize: imageBase64.length,
+        });
+    } else {
+        // with_reference mode: use Gemini API for image-to-image generation
+        if (!referenceImage) {
+            logger.error("with_reference mode requires a reference image", {
+                userId,
+                recipeId: recipe.id,
+            });
+            return {
+                success: false,
+                reasons: ["Reference image is required for with_reference mode"],
+            };
+        }
 
-    // Step 4: Return successful result (webp format from gpt-image-1)
+        // Build prompt for Gemini (image is passed directly)
+        const prompt = buildImagePromptWithReferenceGemini(recipe, language);
+
+        logger.debug("Built with_reference prompt for Gemini", {
+            userId,
+            recipeId: recipe.id,
+            promptLength: prompt.length,
+        });
+
+        // Call Gemini API with both prompt and reference image
+        logger.info("Generating image with Gemini (image-to-image)", {
+            userId,
+            recipeId: recipe.id,
+            referenceImageSize: referenceImage.bytes.length,
+        });
+
+        const geminiResult = await callGeminiImageAPI(prompt, referenceImage);
+        imageBase64 = geminiResult.imageBase64;
+        imageMimeType = geminiResult.mimeType;
+
+        logger.info("Recipe image generated successfully (Gemini)", {
+            userId,
+            recipeId: recipe.id,
+            mode: resolvedMode,
+            imageSize: imageBase64.length,
+            mimeType: imageMimeType,
+        });
+    }
+
+    // Step 3: Get style contract for the mode
+    const styleContract = getStyleContract(resolvedMode);
+
+    // Step 4: Determine output mime type (normalize if needed)
+    // Gemini may return different formats, but we prefer webp
+    const outputMimeType = imageMimeType === "image/webp" ? "image/webp" : "image/webp";
+
+    // Step 5: Return successful result
     return {
         success: true,
         data: {
             image: {
-                mime_type: "image/webp",
+                mime_type: outputMimeType,
                 data_base64: imageBase64,
             },
             meta: {
-                style_contract: IMAGE_STYLE_CONTRACT,
-                warnings: [],
+                mode: resolvedMode,
+                style_contract: styleContract,
+                warnings: imageMimeType !== "image/webp"
+                    ? [`Original format was ${imageMimeType}, served as webp`]
+                    : [],
             },
         },
     };

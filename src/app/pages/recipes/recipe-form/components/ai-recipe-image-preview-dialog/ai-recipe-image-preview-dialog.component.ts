@@ -31,6 +31,11 @@ export interface AiRecipeImageDialogResult {
 export type AiImageDialogState = 'loading' | 'error' | 'success';
 
 /**
+ * Resolved AI image generation mode (never 'auto').
+ */
+export type AiRecipeImageResolvedMode = 'recipe_only' | 'with_reference';
+
+/**
  * Dialog component for previewing AI-generated recipe images.
  * 
  * Displays three states:
@@ -62,6 +67,9 @@ export class AiRecipeImagePreviewDialogComponent {
     /** Generated image data URL (data:image/png;base64,...) */
     readonly imageDataUrl = signal<string | null>(null);
 
+    /** Resolved generation mode from API response */
+    readonly resolvedMode = signal<AiRecipeImageResolvedMode | null>(null);
+
     /** Error message for display */
     readonly errorMessage = signal<string | null>(null);
 
@@ -85,11 +93,29 @@ export class AiRecipeImagePreviewDialogComponent {
     /** Computed: is success state */
     readonly isSuccess = computed(() => this.state() === 'success');
 
+    /** Computed: style note text based on resolved mode */
+    readonly styleNoteText = computed(() => {
+        const mode = this.resolvedMode();
+        if (!mode) {
+            return 'Realistyczne zdjęcie w stylu rustykalnym';
+        }
+
+        if (mode === 'recipe_only') {
+            return 'Wygenerowano z przepisu — realistyczne zdjęcie w stylu rustykalnym';
+        }
+
+        // mode === 'with_reference'
+        return 'Wygenerowano z referencją zdjęcia — nowe ujęcie (nie kopiujemy referencji) w stylu eleganckiej kuchni/jadalni';
+    });
+
     /**
      * Update dialog with successful generation result.
+     * @param imageDataUrl Data URL of the generated image
+     * @param mode Resolved generation mode from API response
      */
-    setSuccess(imageDataUrl: string): void {
+    setSuccess(imageDataUrl: string, mode: AiRecipeImageResolvedMode): void {
         this.imageDataUrl.set(imageDataUrl);
+        this.resolvedMode.set(mode);
         this.errorMessage.set(null);
         this.errorReasons.set([]);
         this.state.set('success');
@@ -110,6 +136,7 @@ export class AiRecipeImagePreviewDialogComponent {
      */
     setLoading(): void {
         this.imageDataUrl.set(null);
+        this.resolvedMode.set(null);
         this.errorMessage.set(null);
         this.errorReasons.set([]);
         this.state.set('loading');

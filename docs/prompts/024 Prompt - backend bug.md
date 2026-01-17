@@ -12,33 +12,21 @@ Zapoznaj się z dokumentamu projektu
 
 <aktualne_zachowanie>
 
-endpoit
-GET 
-http://127.0.0.1:54331/functions/v1/recipes/40/collections
 
-z body
-{
-  "collection_ids": [
-    4
-  ]
-}
+generowanie obrazu na podstawie obrazu wklejonego do frmularza przepisu nie używa obrazu rferencyjnego
 
-nie pozwala dodać przepisu do kolekcji użytkownika
-{
-  "code": "NOT_FOUND",
-  "message": "Recipe with ID 40 not found"
-}
-
-
-zalogowany użytkownik nie jest autorem przpisu
+[Warning] {"level":"warn","message":"Failed to download reference image from storage","timestamp":"2026-01-16T16:21:23.310Z","context":{"userId":"c553b8d1-3dbb-488f-b610-97eb6f95d357","recipeId":54,"error":"{}"}}
+2026-01-16T16:21:23.310582432Z 
+2026-01-16T16:21:23.310587307Z [Info] {"level":"info","message":"Falling back to recipe_only mode","timestamp":"2026-01-16T16:21:23.310Z","context":{"userId":"c553b8d1-3dbb-488f-b610-97eb6f95d357","recipeId":54}}
+2026-01-16T16:21:23.310591312Z
+2026-01-16T16:21:23.310706688Z [Info] {"level":"info","message":"Starting recipe image generation","timestamp":"2026-01-16T16:21:23.310Z","context":{"userId":"c553b8d1-3dbb-488f-b610-97eb6f95d357","recipeId":54,"recipeName":"Schab chrzanowy","language":"pl","mode":"recipe_only","hasReferenceImage":false,"ingredientsCount":15,"stepsCount":7}}
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-uzytkownik może dopdać do swojek kolekcji przepis innego autora jesli 
-przepis ma widocnosc PUBLIC 
+do generowania juset użyty obraz referencyjny (model gemini)
 
 </oczekiwane_zachowanie>
 

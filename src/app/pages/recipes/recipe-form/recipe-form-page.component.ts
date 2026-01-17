@@ -153,6 +153,9 @@ export class RecipeFormPageComponent implements OnInit {
     /** Current image URL (for edit mode) */
     readonly currentImageUrl = signal<string | null>(null);
 
+    /** Current image storage path (for AI reference image) */
+    readonly currentImagePath = signal<string | null>(null);
+
     /** Pending image file (for create mode) */
     private pendingImageFile: File | null = null;
 
@@ -188,6 +191,19 @@ export class RecipeFormPageComponent implements OnInit {
         }
         // Disabled during saving, image uploading, or AI generation
         return this.saving() || this.imageUploading() || this.aiGenerating();
+    });
+
+    /** Computed: has reference image for AI generation */
+    readonly hasAiReferenceImage = computed(() => !!this.currentImagePath());
+
+    /** Computed: tooltip for AI image button */
+    readonly aiImageTooltip = computed(() => {
+        if (!this.recipeId()) {
+            return 'Zapisz przepis, aby wygenerować zdjęcie AI';
+        }
+        return this.hasAiReferenceImage()
+            ? 'Generuj z referencją zdjęcia'
+            : 'Generuj z przepisu';
     });
 
     /** Main form group */
@@ -490,9 +506,10 @@ export class RecipeFormPageComponent implements OnInit {
             difficulty: recipe.difficulty ?? null,
         });
 
-        // Set current image URL
+        // Set current image URL and path
         if (recipe.image_path) {
             this.currentImageUrl.set(recipe.image_path);
+            this.currentImagePath.set(recipe.image_path);
         }
 
         // Clear and populate tags
@@ -556,13 +573,15 @@ export class RecipeFormPageComponent implements OnInit {
                 break;
 
             case 'uploaded':
-                // Edit mode - update current image URL
+                // Edit mode - update current image URL and path
                 this.currentImageUrl.set(event.imageUrl || event.imagePath);
+                this.currentImagePath.set(event.imagePath);
                 break;
 
             case 'deleted':
-                // Edit mode - clear current image URL
+                // Edit mode - clear current image URL and path
                 this.currentImageUrl.set(null);
+                this.currentImagePath.set(null);
                 break;
 
             case 'uploadingChanged':
@@ -751,8 +770,8 @@ export class RecipeFormPageComponent implements OnInit {
                 // Build data URL for preview
                 const dataUrl = `data:${response.image.mime_type};base64,${response.image.data_base64}`;
 
-                // Update dialog with success
-                dialogRef.componentInstance.setSuccess(dataUrl);
+                // Update dialog with success (pass resolved mode from API)
+                dialogRef.componentInstance.setSuccess(dataUrl, response.meta.mode);
 
                 // Generation complete - unblock upload to allow applying image
                 this.aiGenerating.set(false);
@@ -843,7 +862,7 @@ export class RecipeFormPageComponent implements OnInit {
             return { type: 'item' as const, content: trimmed };
         });
 
-        return {
+        const request: AiRecipeImageRequestDto = {
             recipe: {
                 id: recipeId,
                 name: formValue.name,
@@ -855,6 +874,8 @@ export class RecipeFormPageComponent implements OnInit {
                 ingredients,
                 steps,
                 tags: formValue.tags,
+                prep_time_minutes: formValue.prepTimeMinutes ?? null,
+                total_time_minutes: formValue.totalTimeMinutes ?? null,
             },
             output: {
                 mime_type: 'image/webp',
@@ -863,7 +884,18 @@ export class RecipeFormPageComponent implements OnInit {
             },
             language: 'pl',
             output_format: 'pycha_recipe_image_v1',
+            mode: 'auto',
         };
+
+        // Add reference_image if available
+        if (this.hasAiReferenceImage() && this.currentImagePath()) {
+            request.reference_image = {
+                source: 'storage_path',
+                image_path: this.currentImagePath()!,
+            };
+        }
+
+        return request;
     }
 
     /**

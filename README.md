@@ -70,6 +70,43 @@ npm run test:e2e:debug    # Debug mode for E2E tests
 
 📖 **For detailed testing documentation, see [TESTING.md](TESTING.md)**
 
+## Deployment
+
+The application uses automated CI/CD pipeline with GitHub Actions. Each push to `main` branch automatically deploys:
+1. Backend (Supabase Edge Functions + Database migrations)
+2. Frontend (Firebase Hosting)
+
+### Quick Start Deployment
+
+```bash
+# Push to main branch
+git push origin main
+
+# Monitor deployment progress
+# GitHub → Actions → "Deploy to Production"
+```
+
+**Deployment time:** ~10-15 minutes (automated)
+
+### Configuration & Documentation
+
+- 🚀 **[Deployment Quick Start](docs/deployment-quickstart.md)** - Essential steps for deployment with Gemini API
+- 📘 **[Full Deployment Guide](docs/deployment-guide-gemini.md)** - Comprehensive deployment documentation
+- 🔧 **[Environment Setup](ENV_SETUP.md)** - Configuration for local development and production
+- 📋 **[Project Documentation](docs/results/main-project-docs/)** - PRD, API Plan, Tech Stack, and more
+
+### Required GitHub Secrets
+
+For production deployment, configure these secrets in GitHub:
+- `SUPABASE_PROJECT_ID` - Supabase project reference
+- `SUPABASE_ACCESS_TOKEN` - Supabase API token
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Supabase anonymous key
+- `OPENAI_API_KEY` - OpenAI API key for AI features
+- `GEMINI_API_KEY` - Google Gemini API key for image generation
+- `FIREBASE_SERVICE_ACCOUNT_PYCHASWIATOWA_PROD` - Firebase service account
+- `APP_PUBLIC_URL` - Public URL of the application
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

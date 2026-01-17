@@ -65,7 +65,7 @@
                             type="button"
                             class="ai-image-button"
                             [disabled]="isAiImageButtonDisabled()"
-                            [matTooltip]="recipeId() ? 'Wygeneruj zdjęcie za pomocą AI' : 'Zapisz przepis, aby wygenerować zdjęcie AI'"
+                            [matTooltip]="aiImageTooltip()"
                             (click)="onGenerateAiImage()"
                             aria-label="Wygeneruj zdjęcie za pomocą AI">
                             @if (aiGenerating()) {

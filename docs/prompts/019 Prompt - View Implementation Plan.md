@@ -16,34 +16,31 @@ Najpierw przejrzyj następujące informacje:
 
 </ui_plan>
 
-3. Widok do implementacji / zmiany w widokach
-<views>
-- **Szczegóły przepisu (uniwersalny widok)** (`/recipes/:id-:slug`, `/explore/recipes/:id-:slug`)
-    - **Co się zmieniło**: dodano sekcję **„Wskazówki”** jako odrębny blok **pod krokami przygotowania**; sekcja jest ukryta, gdy lista jest pusta.
-
-- **Publiczny katalog przepisów (Explore)** (`/explore`)
-    - **Co się zmieniło**: w opisie transparentności dopasowania rozszerzono etykietę o **„wskazówki”**; relevance uwzględnia wskazówki jako najniższy priorytet.
-
-- **Dodaj przepis (Kreator – AI z tekstu/zdjęcia)** (`/recipes/new/assist`)
-    - **Co się zmieniło**: draft z AI może wstępnie wypełnić także wskazówki (jeśli zostaną wywnioskowane).
-
-</views>
-
-
 4. User Stories:
 
 <user_stories>
 
-### Zmienione
+- **US-037 – Generowanie zdjęcia przepisu (AI) w edycji – tylko premium (zmieniona)**
+    - **Co się zmieniło**: doprecyzowano, że generowanie może działać w dwóch trybach; bazowy (bez zdjęcia) pozostaje jak dotychczas, a nowy tryb z referencją uruchamia się automatycznie, gdy zdjęcie jest dostępne w formularzu.
 
-- **US-004 — Przeglądanie szczegółów przepisu**
-    - **Co się zmieniło**: w szczegółach przepisu wskazówki (jeśli istnieją) są widoczne jako osobna sekcja **pod listą kroków przygotowania**; brak wskazówek → brak sekcji.
-- **US-009 — Wyszukiwanie przepisów**
-    - **Co się zmieniło**: wyszukiwanie obejmuje także wskazówki; priorytet dopasowania wskazówek jest najniższy.
-
+- **US-046 – Generowanie zdjęcia AI z referencją (automatyczny tryb, premium) (nowa)**
+    - **Nowe**: automatyczny wybór trybu (bez zdjęcia vs z referencją), sygnalizacja trybu tooltipem oraz wymaganie „nie kopiuj referencji, wygeneruj nowe ujęcie”.
 
 
 </user_stories>
+
+
+3. Widok do implementacji / zmiany w widokach
+<views>
+- **Formularz przepisu `/recipes/:id/edit` (zmieniony)**
+    - **Co się zmieniło**: przycisk AI działa automatycznie w 2 trybach zależnie od dostępności zdjęcia oraz pokazuje tooltip „Generuj z przepisu” / „Generuj z referencją zdjęcia”.
+
+- **Modal podglądu wygenerowanego zdjęcia (zmieniony)**
+    - **Co się zmieniło**: modal pokazuje notatkę o trybie/stylu zależną od tego, czy generowanie było z referencją.
+
+
+
+</views>
 
 5. Endpoint Description:
 <endpoint_description>
