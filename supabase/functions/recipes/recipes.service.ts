@@ -153,6 +153,11 @@ export interface UploadRecipeImageResponseDto {
 }
 
 /**
+ * Status of the normalized ingredients generation process.
+ */
+export type NormalizedIngredientsStatus = 'PENDING' | 'READY' | 'FAILED';
+
+/**
  * DTO for the detailed view of a single recipe.
  * Based on the `recipe_details` view, with strongly-typed JSONB fields.
  */
@@ -183,6 +188,10 @@ export interface RecipeDetailDto {
     is_grill: boolean;
     /** Array of collection IDs (owned by authenticated user) that contain this recipe. */
     collection_ids: number[];
+    /** Current status of normalized ingredients generation. */
+    normalized_ingredients_status: NormalizedIngredientsStatus;
+    /** Timestamp of last normalized ingredients update (null if never processed or pending). */
+    normalized_ingredients_updated_at: string | null;
 }
 
 /**
@@ -235,7 +244,7 @@ const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tips, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tips, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, normalized_ingredients_status, normalized_ingredients_updated_at';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -1026,6 +1035,8 @@ function mapToRecipeDetailDto(data: any, inMyPlan: boolean, collectionIds: numbe
         difficulty: (data.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(data.is_grill),
         collection_ids: collectionIds,
+        normalized_ingredients_status: (data.normalized_ingredients_status as NormalizedIngredientsStatus) ?? 'PENDING',
+        normalized_ingredients_updated_at: data.normalized_ingredients_updated_at ?? null,
     };
 }
 
@@ -1208,6 +1219,10 @@ export async function createRecipe(
     // Fetch the complete recipe details using the existing function
     const recipeDetail = await getRecipeById(client, recipeId, userId);
 
+    // Best-effort: Enqueue normalized ingredients job (non-blocking)
+    // This runs after successful recipe creation and doesn't fail the request if it errors
+    await tryEnqueueNormalizedIngredientsJob(client, recipeId, userId);
+
     logger.info('Recipe creation completed', {
         recipeId: recipeDetail.id,
         recipeName: recipeDetail.name,
@@ -1375,10 +1390,18 @@ export async function updateRecipe(
     // Fetch the complete recipe details using the existing function
     const recipeDetail = await getRecipeById(client, updatedRecipeId, userId);
 
+    // Best-effort: Enqueue normalized ingredients job if ingredients were updated (non-blocking)
+    // This runs after successful recipe update and doesn't fail the request if it errors
+    const ingredientsUpdated = input.ingredients_raw !== undefined;
+    if (ingredientsUpdated) {
+        await tryEnqueueNormalizedIngredientsJob(client, updatedRecipeId, userId);
+    }
+
     logger.info('Recipe update completed', {
         recipeId: recipeDetail.id,
         recipeName: recipeDetail.name,
         tagsCount: recipeDetail.tags.length,
+        ingredientsUpdated,
     });
 
     return recipeDetail;
@@ -2438,17 +2461,80 @@ export async function getRecipeNormalizedIngredients(
 }
 
 /**
+ * Best-effort enqueue of normalized ingredients job after recipe write operations.
+ *
+ * This is a non-blocking helper function called after successful recipe create/update.
+ * It attempts to enqueue a normalization job but logs errors instead of throwing them,
+ * ensuring that recipe write operations succeed even if job enqueuing fails.
+ *
+ * Use case: Called after createRecipe() and updateRecipe() to trigger async normalization.
+ *
+ * @param client - Authenticated Supabase client (with user JWT)
+ * @param recipeId - Recipe ID to enqueue normalization for
+ * @param userId - Authenticated user ID (for logging)
+ */
+async function tryEnqueueNormalizedIngredientsJob(
+    client: TypedSupabaseClient,
+    recipeId: number,
+    userId: string
+): Promise<void> {
+    try {
+        logger.info('Attempting to enqueue normalized ingredients job', {
+            recipeId,
+            userId,
+        });
+
+        // Call RPC to atomically reset status and enqueue job
+        const { data, error } = await client.rpc(
+            'enqueue_normalized_ingredients_refresh',
+            {
+                p_recipe_id: recipeId,
+            }
+        );
+
+        if (error) {
+            // Log as warning (not error) since this is best-effort
+            logger.warn('Failed to enqueue normalized ingredients job (non-blocking)', {
+                recipeId,
+                userId,
+                errorCode: error.code,
+                errorMessage: error.message,
+            });
+            return;
+        }
+
+        if (!data) {
+            logger.warn('Enqueue RPC returned null data', { recipeId, userId });
+            return;
+        }
+
+        logger.info('Successfully enqueued normalized ingredients job', {
+            recipeId,
+            userId,
+            status: data.status,
+        });
+    } catch (err) {
+        // Catch any unexpected errors and log as warning
+        logger.warn('Unexpected error while enqueuing normalized ingredients job', {
+            recipeId,
+            userId,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+}
+
+/**
  * Enqueues a normalization refresh job for a recipe's ingredients.
- * 
+ *
  * This function atomically resets the recipe's normalization status to PENDING
  * and creates/updates a job in the queue for worker processing.
- * 
+ *
  * Business rules:
  * - Only recipe owner can enqueue refresh (enforced by RPC + RLS)
  * - Respects soft-delete (cannot refresh deleted recipes)
  * - Idempotent: multiple calls for same recipe don't create duplicate jobs
  * - Deduplication enforced via unique index on recipe_id in jobs table
- * 
+ *
  * @param client - Authenticated Supabase client (with user JWT)
  * @param recipeId - Recipe ID to refresh normalized ingredients for
  * @param userId - Authenticated user ID (for logging)

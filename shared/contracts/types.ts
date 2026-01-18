@@ -294,6 +294,10 @@ export type RecipeDetailDto = Omit<
     is_grill: boolean;
     /** Array of collection IDs (owned by authenticated user) that contain this recipe. */
     collection_ids: number[];
+    /** Current status of normalized ingredients generation. */
+    normalized_ingredients_status: NormalizedIngredientsStatus;
+    /** Timestamp of last normalized ingredients update (null if never processed or pending). */
+    normalized_ingredients_updated_at: string | null;
 };
 
 /**
