@@ -12,32 +12,31 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-chce aby przy każdym zapisie przepisu, czy to nowego czy edytowanego przy danym przepisie tworzyła sie lista skłądników 
-znormalizowanych. dotychczasowe składniki maja być obsługiwane jak do tej pory. skłądniki znormalizowane bea w przyszłosci słuzyć do budowania listy
-zakupów. 
-
-składniki znormalizowane mają być przechowywane w bazie podobnie jak zwykłae, będą się jednak skłądać z trzech poł:
-
-- ilosc
-- jednostka miary
-- nazwa
-
-ilosc ma być typu liczba, jednostka miary ma być stringiem ale mab być jedna z przyjetych jednostek najczęsciej stosowanyc:
-- g
-- ml 
-- szt.
-- ząbek
-- łyżeczka
-- łyżka
-- szczypta
-
-nazwa ma być w liczbie pojedynczej w mianowniku
 
 
-skłądniki znormalizowane mają się budować na podstawie składników pisanych ręcznie przez użytkownika. do tego celu należy użyc jakiegoś taniego modelu LLM od OpenAI.
-jeslit ot  możliwe to skłłądniki mają byc zawsze przliczne na te podane wyżej np 1 kg -> 1000 g
-0,5 l -> 500 ml
+System powinien asynchronicznie normalizować składniki po każdym zapisie
+Proces nie blokuje zapisu przepisu
+W przypadku błędu system zachowuje przepis i podejmuje retry
+Ale w obecnej implementacji:
+Enqueue działa ✅
+Worker/processor nie istnieje ❌
+Retry mechanism nie działa (bo worker nie istnieje) ❌
 
+Rozwiązanie
+Problem polega na tym, że brakuje implementacji workera, który przetwarzałby kolejkę jobów normalizacji składników. Obecnie:
+✅ Endpoint PUT /recipes/{id} działa poprawnie
+✅ Job jest tworzony w bazie z statusem PENDING
+❌ Brak workera, który by pobrał ten job i wykonał normalizację
+Trzeba stworzyć worker, który będzie:
+ - Pobierał joby ze statusem PENDING z tabeli normalized_ingredients_jobs
+ - Wywoływał endpoint AI do normalizacji składników
+ - Zapisywał wyniki do tabeli recipe_normalized_ingredients
+ - Aktualizował status w tabeli recipes
+
+potrzeba Utworzenia nowego Supabase Edge Function jako worker
+Skonfigurowania go jako cron job lub trigger
+Implementacji logiki przetwarzania kolejki jobów
+Dodania mechanizmu retry dla nieudanych prób
 
 </nowa_funkcjonalnosc>
 

@@ -8,6 +8,7 @@ The API exposes the following primary resources:
 
 -   **Recipes**: Corresponds to the `recipes` table. Represents a user's culinary recipe.
 -   **Recipe Normalized Ingredients**: A per-recipe, backend-generated list of normalized ingredients used for future shopping list features. Each item contains `name` (singular, nominative), optional `amount` (number), and optional `unit` (controlled list). Generated asynchronously on each recipe save.
+-   **Normalized Ingredients Jobs (internal)**: Background job queue used to asynchronously compute recipe normalized ingredients after each recipe save. This is an internal backend concern (not exposed to the standard UI in MVP).
 -   **Public Recipes**: Read-only access to recipes for public routes. For anonymous users: only recipes with `visibility = 'PUBLIC'`. For authenticated users: may also include the user's own recipes with non-public `visibility` (e.g., `PRIVATE`, `SHARED`) as long as `is_owner = true`.
 -   **Categories**: Corresponds to the `categories` table. Represents a predefined recipe category.
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
@@ -528,7 +529,10 @@ Public endpoints are available without authentication:
 
 #### `POST /recipes`
 
--   **Description**: Create a new recipe. The raw text for ingredients, steps, and tips will be parsed server-side into JSONB format. The `tips_raw` field is optional. After a successful save, the backend asynchronously enqueues a job to compute `normalized_ingredients` for the recipe (does not block the save).
+-   **Description**: Create a new recipe. The raw text for ingredients, steps, and tips will be parsed server-side into JSONB format. The `tips_raw` field is optional. After a successful save, the backend asynchronously enqueues (or refreshes) a job to compute `normalized_ingredients` for the recipe (does not block the save).
+-   **Normalized ingredients job behavior (MVP)**:
+    - Exactly **one active job per recipe** (`recipe_id`) at a time (deduplication).
+    - A subsequent save refreshes the active job so the worker computes normalized ingredients from the **latest recipe state**.
 -   **Request Payload**:
     ```json
     {
@@ -767,6 +771,40 @@ Public endpoints are available without authentication:
 
 ---
 
+### Internal Workers / Jobs
+
+#### `POST /internal/workers/normalized-ingredients/run` (Supabase Scheduled Edge Function)
+
+-   **Description**: Process the normalized ingredients job queue and compute missing/failed normalized ingredients asynchronously.
+-   **Intended caller**: Supabase Scheduler (cron). Not called by the Angular app.
+-   **Schedule**:
+    - The function is scheduled as **cron every 1 minute**.
+    - The effective processing interval is controlled by an environment variable (minutes): `NORMALIZED_INGREDIENTS_WORKER_RUN_EVERY_MINUTES`.
+-   **Auth / security**:
+    - Must be treated as **internal-only** (not publicly accessible to end users).
+    - Recommended: require a service-role context (or an internal secret header) to execute.
+-   **Job selection (MVP)**:
+    - Process jobs where `status IN (PENDING, RETRY)` and `next_run_at <= now()`.
+    - Ensure safe concurrency (e.g., use `FOR UPDATE SKIP LOCKED` / locks) so the same job is not processed twice.
+    - Enforce deduplication: at most **one active job** per `recipe_id`.
+-   **Retry policy (MVP)**:
+    - Max attempts: **5**.
+    - Exponential backoff with jitter, recommended schedule: **1m, 5m, 30m, 2h, 12h**.
+    - After max attempts, mark the job as `FAILED` and update the recipe's `normalized_ingredients_status = FAILED`.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload** (example):
+        ```json
+        {
+          "processed": 10,
+          "succeeded": 7,
+          "failed": 3,
+          "skipped": 0
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `500 Internal Server Error` (unexpected worker failure)
+
 #### `POST /ai/recipes/image` (Supabase Edge Function)
 
 -   **Description**: Generate a **photorealistic** recipe image based on the **current recipe form state** (including unsaved edits). The endpoint supports two modes:
@@ -927,6 +965,8 @@ Public endpoints are available without authentication:
 -   **Description**: Enqueue a re-normalization job for the recipe's normalized ingredients. Intended for dev/test tooling (the standard UI does not expose it in MVP).
 -   **Auth**: Required (`Authorization: Bearer <JWT>`).
 -   **Authorization**: The caller MUST own the recipe (RLS enforced).
+-   **Notes (MVP)**:
+    - This endpoint must respect deduplication: it creates a job if none is active, or refreshes the active job for the given `recipe_id`.
 -   **Success Response**:
     -   **Code**: `202 Accepted`
     -   **Payload**:
@@ -978,7 +1018,10 @@ Public endpoints are available without authentication:
 
 #### `PUT /recipes/{id}`
 
--   **Description**: Update an existing recipe. After a successful save, the backend asynchronously enqueues a job to recompute `normalized_ingredients` for the recipe (does not block the save).
+-   **Description**: Update an existing recipe. After a successful save, the backend asynchronously enqueues (or refreshes) a job to recompute `normalized_ingredients` for the recipe (does not block the save).
+-   **Normalized ingredients job behavior (MVP)**:
+    - Exactly **one active job per recipe** (`recipe_id`) at a time (deduplication).
+    - A subsequent save refreshes the active job so the worker computes normalized ingredients from the **latest recipe state**.
 -   **Request Payload**: (Same as `POST /recipes`, with all fields being optional)
     ```json
     {
