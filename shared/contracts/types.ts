@@ -713,6 +713,71 @@ export interface SlugifyResponseDto {
 
 // #endregion
 
+// #region --- AI Normalized Ingredients ---
+
+/**
+ * Supported unit types for normalized ingredients (MVP controlled list).
+ */
+export type NormalizedIngredientUnit =
+    | 'g'
+    | 'ml'
+    | 'szt.'
+    | 'ząbek'
+    | 'łyżeczka'
+    | 'łyżka'
+    | 'szczypta'
+    | 'pęczek';
+
+/**
+ * DTO for a single normalized ingredient item.
+ */
+export interface NormalizedIngredientDto {
+    /** Amount of ingredient (or null if ambiguous/unspecified). */
+    amount: number | null;
+    /** Unit from allowed_units (or null if ambiguous/unspecified). */
+    unit: NormalizedIngredientUnit | null;
+    /** Ingredient name in singular nominative form (Polish). */
+    name: string;
+}
+
+/**
+ * Request DTO for AI normalized ingredients endpoint.
+ */
+export interface AiNormalizedIngredientsRequestDto {
+    /** Recipe ID to verify access (anti-leak). */
+    recipe_id: number;
+    /** Output language (defaults to 'pl'). */
+    language?: string;
+    /** Required output format identifier. */
+    output_format: 'pycha_normalized_ingredients_v1';
+    /** Recipe ingredients in structured format. */
+    ingredients: RecipeContent;
+    /** Whitelist of allowed units for normalization. */
+    allowed_units: NormalizedIngredientUnit[];
+}
+
+/**
+ * Meta information for normalized ingredients response.
+ */
+export interface AiNormalizedIngredientsMetaDto {
+    /** Confidence score (0-1) for the normalization quality. */
+    confidence: number;
+    /** Warnings about potential issues. */
+    warnings: string[];
+}
+
+/**
+ * Response DTO for successful AI normalized ingredients generation.
+ */
+export interface AiNormalizedIngredientsResponseDto {
+    /** Normalized ingredients list. */
+    normalized_ingredients: NormalizedIngredientDto[];
+    /** Meta information about the normalization. */
+    meta: AiNormalizedIngredientsMetaDto;
+}
+
+// #endregion
+
 // #region --- AI Recipe Image Generation ---
 
 /**

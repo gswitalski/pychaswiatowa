@@ -74,3 +74,138 @@ Content-Type: application/json
     "output_format": "pycha_recipe_draft_v1",
     "language": "en"
 }
+
+### ============================================
+### AI Normalized Ingredients - Test Requests
+### ============================================
+
+### Test 7: Valid normalized ingredients request
+POST {{baseUrl}}/recipes/normalized-ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "recipe_id": 1,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "language": "pl",
+    "ingredients": [
+        { "type": "header", "content": "Ciasto" },
+        { "type": "item", "content": "1 kg mąki" },
+        { "type": "item", "content": "2 łyżki cukru" },
+        { "type": "item", "content": "do smaku sól" },
+        { "type": "item", "content": "3 jajka" },
+        { "type": "header", "content": "Dodatki" },
+        { "type": "item", "content": "pęczek koperku" },
+        { "type": "item", "content": "2 ząbki czosnku" },
+        { "type": "item", "content": "500 ml mleka" }
+    ],
+    "allowed_units": ["g", "ml", "szt.", "ząbek", "łyżeczka", "łyżka", "szczypta", "pęczek"]
+}
+
+### Test 8: Ambiguous ingredients (only "do smaku")
+POST {{baseUrl}}/recipes/normalized-ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "recipe_id": 1,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "language": "pl",
+    "ingredients": [
+        { "type": "item", "content": "do smaku sól" },
+        { "type": "item", "content": "opcjonalnie pieprz" },
+        { "type": "item", "content": "na oko odrobina cynamonu" }
+    ],
+    "allowed_units": ["g", "ml", "szt.", "łyżeczka", "łyżka", "szczypta"]
+}
+
+### Test 9: Only headers (should return 400)
+POST {{baseUrl}}/recipes/normalized-ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "recipe_id": 1,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "language": "pl",
+    "ingredients": [
+        { "type": "header", "content": "Składniki" },
+        { "type": "header", "content": "Dodatki" }
+    ],
+    "allowed_units": ["g", "ml", "szt."]
+}
+
+### Test 10: Invalid allowed_units (not from supported list - should return validation error)
+POST {{baseUrl}}/recipes/normalized-ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "recipe_id": 1,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "language": "pl",
+    "ingredients": [
+        { "type": "item", "content": "1 kg mąki" }
+    ],
+    "allowed_units": ["kg", "litr", "filiżanka"]
+}
+
+### Test 11: Missing token (should return 401)
+POST {{baseUrl}}/recipes/normalized-ingredients
+Content-Type: application/json
+
+{
+    "recipe_id": 1,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "language": "pl",
+    "ingredients": [
+        { "type": "item", "content": "1 kg mąki" }
+    ],
+    "allowed_units": ["g", "ml"]
+}
+
+### Test 12: Recipe ID not owned (should return 404)
+POST {{baseUrl}}/recipes/normalized-ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "recipe_id": 999999,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "language": "pl",
+    "ingredients": [
+        { "type": "item", "content": "1 kg mąki" }
+    ],
+    "allowed_units": ["g", "ml"]
+}
+
+### Test 13: Missing required field (should return 400)
+POST {{baseUrl}}/recipes/normalized-ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "recipe_id": 1,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "allowed_units": ["g", "ml"]
+}
+
+### Test 14: Complex ingredients with conversions
+POST {{baseUrl}}/recipes/normalized-ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "recipe_id": 1,
+    "output_format": "pycha_normalized_ingredients_v1",
+    "language": "pl",
+    "ingredients": [
+        { "type": "item", "content": "0.5 kg mąki pszennej" },
+        { "type": "item", "content": "5 dag masła" },
+        { "type": "item", "content": "1 l mleka" },
+        { "type": "item", "content": "1 szczypta soli" },
+        { "type": "item", "content": "2 łyżki stołowe cukru" },
+        { "type": "item", "content": "3 łyżeczki proszku do pieczenia" }
+    ],
+    "allowed_units": ["g", "ml", "szt.", "łyżeczka", "łyżka", "szczypta"]
+}

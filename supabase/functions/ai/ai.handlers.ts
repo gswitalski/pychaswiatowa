@@ -9,8 +9,10 @@ import { getAuthenticatedContext, getSupabaseClientWithAuth } from '../_shared/s
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
-import { generateRecipeDraft, generateRecipeImage } from './ai.service.ts';
+import { generateRecipeDraft, generateRecipeImage, generateNormalizedIngredients } from './ai.service.ts';
 import {
+    AiNormalizedIngredientsRequestSchema,
+    AiNormalizedIngredientsResponseDto,
     AiRecipeDraftRequestSchema,
     AiRecipeDraftResponseDto,
     AiRecipeDraftUnprocessableEntityDto,
@@ -675,6 +677,170 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
     }
 }
 
+/**
+ * Handles POST /ai/recipes/normalized-ingredients request.
+ * Normalizes recipe ingredients to structured format for shopping lists.
+ *
+ * @param req - The incoming HTTP request
+ * @returns Response with normalized ingredients or error
+ */
+async function handlePostAiRecipesNormalizedIngredients(req: Request): Promise<Response> {
+    const startTime = Date.now();
+
+    try {
+        logger.info('Handling POST /ai/recipes/normalized-ingredients request');
+
+        // Step 1: Authenticate user
+        const { user } = await getAuthenticatedContext(req);
+
+        logger.info('User authenticated for AI normalized ingredients', {
+            userId: user.id,
+        });
+
+        // Step 2: Parse request body
+        let body: unknown;
+        try {
+            body = await req.json();
+        } catch {
+            logger.warn('Invalid JSON in request body', { userId: user.id });
+            return new Response(
+                JSON.stringify({
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid JSON in request body',
+                }),
+                {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            );
+        }
+
+        // Step 3: Validate request body with Zod schema
+        const validationResult = AiNormalizedIngredientsRequestSchema.safeParse(body);
+
+        if (!validationResult.success) {
+            logger.warn('Request validation failed', {
+                userId: user.id,
+                errors: validationResult.error.errors,
+            });
+            return createValidationErrorResponse(validationResult.error);
+        }
+
+        const requestData = validationResult.data;
+
+        // Step 4: Verify recipe access (RLS + anti-leak check)
+        const token = extractAuthToken(req);
+        const supabase = getSupabaseClientWithAuth(token);
+        
+        const { data: recipeExists, error: recipeError } = await supabase
+            .from('recipes')
+            .select('id')
+            .eq('id', requestData.recipe_id)
+            .is('deleted_at', null)
+            .single();
+
+        if (recipeError || !recipeExists) {
+            logger.warn('Recipe not found or not owned by user', {
+                userId: user.id,
+                recipeId: requestData.recipe_id,
+                error: recipeError?.message,
+            });
+            return createNotFoundResponse(
+                'Recipe not found or you do not have access to it'
+            );
+        }
+
+        logger.info('Recipe access verified', {
+            userId: user.id,
+            recipeId: requestData.recipe_id,
+        });
+
+        // Step 5: Pre-processing - filter only type='item'
+        const ingredientItems = requestData.ingredients.filter(item => item.type === 'item');
+
+        if (ingredientItems.length === 0) {
+            logger.warn('No ingredient items to normalize', {
+                userId: user.id,
+                recipeId: requestData.recipe_id,
+                totalItems: requestData.ingredients.length,
+            });
+            return new Response(
+                JSON.stringify({
+                    code: 'VALIDATION_ERROR',
+                    message: 'No ingredient items to normalize (only headers or empty list)',
+                }),
+                {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            );
+        }
+
+        logger.info('Pre-processing completed', {
+            userId: user.id,
+            recipeId: requestData.recipe_id,
+            originalCount: requestData.ingredients.length,
+            itemsCount: ingredientItems.length,
+        });
+
+        // Step 6: Call service to generate normalized ingredients
+        const result = await generateNormalizedIngredients({
+            userId: user.id,
+            recipeId: requestData.recipe_id,
+            ingredientItems,
+            allowedUnits: requestData.allowed_units,
+            language: requestData.language,
+        });
+
+        const duration = Date.now() - startTime;
+
+        // Step 7: Handle service result
+        if (!result.success) {
+            logger.warn('Normalized ingredients generation failed', {
+                userId: user.id,
+                recipeId: requestData.recipe_id,
+                reasons: result.reasons,
+                duration,
+            });
+            return new Response(
+                JSON.stringify({
+                    message: 'Failed to normalize ingredients',
+                    reasons: result.reasons,
+                }),
+                {
+                    status: 422,
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            );
+        }
+
+        logger.info('Normalized ingredients generated successfully', {
+            userId: user.id,
+            recipeId: requestData.recipe_id,
+            normalizedCount: result.data.normalized_ingredients.length,
+            confidence: result.data.meta.confidence,
+            duration,
+        });
+
+        return createSuccessResponse<AiNormalizedIngredientsResponseDto>(result.data);
+    } catch (error) {
+        const duration = Date.now() - startTime;
+
+        // Handle rate limiting errors
+        if (error instanceof ApplicationError && error.code === 'TOO_MANY_REQUESTS') {
+            logger.warn('Rate limit exceeded for normalized ingredients', { duration });
+            return createTooManyRequestsResponse(error.message, 60);
+        }
+
+        logger.error('Error in handlePostAiRecipesNormalizedIngredients', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            duration,
+        });
+
+        return handleError(error);
+    }
+}
+
 // #endregion
 
 // #region --- Router ---
@@ -686,6 +852,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
  * Supported routes:
  * - POST /ai/recipes/draft - Generate recipe draft from text or image
  * - POST /ai/recipes/image - Generate preview image of a recipe dish (premium)
+ * - POST /ai/recipes/normalized-ingredients - Normalize ingredients for shopping lists
  */
 export async function aiRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
@@ -693,7 +860,15 @@ export async function aiRouter(req: Request): Promise<Response> {
 
     logger.debug('Routing AI request', { method, path });
 
-    // Route: POST /ai/recipes/image (check first - more specific path)
+    // Route: POST /ai/recipes/normalized-ingredients (check first - most specific path)
+    if (path === '/recipes/normalized-ingredients' || path === '/recipes/normalized-ingredients/') {
+        if (method === 'POST') {
+            return handlePostAiRecipesNormalizedIngredients(req);
+        }
+        return createMethodNotAllowedResponse(['POST']);
+    }
+
+    // Route: POST /ai/recipes/image
     if (path === '/recipes/image' || path === '/recipes/image/') {
         if (method === 'POST') {
             return handlePostAiRecipesImage(req);

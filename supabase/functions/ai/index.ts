@@ -5,6 +5,7 @@
  * Supported endpoints:
  * - POST /functions/v1/ai/recipes/draft - Generate recipe draft from text or image using AI
  * - POST /functions/v1/ai/recipes/image - Generate preview image of a recipe dish (premium feature)
+ * - POST /functions/v1/ai/recipes/normalized-ingredients - Normalize ingredients for shopping lists
  */
 
 import { aiRouter } from './ai.handlers.ts';

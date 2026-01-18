@@ -57,6 +57,18 @@ export const IMAGE_OUTPUT_HEIGHT = 1024;
 /** Maximum reference image size after base64 decoding (bytes) - 2 MB */
 export const MAX_REFERENCE_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
+/** Required output format for normalized ingredients */
+export const REQUIRED_NORMALIZED_INGREDIENTS_OUTPUT_FORMAT = 'pycha_normalized_ingredients_v1' as const;
+
+/** Maximum number of ingredient items for normalization (protection against abuse) */
+export const MAX_NORMALIZED_INGREDIENTS_ITEMS = 500;
+
+/** Maximum length of single ingredient content line (characters) */
+export const MAX_INGREDIENT_CONTENT_LENGTH = 500;
+
+/** Maximum number of allowed units */
+export const MAX_ALLOWED_UNITS_COUNT = 20;
+
 // #endregion
 
 // #region --- Validation Schemas ---
@@ -414,3 +426,109 @@ export type ImageGenerationResult =
 
 // #endregion
 
+// #region --- Normalized Ingredients Types ---
+
+/**
+ * Supported unit types for normalized ingredients (MVP controlled list).
+ */
+export const NORMALIZED_INGREDIENT_UNITS = [
+    'g',
+    'ml',
+    'szt.',
+    'ząbek',
+    'łyżeczka',
+    'łyżka',
+    'szczypta',
+    'pęczek',
+] as const;
+
+export type NormalizedIngredientUnit = typeof NORMALIZED_INGREDIENT_UNITS[number];
+
+/**
+ * Schema for normalized ingredient item in response.
+ */
+const NormalizedIngredientSchema = z.object({
+    amount: z.number().nullable(),
+    unit: z.enum(NORMALIZED_INGREDIENT_UNITS).nullable(),
+    name: z.string().min(1, 'Ingredient name cannot be empty'),
+});
+
+/**
+ * Schema for request body (POST /ai/recipes/normalized-ingredients).
+ */
+export const AiNormalizedIngredientsRequestSchema = z.object({
+    recipe_id: z.number()
+        .int('Recipe ID must be an integer')
+        .positive('Recipe ID must be positive'),
+    language: z.string().optional().default('pl'),
+    output_format: z.literal(REQUIRED_NORMALIZED_INGREDIENTS_OUTPUT_FORMAT, {
+        errorMap: () => ({
+            message: `output_format must be "${REQUIRED_NORMALIZED_INGREDIENTS_OUTPUT_FORMAT}"`
+        }),
+    }),
+    ingredients: z.array(RecipeContentItemSchema)
+        .min(1, 'Ingredients list cannot be empty')
+        .max(MAX_NORMALIZED_INGREDIENTS_ITEMS, `Ingredients list cannot exceed ${MAX_NORMALIZED_INGREDIENTS_ITEMS} items`),
+    allowed_units: z.array(z.enum(NORMALIZED_INGREDIENT_UNITS))
+        .min(1, 'Allowed units list cannot be empty')
+        .max(MAX_ALLOWED_UNITS_COUNT, `Allowed units list cannot exceed ${MAX_ALLOWED_UNITS_COUNT} items`),
+}).superRefine((data, ctx) => {
+    // Validate ingredient content length
+    for (let i = 0; i < data.ingredients.length; i++) {
+        const item = data.ingredients[i];
+        if (item.content.length > MAX_INGREDIENT_CONTENT_LENGTH) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Ingredient content at index ${i} exceeds maximum length of ${MAX_INGREDIENT_CONTENT_LENGTH} characters`,
+                path: ['ingredients', i, 'content'],
+            });
+        }
+    }
+});
+
+/**
+ * Schema for validating LLM output (normalized ingredients).
+ */
+export const AiNormalizedIngredientsLlmResponseSchema = z.object({
+    normalized_ingredients: z.array(NormalizedIngredientSchema)
+        .min(1, 'Normalized ingredients list cannot be empty'),
+    meta: z.object({
+        confidence: z.number().min(0).max(1),
+        warnings: z.array(z.string()).default([]),
+    }),
+});
+
+/** Type for request body */
+export type AiNormalizedIngredientsRequest = z.infer<typeof AiNormalizedIngredientsRequestSchema>;
+
+/** Type for normalized ingredient item */
+export type NormalizedIngredientDto = z.infer<typeof NormalizedIngredientSchema>;
+
+/** Type for complete API response */
+export interface AiNormalizedIngredientsResponseDto {
+    normalized_ingredients: NormalizedIngredientDto[];
+    meta: {
+        confidence: number;
+        warnings: string[];
+    };
+}
+
+/**
+ * Parameters for the generateNormalizedIngredients service function.
+ */
+export interface GenerateNormalizedIngredientsParams {
+    userId: string;
+    recipeId: number;
+    ingredientItems: Array<{ type: string; content: string }>;
+    allowedUnits: NormalizedIngredientUnit[];
+    language: string;
+}
+
+/**
+ * Result from normalized ingredients generation - either success or validation failure.
+ */
+export type NormalizedIngredientsGenerationResult =
+    | { success: true; data: AiNormalizedIngredientsResponseDto }
+    | { success: false; reasons: string[] };
+
+// #endregion
