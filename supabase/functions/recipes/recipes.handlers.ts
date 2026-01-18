@@ -19,6 +19,7 @@ import {
     getRecipesFeed,
     setRecipeCollections,
     getRecipeNormalizedIngredients,
+    enqueueRecipeNormalizedIngredientsRefresh,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
@@ -1369,6 +1370,29 @@ function extractRecipeIdFromCollectionsPath(url: URL): string | null {
  * Extracts the recipe ID from /recipes/{id}/normalized-ingredients path.
  * Used to route GET /recipes/{id}/normalized-ingredients requests.
  */
+/**
+ * Extracts recipe ID from /recipes/{id}/normalized-ingredients/refresh path.
+ * @param url - The request URL
+ * @returns Recipe ID string if path matches, null otherwise
+ */
+function extractRecipeIdFromNormalizedIngredientsRefreshPath(url: URL): string | null {
+    // Match pattern: /recipes/{id}/normalized-ingredients/refresh where id is captured
+    // This handles both local (/recipes/123/normalized-ingredients/refresh) and deployed (/functions/v1/recipes/123/normalized-ingredients/refresh) paths
+    const pathname = url.pathname;
+    const refreshPathMatch = pathname.match(/\/recipes\/([^/]+)\/normalized-ingredients\/refresh\/?$/);
+
+    if (refreshPathMatch && refreshPathMatch[1]) {
+        return refreshPathMatch[1];
+    }
+
+    return null;
+}
+
+/**
+ * Extracts recipe ID from /recipes/{id}/normalized-ingredients path.
+ * @param url - The request URL
+ * @returns Recipe ID string if path matches, null otherwise
+ */
 function extractRecipeIdFromNormalizedIngredientsPath(url: URL): string | null {
     // Match pattern: /recipes/{id}/normalized-ingredients where id is captured
     // This handles both local (/recipes/123/normalized-ingredients) and deployed (/functions/v1/recipes/123/normalized-ingredients) paths
@@ -1583,6 +1607,65 @@ export async function handleGetRecipeNormalizedIngredients(
 }
 
 /**
+ * Handler for POST /recipes/{id}/normalized-ingredients/refresh
+ * 
+ * Manually enqueues a normalization refresh job for a recipe's ingredients.
+ * This is a dev/test endpoint for triggering re-normalization without modifying the recipe.
+ * 
+ * The operation is asynchronous - it enqueues a job for worker processing and returns immediately.
+ * 
+ * @param req - The incoming HTTP request (requires JWT authentication)
+ * @param recipeIdParam - Recipe ID from URL path parameter
+ * @returns 202 Accepted with { recipe_id, status: 'PENDING' }
+ * @throws 400 Bad Request if recipe ID is invalid
+ * @throws 401 Unauthorized if not authenticated
+ * @throws 404 Not Found if recipe doesn't exist, is deleted, or user doesn't own it
+ * @throws 500 Internal Server Error on database errors
+ */
+export async function handlePostRecipeNormalizedIngredientsRefresh(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling POST /recipes/{id}/normalized-ingredients/refresh request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter (guard clause)
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user) - throws 401 if not authenticated
+        const { client, user } = await getAuthenticatedContext(req);
+
+        logger.info('Enqueuing normalized ingredients refresh', {
+            recipeId,
+            userId: user.id,
+        });
+
+        // Call service layer to enqueue refresh job
+        const result = await enqueueRecipeNormalizedIngredientsRefresh(
+            client,
+            recipeId,
+            user.id
+        );
+
+        logger.info('Successfully enqueued normalized ingredients refresh', {
+            recipeId,
+            userId: user.id,
+            status: result.status,
+        });
+
+        // Return 202 Accepted (async operation enqueued)
+        return new Response(JSON.stringify(result), {
+            status: 202,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Recipes router - routes HTTP methods to appropriate handlers.
  * Supports:
  * - GET /recipes - List all recipes (paginated)
@@ -1592,6 +1675,7 @@ export async function handleGetRecipeNormalizedIngredients(
  * - POST /recipes - Create a new recipe
  * - POST /recipes/import - Import a recipe from raw text
  * - POST /recipes/{id}/image - Upload or replace recipe image
+ * - POST /recipes/{id}/normalized-ingredients/refresh - Enqueue normalization refresh (dev/test)
  * - PUT /recipes/{id} - Update an existing recipe
  * - PUT /recipes/{id}/collections - Set recipe collections (atomic)
  * - DELETE /recipes/{id} - Soft-delete a recipe
@@ -1610,6 +1694,9 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Check for /recipes/import path first (before checking for recipe ID)
     const isImport = isImportPath(url);
+
+    // Check for /recipes/{id}/normalized-ingredients/refresh path (MUST be before /normalized-ingredients to avoid false match)
+    const refreshNormalizedIngredientsRecipeId = extractRecipeIdFromNormalizedIngredientsRefreshPath(url);
 
     // Check for /recipes/{id}/normalized-ingredients path (must be checked before extracting simple recipe ID)
     const normalizedIngredientsRecipeId = extractRecipeIdFromNormalizedIngredientsPath(url);
@@ -1676,7 +1763,12 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Route POST requests
     if (method === 'POST') {
-        // Handle POST /recipes/{id}/image (most specific path, check first)
+        // Handle POST /recipes/{id}/normalized-ingredients/refresh (most specific normalized-ingredients path, check first)
+        if (refreshNormalizedIngredientsRecipeId) {
+            return handlePostRecipeNormalizedIngredientsRefresh(req, refreshNormalizedIngredientsRecipeId);
+        }
+
+        // Handle POST /recipes/{id}/image (most specific path, check after refresh)
         if (imageRecipeId) {
             return handleUploadRecipeImage(req, imageRecipeId);
         }

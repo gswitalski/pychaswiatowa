@@ -27,7 +27,7 @@ export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
 /**
  * Recipe cuisine enum.
  */
-export type RecipeCuisine = 
+export type RecipeCuisine =
     | 'AFRICAN'
     | 'AMERICAN'
     | 'ASIAN'
@@ -1966,7 +1966,7 @@ export async function deleteRecipeImage(
 /**
  * Atomically sets the target list of collections for a recipe.
  * This is an idempotent operation that computes the diff from current state.
- * 
+ *
  * Process:
  * 1. Verify recipe exists, is not soft-deleted, and user has access (owner)
  * 2. Validate all target collections exist and belong to the user
@@ -2195,3 +2195,381 @@ export async function setRecipeCollections(
     return result;
 }
 
+// #region --- Normalized Ingredients ---
+
+/**
+ * Status of the normalized ingredients generation process.
+ */
+export type NormalizedIngredientsStatus = 'PENDING' | 'READY' | 'FAILED';
+
+/**
+ * Supported unit types for normalized ingredients (MVP controlled list).
+ */
+export type NormalizedIngredientUnit =
+    | 'g'
+    | 'ml'
+    | 'szt.'
+    | 'ząbek'
+    | 'łyżeczka'
+    | 'łyżka'
+    | 'szczypta'
+    | 'pęczek';
+
+/**
+ * DTO for a single normalized ingredient item.
+ */
+export interface NormalizedIngredientDto {
+    amount: number | null;
+    unit: NormalizedIngredientUnit | null;
+    name: string;
+}
+
+/**
+ * Response DTO for GET /recipes/{id}/normalized-ingredients endpoint.
+ */
+export interface GetRecipeNormalizedIngredientsResult {
+    recipe_id: number;
+    status: NormalizedIngredientsStatus;
+    updated_at: string | null;
+    items: NormalizedIngredientDto[];
+}
+
+/**
+ * Fetches normalized ingredients for a recipe.
+ *
+ * Business rules:
+ * - Only recipe owner can access normalized ingredients (enforced by RLS)
+ * - Respects soft-delete (deleted_at IS NULL)
+ * - Returns empty items array when status is PENDING or FAILED
+ * - Returns items from recipe_normalized_ingredients table when status is READY
+ *
+ * @param client - Authenticated Supabase client (with user JWT)
+ * @param recipeId - Recipe ID to fetch normalized ingredients for
+ * @param userId - Authenticated user ID (for logging and validation)
+ * @returns GetRecipeNormalizedIngredientsResult with status and items
+ * @throws ApplicationError NOT_FOUND if recipe doesn't exist, is deleted, or user doesn't own it
+ * @throws ApplicationError INTERNAL_ERROR on database errors or data inconsistency
+ */
+export async function getRecipeNormalizedIngredients(
+    client: TypedSupabaseClient,
+    recipeId: number,
+    userId: string
+): Promise<GetRecipeNormalizedIngredientsResult> {
+    logger.info('Fetching normalized ingredients for recipe', {
+        recipeId,
+        userId,
+    });
+
+    // Step 1: Fetch status and updated_at from recipes table (respects RLS + soft-delete)
+    const { data: recipeData, error: recipeError } = await client
+        .from('recipes')
+        .select('id, normalized_ingredients_status, normalized_ingredients_updated_at')
+        .eq('id', recipeId)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+    // Handle database errors
+    if (recipeError) {
+        logger.error('Database error while fetching recipe normalization status', {
+            recipeId,
+            userId,
+            errorCode: recipeError.code,
+            errorMessage: recipeError.message,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to fetch recipe normalization status'
+        );
+    }
+
+    // Recipe not found or user doesn't have access (RLS blocks it)
+    if (!recipeData) {
+        logger.warn('Recipe not found or access denied for normalized ingredients', {
+            recipeId,
+            userId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            `Recipe with ID ${recipeId} not found`
+        );
+    }
+
+    const status = recipeData.normalized_ingredients_status as NormalizedIngredientsStatus;
+    const updatedAt = recipeData.normalized_ingredients_updated_at;
+
+    logger.info('Recipe normalization status fetched', {
+        recipeId,
+        status,
+        hasUpdatedAt: !!updatedAt,
+    });
+
+    // Step 2: If status is not READY, return empty items
+    if (status !== 'READY') {
+        logger.info('Normalized ingredients not ready, returning empty items', {
+            recipeId,
+            status,
+        });
+
+        return {
+            recipe_id: recipeId,
+            status,
+            updated_at: updatedAt,
+            items: [],
+        };
+    }
+
+    // Step 3: Status is READY - fetch items from recipe_normalized_ingredients table
+    const { data: normalizedData, error: normalizedError } = await client
+        .from('recipe_normalized_ingredients')
+        .select('items, updated_at')
+        .eq('recipe_id', recipeId)
+        .maybeSingle();
+
+    // Handle database errors
+    if (normalizedError) {
+        logger.error('Database error while fetching normalized ingredients items', {
+            recipeId,
+            userId,
+            errorCode: normalizedError.code,
+            errorMessage: normalizedError.message,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to fetch normalized ingredients'
+        );
+    }
+
+    // Data inconsistency: status is READY but no data in normalized table
+    if (!normalizedData) {
+        logger.error('Data inconsistency: status is READY but no normalized ingredients found', {
+            recipeId,
+            userId,
+            status,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Normalized ingredients data inconsistency'
+        );
+    }
+
+    // Step 4: Parse and validate items from JSONB
+    let items: NormalizedIngredientDto[];
+
+    try {
+        const parsedItems = normalizedData.items as unknown;
+
+        // Validate that items is an array
+        if (!Array.isArray(parsedItems)) {
+            logger.error('Invalid normalized ingredients format: not an array', {
+                recipeId,
+                itemsType: typeof parsedItems,
+            });
+            throw new ApplicationError(
+                'INTERNAL_ERROR',
+                'Invalid normalized ingredients format'
+            );
+        }
+
+        // Type-cast and validate structure (basic validation)
+        items = parsedItems.map((item: unknown, index: number) => {
+            if (typeof item !== 'object' || item === null) {
+                logger.error('Invalid normalized ingredient item: not an object', {
+                    recipeId,
+                    itemIndex: index,
+                });
+                throw new ApplicationError(
+                    'INTERNAL_ERROR',
+                    'Invalid normalized ingredient item format'
+                );
+            }
+
+            const typedItem = item as Record<string, unknown>;
+
+            // Validate required fields
+            if (typeof typedItem.name !== 'string') {
+                logger.error('Invalid normalized ingredient: missing or invalid name', {
+                    recipeId,
+                    itemIndex: index,
+                });
+                throw new ApplicationError(
+                    'INTERNAL_ERROR',
+                    'Invalid normalized ingredient: name must be a string'
+                );
+            }
+
+            return {
+                amount: typedItem.amount === null ? null : Number(typedItem.amount),
+                unit: (typedItem.unit as NormalizedIngredientUnit | null) ?? null,
+                name: typedItem.name,
+            };
+        });
+
+        logger.info('Normalized ingredients fetched successfully', {
+            recipeId,
+            itemsCount: items.length,
+            status,
+        });
+
+    } catch (error) {
+        // Catch any parsing errors
+        if (error instanceof ApplicationError) {
+            throw error; // Re-throw ApplicationErrors
+        }
+
+        logger.error('Failed to parse normalized ingredients', {
+            recipeId,
+            userId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to parse normalized ingredients'
+        );
+    }
+
+    // Step 5: Return result with items
+    return {
+        recipe_id: recipeId,
+        status,
+        updated_at: updatedAt,
+        items,
+    };
+}
+
+/**
+ * Enqueues a normalization refresh job for a recipe's ingredients.
+ * 
+ * This function atomically resets the recipe's normalization status to PENDING
+ * and creates/updates a job in the queue for worker processing.
+ * 
+ * Business rules:
+ * - Only recipe owner can enqueue refresh (enforced by RPC + RLS)
+ * - Respects soft-delete (cannot refresh deleted recipes)
+ * - Idempotent: multiple calls for same recipe don't create duplicate jobs
+ * - Deduplication enforced via unique index on recipe_id in jobs table
+ * 
+ * @param client - Authenticated Supabase client (with user JWT)
+ * @param recipeId - Recipe ID to refresh normalized ingredients for
+ * @param userId - Authenticated user ID (for logging)
+ * @returns Object with recipe_id and status ('PENDING')
+ * @throws ApplicationError NOT_FOUND if recipe doesn't exist, is deleted, or user doesn't own it
+ * @throws ApplicationError INTERNAL_ERROR on database errors
+ */
+export async function enqueueRecipeNormalizedIngredientsRefresh(
+    client: TypedSupabaseClient,
+    recipeId: number,
+    userId: string
+): Promise<{ recipe_id: number; status: NormalizedIngredientsStatus }> {
+    logger.info('Enqueuing normalized ingredients refresh', {
+        recipeId,
+        userId,
+    });
+
+    // Call RPC to atomically reset status and enqueue job
+    const { data, error } = await client.rpc(
+        'enqueue_normalized_ingredients_refresh',
+        {
+            p_recipe_id: recipeId,
+        }
+    );
+
+    // Handle RPC errors
+    if (error) {
+        logger.error('RPC error while enqueuing normalized ingredients refresh', {
+            recipeId,
+            userId,
+            errorCode: error.code,
+            errorMessage: error.message,
+            errorDetails: error.details,
+        });
+
+        // Handle specific error codes from our RPC function
+        // AUTHZ1 = Unauthorized (no auth context)
+        if (error.code === 'AUTHZ1' || error.message?.includes('Unauthorized')) {
+            throw new ApplicationError(
+                'UNAUTHORIZED',
+                'Authentication required'
+            );
+        }
+
+        // NOTFD = Recipe not found or access denied
+        if (error.code === 'NOTFD' || error.message?.includes('not found') || error.message?.includes('access denied')) {
+            logger.warn('Recipe not found or access denied for refresh', {
+                recipeId,
+                userId,
+            });
+            throw new ApplicationError(
+                'NOT_FOUND',
+                `Recipe with ID ${recipeId} not found`
+            );
+        }
+
+        // P0001 = raise_exception (other validation errors from RPC)
+        if (error.code === 'P0001') {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                error.message || 'Validation error occurred'
+            );
+        }
+
+        // Generic error fallback
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to enqueue normalized ingredients refresh'
+        );
+    }
+
+    // Validate RPC response
+    if (!data || typeof data !== 'object') {
+        logger.error('RPC returned invalid data format', {
+            recipeId,
+            userId,
+            data,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Invalid response from refresh operation'
+        );
+    }
+
+    // Extract and validate response fields
+    const result = data as { recipe_id?: number; status?: string };
+
+    if (typeof result.recipe_id !== 'number' || result.recipe_id !== recipeId) {
+        logger.error('RPC returned mismatched recipe_id', {
+            recipeId,
+            userId,
+            returnedId: result.recipe_id,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Data inconsistency in refresh operation'
+        );
+    }
+
+    if (result.status !== 'PENDING') {
+        logger.error('RPC returned unexpected status', {
+            recipeId,
+            userId,
+            status: result.status,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Unexpected status in refresh operation'
+        );
+    }
+
+    logger.info('Normalized ingredients refresh enqueued successfully', {
+        recipeId,
+        userId,
+        status: result.status,
+    });
+
+    return {
+        recipe_id: result.recipe_id,
+        status: result.status as NormalizedIngredientsStatus,
+    };
+}
+
+// #endregion

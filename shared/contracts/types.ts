@@ -799,6 +799,17 @@ export interface GetRecipeNormalizedIngredientsResponseDto {
     items: NormalizedIngredientDto[];
 }
 
+/**
+ * Response DTO for POST /recipes/{id}/normalized-ingredients/refresh endpoint.
+ * Returns minimal status information after enqueuing the normalization job.
+ */
+export interface RefreshRecipeNormalizedIngredientsResponseDto {
+    /** Recipe ID. */
+    recipe_id: number;
+    /** Current status (always 'PENDING' after refresh). */
+    status: NormalizedIngredientsStatus;
+}
+
 // #endregion
 
 // #region --- AI Recipe Image Generation ---
