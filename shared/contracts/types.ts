@@ -776,6 +776,29 @@ export interface AiNormalizedIngredientsResponseDto {
     meta: AiNormalizedIngredientsMetaDto;
 }
 
+/**
+ * Status of the normalized ingredients generation process.
+ * - PENDING: normalization has not yet started or is in progress
+ * - READY: normalization completed successfully, items available
+ * - FAILED: normalization failed, no items available
+ */
+export type NormalizedIngredientsStatus = 'PENDING' | 'READY' | 'FAILED';
+
+/**
+ * Response DTO for GET /recipes/{id}/normalized-ingredients endpoint.
+ * Returns the normalized ingredients for a recipe along with generation status.
+ */
+export interface GetRecipeNormalizedIngredientsResponseDto {
+    /** Recipe ID. */
+    recipe_id: number;
+    /** Current status of the normalization process. */
+    status: NormalizedIngredientsStatus;
+    /** Timestamp of last successful normalization (null if never completed or status is PENDING). */
+    updated_at: string | null;
+    /** Array of normalized ingredient items (empty if status is not READY). */
+    items: NormalizedIngredientDto[];
+}
+
 // #endregion
 
 // #region --- AI Recipe Image Generation ---

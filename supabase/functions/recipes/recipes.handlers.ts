@@ -18,6 +18,7 @@ import {
     deleteRecipeImage,
     getRecipesFeed,
     setRecipeCollections,
+    getRecipeNormalizedIngredients,
     PaginatedResponseDto,
     RecipeListItemDto,
     RecipeDetailDto,
@@ -1365,6 +1366,23 @@ function extractRecipeIdFromCollectionsPath(url: URL): string | null {
 }
 
 /**
+ * Extracts the recipe ID from /recipes/{id}/normalized-ingredients path.
+ * Used to route GET /recipes/{id}/normalized-ingredients requests.
+ */
+function extractRecipeIdFromNormalizedIngredientsPath(url: URL): string | null {
+    // Match pattern: /recipes/{id}/normalized-ingredients where id is captured
+    // This handles both local (/recipes/123/normalized-ingredients) and deployed (/functions/v1/recipes/123/normalized-ingredients) paths
+    const pathname = url.pathname;
+    const normalizedIngredientsPathMatch = pathname.match(/\/recipes\/([^/]+)\/normalized-ingredients\/?$/);
+
+    if (normalizedIngredientsPathMatch && normalizedIngredientsPathMatch[1]) {
+        return normalizedIngredientsPathMatch[1];
+    }
+
+    return null;
+}
+
+/**
  * Handles DELETE /recipes/{id}/image request.
  * Removes the image from a recipe by setting image_path to NULL.
  * Also performs best-effort deletion of the image file from Storage.
@@ -1507,11 +1525,70 @@ function extractRecipeIdFromPath(url: URL): string | null {
 }
 
 /**
+ * Handler for GET /recipes/{id}/normalized-ingredients
+ * Returns normalized ingredients for a recipe along with generation status.
+ *
+ * Access rules:
+ * - Only recipe owner can access normalized ingredients (enforced by RLS)
+ * - Respects soft-delete (deleted_at IS NULL)
+ * - Returns empty items array when status is PENDING or FAILED
+ *
+ * Response structure:
+ * - recipe_id: number
+ * - status: 'PENDING' | 'READY' | 'FAILED'
+ * - updated_at: string | null (timestamp of last successful normalization)
+ * - items: Array of {amount, unit, name} objects (empty if not READY)
+ *
+ * @param req - The incoming HTTP request
+ * @param recipeIdParam - Recipe ID from URL path
+ * @returns Response with GetRecipeNormalizedIngredientsResponseDto on success, or error response
+ */
+export async function handleGetRecipeNormalizedIngredients(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling GET /recipes/{id}/normalized-ingredients request', {
+            recipeIdParam,
+        });
+
+        // Validate recipe ID parameter
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+
+        // Get authenticated context (client + user)
+        const { client, user } = await getAuthenticatedContext(req);
+
+        logger.info('Fetching normalized ingredients for recipe', {
+            recipeId,
+            userId: user.id,
+        });
+
+        // Call service layer to fetch normalized ingredients
+        const result = await getRecipeNormalizedIngredients(client, recipeId, user.id);
+
+        logger.info('Successfully fetched normalized ingredients', {
+            recipeId,
+            status: result.status,
+            itemsCount: result.items.length,
+        });
+
+        // Return 200 OK with DTO
+        return new Response(JSON.stringify(result), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Recipes router - routes HTTP methods to appropriate handlers.
  * Supports:
  * - GET /recipes - List all recipes (paginated)
  * - GET /recipes/feed - List recipes with cursor-based pagination
  * - GET /recipes/{id} - Get single recipe by ID
+ * - GET /recipes/{id}/normalized-ingredients - Get normalized ingredients for a recipe
  * - POST /recipes - Create a new recipe
  * - POST /recipes/import - Import a recipe from raw text
  * - POST /recipes/{id}/image - Upload or replace recipe image
@@ -1533,6 +1610,9 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     // Check for /recipes/import path first (before checking for recipe ID)
     const isImport = isImportPath(url);
+
+    // Check for /recipes/{id}/normalized-ingredients path (must be checked before extracting simple recipe ID)
+    const normalizedIngredientsRecipeId = extractRecipeIdFromNormalizedIngredientsPath(url);
 
     // Check for /recipes/{id}/collections path (must be checked before extracting simple recipe ID)
     const collectionsRecipeId = extractRecipeIdFromCollectionsPath(url);
@@ -1560,6 +1640,11 @@ export async function recipesRouter(req: Request): Promise<Response> {
         // GET /recipes/feed - cursor-based pagination feed
         if (isFeed) {
             return handleGetRecipesFeed(req);
+        }
+
+        // GET /recipes/{id}/normalized-ingredients - get normalized ingredients for recipe (must be before /recipes/{id})
+        if (normalizedIngredientsRecipeId) {
+            return handleGetRecipeNormalizedIngredients(req, normalizedIngredientsRecipeId);
         }
 
         // GET /recipes/import is not allowed
