@@ -13,9 +13,8 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
  
-
-
-
+    - **`POST /recipes/{id}/normalized-ingredients/refresh`**
+        - Ręczne zlecenie ponownej normalizacji (dev/test).
 
 </api_changes_description>
 
