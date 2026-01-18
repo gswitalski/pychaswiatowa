@@ -208,3 +208,176 @@ Authorization: Bearer {{authToken}}
 # }
 
 ###
+# ============================================================================
+# POST /recipes/{id}/normalized-ingredients/refresh - Enqueue Normalization Refresh
+# ============================================================================
+
+###
+# Test 14: Refresh normalization - Success (202 Accepted)
+# Prerequisites: Recipe with ID @testRecipeId exists and user owns it
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (202 Accepted):
+# {
+#     "recipe_id": 1,
+#     "status": "PENDING"
+# }
+# Note: Status is always PENDING after refresh, regardless of previous state
+
+###
+# Test 15: Refresh normalization - Idempotency test (multiple calls)
+# Prerequisites: Recipe with ID @testRecipeId exists
+# Call this multiple times in a row - should always return 202 with PENDING status
+# Job should be deduplicated in the queue (no duplicates in normalized_ingredients_jobs table)
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (202 Accepted):
+# {
+#     "recipe_id": 1,
+#     "status": "PENDING"
+# }
+# Note: Check database - only one job should exist for this recipe_id
+
+###
+# Test 16: Refresh normalization - Unauthorized (Missing JWT token)
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+
+# Expected response (401):
+# {
+#     "code": "UNAUTHORIZED",
+#     "message": "Missing or invalid authentication token"
+# }
+
+###
+# Test 17: Refresh normalization - Unauthorized (Invalid JWT token)
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+Authorization: Bearer invalid_token_12345
+
+# Expected response (401):
+# {
+#     "code": "UNAUTHORIZED",
+#     "message": "Invalid JWT token"
+# }
+
+###
+# Test 18: Refresh normalization - Bad Request (Invalid recipe ID - not a number)
+POST {{baseUrl}}/abc/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (400):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Invalid recipe ID: 'abc'. ID must be a positive integer."
+# }
+
+###
+# Test 19: Refresh normalization - Bad Request (Invalid recipe ID - zero)
+POST {{baseUrl}}/0/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (400):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Invalid recipe ID: '0'. ID must be a positive integer."
+# }
+
+###
+# Test 20: Refresh normalization - Bad Request (Invalid recipe ID - negative)
+POST {{baseUrl}}/-5/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (400):
+# {
+#     "code": "VALIDATION_ERROR",
+#     "message": "Invalid recipe ID: '-5'. ID must be a positive integer."
+# }
+
+###
+# Test 21: Refresh normalization - Not Found (Recipe doesn't exist)
+POST {{baseUrl}}/999999/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (404):
+# {
+#     "code": "NOT_FOUND",
+#     "message": "Recipe with ID 999999 not found"
+# }
+
+###
+# Test 22: Refresh normalization - Not Found (Recipe is soft-deleted)
+# Prerequisites: Recipe with ID exists but is soft-deleted (deleted_at IS NOT NULL)
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (404):
+# {
+#     "code": "NOT_FOUND",
+#     "message": "Recipe with ID X not found"
+# }
+# Note: Soft-deleted recipes are treated as non-existent
+
+###
+# Test 23: Refresh normalization - Not Found (Access denied - different user's recipe)
+# Prerequisites: Recipe exists but belongs to another user
+# Use token from different user account
+@otherUserToken = OTHER_USER_JWT_TOKEN_HERE
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+Authorization: Bearer {{otherUserToken}}
+
+# Expected response (404):
+# {
+#     "code": "NOT_FOUND",
+#     "message": "Recipe with ID X not found"
+# }
+# Note: Returns 404 (not 403) to prevent information leak about recipe existence (anti-leak)
+
+###
+# Test 24: Refresh normalization - Real-world workflow
+# Step 1: Check current status (may be READY)
+GET {{baseUrl}}/{{testRecipeId}}/normalized-ingredients
+Authorization: Bearer {{authToken}}
+
+###
+# Test 24 (continued): Step 2: Trigger refresh
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+###
+# Test 24 (continued): Step 3: Check status immediately after refresh (should be PENDING)
+GET {{baseUrl}}/{{testRecipeId}}/normalized-ingredients
+Authorization: Bearer {{authToken}}
+
+# Expected flow:
+# 1. GET returns status READY (or any other status)
+# 2. POST returns 202 with status PENDING
+# 3. GET returns status PENDING with empty items and updated_at=null
+# 4. (After worker processes the job) GET will return status READY with items
+
+###
+# Test 25: Refresh normalization - Verify database state after refresh
+# Prerequisites: Recipe with ID @testRecipeId exists
+#
+# Steps to manually verify:
+# 1. Call POST refresh endpoint
+# 2. Check database tables:
+#    - recipes.normalized_ingredients_status should be 'PENDING'
+#    - recipes.normalized_ingredients_updated_at should be NULL
+#    - normalized_ingredients_jobs should have one row for this recipe_id with status 'PENDING'
+# 3. Call POST refresh again (idempotency test)
+# 4. Check database:
+#    - normalized_ingredients_jobs should still have ONLY ONE row for this recipe_id
+#    - Job updated_at timestamp should be updated to now()
+#    - Job attempts counter should be reset to 0
+
+POST {{baseUrl}}/{{testRecipeId}}/normalized-ingredients/refresh
+Authorization: Bearer {{authToken}}
+
+# Expected response (202):
+# {
+#     "recipe_id": 1,
+#     "status": "PENDING"
+# }
+
+###
