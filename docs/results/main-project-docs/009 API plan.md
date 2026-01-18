@@ -7,6 +7,7 @@ This document outlines the REST API for the PychaŚwiatowa application, based on
 The API exposes the following primary resources:
 
 -   **Recipes**: Corresponds to the `recipes` table. Represents a user's culinary recipe.
+-   **Recipe Normalized Ingredients**: A per-recipe, backend-generated list of normalized ingredients used for future shopping list features. Each item contains `name` (singular, nominative), optional `amount` (number), and optional `unit` (controlled list). Generated asynchronously on each recipe save.
 -   **Public Recipes**: Read-only access to recipes for public routes. For anonymous users: only recipes with `visibility = 'PUBLIC'`. For authenticated users: may also include the user's own recipes with non-public `visibility` (e.g., `PRIVATE`, `SHARED`) as long as `is_owner = true`.
 -   **Categories**: Corresponds to the `categories` table. Represents a predefined recipe category.
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
@@ -527,7 +528,7 @@ Public endpoints are available without authentication:
 
 #### `POST /recipes`
 
--   **Description**: Create a new recipe. The raw text for ingredients, steps, and tips will be parsed server-side into JSONB format. The `tips_raw` field is optional.
+-   **Description**: Create a new recipe. The raw text for ingredients, steps, and tips will be parsed server-side into JSONB format. The `tips_raw` field is optional. After a successful save, the backend asynchronously enqueues a job to compute `normalized_ingredients` for the recipe (does not block the save).
 -   **Request Payload**:
     ```json
     {
@@ -567,6 +568,8 @@ Public endpoints are available without authentication:
           "difficulty": "EASY",
           "category_id": 2,
           "visibility": "PRIVATE",
+          "normalized_ingredients_status": "PENDING",
+          "normalized_ingredients_updated_at": null,
           "ingredients": [
             {"type": "header", "content": "Dough"},
             {"type": "item", "content": "500g flour"},
@@ -713,6 +716,57 @@ Public endpoints are available without authentication:
 
 ---
 
+#### `POST /ai/recipes/normalized-ingredients` (Supabase Edge Function)
+
+-   **Description**: Normalize a recipe's ingredient lines into a structured list intended for future shopping list functionality. This endpoint is typically called by a backend worker/job after `POST /recipes` or `PUT /recipes/{id}` (not by the standard UI in MVP).
+-   **Auth**: Required (`Authorization: Bearer <JWT>`).
+-   **Notes**:
+    - Input MUST represent a single recipe's current ingredient list.
+    - The function MUST ignore section headers (`type = "header"`) and process only `type = "item"`.
+    - Output items MUST use:
+        - `name`: singular, nominative (PL),
+        - `amount`: number or `null`,
+        - `unit`: controlled list value or `null`.
+    - Unit conversions are performed only for mass/volume (e.g., `kg -> g`, `l -> ml`).
+    - If the amount/unit cannot be determined reliably (e.g., "do smaku", "opcjonalnie", "na oko"), return only `name` (`amount=null`, `unit=null`).
+    - Rate limiting SHOULD be enforced per user to control costs.
+-   **Request Payload**:
+    ```json
+    {
+      "recipe_id": 123,
+      "language": "pl",
+      "output_format": "pycha_normalized_ingredients_v1",
+      "ingredients": [
+        { "type": "header", "content": "Ciasto" },
+        { "type": "item", "content": "1 kg mąki" },
+        { "type": "item", "content": "do smaku sól" }
+      ],
+      "allowed_units": ["g", "ml", "szt.", "ząbek", "łyżeczka", "łyżka", "szczypta", "pęczek"]
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "normalized_ingredients": [
+            { "amount": 1000, "unit": "g", "name": "mąka" },
+            { "amount": null, "unit": null, "name": "sól" }
+          ],
+          "meta": {
+            "confidence": 0.78,
+            "warnings": []
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (invalid payload)
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `422 Unprocessable Entity` (cannot interpret the ingredient list reliably)
+    -   **Code**: `429 Too Many Requests` (rate limit exceeded)
+
+---
+
 #### `POST /ai/recipes/image` (Supabase Edge Function)
 
 -   **Description**: Generate a **photorealistic** recipe image based on the **current recipe form state** (including unsaved edits). The endpoint supports two modes:
@@ -842,6 +896,53 @@ Public endpoints are available without authentication:
 
 ---
 
+#### `GET /recipes/{id}/normalized-ingredients`
+
+-   **Description**: Retrieve the backend-generated normalized ingredients for a recipe.
+-   **Auth**: Required (`Authorization: Bearer <JWT>`).
+-   **Authorization**: The caller MUST own the recipe (RLS enforced). For non-owned recipes return `403` or `404` (implementation choice, but must not leak existence).
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "recipe_id": 123,
+          "status": "READY",
+          "updated_at": "2023-10-28T10:00:00Z",
+          "items": [
+            { "amount": 1000, "unit": "g", "name": "mąka" },
+            { "amount": null, "unit": null, "name": "sól" }
+          ]
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
+---
+
+#### `POST /recipes/{id}/normalized-ingredients/refresh`
+
+-   **Description**: Enqueue a re-normalization job for the recipe's normalized ingredients. Intended for dev/test tooling (the standard UI does not expose it in MVP).
+-   **Auth**: Required (`Authorization: Bearer <JWT>`).
+-   **Authorization**: The caller MUST own the recipe (RLS enforced).
+-   **Success Response**:
+    -   **Code**: `202 Accepted`
+    -   **Payload**:
+        ```json
+        {
+          "recipe_id": 123,
+          "status": "PENDING"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
+---
+
 #### `PUT /recipes/{id}/collections`
 
 -   **Description**: Atomically set the target list of collections (owned by the authenticated user) that should contain the recipe. This endpoint is designed for the "Add to collection" modal with multi-select checkboxes.
@@ -877,7 +978,7 @@ Public endpoints are available without authentication:
 
 #### `PUT /recipes/{id}`
 
--   **Description**: Update an existing recipe.
+-   **Description**: Update an existing recipe. After a successful save, the backend asynchronously enqueues a job to recompute `normalized_ingredients` for the recipe (does not block the save).
 -   **Request Payload**: (Same as `POST /recipes`, with all fields being optional)
     ```json
     {
@@ -1364,5 +1465,12 @@ Public endpoints are available without authentication:
 -   **Business Logic**:
     -   **Recipe time consistency**: If both `prep_time_minutes` and `total_time_minutes` are provided (non-null), then `total_time_minutes` MUST be greater than or equal to `prep_time_minutes`. Otherwise the API MUST return `400 Bad Request` with a clear validation error payload.
     -   **Text Parsing**: For `POST /recipes` and `PUT /recipes`, the API will accept `ingredients_raw` and `steps_raw` as plain text, and MAY accept `tips_raw` (optional) as plain text. A dedicated PostgreSQL function, called via RPC, will parse this text into the structured `jsonb` format required by the database (`ingredients`, `steps`, `tips`). Lines starting with `#` will be converted to `{"type": "header", ...}` objects. For lines in `steps_raw`, the parser will strip leading numbering (like "1.", "2.") and bullet points to ensure clean data storage. This allows the frontend to implement automatic, continuous numbering across sections without duplication.
+    -   **Normalized Ingredients (async)**:
+        - After `POST /recipes` and `PUT /recipes/{id}`, the backend enqueues a background job to normalize ingredients into a structured form for future shopping lists.
+        - The job reads the current `recipes.ingredients` (JSONB) and processes only `type = "item"` entries (ignores headers).
+        - Output items have fields: `name` (singular, nominative), `amount` (number or null), `unit` (controlled list value or null).
+        - Allowed units (MVP): `g`, `ml`, `szt.`, `ząbek`, `łyżeczka`, `łyżka`, `szczypta`, `pęczek` (extendable).
+        - Conversions apply only for mass/volume (e.g., `kg -> g`, `l -> ml`).
+        - If amount/unit cannot be determined reliably, store only `name` (`amount=null`, `unit=null`).
     -   **Tag Management**: When creating/updating a recipe, the list of tag names provided will be used to find existing tags or create new ones for the user, and then associate them with the recipe. This logic will be handled within the database transaction for creating/updating the recipe.
     -   **Soft Deletes**: `DELETE /recipes/{id}` performs a soft delete by setting the `deleted_at` field. All `GET` requests for recipes will automatically filter out records where `deleted_at` is not null.

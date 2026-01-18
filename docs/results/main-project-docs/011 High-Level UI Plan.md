@@ -198,6 +198,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe komponenty widoku:** `SharedPageHeader`, `mat-form-field`, `mat-select`, `mat-radio-group` (do wyboru widoczności: Prywatny/Współdzielony/Publiczny), `ImageUploadComponent` (strefa paste/drop + fallback file picker), `EditableListComponent` (składniki/kroki/wskazówki).
 - **Względy UX, dostępności i bezpieczeństwa:**
     - Przycisk Zapisz w nagłówku eliminuje konieczność scrollowania. Walidacja blokuje zapis lub wyświetla błędy. Domyślna widoczność to "Prywatny".
+    - **Składniki znormalizowane (backend-only, MVP):** po zapisie przepisu backend asynchronicznie buduje listę składników znormalizowanych do przyszłej listy zakupów. UI **nie wyświetla** tej listy i nie pokazuje dodatkowych stanów (MVP).
     - Pole **"Liczba porcji"** jest opcjonalne, przyjmuje tylko liczbę całkowitą w zakresie `1-99`, może zostać wyczyszczone (brak wartości). W szczegółach przepisu wartość jest wyświetlana pod tytułem (np. `4 porcje`, `6 porcji`).
     - Pola **"Czas przygotowania (min)"** oraz **"Czas całkowity (min)"** są opcjonalne, przyjmują liczbę całkowitą w zakresie `0-999` i mogą zostać wyczyszczone (brak wartości).
         - Jeśli oba czasy są ustawione, walidacja wymaga aby **czas całkowity ≥ czas przygotowania** (w przeciwnym razie zapis jest blokowany i pokazany jest błąd).
@@ -235,6 +236,16 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe informacje do wyświetlenia:** Podgląd wygenerowanego zdjęcia, krótka notatka o trybie/stylu (np. „Generowanie z przepisu” lub „Generowanie z referencją zdjęcia”; styl zależny od trybu), komunikaty błędów.
 - **Akcje:** „Zastosuj”, „Odrzuć”, (opcjonalnie) „Wygeneruj ponownie”.
 - **Względy UX:** Brak automatycznego nadpisania istniejącego zdjęcia; czytelne stany: `loading` / `success` / `error`. Akcja „Wygeneruj ponownie” oznacza ponowne wywołanie generowania (kolejna próba), nadal w trybie `n=1`.
+
+**9b. (Dev-only) Podgląd składników znormalizowanych**
+- **Ścieżka:** `/dev/recipes/:id/normalized-ingredients`
+- **Główny cel:** Umożliwić deweloperom i testerom weryfikację jakości normalizacji składników bez wpływu na UX użytkownika (widok nie jest dostępny w produkcji).
+- **Kluczowe informacje do wyświetlenia:**
+    - status normalizacji (`PENDING` / `READY` / `FAILED`) + `updated_at`,
+    - tabela z kolumnami: `ilosc` (może być puste), `jednostka` (może być puste), `nazwa`,
+    - (opcjonalnie) lista „niezmapowane / tylko nazwa” (te same rekordy, ale wyróżnione wizualnie).
+- **Akcje:** „Odśwież normalizację” (wywołuje endpoint backendu do ponownego przeliczenia), „Wróć do edycji”.
+- **Względy bezpieczeństwa:** Widok chroniony (tylko środowisko dev/test) i dostępny wyłącznie dla właściciela przepisu (zgodnie z API/RLS).
 
 **10. Import Przepisu**
 - **Ścieżka:** `/recipes/import`
