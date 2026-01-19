@@ -435,11 +435,19 @@ export async function clearPlan(params: {
 }
 
 /**
- * Removes a recipe from user's plan.
+ * Removes a recipe from user's plan and updates shopping list.
  *
  * Business rules:
  * - Recipe must be in user's plan to be removed
- * - Uses user-context client to enforce RLS (user can only remove from their own plan)
+ * - Uses RPC to atomically remove from plan and update shopping list
+ * - Subtracts ingredient contributions from shopping list items
+ * - Manual items (kind='MANUAL') are not affected
+ * 
+ * Side-effect:
+ * - Removes contributions from shopping_list_recipe_contributions
+ * - Updates/removes items from shopping_list_items:
+ *   - Aggregable items (unit != null, amount != null): subtract amount, delete if amount <= 0
+ *   - Name-only items (unit null or amount null): delete only if no other contributions exist
  *
  * @param client - The authenticated Supabase client (user context)
  * @param userId - The ID of the authenticated user (for logging)
@@ -453,39 +461,85 @@ export async function removeRecipeFromPlan(
     userId: string,
     recipeId: number
 ): Promise<void> {
-    // Execute DELETE with RETURNING to check if row was deleted
-    // RLS ensures user can only delete from their own plan (user_id = auth.uid())
-    const { data, error } = await client
-        .from('plan_recipes')
-        .delete()
-        .eq('recipe_id', recipeId)
-        .select('recipe_id');
+    // Call RPC function that atomically:
+    // 1. Removes recipe from plan
+    // 2. Removes contributions from shopping_list_recipe_contributions
+    // 3. Updates/removes items from shopping_list_items
+    const { data, error } = await client.rpc(
+        'remove_recipe_from_plan_and_update_shopping_list',
+        { p_recipe_id: recipeId }
+    );
 
     if (error) {
-        logger.error(
-            `[removeRecipeFromPlan] Failed to remove recipe ${recipeId} from plan for user ${userId}`,
-            error
-        );
-        throw new ApplicationError(
-            'INTERNAL_ERROR',
-            'Failed to remove recipe from plan'
-        );
+        // Map RPC errors to ApplicationError
+        mapRemoveRpcErrorToApplicationError(error, recipeId, userId);
     }
 
-    // Check if any rows were deleted
-    // If 0 rows deleted, recipe was not in user's plan
-    if (!data || data.length === 0) {
+    // Log success with metadata from RPC response
+    if (data) {
+        const metadata = data as {
+            success: boolean;
+            recipe_id: number;
+            contributions_removed: number;
+            items_updated: number;
+            items_deleted: number;
+        };
+
+        logger.info(
+            `[removeRecipeFromPlan] Recipe ${recipeId} removed from plan for user ${userId}. ` +
+            `Shopping list updated: ${metadata.contributions_removed} contributions removed, ` +
+            `${metadata.items_updated} items updated, ${metadata.items_deleted} items deleted`
+        );
+    } else {
+        logger.info(
+            `[removeRecipeFromPlan] Recipe ${recipeId} removed from plan for user ${userId}`
+        );
+    }
+}
+
+/**
+ * Maps RPC error from remove_recipe_from_plan_and_update_shopping_list to ApplicationError.
+ * 
+ * Handles custom error codes from the RPC function:
+ * - UNAUTHORIZED -> should not happen (checked by auth.uid())
+ * - NOT_FOUND -> recipe not in plan
+ * - INTERNAL_ERROR -> unexpected database error
+ * 
+ * @param error - The database error from RPC call
+ * @param recipeId - The recipe ID (for logging)
+ * @param userId - The user ID (for logging)
+ * @throws ApplicationError with appropriate code and message
+ */
+function mapRemoveRpcErrorToApplicationError(
+    error: { message: string; code?: string },
+    recipeId: number,
+    userId: string
+): never {
+    const errorMessage = error.message || '';
+
+    // Handle custom RPC exceptions (raised by the function)
+    if (errorMessage.includes('UNAUTHORIZED')) {
+        logger.error(
+            `[removeRecipeFromPlan] Unauthorized RPC call for recipe ${recipeId} by user ${userId}`
+        );
+        throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+    }
+
+    if (errorMessage.includes('NOT_FOUND')) {
         logger.warn(
             `[removeRecipeFromPlan] Recipe ${recipeId} not found in plan for user ${userId}`
         );
-        throw new ApplicationError(
-            'NOT_FOUND',
-            'Recipe not found in plan'
-        );
+        throw new ApplicationError('NOT_FOUND', 'Recipe not found in plan');
     }
 
-    logger.info(
-        `[removeRecipeFromPlan] Recipe ${recipeId} removed from plan for user ${userId}`
+    // Generic database error
+    logger.error(
+        `[removeRecipeFromPlan] RPC error for recipe ${recipeId}, user ${userId}`,
+        error
+    );
+    throw new ApplicationError(
+        'INTERNAL_ERROR',
+        'Failed to remove recipe from plan'
     );
 }
 

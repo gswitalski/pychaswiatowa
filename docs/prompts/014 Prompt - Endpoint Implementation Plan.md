@@ -14,8 +14,8 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 <api_changes_description>
 
 ### Zmienione
-- **`POST /plan/recipes`**
-    - Dodano side-effect: po dodaniu przepisu do planu backend aktualizuje listę zakupów na podstawie `recipe_normalized_ingredients` z regułami merge/sumowania.
+- **`DELETE /plan/recipes/{recipeId}`**
+    - Dodano side-effect: po usunięciu przepisu z planu backend odejmuje wkład składników z listy zakupów.
 
 </api_changes_description>
 

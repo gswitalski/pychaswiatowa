@@ -147,7 +147,9 @@ export async function handleDeletePlan(req: Request): Promise<Response> {
 
 /**
  * Handler for DELETE /plan/recipes/{recipeId}
- * Removes a recipe from user's plan
+ * Removes a recipe from user's plan and updates shopping list.
+ * 
+ * Side-effect: Atomically subtracts recipe's ingredient contributions from shopping list.
  */
 export async function handleDeletePlanRecipe(
     req: Request,

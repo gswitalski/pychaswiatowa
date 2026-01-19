@@ -9,22 +9,22 @@ create table if not exists public.shopping_list_items (
     id bigserial primary key,
     user_id uuid not null default auth.uid(),
     kind text not null check (kind in ('RECIPE', 'MANUAL')),
-    
+
     -- Fields for RECIPE kind (aggregated from recipe contributions)
     name text null,
     amount numeric null,
     unit text null,
-    
+
     -- Fields for MANUAL kind (user free-text)
     text text null,
-    
+
     -- Ownership flag (user marked item as owned/purchased)
     is_owned boolean not null default false,
-    
+
     -- Timestamps
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
-    
+
     -- Consistency constraints: ensure correct fields per kind
     constraint check_recipe_kind_fields
         check (
@@ -93,11 +93,11 @@ create table if not exists public.shopping_list_recipe_contributions (
     unit text null,
     amount numeric null,
     created_at timestamptz not null default now(),
-    
+
     -- Composite primary key: user_id, recipe_id, name, unit
     -- This ensures one contribution record per ingredient per recipe per user
     primary key (user_id, recipe_id, name, coalesce(unit, '')),
-    
+
     -- Foreign key to recipes table
     constraint fk_shopping_list_contributions_recipe
         foreign key (recipe_id)
