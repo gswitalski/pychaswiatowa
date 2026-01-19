@@ -938,3 +938,22 @@ export interface AiRecipeImageUnprocessableEntityDto {
 }
 
 // #endregion
+
+// #region --- Internal Workers ---
+
+/**
+ * Response DTO for internal worker endpoints.
+ * Returns processing summary statistics.
+ */
+export interface NormalizedIngredientsWorkerRunResponseDto {
+    /** Total number of jobs processed in this run. */
+    processed: number;
+    /** Number of jobs that completed successfully. */
+    succeeded: number;
+    /** Number of jobs that failed (including those scheduled for retry). */
+    failed: number;
+    /** Number of jobs that were skipped (e.g., no items to normalize). */
+    skipped: number;
+}
+
+// #endregion

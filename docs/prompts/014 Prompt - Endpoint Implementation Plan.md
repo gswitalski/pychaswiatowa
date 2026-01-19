@@ -12,9 +12,9 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
- 
-    - **`POST /recipes/{id}/normalized-ingredients/refresh`**
-        - Ręczne zlecenie ponownej normalizacji (dev/test).
+
+ - **Nowe**
+    - **`POST /internal/workers/normalized-ingredients/run`**: dodano wewnętrzny kontrakt workera (Supabase Scheduled Edge Function) uruchamianego cronem co minutę, z realnym interwałem sterowanym zmienną środowiskową `NORMALIZED_INGREDIENTS_WORKER_RUN_EVERY_MINUTES`, oraz polityką retry/backoff i deduplikacją.
 
 </api_changes_description>
 

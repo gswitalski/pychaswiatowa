@@ -1,0 +1,78 @@
+### ====================
+### Internal Worker: Normalized Ingredients
+### Test requests for POST /internal/workers/normalized-ingredients/run
+### ====================
+
+### Variables
+@base_url = http://localhost:54321/functions/v1
+@internal_secret = your-internal-secret-here
+
+### ====================
+### 1. Run Worker - Success
+### Description: Runs the normalized ingredients worker with valid authentication
+### Expected: 200 OK with summary {processed, succeeded, failed, skipped}
+### ====================
+
+POST {{base_url}}/internal/workers/normalized-ingredients/run
+Content-Type: application/json
+x-internal-worker-secret: {{internal_secret}}
+
+### ====================
+### 2. Run Worker - Unauthorized (Missing Secret)
+### Description: Attempts to run worker without secret header
+### Expected: 401 Unauthorized
+### ====================
+
+POST {{base_url}}/internal/workers/normalized-ingredients/run
+Content-Type: application/json
+
+### ====================
+### 3. Run Worker - Unauthorized (Invalid Secret)
+### Description: Attempts to run worker with invalid secret
+### Expected: 401 Unauthorized
+### ====================
+
+POST {{base_url}}/internal/workers/normalized-ingredients/run
+Content-Type: application/json
+x-internal-worker-secret: invalid-secret
+
+### ====================
+### 4. Run Worker - Wrong Method
+### Description: Attempts to access worker endpoint with GET
+### Expected: 404 Not Found
+### ====================
+
+GET {{base_url}}/internal/workers/normalized-ingredients/run
+x-internal-worker-secret: {{internal_secret}}
+
+### ====================
+### Notes for Testing
+### ====================
+
+# 1. Set INTERNAL_WORKER_SECRET in .env or Supabase secrets:
+#    INTERNAL_WORKER_SECRET=your-internal-secret-here
+
+# 2. Optional environment variables for tuning:
+#    NORMALIZED_INGREDIENTS_WORKER_BATCH_SIZE=10
+#    NORMALIZED_INGREDIENTS_WORKER_RUN_EVERY_MINUTES=1
+
+# 3. To test actual job processing:
+#    a) Create a recipe via POST /recipes
+#    b) Trigger refresh via POST /recipes/{id}/normalized-ingredients/refresh
+#    c) Run this worker endpoint
+#    d) Check results via GET /recipes/{id}/normalized-ingredients
+
+# 4. To simulate multiple jobs:
+#    - Create multiple recipes
+#    - Trigger refresh for each
+#    - Run worker and observe batch processing
+
+# 5. To test retry logic:
+#    - Temporarily set invalid OPENAI_API_KEY to force failures
+#    - Run worker multiple times
+#    - Check normalized_ingredients_jobs table for status='RETRY' and next_run_at
+
+# 6. Monitor job queue:
+#    SELECT id, recipe_id, status, attempts, next_run_at, last_error
+#    FROM normalized_ingredients_jobs
+#    ORDER BY next_run_at ASC;

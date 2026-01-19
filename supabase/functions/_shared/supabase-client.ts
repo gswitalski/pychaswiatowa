@@ -121,6 +121,16 @@ export function createServiceRoleClient(): TypedSupabaseClient {
 }
 
 /**
+ * Alias for createServiceRoleClient() for better semantics in worker context.
+ * Creates a Supabase client with service role for internal workers.
+ *
+ * @returns Service role Supabase client
+ */
+export function getSupabaseServiceClient(): TypedSupabaseClient {
+    return createServiceRoleClient();
+}
+
+/**
  * Decodes a JWT token without verification to extract the payload.
  * Used to check the 'role' claim to distinguish anon key from user token.
  *
