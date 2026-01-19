@@ -14,6 +14,10 @@ The API exposes the following primary resources:
 -   **Tags**: Corresponds to the `tags` table. Represents user-defined tags for recipes.
 -   **Collections**: Corresponds to the `collections` table. Represents user-created collections of recipes.
 -   **My Plan ("Mój plan")**: A per-user, persistent list of recipes the user wants to keep as a short-term plan. The list is unique (no duplicates) and limited to **50** recipes.
+-   **Shopping List ("Zakupy")**: A per-user, persistent shopping list composed of:
+    - recipe-derived items (built from `Recipe Normalized Ingredients` of recipes that are in "My Plan"),
+    - user-added manual text items (not tied to any recipe).
+    Recipe-derived items are merged by (`name`, `unit`) and summed when possible (see endpoint notes).
 -   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. This is provided by Supabase and consumed via the `supabase-js` client in the Angular app (no custom backend endpoints required for MVP).
 -   **AI Recipe Draft (Supabase Edge Function)**: Generates a structured "recipe draft" from either pasted text or a pasted image (OCR + LLM), to prefill the recipe form. The draft is returned to the client and is **not persisted** until the user explicitly saves the recipe via the standard `POST /recipes`.
 
@@ -1321,6 +1325,12 @@ Public endpoints are available without authentication:
 #### `POST /plan/recipes`
 
 -   **Description**: Add a recipe to the authenticated user's "My Plan" list.
+-   **Side effects (MVP)**:
+    - After adding the recipe to the plan, the backend MUST update the user's Shopping List:
+        - read the recipe's `normalized_ingredients` (must be READY to contribute amounts; if not ready, the recipe contributes no items yet),
+        - upsert/merge shopping list items by (`name`, `unit`),
+        - sum `amount` for items where `unit != null` and `amount != null`,
+        - for `unit = null` (or unknown amounts), keep a single "name-only" item per name (no amount aggregation).
 -   **Request Payload**:
     ```json
     {
@@ -1343,6 +1353,11 @@ Public endpoints are available without authentication:
 #### `DELETE /plan/recipes/{recipeId}`
 
 -   **Description**: Remove a recipe from the authenticated user's "My Plan" list.
+-   **Side effects (MVP)**:
+    - After removing the recipe from the plan, the backend MUST update the user's Shopping List by subtracting the removed recipe's contribution:
+        - for items where `unit != null` and `amount != null`, subtract the contribution and delete the shopping list item if it reaches `0`,
+        - manual text items MUST NOT be modified by this operation,
+        - **Known limitation (MVP)**: editing a recipe while it is in the plan does not trigger any automatic shopping list recompute; the list may become stale.
 -   **Success Response**:
     -   **Code**: `204 No Content`
 -   **Error Response**:
@@ -1359,6 +1374,127 @@ Public endpoints are available without authentication:
     -   **Code**: `204 No Content`
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
+
+---
+
+### Shopping List ("Zakupy")
+
+#### `GET /shopping-list`
+
+-   **Description**: Retrieve the authenticated user's Shopping List.
+-   **Notes (MVP)**:
+    - The list is **persistent** and contains both recipe-derived items (from recipes in "My Plan") and manual text items added by the user.
+    - The API MAY return items already sorted for UI convenience:
+        - `is_owned = false` first,
+        - then `is_owned = true`,
+        - stable secondary sort by `name` / `text` (implementation choice).
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "items": [
+            {
+              "id": 1001,
+              "kind": "RECIPE",
+              "name": "cukier",
+              "amount": 250,
+              "unit": "g",
+              "is_owned": false
+            },
+            {
+              "id": 1002,
+              "kind": "RECIPE",
+              "name": "cukier",
+              "amount": 1,
+              "unit": "łyżeczka",
+              "is_owned": false
+            },
+            {
+              "id": 1003,
+              "kind": "RECIPE",
+              "name": "cukier",
+              "amount": null,
+              "unit": null,
+              "is_owned": false
+            },
+            {
+              "id": 2001,
+              "kind": "MANUAL",
+              "text": "papier toaletowy",
+              "is_owned": true
+            }
+          ]
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+
+---
+
+#### `POST /shopping-list/items`
+
+-   **Description**: Add a new manual text item to the shopping list.
+-   **Notes (MVP)**:
+    - Manual items are plain text only (no amount/unit fields).
+    - Manual items are not automatically merged with recipe-derived items.
+-   **Request Payload**:
+    ```json
+    {
+      "text": "papier toaletowy"
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `201 Created`
+    -   **Payload**:
+        ```json
+        {
+          "id": 2002,
+          "kind": "MANUAL",
+          "text": "papier toaletowy",
+          "is_owned": false
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (missing/empty text)
+    -   **Code**: `401 Unauthorized`
+
+---
+
+#### `PATCH /shopping-list/items/{id}`
+
+-   **Description**: Update a shopping list item.
+-   **Notes (MVP)**:
+    - Supported update: toggle `is_owned` (works for both recipe-derived and manual items).
+    - Editing the recipe-derived content (name/amount/unit) is not supported in MVP.
+-   **Request Payload**:
+    ```json
+    {
+      "is_owned": true
+    }
+    ```
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**: Returns the updated item.
+-   **Error Response**:
+    -   **Code**: `400 Bad Request`
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `404 Not Found`
+
+---
+
+#### `DELETE /shopping-list/items/{id}`
+
+-   **Description**: Delete a manual shopping list item.
+-   **Notes (MVP)**:
+    - Only `kind = MANUAL` items can be deleted by the user.
+    - Attempting to delete a recipe-derived item MUST fail.
+-   **Success Response**:
+    -   **Code**: `204 No Content`
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden` (trying to delete a recipe-derived item)
+    -   **Code**: `404 Not Found`
 
 ---
 

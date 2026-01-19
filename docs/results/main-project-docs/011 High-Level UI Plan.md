@@ -5,7 +5,7 @@
 Architektura interfejsu użytkownika aplikacji PychaŚwiatowa zostanie zbudowana w oparciu o framework Angular i bibliotekę komponentów Angular Material, zgodnie z podejściem "desktop-first" zapewniającym pełną responsywność. Wdrożona zostanie architektura **"App Shell"** separująca nawigację od akcji kontekstowych. Aplikacja będzie składać się z dwóch głównych obszarów: publicznego (dla niezalogowanych użytkowników) oraz prywatnego (dla zalogowanych).
 
 Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grail"**:
-1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Moja Pycha, Przepisy, Kolekcje, Ustawienia). Nie zawiera przycisków akcji. Sidebar jest widoczny wyłącznie w sekcjach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/settings/**`.
+1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Moja Pycha, Przepisy, Kolekcje, Zakupy, Ustawienia). Nie zawiera przycisków akcji. Sidebar jest widoczny wyłącznie w sekcjach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/shopping/**`, `/settings/**`.
 2.  **Globalny Topbar (Góra):** Zawiera stałą główną nawigację (zakładki) **Moja Pycha** (`/dashboard`) i **Odkrywaj przepisy** (`/explore`) z wyróżnieniem aktywnej pozycji, stałą ikonę/akcję globalnego wyszukiwania (Omnibox, np. jako overlay) oraz profil użytkownika. Breadcrumbs są wyświetlane jako element orientacyjny na głębszych trasach (np. wewnątrz kolekcji).
 3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
 
@@ -305,6 +305,31 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - Stan pusty: czytelny komunikat „Twój plan jest pusty” + brak pływającego przycisku.
 - **Względy UX:** Panel i overlay muszą być w pełni dostępne z klawiatury (Esc zamyka, focus trap wewnątrz drawer’a, aria-labels na ikonach).
 
+**16. Zakupy (lista zakupów)**
+- **Ścieżka:** `/shopping`
+- **Główny cel:** Umożliwić użytkownikowi przeglądanie i zarządzanie listą zakupów, która składa się z:
+    - pozycji pochodzących ze składników znormalizowanych przepisów w „Moim planie” (scalonych wg reguł),
+    - ręcznych pozycji tekstowych dodanych przez użytkownika.
+- **Widoczność:** Widok prywatny, dostępny po zalogowaniu (App Shell z Sidebarem).
+- **Header:** Tytuł „Zakupy”. Brak „dużych” akcji globalnych w nagłówku (MVP).
+- **Kluczowe elementy widoku:**
+    - sekcja „Dodaj pozycję” z:
+        - polem tekstowym (placeholder np. „Dodaj coś…”, przykłady: „papier toaletowy”, „kawa”),
+        - przyciskiem „Dodaj”,
+    - lista pozycji zakupów z kontrolką „posiadane” (checkbox) przy każdej pozycji,
+    - dla pozycji z przepisów: prezentacja jako `nazwa` + (opcjonalnie) `ilość jednostka` (np. `cukier, 250 g`; `cukier`),
+    - dla pozycji ręcznych: prezentacja jako tekst użytkownika,
+    - akcja usunięcia dla pozycji ręcznych (ikonka kosza) (MVP).
+- **Reguły sortowania (MVP):**
+    - pozycje nieoznaczone jako „posiadane” są wyświetlane na górze,
+    - pozycje oznaczone jako „posiadane” są przesortowane na dół i wizualnie zde-emfazyzowane (np. wyszarzone),
+    - sortowanie wewnątrz grup może być stabilne (np. alfabetyczne po `nazwa` / tekst).
+- **Względy UX, dostępności i bezpieczeństwa:**
+    - szybkie odhaczanie (checkbox + duży obszar klikalny wiersza),
+    - w pełni dostępne z klawiatury (tab order, aria-labels na ikonach, Enter dodaje pozycję),
+    - czytelne stany pustego widoku: „Brak pozycji na liście zakupów” + wskazówka „Dodaj przepis do planu lub wpisz pozycję ręcznie”.
+    - *Uwaga (MVP):* jeśli użytkownik edytuje przepis będący w planie, lista zakupów może pozostać nieaktualna (brak automatycznej aktualizacji).
+
 ## 3. Mapa podróży użytkownika
 
 Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dodaniu i zorganizowaniu pierwszego przepisu:
@@ -326,7 +351,7 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
     - w Topbarze dostępna jest stała główna nawigacja: `Moja Pycha` (`/dashboard`) i `Odkrywaj przepisy` (`/explore`).
 - **Nawigacja dla zalogowanych (App Shell):**
-    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
+    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Zakupy`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/shopping/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
         - **Główna nawigacja (stała):** Zakładki "Moja Pycha" oraz "Odkrywaj przepisy" z wyróżnieniem aktywnej pozycji. **Lista pozycji jest zahardkodowana we froncie** (konfiguracja statyczna) i przygotowana pod przyszłe moduły: blog, menu, zakupy.
         - **Breadcrumbs (kontekstowe):** Ścieżka powrotu wyświetlana na głębszych trasach (np. `Kolekcje > Święta`).

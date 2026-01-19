@@ -12,31 +12,21 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
+1. użytkownik może obsługiwać listę zakupów ze składnikami do przepisów które ma w swoim  planie
+2. Każde dodanei przepisu do planu ododaje składniki do listy zakupów.
+3. elementy na liście zakupów są brane z list składników znormalizowanych
+4. każdy składnik który jest powtórzeinirm innego składnika z tego samego przepisu lub z innego juest scalany w jeden element listy zakupów pod warucnkiem że jednostki smiary są takie same. ilosci jest sumowana
+np jesli w jednym przepisie jest cukier 200 g, a w drugim przepisie cukier 50 g, w czecim przepisie 1 łyżeczka cukru a w czwartym przepisie po prostu cukier bez ilości i jednostki to na liście zakupów ma się pojawić
+- cukier, 250 g
+- cukier, 1 łyżeczka 
+- cukier
 
+5. użytkowniek ma mozliwosc zaznaczenia które składniki juz posiada
+6. Skłądniki zaznaczone jako posiadane są przesortowane na sam dół
+7. uzytkownik może ddodac dowolny element do listu zakupów, który nie jest zwiazany z żadnym przepisem opisujac swoimi słowami co i ile ma kupić.
+8. Lista zakupów mna odzielny element w głównym menu : 'Zakupy'.
+9. Usunięcie przepisu z planu usuwa odpowiednie ilości składników z listy zakupów.
 
-System powinien asynchronicznie normalizować składniki po każdym zapisie
-Proces nie blokuje zapisu przepisu
-W przypadku błędu system zachowuje przepis i podejmuje retry
-Ale w obecnej implementacji:
-Enqueue działa ✅
-Worker/processor nie istnieje ❌
-Retry mechanism nie działa (bo worker nie istnieje) ❌
-
-Rozwiązanie
-Problem polega na tym, że brakuje implementacji workera, który przetwarzałby kolejkę jobów normalizacji składników. Obecnie:
-✅ Endpoint PUT /recipes/{id} działa poprawnie
-✅ Job jest tworzony w bazie z statusem PENDING
-❌ Brak workera, który by pobrał ten job i wykonał normalizację
-Trzeba stworzyć worker, który będzie:
- - Pobierał joby ze statusem PENDING z tabeli normalized_ingredients_jobs
- - Wywoływał endpoint AI do normalizacji składników
- - Zapisywał wyniki do tabeli recipe_normalized_ingredients
- - Aktualizował status w tabeli recipes
-
-potrzeba Utworzenia nowego Supabase Edge Function jako worker
-Skonfigurowania go jako cron job lub trigger
-Implementacji logiki przetwarzania kolejki jobów
-Dodania mechanizmu retry dla nieudanych prób
 
 </nowa_funkcjonalnosc>
 
