@@ -13,7 +13,7 @@ function getWorkerBatchSize(): number {
     if (!envValue) {
         return DEFAULT_WORKER_BATCH_SIZE;
     }
-    
+
     const parsed = parseInt(envValue, 10);
     if (isNaN(parsed) || parsed < 1 || parsed > 100) {
         logger.warn('Invalid NORMALIZED_INGREDIENTS_WORKER_BATCH_SIZE, using default', {
@@ -22,7 +22,7 @@ function getWorkerBatchSize(): number {
         });
         return DEFAULT_WORKER_BATCH_SIZE;
     }
-    
+
     return parsed;
 }
 
@@ -32,7 +32,7 @@ function getWorkerBatchSize(): number {
 
 /**
  * Verifies internal worker secret from request header.
- * 
+ *
  * @param req - The incoming HTTP request
  * @throws ApplicationError with UNAUTHORIZED if secret is missing or invalid
  */
@@ -66,7 +66,7 @@ function verifyInternalSecret(req: Request): void {
 /**
  * Handles POST /workers/normalized-ingredients/run request.
  * Processes queued normalization jobs with retry/backoff logic.
- * 
+ *
  * @param req - The incoming HTTP request
  * @returns Response with processing summary
  */
@@ -74,7 +74,7 @@ async function handlePostWorkersNormalizedIngredientsRun(
     req: Request
 ): Promise<Response> {
     const startTime = Date.now();
-    
+
     logger.info('Handling POST /workers/normalized-ingredients/run');
 
     try {
@@ -157,7 +157,7 @@ async function handlePostWorkersNormalizedIngredientsRun(
 /**
  * Router for internal endpoints.
  * Routes requests to appropriate handlers based on path.
- * 
+ *
  * @param req - The incoming HTTP request
  * @returns Response from the appropriate handler or 404
  */
