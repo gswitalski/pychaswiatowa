@@ -1,0 +1,179 @@
+### Test Shopping List Endpoints
+### Use REST Client extension in VS Code to execute these requests
+
+@baseUrl = http://localhost:54331/functions/v1
+@token = YOUR_JWT_TOKEN_HERE
+
+###############################################################################
+### POST /shopping-list/items - Add manual item to shopping list
+###############################################################################
+
+### POST-1. SUCCESS: Add valid manual item
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "papier toaletowy"
+}
+
+### POST-2. SUCCESS: Add item with leading/trailing whitespace (should be trimmed)
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "   mleko 3.2%   "
+}
+
+### POST-3. SUCCESS: Add item with maximum length (200 chars)
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi"
+}
+
+### POST-4. VALIDATION ERROR: Empty text
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": ""
+}
+
+### POST-5. VALIDATION ERROR: Only whitespace
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "   "
+}
+
+### POST-6. VALIDATION ERROR: Text too long (over 200 chars)
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat"
+}
+
+### POST-7. VALIDATION ERROR: Missing text field
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### POST-8. VALIDATION ERROR: Invalid field type (number instead of string)
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": 12345
+}
+
+### POST-9. VALIDATION ERROR: Null text
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": null
+}
+
+### POST-10. VALIDATION ERROR: Invalid JSON
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{invalid json}
+
+### POST-11. VALIDATION ERROR: Extra fields (should be ignored)
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "chleb",
+  "kind": "RECIPE",
+  "is_owned": true,
+  "user_id": "malicious-user-id"
+}
+
+### POST-12. UNAUTHORIZED: Missing Authorization header
+POST {{baseUrl}}/shopping-list/items
+Content-Type: application/json
+
+{
+  "text": "chleb"
+}
+
+### POST-13. UNAUTHORIZED: Invalid token
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer invalid_token_here
+Content-Type: application/json
+
+{
+  "text": "chleb"
+}
+
+### POST-14. UNAUTHORIZED: Empty token
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer 
+Content-Type: application/json
+
+{
+  "text": "chleb"
+}
+
+### POST-15. SUCCESS: Add item with special characters
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "sól & pieprz (100g) - organiczny"
+}
+
+### POST-16. SUCCESS: Add item with Polish characters
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "świeże jajka ekologiczne żółtka białka"
+}
+
+### POST-17. SUCCESS: Add item with emoji (edge case)
+POST {{baseUrl}}/shopping-list/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "🍎 jabłka"
+}
+
+###############################################################################
+### NOTES
+###############################################################################
+
+# Expected responses:
+# - POST-1, POST-2, POST-3, POST-15, POST-16, POST-17: 201 Created with ShoppingListItemManualDto
+# - POST-4, POST-5, POST-6, POST-7, POST-8, POST-9, POST-10, POST-11: 400 Bad Request
+# - POST-12, POST-13, POST-14: 401 Unauthorized
+
+# To get a valid JWT token for local testing:
+# 1. Start Supabase locally: supabase start
+# 2. Sign in as test user via Supabase Studio or API
+# 3. Copy the JWT token from response or browser DevTools
+# 4. Replace YOUR_JWT_TOKEN_HERE with the actual token
+
+# Test user credentials (local environment):
+# Email: test@pychaswiatowa.pl
+# Password: 554G5rjnbdAanGR

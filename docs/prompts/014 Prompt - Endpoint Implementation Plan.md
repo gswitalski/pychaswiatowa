@@ -13,9 +13,11 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-### Zmienione
-- **`DELETE /plan/recipes/{recipeId}`**
-    - Dodano side-effect: po usunięciu przepisu z planu backend odejmuje wkład składników z listy zakupów.
+### Nowe
+
+- **`POST /shopping-list/items`**
+    - Dodaje ręczną pozycję tekstową do listy zakupów.
+
 
 </api_changes_description>
 

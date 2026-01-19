@@ -80,13 +80,14 @@ create policy "Users can delete their own manual shopping list items"
 create trigger set_updated_at_shopping_list_items
     before update on public.shopping_list_items
     for each row
-    execute function public.update_updated_at();
+    execute function public.handle_updated_at();
 
 -- =============================================================================
 -- Table 2: shopping_list_recipe_contributions (recipe ingredient contributions)
 -- =============================================================================
 
 create table if not exists public.shopping_list_recipe_contributions (
+    id bigserial primary key,
     user_id uuid not null default auth.uid(),
     recipe_id bigint not null,
     name text not null,
@@ -94,16 +95,17 @@ create table if not exists public.shopping_list_recipe_contributions (
     amount numeric null,
     created_at timestamptz not null default now(),
 
-    -- Composite primary key: user_id, recipe_id, name, unit
-    -- This ensures one contribution record per ingredient per recipe per user
-    primary key (user_id, recipe_id, name, coalesce(unit, '')),
-
     -- Foreign key to recipes table
     constraint fk_shopping_list_contributions_recipe
         foreign key (recipe_id)
         references public.recipes(id)
         on delete cascade
 );
+
+-- Create unique index for the composite key (user_id, recipe_id, name, unit)
+-- Uses coalesce to handle null units (similar to shopping_list_items)
+create unique index if not exists idx_shopping_list_contributions_unique_key
+    on public.shopping_list_recipe_contributions (user_id, recipe_id, name, coalesce(unit, ''));
 
 -- Create index for efficient lookups by user and recipe
 create index if not exists idx_shopping_list_contributions_user_recipe
