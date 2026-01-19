@@ -13,8 +13,9 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
- - **Nowe**
-    - **`POST /internal/workers/normalized-ingredients/run`**: dodano wewnętrzny kontrakt workera (Supabase Scheduled Edge Function) uruchamianego cronem co minutę, z realnym interwałem sterowanym zmienną środowiskową `NORMALIZED_INGREDIENTS_WORKER_RUN_EVERY_MINUTES`, oraz polityką retry/backoff i deduplikacją.
+### Zmienione
+- **`POST /plan/recipes`**
+    - Dodano side-effect: po dodaniu przepisu do planu backend aktualizuje listę zakupów na podstawie `recipe_normalized_ingredients` z regułami merge/sumowania.
 
 </api_changes_description>
 

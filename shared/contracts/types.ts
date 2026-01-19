@@ -605,6 +605,76 @@ export interface GetPlanResponseDto {
 
 // #endregion
 
+// #region --- Shopping List ---
+
+/**
+ * Shopping list item kind enum.
+ * Defines the source/type of the shopping list item.
+ */
+export type ShoppingListItemKind = 'RECIPE' | 'MANUAL';
+
+/**
+ * Base interface for shopping list items (common fields).
+ */
+interface ShoppingListItemBase {
+    id: number;
+    user_id: string;
+    kind: ShoppingListItemKind;
+    is_owned: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * DTO for a shopping list item derived from recipe normalized ingredients.
+ * Contains aggregated ingredient data with merge key (name, unit).
+ */
+export interface ShoppingListItemRecipeDto extends ShoppingListItemBase {
+    kind: 'RECIPE';
+    /** Ingredient name (normalized, singular nominative). */
+    name: string;
+    /** Aggregated amount (sum of all recipe contributions), or null if unit is null. */
+    amount: number | null;
+    /** Ingredient unit (from normalized ingredients), or null for name-only items. */
+    unit: NormalizedIngredientUnit | null;
+}
+
+/**
+ * DTO for a manually added shopping list item (free-text).
+ */
+export interface ShoppingListItemManualDto extends ShoppingListItemBase {
+    kind: 'MANUAL';
+    /** User-provided free-text item. */
+    text: string;
+}
+
+/**
+ * Discriminated union type for shopping list items.
+ */
+export type ShoppingListItemDto = ShoppingListItemRecipeDto | ShoppingListItemManualDto;
+
+/**
+ * Response DTO for GET /shopping-list endpoint.
+ * Returns user's shopping list with metadata.
+ */
+export interface GetShoppingListResponseDto {
+    data: ShoppingListItemDto[];
+    meta: {
+        total: number;
+        recipe_items: number;
+        manual_items: number;
+    };
+}
+
+/**
+ * Command model for adding a manual item to shopping list.
+ */
+export interface AddManualShoppingListItemCommand {
+    text: string;
+}
+
+// #endregion
+
 // #region --- AI Recipe Draft ---
 
 /**

@@ -1,0 +1,243 @@
+### POST /plan/recipes - Manual Test Suite
+### Endpoint: Add recipe to user's plan with shopping list side-effect
+### Base URL: http://localhost:54321/functions/v1
+
+### Setup: Set auth token (get from Supabase local Auth)
+### Test user: test@pychaswiatowa.pl (password: 554G5rjnbdAanGR)
+@baseUrl = http://localhost:54321/functions/v1
+@token = YOUR_JWT_TOKEN_HERE
+
+### =============================================================================
+### Test 1: SUCCESS - Add own recipe with normalized ingredients (READY)
+### Expected: 201 Created, shopping list updated
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 1
+}
+
+###
+
+### =============================================================================
+### Test 2: SUCCESS - Add PUBLIC recipe from another user
+### Recipe must be: PUBLIC, not soft-deleted, normalized_ingredients_status='READY'
+### Expected: 201 Created, shopping list updated with public recipe ingredients
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 45
+}
+
+###
+
+### =============================================================================
+### Test 3: SUCCESS - Add recipe without normalized ingredients (PENDING/FAILED)
+### Expected: 201 Created, shopping list NOT updated
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 100
+}
+
+###
+
+### =============================================================================
+### Test 4: ERROR 409 CONFLICT - Add duplicate recipe
+### Expected: 409 Conflict, message: "Recipe is already in plan"
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 1
+}
+
+###
+
+### =============================================================================
+### Test 5: ERROR 404 NOT FOUND - Recipe doesn't exist
+### Expected: 404 Not Found, message: "Recipe not found"
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 999999
+}
+
+###
+
+### =============================================================================
+### Test 6: ERROR 404 NOT FOUND (or 403) - Access denied (PRIVATE/SHARED other user's recipe)
+### Expected: 404 Not Found (anti-leak) or 403 Forbidden
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 200
+}
+
+###
+
+### =============================================================================
+### Test 7: ERROR 400 BAD REQUEST - Invalid JSON
+### Expected: 400 Bad Request, message: "Invalid JSON in request body"
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "recipe_id": "not a number" }
+
+###
+
+### =============================================================================
+### Test 8: ERROR 400 BAD REQUEST - Missing recipe_id
+### Expected: 400 Bad Request, validation error
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+###
+
+### =============================================================================
+### Test 9: ERROR 400 BAD REQUEST - Negative recipe_id
+### Expected: 400 Bad Request, message: "Recipe ID must be a positive integer"
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": -1
+}
+
+###
+
+### =============================================================================
+### Test 10: ERROR 400 BAD REQUEST - Zero recipe_id
+### Expected: 400 Bad Request, message: "Recipe ID must be a positive integer"
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 0
+}
+
+###
+
+### =============================================================================
+### Test 11: ERROR 401 UNAUTHORIZED - Missing auth token
+### Expected: 401 Unauthorized
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Content-Type: application/json
+
+{
+  "recipe_id": 1
+}
+
+###
+
+### =============================================================================
+### Test 12: ERROR 401 UNAUTHORIZED - Invalid auth token
+### Expected: 401 Unauthorized
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer invalid_token_here
+Content-Type: application/json
+
+{
+  "recipe_id": 1
+}
+
+###
+
+### =============================================================================
+### Test 13: ERROR 422 UNPROCESSABLE ENTITY - Plan limit reached (50 recipes)
+### Prerequisites: User must have 50 recipes in plan
+### Expected: 422 Unprocessable Entity, message: "Plan limit reached (50 recipes)"
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 51
+}
+
+###
+
+### =============================================================================
+### Verify Shopping List Update
+### Prerequisites: Run Test 1 first to add recipe with normalized ingredients
+### Expected: GET /shopping-list should show ingredients from recipe_id=1
+### Note: This endpoint may not exist yet (future implementation)
+### =============================================================================
+
+GET {{baseUrl}}/shopping-list
+Authorization: Bearer {{token}}
+
+###
+
+### =============================================================================
+### Verify Shopping List Merge Logic
+### Prerequisites:
+### 1. Add recipe_id=1 (contains: kapusta 1000g, cebula 2 szt.)
+### 2. Add recipe_id=3 (contains: kapusta 500g, cebula 1 szt.)
+### Expected: Shopping list should show:
+### - kapusta: 1500g (merged by name+unit)
+### - cebula: 3 szt. (merged by name+unit)
+### =============================================================================
+
+POST {{baseUrl}}/plan/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 3
+}
+
+###
+
+### =============================================================================
+### Cleanup: Remove all recipes from plan
+### Note: This will help reset tests
+### Expected: 204 No Content
+### =============================================================================
+
+DELETE {{baseUrl}}/plan
+Authorization: Bearer {{token}}
+
+###

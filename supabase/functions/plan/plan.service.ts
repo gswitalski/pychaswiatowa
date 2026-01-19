@@ -8,7 +8,7 @@ import { TypedSupabaseClient, createServiceRoleClient } from '../_shared/supabas
 import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan.types.ts';
 
 /**
- * Adds a recipe to user's plan.
+ * Adds a recipe to user's plan and updates shopping list.
  *
  * Business rules:
  * - User can add own recipes (any visibility)
@@ -16,8 +16,13 @@ import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan
  * - Recipe must exist and not be soft-deleted
  * - Recipe cannot already be in plan (enforced by DB unique constraint)
  * - Plan cannot exceed 50 items (enforced by DB trigger)
+ * 
+ * Side-effect (NEW):
+ * - Updates shopping list based on normalized ingredients (if status=READY)
+ * - Merges ingredients by (name, unit) key
+ * - Sums amounts for items with non-null unit
  *
- * @param client - The authenticated Supabase client
+ * @param client - The authenticated Supabase client (user context)
  * @param userId - The ID of the authenticated user
  * @param recipeId - The ID of the recipe to add
  * @throws ApplicationError
@@ -32,14 +37,120 @@ export async function addRecipeToPlan(
     recipeId: number
 ): Promise<void> {
 
-    // 1. Verify recipe access (use service role to bypass RLS for read)
-    await verifyRecipeAccess(userId, recipeId);
+    // Call RPC function that atomically:
+    // 1. Verifies recipe access (owner or PUBLIC)
+    // 2. Adds recipe to plan (with limit check)
+    // 3. Updates shopping list from normalized ingredients (if READY)
+    const { data, error } = await client.rpc(
+        'add_recipe_to_plan_and_update_shopping_list',
+        { p_recipe_id: recipeId }
+    );
 
-    // 2. Insert into plan_recipes (use user context to enforce RLS)
-    await insertRecipeToPlan(client, recipeId);
+    if (error) {
+        // Map RPC errors to ApplicationError
+        mapRpcErrorToApplicationError(error, recipeId, userId);
+    }
 
-    logger.info(
-        `[addRecipeToPlan] Recipe ${recipeId} added to plan for user ${userId}`
+    // Log success with metadata from RPC response
+    if (data) {
+        const metadata = data as {
+            success: boolean;
+            recipe_id: number;
+            shopping_list_updated: boolean;
+            items_added: number;
+            items_updated: number;
+        };
+
+        logger.info(
+            `[addRecipeToPlan] Recipe ${recipeId} added to plan for user ${userId}. ` +
+            `Shopping list updated: ${metadata.shopping_list_updated} ` +
+            `(${metadata.items_added} added, ${metadata.items_updated} updated)`
+        );
+    } else {
+        logger.info(
+            `[addRecipeToPlan] Recipe ${recipeId} added to plan for user ${userId}`
+        );
+    }
+}
+
+/**
+ * Maps RPC error from add_recipe_to_plan_and_update_shopping_list to ApplicationError.
+ * 
+ * Handles custom error codes from the RPC function:
+ * - UNAUTHORIZED -> should not happen (checked by auth.uid())
+ * - NOT_FOUND -> recipe not found or deleted
+ * - FORBIDDEN -> access denied (private/shared recipe)
+ * - CONFLICT -> recipe already in plan
+ * - PLAN_LIMIT_EXCEEDED -> 50 recipes limit reached
+ * 
+ * @param error - The database error from RPC call
+ * @param recipeId - The recipe ID (for logging)
+ * @param userId - The user ID (for logging)
+ * @throws ApplicationError with appropriate code and message
+ */
+function mapRpcErrorToApplicationError(
+    error: { message: string; code?: string },
+    recipeId: number,
+    userId: string
+): never {
+    const errorMessage = error.message || '';
+
+    // Handle custom RPC exceptions (raised by the function)
+    if (errorMessage.includes('UNAUTHORIZED')) {
+        logger.error(
+            `[addRecipeToPlan] Unauthorized RPC call for recipe ${recipeId} by user ${userId}`
+        );
+        throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+    }
+
+    if (errorMessage.includes('NOT_FOUND')) {
+        logger.warn(
+            `[addRecipeToPlan] Recipe ${recipeId} not found or deleted`
+        );
+        throw new ApplicationError('NOT_FOUND', 'Recipe not found');
+    }
+
+    if (errorMessage.includes('FORBIDDEN')) {
+        logger.warn(
+            `[addRecipeToPlan] User ${userId} forbidden from accessing recipe ${recipeId}`
+        );
+        throw new ApplicationError(
+            'FORBIDDEN',
+            'You do not have access to this recipe'
+        );
+    }
+
+    if (errorMessage.includes('CONFLICT')) {
+        logger.warn(
+            `[addRecipeToPlan] Recipe ${recipeId} already in plan for user ${userId}`
+        );
+        throw new ApplicationError(
+            'CONFLICT',
+            'Recipe is already in plan'
+        );
+    }
+
+    if (
+        errorMessage.includes('PLAN_LIMIT_EXCEEDED') ||
+        errorMessage.includes('Plan limit reached')
+    ) {
+        logger.warn(
+            `[addRecipeToPlan] Plan limit reached for user ${userId}`
+        );
+        throw new ApplicationError(
+            'UNPROCESSABLE_ENTITY',
+            'Plan limit reached (50 recipes)'
+        );
+    }
+
+    // Generic database error
+    logger.error(
+        `[addRecipeToPlan] RPC error for recipe ${recipeId}, user ${userId}`,
+        error
+    );
+    throw new ApplicationError(
+        'INTERNAL_ERROR',
+        'Failed to add recipe to plan'
     );
 }
 
@@ -47,6 +158,9 @@ export async function addRecipeToPlan(
  * Verifies that user has access to the recipe.
  * Returns minimal recipe info if access is granted.
  *
+ * @deprecated This function is no longer used by addRecipeToPlan (now handled by RPC).
+ * Kept for potential future use or other endpoints.
+ * 
  * @throws ApplicationError
  * - NOT_FOUND: Recipe doesn't exist or is deleted
  * - FORBIDDEN: User doesn't have access to recipe
@@ -102,6 +216,9 @@ async function verifyRecipeAccess(
  * Inserts recipe into plan_recipes table.
  * Uses user context client to enforce RLS.
  *
+ * @deprecated This function is no longer used by addRecipeToPlan (now handled by RPC).
+ * Kept for potential future use or other endpoints.
+ * 
  * @param client - The authenticated Supabase client (user context)
  * @param recipeId - The ID of the recipe to add
  * @throws ApplicationError
