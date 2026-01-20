@@ -11,6 +11,58 @@ Funkcja `shopping-list` obsługuje dwa typy pozycji na liście zakupów:
 
 ## 🔌 Endpointy (MVP)
 
+### GET /shopping-list
+
+Pobiera kompletną listę zakupów użytkownika (pozycje RECIPE + MANUAL).
+
+**Request:**
+- Brak parametrów query
+- Wymaga: `Authorization: Bearer <JWT>`
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1001,
+      "user_id": "uuid",
+      "kind": "RECIPE",
+      "name": "cukier",
+      "amount": 250,
+      "unit": "g",
+      "is_owned": false,
+      "created_at": "2026-01-19T12:34:56.000Z",
+      "updated_at": "2026-01-19T12:34:56.000Z"
+    },
+    {
+      "id": 2001,
+      "user_id": "uuid",
+      "kind": "MANUAL",
+      "text": "papier toaletowy",
+      "is_owned": true,
+      "created_at": "2026-01-19T12:34:56.000Z",
+      "updated_at": "2026-01-19T12:34:56.000Z"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "recipe_items": 1,
+    "manual_items": 1
+  }
+}
+```
+
+**Kody błędów:**
+- `401` - Unauthorized (brak/nieprawidłowy JWT)
+- `500` - Internal server error
+
+**Sortowanie:**
+- Pozycje sortowane są automatycznie:
+  1. `is_owned = false` (nieposiadane) najpierw
+  2. `is_owned = true` (posiadane) na końcu
+  3. Alfabetycznie po `name` (RECIPE) lub `text` (MANUAL)
+  4. Stabilny sort po `id` (tiebreaker)
+
 ### POST /shopping-list/items
 
 Dodaje nową ręczną pozycję tekstową do listy zakupów.
@@ -127,9 +179,10 @@ shopping-list/
    supabase functions serve shopping-list
    ```
 
-5. **Endpoint dostępny na:**
+5. **Endpointy dostępne na:**
    ```
-   http://localhost:54331/functions/v1/shopping-list/items
+   GET  http://localhost:54331/functions/v1/shopping-list
+   POST http://localhost:54331/functions/v1/shopping-list/items
    ```
 
 ### Użycie test-requests.http
@@ -148,6 +201,12 @@ Otwórz plik `test-requests.http` w VS Code z rozszerzeniem REST Client.
 3. **Kliknij "Send Request"** nad wybranym testem
 
 ## 📝 Przykłady użycia
+
+### Pobranie listy zakupów
+```bash
+curl -X GET http://localhost:54331/functions/v1/shopping-list \
+  -H "Authorization: Bearer <token>"
+```
 
 ### Dodanie pozycji
 ```bash
@@ -184,12 +243,10 @@ curl -X POST http://localhost:54331/functions/v1/shopping-list/items \
 
 ## 🔮 Roadmap (poza MVP)
 
-- [ ] `GET /shopping-list` - Lista wszystkich pozycji
 - [ ] `PATCH /shopping-list/items/{id}` - Toggle `is_owned`
 - [ ] `DELETE /shopping-list/items/{id}` - Usuwanie pozycji MANUAL
 - [ ] Automatyczne aktualizacje z przepisów w planie
 - [ ] Merge pozycji RECIPE z różnych przepisów
-- [ ] Sortowanie/grupowanie pozycji
 
 ## 📚 Powiązane dokumenty
 

@@ -6,7 +6,7 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
-import { createManualShoppingListItem } from './shopping-list.service.ts';
+import { createManualShoppingListItem, getShoppingList } from './shopping-list.service.ts';
 
 /**
  * Zod schema for AddManualShoppingListItemCommand.
@@ -30,6 +30,11 @@ export async function shoppingListRouter(req: Request): Promise<Response> {
     // Extract path after /shopping-list
     const pathMatch = url.pathname.match(/^\/shopping-list(.*)$/);
     const path = pathMatch ? pathMatch[1] : url.pathname;
+
+    // Route: GET /shopping-list (root endpoint)
+    if ((path === '' || path === '/') && method === 'GET') {
+        return await handleGetShoppingList(req);
+    }
 
     // Route: POST /items
     if (path === '/items' && method === 'POST') {
@@ -116,6 +121,48 @@ export async function handlePostShoppingListItems(req: Request): Promise<Respons
     // 5. Return 201 Created with created item
     return new Response(JSON.stringify(createdItem), {
         status: 201,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}
+
+/**
+ * Handler for GET /shopping-list
+ * Retrieves the complete shopping list for the authenticated user
+ * 
+ * Request:
+ * - Headers: Authorization: Bearer <JWT>
+ * - No query parameters (MVP)
+ * 
+ * Response:
+ * - 200 OK with GetShoppingListResponseDto
+ * - Contains data array with ShoppingListItemDto items (RECIPE and MANUAL)
+ * - Contains meta object with total, recipe_items, and manual_items counts
+ * 
+ * Errors:
+ * - 401 Unauthorized: Missing or invalid JWT
+ * - 500 Internal Server Error: Database error
+ */
+export async function handleGetShoppingList(req: Request): Promise<Response> {
+    // 1. Authenticate user
+    const { client, user } = await getAuthenticatedContext(req);
+
+    logger.info('[handleGetShoppingList] Fetching shopping list', {
+        userId: user.id,
+    });
+
+    // 2. Call service to get shopping list items
+    const result = await getShoppingList(client, user.id);
+
+    logger.info('[handleGetShoppingList] Shopping list retrieved successfully', {
+        userId: user.id,
+        total: result.meta.total,
+        recipeItems: result.meta.recipe_items,
+        manualItems: result.meta.manual_items,
+    });
+
+    // 3. Return 200 OK with GetShoppingListResponseDto
+    return new Response(JSON.stringify(result), {
+        status: 200,
         headers: { 'Content-Type': 'application/json' },
     });
 }

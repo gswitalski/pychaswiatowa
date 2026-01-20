@@ -2,8 +2,8 @@
  * Main router for Shopping List endpoints
  * 
  * Handles:
+ * - GET /shopping-list - Get all shopping list items
  * - POST /shopping-list/items - Add manual item to shopping list
- * - Future: GET /shopping-list - Get all shopping list items
  * - Future: PATCH /shopping-list/items/{id} - Update item (toggle is_owned)
  * - Future: DELETE /shopping-list/items/{id} - Remove item
  */

@@ -21,6 +21,25 @@ const SHOPPING_LIST_ITEM_MANUAL_SELECT = `
 ` as const;
 
 /**
+ * Columns to select for all shopping list items (both RECIPE and MANUAL).
+ * Covers both ShoppingListItemRecipeDto and ShoppingListItemManualDto.
+ * Note: RECIPE items will have name, amount, unit (text is null).
+ *       MANUAL items will have text (name, amount, unit are null).
+ */
+const SHOPPING_LIST_ITEM_ALL_SELECT = `
+    id,
+    user_id,
+    kind,
+    name,
+    amount,
+    unit,
+    text,
+    is_owned,
+    created_at,
+    updated_at
+` as const;
+
+/**
  * Response type for creating a manual shopping list item.
  * Matches ShoppingListItemManualDto from shared/contracts/types.ts
  */
@@ -122,4 +141,142 @@ export async function createManualShoppingListItem(
     });
 
     return data as CreateManualShoppingListItemResponse;
+}
+
+/**
+ * Response type for getting shopping list.
+ * Matches GetShoppingListResponseDto from shared/contracts/types.ts
+ */
+export interface GetShoppingListResponse {
+    data: ShoppingListItemDto[];
+    meta: {
+        total: number;
+        recipe_items: number;
+        manual_items: number;
+    };
+}
+
+/**
+ * DTO type for shopping list items (discriminated union).
+ * Matches ShoppingListItemDto from shared/contracts/types.ts
+ */
+type ShoppingListItemDto = ShoppingListItemRecipeDto | ShoppingListItemManualDto;
+
+/**
+ * DTO for recipe-based shopping list items.
+ */
+interface ShoppingListItemRecipeDto {
+    id: number;
+    user_id: string;
+    kind: 'RECIPE';
+    name: string;
+    amount: number | null;
+    unit: string | null;
+    is_owned: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * DTO for manual shopping list items.
+ */
+interface ShoppingListItemManualDto {
+    id: number;
+    user_id: string;
+    kind: 'MANUAL';
+    text: string;
+    is_owned: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Retrieves the complete shopping list for the authenticated user.
+ * 
+ * Business rules:
+ * - Returns both RECIPE and MANUAL items
+ * - Items are sorted by:
+ *   1. is_owned ASC (false first, then true)
+ *   2. alphabetically by name/text (case-insensitive)
+ *   3. id ASC (stable sort tiebreaker)
+ * - RLS ensures user sees only their own items
+ * - Meta includes counts: total, recipe_items, manual_items
+ * 
+ * @param client - The authenticated Supabase client (user context)
+ * @param userId - The ID of the authenticated user (for logging)
+ * @returns Shopping list with items and metadata
+ * @throws ApplicationError
+ * - INTERNAL_ERROR: Database operation failed
+ */
+export async function getShoppingList(
+    client: TypedSupabaseClient,
+    userId: string
+): Promise<GetShoppingListResponse> {
+    
+    logger.info('[getShoppingList] Fetching shopping list', { userId });
+
+    // Fetch all shopping list items for the user
+    // Note: Sorting is done in-memory (see below) as Supabase client doesn't support coalesce in order()
+    const { data, error } = await client
+        .from('shopping_list_items')
+        .select(SHOPPING_LIST_ITEM_ALL_SELECT);
+
+    if (error) {
+        logger.error('[getShoppingList] Database error', {
+            userId,
+            error: error.message,
+            code: error.code,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to fetch shopping list'
+        );
+    }
+
+    // data can be null if no items (Supabase returns null for empty result)
+    const items = data || [];
+
+    // Sort items in-memory per spec:
+    // 1. is_owned ASC (false first, then true)
+    // 2. alphabetically by name (RECIPE) or text (MANUAL), case-insensitive
+    // 3. id ASC (stable sort tiebreaker)
+    const sortedItems = items.sort((a, b) => {
+        // Primary sort: is_owned (false < true)
+        if (a.is_owned !== b.is_owned) {
+            return a.is_owned ? 1 : -1;
+        }
+
+        // Secondary sort: name/text (case-insensitive, alphabetically)
+        const aText = (a.name || a.text || '').toLowerCase();
+        const bText = (b.name || b.text || '').toLowerCase();
+        if (aText !== bText) {
+            return aText.localeCompare(bText);
+        }
+
+        // Tertiary sort: id (stable tiebreaker)
+        return a.id - b.id;
+    });
+
+    // Calculate metadata
+    const recipeItems = sortedItems.filter((item) => item.kind === 'RECIPE').length;
+    const manualItems = sortedItems.filter((item) => item.kind === 'MANUAL').length;
+
+    logger.info('[getShoppingList] Shopping list fetched successfully', {
+        userId,
+        total: sortedItems.length,
+        recipeItems,
+        manualItems,
+    });
+
+    // Cast items to proper DTO type (discriminated union)
+    const itemsDto = sortedItems as ShoppingListItemDto[];
+
+    return {
+        data: itemsDto,
+        meta: {
+            total: sortedItems.length,
+            recipe_items: recipeItems,
+            manual_items: manualItems,
+        },
+    };
 }

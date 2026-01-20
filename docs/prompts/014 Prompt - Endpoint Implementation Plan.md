@@ -15,9 +15,8 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 ### Nowe
 
-- **`POST /shopping-list/items`**
-    - Dodaje ręczną pozycję tekstową do listy zakupów.
-
+- **`GET /shopping-list`**
+    - Pobiera listę zakupów (pozycje z przepisów + ręczne).
 
 </api_changes_description>
 

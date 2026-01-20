@@ -5,6 +5,25 @@
 @token = YOUR_JWT_TOKEN_HERE
 
 ###############################################################################
+### GET /shopping-list - Get all shopping list items
+###############################################################################
+
+### GET-1. SUCCESS: Get shopping list (authenticated user)
+GET {{baseUrl}}/shopping-list
+Authorization: Bearer {{token}}
+
+### GET-2. UNAUTHORIZED: Missing Authorization header
+GET {{baseUrl}}/shopping-list
+
+### GET-3. UNAUTHORIZED: Invalid token
+GET {{baseUrl}}/shopping-list
+Authorization: Bearer invalid_token_here
+
+### GET-4. UNAUTHORIZED: Empty token
+GET {{baseUrl}}/shopping-list
+Authorization: Bearer 
+
+###############################################################################
 ### POST /shopping-list/items - Add manual item to shopping list
 ###############################################################################
 
@@ -164,6 +183,11 @@ Content-Type: application/json
 ###############################################################################
 
 # Expected responses:
+# GET endpoint:
+# - GET-1: 200 OK with GetShoppingListResponseDto (data array + meta object)
+# - GET-2, GET-3, GET-4: 401 Unauthorized
+# 
+# POST endpoint:
 # - POST-1, POST-2, POST-3, POST-15, POST-16, POST-17: 201 Created with ShoppingListItemManualDto
 # - POST-4, POST-5, POST-6, POST-7, POST-8, POST-9, POST-10, POST-11: 400 Bad Request
 # - POST-12, POST-13, POST-14: 401 Unauthorized
