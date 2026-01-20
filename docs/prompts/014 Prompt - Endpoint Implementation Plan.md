@@ -14,9 +14,9 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 <api_changes_description>
 
 ### Nowe
+- **`DELETE /shopping-list/items/{id}`**
+    - Usuwa ręczną pozycję (`kind=MANUAL`); usuwanie pozycji z przepisów jest zabronione (403).
 
-- **`GET /shopping-list`**
-    - Pobiera listę zakupów (pozycje z przepisów + ręczne).
 
 </api_changes_description>
 

@@ -349,3 +349,109 @@ export async function updateShoppingListItemIsOwned(
 
     return data as ShoppingListItemDto;
 }
+
+/**
+ * Deletes a manual shopping list item.
+ *
+ * Business rules:
+ * - Only MANUAL items can be deleted
+ * - RECIPE items are system-managed and return FORBIDDEN
+ * - RLS ensures user can only delete their own items
+ *
+ * @param client - The authenticated Supabase client (user context)
+ * @param userId - The ID of the authenticated user (for logging)
+ * @param itemId - Shopping list item ID
+ * @throws ApplicationError
+ * - NOT_FOUND: Item not found or not owned by user
+ * - FORBIDDEN: Item is recipe-derived
+ * - INTERNAL_ERROR: Database operation failed
+ */
+export async function deleteManualShoppingListItem(
+    client: TypedSupabaseClient,
+    userId: string,
+    itemId: number
+): Promise<void> {
+    logger.info('[deleteManualShoppingListItem] Deleting manual item', {
+        userId,
+        itemId,
+    });
+
+    const { data: existingItem, error: selectError } = await client
+        .from('shopping_list_items')
+        .select('id,kind')
+        .eq('id', itemId)
+        .maybeSingle();
+
+    if (selectError) {
+        logger.error('[deleteManualShoppingListItem] Database select error', {
+            userId,
+            itemId,
+            error: selectError.message,
+            code: selectError.code,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to delete shopping list item'
+        );
+    }
+
+    if (!existingItem) {
+        logger.warn('[deleteManualShoppingListItem] Item not found', {
+            userId,
+            itemId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            'Shopping list item not found'
+        );
+    }
+
+    if (existingItem.kind !== 'MANUAL') {
+        logger.warn('[deleteManualShoppingListItem] Forbidden item kind', {
+            userId,
+            itemId,
+            kind: existingItem.kind,
+        });
+        throw new ApplicationError(
+            'FORBIDDEN',
+            'Cannot delete recipe-derived shopping list items'
+        );
+    }
+
+    const { data: deletedItem, error: deleteError } = await client
+        .from('shopping_list_items')
+        .delete()
+        .eq('id', itemId)
+        .eq('kind', 'MANUAL')
+        .select('id')
+        .maybeSingle();
+
+    if (deleteError) {
+        logger.error('[deleteManualShoppingListItem] Database delete error', {
+            userId,
+            itemId,
+            error: deleteError.message,
+            code: deleteError.code,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to delete shopping list item'
+        );
+    }
+
+    if (!deletedItem) {
+        logger.warn('[deleteManualShoppingListItem] Item not found after delete', {
+            userId,
+            itemId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            'Shopping list item not found'
+        );
+    }
+
+    logger.info('[deleteManualShoppingListItem] Item deleted successfully', {
+        userId,
+        itemId,
+    });
+}

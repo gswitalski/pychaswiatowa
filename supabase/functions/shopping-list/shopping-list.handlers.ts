@@ -8,6 +8,7 @@ import { ApplicationError } from '../_shared/errors.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import {
     createManualShoppingListItem,
+    deleteManualShoppingListItem,
     getShoppingList,
     updateShoppingListItemIsOwned,
 } from './shopping-list.service.ts';
@@ -60,6 +61,11 @@ export async function shoppingListRouter(req: Request): Promise<Response> {
     const itemMatch = path.match(/^\/items\/([^/]+)$/);
     if (itemMatch && method === 'PATCH') {
         return await handlePatchShoppingListItem(req, itemMatch[1]);
+    }
+
+    // Route: DELETE /items/{id}
+    if (itemMatch && method === 'DELETE') {
+        return await handleDeleteShoppingListItem(req, itemMatch[1]);
     }
 
     // No matching route
@@ -164,6 +170,65 @@ export async function handlePatchShoppingListItem(
         status: 200,
         headers: { 'Content-Type': 'application/json' },
     });
+}
+
+/**
+ * Handler for DELETE /shopping-list/items/{id}
+ * Removes a manual shopping list item.
+ *
+ * Request:
+ * - Path: /shopping-list/items/{id}
+ * - Headers: Authorization: Bearer <JWT>
+ *
+ * Response:
+ * - 204 No Content
+ *
+ * Errors:
+ * - 400 Bad Request: Invalid path parameter
+ * - 401 Unauthorized: Missing or invalid JWT
+ * - 403 Forbidden: Attempt to delete recipe-derived item
+ * - 404 Not Found: Item not found or not owned by user
+ * - 500 Internal Server Error: Database error
+ */
+export async function handleDeleteShoppingListItem(
+    req: Request,
+    rawItemId: string
+): Promise<Response> {
+    // 1. Authenticate user
+    const { client, user } = await getAuthenticatedContext(req);
+
+    logger.info('[handleDeleteShoppingListItem] Deleting shopping list item', {
+        userId: user.id,
+        rawItemId,
+    });
+
+    // 2. Validate path parameter
+    const idResult = ShoppingListItemIdSchema.safeParse(rawItemId);
+    if (!idResult.success) {
+        const firstError = idResult.error.errors[0];
+        logger.warn('[handleDeleteShoppingListItem] Invalid item id', {
+            userId: user.id,
+            value: rawItemId,
+            message: firstError.message,
+        });
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            `id: ${firstError.message}`
+        );
+    }
+
+    const itemId = idResult.data;
+
+    // 3. Call service to delete item
+    await deleteManualShoppingListItem(client, user.id, itemId);
+
+    logger.info('[handleDeleteShoppingListItem] Item deleted successfully', {
+        userId: user.id,
+        itemId,
+    });
+
+    // 4. Return 204 No Content
+    return new Response(null, { status: 204 });
 }
 
 /**
