@@ -280,3 +280,72 @@ export async function getShoppingList(
         },
     };
 }
+
+/**
+ * Updates the is_owned flag for a shopping list item.
+ *
+ * Business rules:
+ * - Only is_owned can be updated
+ * - RLS ensures user can update only their own items
+ * - Returns 404 if item does not exist or is not owned by user
+ *
+ * @param client - The authenticated Supabase client (user context)
+ * @param userId - The ID of the authenticated user (for logging)
+ * @param itemId - Shopping list item ID
+ * @param isOwned - New ownership status
+ * @returns Updated shopping list item (RECIPE or MANUAL)
+ * @throws ApplicationError
+ * - NOT_FOUND: Item not found or not owned by user
+ * - INTERNAL_ERROR: Database operation failed
+ */
+export async function updateShoppingListItemIsOwned(
+    client: TypedSupabaseClient,
+    userId: string,
+    itemId: number,
+    isOwned: boolean
+): Promise<ShoppingListItemDto> {
+    logger.info('[updateShoppingListItemIsOwned] Updating item ownership', {
+        userId,
+        itemId,
+        isOwned,
+    });
+
+    const { data, error } = await client
+        .from('shopping_list_items')
+        .update({ is_owned: isOwned })
+        .eq('id', itemId)
+        .select(SHOPPING_LIST_ITEM_ALL_SELECT)
+        .maybeSingle();
+
+    if (error) {
+        logger.error('[updateShoppingListItemIsOwned] Database error', {
+            userId,
+            itemId,
+            error: error.message,
+            code: error.code,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to update shopping list item'
+        );
+    }
+
+    if (!data) {
+        logger.warn('[updateShoppingListItemIsOwned] Item not found', {
+            userId,
+            itemId,
+        });
+        throw new ApplicationError(
+            'NOT_FOUND',
+            'Shopping list item not found'
+        );
+    }
+
+    logger.info('[updateShoppingListItemIsOwned] Item updated successfully', {
+        userId,
+        itemId,
+        isOwned,
+    });
+
+    return data as ShoppingListItemDto;
+}

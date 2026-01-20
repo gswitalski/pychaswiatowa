@@ -4,7 +4,7 @@
  * Handles:
  * - GET /shopping-list - Get all shopping list items
  * - POST /shopping-list/items - Add manual item to shopping list
- * - Future: PATCH /shopping-list/items/{id} - Update item (toggle is_owned)
+ * - PATCH /shopping-list/items/{id} - Update item (toggle is_owned)
  * - Future: DELETE /shopping-list/items/{id} - Remove item
  */
 
@@ -16,6 +16,7 @@ import { shoppingListRouter } from './shopping-list.handlers.ts';
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS',
 };
 
 Deno.serve(async (req: Request) => {

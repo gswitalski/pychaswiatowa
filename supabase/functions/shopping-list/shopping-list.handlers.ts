@@ -6,7 +6,11 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
-import { createManualShoppingListItem, getShoppingList } from './shopping-list.service.ts';
+import {
+    createManualShoppingListItem,
+    getShoppingList,
+    updateShoppingListItemIsOwned,
+} from './shopping-list.service.ts';
 
 /**
  * Zod schema for AddManualShoppingListItemCommand.
@@ -18,6 +22,17 @@ const AddManualShoppingListItemSchema = z.object({
         .min(1, 'Text cannot be empty')
         .max(200, 'Text cannot exceed 200 characters')
         .transform((val) => val.trim()), // Normalize: trim whitespace
+});
+
+/** Schema for shopping list item ID path parameter */
+const ShoppingListItemIdSchema = z.coerce
+    .number()
+    .int()
+    .positive('Shopping list item ID must be a positive integer');
+
+/** Schema for PATCH /shopping-list/items/{id} body */
+const PatchShoppingListItemSchema = z.object({
+    is_owned: z.boolean(),
 });
 
 /**
@@ -41,8 +56,114 @@ export async function shoppingListRouter(req: Request): Promise<Response> {
         return await handlePostShoppingListItems(req);
     }
 
+    // Route: PATCH /items/{id}
+    const itemMatch = path.match(/^\/items\/([^/]+)$/);
+    if (itemMatch && method === 'PATCH') {
+        return await handlePatchShoppingListItem(req, itemMatch[1]);
+    }
+
     // No matching route
     throw new ApplicationError('NOT_FOUND', 'Endpoint not found');
+}
+
+/**
+ * Handler for PATCH /shopping-list/items/{id}
+ * Updates shopping list item ownership status (is_owned)
+ *
+ * Request:
+ * - Path: /shopping-list/items/{id}
+ * - Body: { is_owned: boolean }
+ * - Headers: Authorization: Bearer <JWT>
+ *
+ * Response:
+ * - 200 OK with ShoppingListItemDto
+ *
+ * Errors:
+ * - 400 Bad Request: Invalid JSON or validation error
+ * - 401 Unauthorized: Missing or invalid JWT
+ * - 404 Not Found: Item not found or not owned by user
+ * - 500 Internal Server Error: Database error
+ */
+export async function handlePatchShoppingListItem(
+    req: Request,
+    rawItemId: string
+): Promise<Response> {
+    // 1. Authenticate user
+    const { client, user } = await getAuthenticatedContext(req);
+
+    logger.info('[handlePatchShoppingListItem] Updating shopping list item', {
+        userId: user.id,
+        rawItemId,
+    });
+
+    // 2. Validate path parameter
+    const idResult = ShoppingListItemIdSchema.safeParse(rawItemId);
+    if (!idResult.success) {
+        const firstError = idResult.error.errors[0];
+        logger.warn('[handlePatchShoppingListItem] Invalid item id', {
+            userId: user.id,
+            value: rawItemId,
+            message: firstError.message,
+        });
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            `id: ${firstError.message}`
+        );
+    }
+
+    const itemId = idResult.data;
+
+    // 3. Parse and validate request body
+    let body: unknown;
+    try {
+        body = await req.json();
+    } catch (_error) {
+        logger.warn('[handlePatchShoppingListItem] Invalid JSON', {
+            userId: user.id,
+            itemId,
+        });
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'Invalid JSON in request body'
+        );
+    }
+
+    const validationResult = PatchShoppingListItemSchema.safeParse(body);
+    if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        logger.warn('[handlePatchShoppingListItem] Validation error', {
+            userId: user.id,
+            itemId,
+            field: firstError.path.join('.'),
+            message: firstError.message,
+        });
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            `${firstError.path.join('.')}: ${firstError.message}`
+        );
+    }
+
+    const { is_owned: isOwned } = validationResult.data;
+
+    // 4. Call service to update item
+    const updatedItem = await updateShoppingListItemIsOwned(
+        client,
+        user.id,
+        itemId,
+        isOwned
+    );
+
+    logger.info('[handlePatchShoppingListItem] Item updated successfully', {
+        userId: user.id,
+        itemId,
+        isOwned,
+    });
+
+    // 5. Return 200 OK with updated item
+    return new Response(JSON.stringify(updatedItem), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+    });
 }
 
 /**

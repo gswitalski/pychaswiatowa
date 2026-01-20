@@ -673,6 +673,13 @@ export interface AddManualShoppingListItemCommand {
     text: string;
 }
 
+/**
+ * Command model for updating shopping list item ownership flag.
+ */
+export interface UpdateShoppingListItemCommand {
+    is_owned: boolean;
+}
+
 // #endregion
 
 // #region --- AI Recipe Draft ---

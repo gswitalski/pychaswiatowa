@@ -92,6 +92,36 @@ Dodaje nową ręczną pozycję tekstową do listy zakupów.
 - `401` - Unauthorized (brak/nieprawidłowy JWT)
 - `500` - Internal server error
 
+### PATCH /shopping-list/items/{id}
+
+Aktualizuje flagę `is_owned` dla pozycji listy zakupów (RECIPE lub MANUAL).
+
+**Request:**
+```json
+{
+  "is_owned": true
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 2001,
+  "user_id": "uuid",
+  "kind": "MANUAL",
+  "text": "papier toaletowy",
+  "is_owned": true,
+  "created_at": "2026-01-19T12:34:56.000Z",
+  "updated_at": "2026-01-20T10:00:00.000Z"
+}
+```
+
+**Kody błędów:**
+- `400` - Validation error (nieprawidłowy `id` lub `is_owned`, błędny JSON)
+- `401` - Unauthorized (brak/nieprawidłowy JWT)
+- `404` - Not found (rekord nie istnieje lub nie należy do użytkownika)
+- `500` - Internal server error
+
 ## 🏗️ Architektura
 
 Funkcja jest zorganizowana według modularnego wzorca:
@@ -121,7 +151,8 @@ shopping-list/
 ### Autoryzacja (RLS)
 - Użytkownik może operować **tylko na własnych** pozycjach listy zakupów
 - `user_id` jest ustawiany automatycznie przez DB (`auth.uid()`)
-- Klient NIE może ustawić `user_id`, `kind`, `is_owned` w payloadzie
+- Klient NIE może ustawić `user_id`, `kind` w payloadzie
+- Aktualizacja `is_owned` jest dostępna tylko przez PATCH
 
 ### Walidacja
 
@@ -183,6 +214,7 @@ shopping-list/
    ```
    GET  http://localhost:54331/functions/v1/shopping-list
    POST http://localhost:54331/functions/v1/shopping-list/items
+   PATCH http://localhost:54331/functions/v1/shopping-list/items/{id}
    ```
 
 ### Użycie test-requests.http
@@ -216,6 +248,14 @@ curl -X POST http://localhost:54331/functions/v1/shopping-list/items \
   -d '{"text":"mleko 3.2%"}'
 ```
 
+### Aktualizacja is_owned
+```bash
+curl -X PATCH http://localhost:54331/functions/v1/shopping-list/items/2001 \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"is_owned":true}'
+```
+
 ### Przykład z trim
 ```json
 // Request:
@@ -243,7 +283,6 @@ curl -X POST http://localhost:54331/functions/v1/shopping-list/items \
 
 ## 🔮 Roadmap (poza MVP)
 
-- [ ] `PATCH /shopping-list/items/{id}` - Toggle `is_owned`
 - [ ] `DELETE /shopping-list/items/{id}` - Usuwanie pozycji MANUAL
 - [ ] Automatyczne aktualizacje z przepisów w planie
 - [ ] Merge pozycji RECIPE z różnych przepisów

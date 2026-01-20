@@ -179,6 +179,91 @@ Content-Type: application/json
 }
 
 ###############################################################################
+### PATCH /shopping-list/items/{id} - Update item (toggle is_owned)
+###############################################################################
+
+### PATCH-1. SUCCESS: Mark manual item as owned
+# Replace {{manualItemId}} with an existing MANUAL item ID
+@manualItemId = 0
+PATCH {{baseUrl}}/shopping-list/items/{{manualItemId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_owned": true
+}
+
+### PATCH-2. SUCCESS: Mark recipe item as not owned
+# Replace {{recipeItemId}} with an existing RECIPE item ID
+@recipeItemId = 0
+PATCH {{baseUrl}}/shopping-list/items/{{recipeItemId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_owned": false
+}
+
+### PATCH-3. VALIDATION ERROR: Invalid id (not a number)
+PATCH {{baseUrl}}/shopping-list/items/abc
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_owned": true
+}
+
+### PATCH-4. VALIDATION ERROR: Invalid id (zero)
+PATCH {{baseUrl}}/shopping-list/items/0
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_owned": true
+}
+
+### PATCH-5. VALIDATION ERROR: Missing is_owned
+PATCH {{baseUrl}}/shopping-list/items/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+}
+
+### PATCH-6. VALIDATION ERROR: is_owned not boolean
+PATCH {{baseUrl}}/shopping-list/items/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_owned": "true"
+}
+
+### PATCH-7. VALIDATION ERROR: Invalid JSON
+PATCH {{baseUrl}}/shopping-list/items/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{invalid json}
+
+### PATCH-8. UNAUTHORIZED: Missing Authorization header
+PATCH {{baseUrl}}/shopping-list/items/1
+Content-Type: application/json
+
+{
+  "is_owned": true
+}
+
+### PATCH-9. UNAUTHORIZED: Invalid token
+PATCH {{baseUrl}}/shopping-list/items/1
+Authorization: Bearer invalid_token_here
+Content-Type: application/json
+
+{
+  "is_owned": true
+}
+
+###############################################################################
 ### NOTES
 ###############################################################################
 
@@ -191,6 +276,11 @@ Content-Type: application/json
 # - POST-1, POST-2, POST-3, POST-15, POST-16, POST-17: 201 Created with ShoppingListItemManualDto
 # - POST-4, POST-5, POST-6, POST-7, POST-8, POST-9, POST-10, POST-11: 400 Bad Request
 # - POST-12, POST-13, POST-14: 401 Unauthorized
+#
+# PATCH endpoint:
+# - PATCH-1, PATCH-2: 200 OK with ShoppingListItemDto
+# - PATCH-3, PATCH-4, PATCH-5, PATCH-6, PATCH-7: 400 Bad Request
+# - PATCH-8, PATCH-9: 401 Unauthorized
 
 # To get a valid JWT token for local testing:
 # 1. Start Supabase locally: supabase start
