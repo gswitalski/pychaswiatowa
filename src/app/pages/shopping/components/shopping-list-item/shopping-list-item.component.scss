@@ -1,0 +1,41 @@
+.shopping-list-item {
+    transition: opacity 0.2s ease;
+
+    &--owned {
+        opacity: 0.6;
+
+        .shopping-list-item__primary {
+            text-decoration: line-through;
+        }
+    }
+
+    &--mutating {
+        pointer-events: none;
+    }
+
+    &__checkbox {
+        margin-right: 1rem;
+    }
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    &__primary {
+        font-size: 1rem;
+        line-height: 1.5;
+        color: var(--mat-sys-on-surface);
+    }
+
+    &__secondary {
+        font-size: 0.875rem;
+        line-height: 1.25;
+        color: var(--mat-sys-on-surface-variant);
+    }
+
+    &__delete {
+        margin-left: 0.5rem;
+    }
+}

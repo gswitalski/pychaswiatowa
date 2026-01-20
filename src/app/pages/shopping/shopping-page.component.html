@@ -1,0 +1,50 @@
+<div class="shopping-page">
+    <pych-page-header [title]="'Zakupy'" />
+
+    <div class="shopping-page__content">
+        <!-- Formularz dodawania pozycji -->
+        <div class="shopping-page__add-section">
+            <pych-shopping-add-item-form
+                [isSubmitting]="isAddingManual()"
+                (add)="onAddManualItem($event)"
+            />
+        </div>
+
+        <!-- Stan: Ładowanie początkowe -->
+        @if (isLoading()) {
+            <div class="shopping-page__loading">
+                <mat-spinner [diameter]="48" />
+                <p>Ładowanie listy zakupów...</p>
+            </div>
+        }
+        <!-- Stan: Błąd -->
+        @else if (error()) {
+            <div class="shopping-page__error">
+                <p class="shopping-page__error-message">{{ error()!.message }}</p>
+                <button mat-flat-button color="primary" (click)="onRetry()">
+                    Spróbuj ponownie
+                </button>
+            </div>
+        }
+        <!-- Stan: Pusta lista -->
+        @else if (isEmpty()) {
+            <pych-empty-state
+                [icon]="'shopping_cart'"
+                [title]="'Brak pozycji na liście'"
+                [description]="'Dodaj pozycje ręcznie lub dodaj przepisy do planu, aby automatycznie wygenerować listę zakupów.'"
+            />
+        }
+        <!-- Stan: Lista z danymi -->
+        @else {
+            <div class="shopping-page__list-container" [class.shopping-page__list-container--refreshing]="isRefreshing()">
+                <pych-shopping-list
+                    [items]="itemsSorted()"
+                    [toggleInProgressIds]="mutationState().togglingItemIds"
+                    [deleteInProgressIds]="mutationState().deletingItemIds"
+                    (toggleOwned)="onToggleOwned($event)"
+                    (deleteManual)="onDeleteManual($event)"
+                />
+            </div>
+        }
+    </div>
+</div>

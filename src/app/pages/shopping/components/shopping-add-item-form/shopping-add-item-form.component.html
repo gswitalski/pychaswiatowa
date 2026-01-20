@@ -1,0 +1,23 @@
+<form class="shopping-add-item-form" (ngSubmit)="onSubmit()">
+    <mat-form-field class="shopping-add-item-form__field" appearance="outline">
+        <mat-label>Dodaj pozycję</mat-label>
+        <input
+            matInput
+            type="text"
+            placeholder="np. papier toaletowy"
+            [formControl]="textControl"
+            [disabled]="isSubmitting()"
+        />
+        <mat-icon matSuffix>add</mat-icon>
+    </mat-form-field>
+
+    <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        [disabled]="isButtonDisabled"
+        class="shopping-add-item-form__submit"
+    >
+        Dodaj
+    </button>
+</form>

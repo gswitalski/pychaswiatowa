@@ -41,6 +41,11 @@ export class SidebarComponent {
             icon: 'collections_bookmark',
         },
         {
+            label: 'Zakupy',
+            route: '/shopping',
+            icon: 'shopping_cart',
+        },
+        {
             label: 'Ustawienia',
             route: '/settings',
             icon: 'settings',

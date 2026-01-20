@@ -1,0 +1,25 @@
+.shopping-add-item-form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+
+    &__field {
+        flex: 1;
+        margin: 0;
+    }
+
+    &__submit {
+        margin-top: 0.25rem; // Wyrównanie z polem input
+    }
+
+    // Mobile - stack vertically
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: stretch;
+
+        &__submit {
+            margin-top: 0;
+            width: 100%;
+        }
+    }
+}

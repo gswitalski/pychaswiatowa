@@ -1,0 +1,14 @@
+<mat-list class="shopping-list">
+    @for (item of items(); track item.id) {
+        <pych-shopping-list-item
+            [item]="item"
+            [isToggling]="isToggling(item.id)"
+            [isDeleting]="isDeleting(item.id)"
+            (toggleOwned)="onToggleOwned($event)"
+            (deleteManual)="onDeleteManual($event)"
+        />
+        @if (!$last) {
+            <mat-divider />
+        }
+    }
+</mat-list>

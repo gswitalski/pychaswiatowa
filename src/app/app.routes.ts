@@ -90,6 +90,14 @@ export const routes: Routes = [
                 data: { breadcrumb: 'Kolekcje' },
             },
             {
+                path: 'shopping',
+                loadComponent: () =>
+                    import('./pages/shopping/shopping-page.component').then(
+                        (m) => m.ShoppingPageComponent
+                    ),
+                data: { breadcrumb: 'Zakupy' },
+            },
+            {
                 path: 'settings',
                 loadComponent: () =>
                     import('./pages/dashboard/dashboard-page.component').then(
@@ -193,6 +201,14 @@ export const routes: Routes = [
                 redirectTo: () => {
                     // Redirect guests to login with return URL
                     return '/login?redirectTo=%2Fdashboard';
+                },
+                pathMatch: 'full',
+            },
+            {
+                path: 'shopping',
+                redirectTo: () => {
+                    // Redirect guests to login with return URL
+                    return '/login?redirectTo=%2Fshopping';
                 },
                 pathMatch: 'full',
             },

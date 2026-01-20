@@ -1,0 +1,41 @@
+<mat-list-item
+    class="shopping-list-item"
+    [class.shopping-list-item--owned]="item().isOwned"
+    [class.shopping-list-item--mutating]="isToggling() || isDeleting()"
+>
+    <!-- Checkbox -->
+    <mat-checkbox
+        matListItemMeta
+        [checked]="item().isOwned"
+        [disabled]="isToggling() || isDeleting()"
+        (change)="onCheckboxChange($event.checked)"
+        [attr.aria-label]="'Oznacz jako posiadane: ' + item().primaryText"
+        class="shopping-list-item__checkbox"
+    />
+
+    <!-- Treść -->
+    <div matListItemTitle class="shopping-list-item__content">
+        <span class="shopping-list-item__primary">{{ item().primaryText }}</span>
+        @if (item().secondaryText) {
+            <span class="shopping-list-item__secondary">{{ item().secondaryText }}</span>
+        }
+    </div>
+
+    <!-- Przycisk usuwania (tylko MANUAL) -->
+    @if (item().canDelete) {
+        <button
+            mat-icon-button
+            matListItemMeta
+            [disabled]="isToggling() || isDeleting()"
+            (click)="onDeleteClick()"
+            [attr.aria-label]="'Usuń: ' + item().primaryText"
+            class="shopping-list-item__delete"
+        >
+            @if (isDeleting()) {
+                <mat-spinner [diameter]="20" />
+            } @else {
+                <mat-icon>delete</mat-icon>
+            }
+        </button>
+    }
+</mat-list-item>

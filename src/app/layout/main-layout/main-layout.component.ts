@@ -43,7 +43,7 @@ export class MainLayoutComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
 
     /** Private paths that require sidebar visibility */
-    private readonly PRIVATE_PATHS = ['/dashboard', '/recipes', '/my-recipies', '/collections', '/settings'];
+    private readonly PRIVATE_PATHS = ['/dashboard', '/recipes', '/my-recipies', '/collections', '/shopping', '/settings'];
 
     /** Sidebar open state */
     readonly isSidebarOpen = this.layoutService.isSidebarOpen;
