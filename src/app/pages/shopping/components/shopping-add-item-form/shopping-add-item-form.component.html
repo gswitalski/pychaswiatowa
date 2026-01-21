@@ -1,4 +1,4 @@
-<form class="shopping-add-item-form" (ngSubmit)="onSubmit()">
+<form class="shopping-add-item-form" [formGroup]="form" (ngSubmit)="onSubmit()">
     <mat-form-field class="shopping-add-item-form__field" appearance="outline">
         <mat-label>Dodaj pozycję</mat-label>
         <input

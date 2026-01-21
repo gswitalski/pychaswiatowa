@@ -11,19 +11,27 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-strona http://localhost:4200/my-recipies
+strona
+http://localhost:4200/shopping
 
-przewijam przepisy w dół
-ikonki i badge z kart przepisów nie chowają sie pod
-pych-page-header
 
-tylko są nad nim (patrz obraz)
+wpisuję rezczną pozycję do list yi wciskam "Doda"
+
+nic sę nie dodaje
+
+endpoint
+- **`POST /shopping-list/items`**
+
+nie jest wywołany
+
+
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-ikonki i budge chowają sie pod header
+POST /shopping-list/items jest wywałoanay i pozyja reczna pojawia się na liście zakupów
+
 
 
 </oczekiwane_zachowanie>

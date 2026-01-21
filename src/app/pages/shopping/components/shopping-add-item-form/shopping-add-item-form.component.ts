@@ -5,7 +5,7 @@ import {
     output,
     inject,
 } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,17 +39,24 @@ export class ShoppingAddItemFormComponent {
     /** Kontrolka formularza */
     readonly textControl = new FormControl<string>('', {
         nonNullable: true,
-        validators: [Validators.required],
+    });
+
+    /** Grupa formularza potrzebna do obsługi ngSubmit */
+    readonly form = new FormGroup({
+        text: this.textControl,
     });
 
     /**
      * Obsługuje submit formularza
      */
     onSubmit(): void {
+        if (this.isSubmitting()) {
+            return;
+        }
+
         // Walidacja
         const text = this.textControl.value.trim();
         if (!text) {
-            this.textControl.setErrors({ required: true });
             return;
         }
 
