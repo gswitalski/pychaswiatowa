@@ -53,5 +53,12 @@ export const MAIN_NAVIGATION_ITEMS: MainNavigationItem[] = [
         ariaLabel: 'Przejdź do Moja Pycha',
         matchingRoutes: ['/dashboard', '/my-recipies', '/recipes', '/collections', '/shopping', '/settings'],
     },
+    {
+        label: 'Zakupy',
+        route: '/shopping',
+        exact: false,
+        ariaLabel: 'Przejdź do Zakupów',
+        matchingRoutes: ['/shopping'],
+    }
 ];
 

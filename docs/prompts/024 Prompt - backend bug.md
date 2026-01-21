@@ -1,27 +1,31 @@
 Jesteś doświadczonym programistą aplikacji webowych. Twoim zadaniem jest przeanalizowanie i naprawienie buga w backendzie aplikacji.
 
-Zapoznaj się z dokumentamu projektu
+Zapoznaj się z  projektem
 
-<dokumnety_projektowe>
+<project_summary>
 
 
 
-</dokumnety_projektowe>
+</project_summary>
 
 
 
 <aktualne_zachowanie>
 
-wywołuję endpoint PUT /recipes/{id}`** – aktualizacja istniejącego przepisu
+endpoint Endpoint: **`POST /plan/recipes`**
+zgodnie z planem implementacji który został wsrożony 
 
-nie aktualizuje się noramlized_ingredients (cały czas jest null) j job ma status PENDING
+
+
+powinien zapisujac przepis do planyu powinien dodawac znormalizowne skłądniki prepisu do listy zakoópw, ale nie robi tego
+
 
 </aktualne_zachowanie>
 
 
 <oczekiwane_zachowanie>
 
-
+dodaane znormalizowane skłądniki do listy zakupów
 
 </oczekiwane_zachowanie>
 
