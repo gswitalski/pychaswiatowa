@@ -404,34 +404,69 @@ export async function clearPlan(params: {
 }): Promise<number> {
     const { client, userId } = params;
 
-    // Execute DELETE with RETURNING to count deleted rows
-    // RLS ensures user can only delete from their own plan (user_id = auth.uid())
-    // However, we need to explicitly filter by user_id for the query to work correctly
-    const { data, error } = await client
-        .from('plan_recipes')
-        .delete()
-        .eq('user_id', userId)
-        .select('recipe_id');
+    // Call RPC function that atomically:
+    // 1. Clears plan_recipes
+    // 2. Clears shopping_list_recipe_contributions
+    // 3. Clears shopping_list_items of kind='RECIPE'
+    const { data, error } = await client.rpc(
+        'clear_plan_and_update_shopping_list'
+    );
 
     if (error) {
-        logger.error(
-            `[clearPlan] Failed to clear plan for user ${userId}`,
-            error
-        );
-        throw new ApplicationError(
-            'INTERNAL_ERROR',
-            'Failed to clear plan'
-        );
+        mapClearPlanRpcErrorToApplicationError(error, userId);
     }
 
+    const metadata = data as
+        | {
+              success: boolean;
+              plan_items_removed: number;
+              contributions_removed: number;
+              recipe_items_deleted: number;
+          }
+        | null;
+
     // Count deleted rows (0 if plan was already empty - this is OK, idempotent)
-    const deletedCount = data?.length || 0;
+    const deletedCount = metadata?.plan_items_removed ?? 0;
 
     logger.info(
         `[clearPlan] Plan cleared for user ${userId}: ${deletedCount} items deleted`
     );
 
     return deletedCount;
+}
+
+/**
+ * Maps RPC error from clear_plan_and_update_shopping_list to ApplicationError.
+ * 
+ * Handles custom error codes from the RPC function:
+ * - UNAUTHORIZED -> auth.uid() missing
+ * - INTERNAL_ERROR -> unexpected database error
+ * 
+ * @param error - The database error from RPC call
+ * @param userId - The user ID (for logging)
+ * @throws ApplicationError with appropriate code and message
+ */
+function mapClearPlanRpcErrorToApplicationError(
+    error: { message: string; code?: string },
+    userId: string
+): never {
+    const errorMessage = error.message || '';
+
+    if (errorMessage.includes('UNAUTHORIZED')) {
+        logger.error(
+            `[clearPlan] Unauthorized RPC call for user ${userId}`
+        );
+        throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+    }
+
+    logger.error(
+        `[clearPlan] RPC error for user ${userId}`,
+        error
+    );
+    throw new ApplicationError(
+        'INTERNAL_ERROR',
+        'Failed to clear plan'
+    );
 }
 
 /**
