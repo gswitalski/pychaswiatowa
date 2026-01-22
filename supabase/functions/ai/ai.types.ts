@@ -130,11 +130,11 @@ export const AiRecipeDraftRequestSchema = z.discriminatedUnion('source', [
  */
 export const AiRecipeDraftOutputSchema = z.object({
     name: z.string().min(1, 'Recipe name is required'),
-    description: z.string().nullable(),
+    description: z.string().nullish().default(null),
     ingredients_raw: z.string().min(1, 'Ingredients are required'),
     steps_raw: z.string().min(1, 'Steps are required'),
     tips_raw: z.string().optional(),
-    category_name: z.string().nullable(),
+    category_name: z.string().nullish().default(null),
     tags: z.array(z.string()).default([]),
 });
 

@@ -1,11 +1,11 @@
 /**
  * Normalized Ingredients - Shared Module
- * 
+ *
  * This module contains shared logic for AI-powered ingredient normalization.
  * Used by both:
  * - POST /ai/recipes/normalized-ingredients (user-facing API)
  * - Internal worker for async background processing
- * 
+ *
  * IMPORTANT: This module depends on OpenAI API and should handle API errors appropriately.
  */
 
@@ -240,7 +240,8 @@ ${language}
 KRYTYCZNE ZASADY NORMALIZACJI:
 
 1. NAZWA SKŁADNIKA (name):
-   - ZAWSZE liczba pojedyncza, mianownik (np. "jajko" zamiast "jajka", "pomidor" zamiast "pomidory")
+   - ZAWSZE liczba pojedyncza lub mnoga, mianownik (np. "jajko" zamiast "jajka", "pomidor" zamiast "pomidory"), tam gdzie lepiej pasuje liczba mnoga to użyj jej np. "rodzynki" zamiast "rodzynek"
+   - jesli składnik jest dodatkowo opisany to użyj tego opisu do nazwy składnika np. "mąka pszenna typ 450" zamiast "mąka"
    - Tylko nazwa składnika, bez ilości i jednostek
    - Małe litery
    - Przykłady: "mąka", "cukier", "jajko", "masło", "mleko"
@@ -323,7 +324,7 @@ Zwróć odpowiedź w formacie JSON zgodnie z instrukcjami.`;
 
 /**
  * Generates normalized ingredients list from recipe ingredients using AI.
- * 
+ *
  * This is the core normalization logic shared between:
  * - User-facing API endpoint (POST /ai/recipes/normalized-ingredients)
  * - Internal worker for background processing

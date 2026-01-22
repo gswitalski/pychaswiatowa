@@ -10,6 +10,8 @@ import {
     AiNormalizedIngredientsLlmResponseSchema,
     AiNormalizedIngredientsResponseDto,
     AiRecipeDraftDto,
+    AiRecipeDraftErrorResponseSchema,
+    AiRecipeDraftLlmResponseSchema,
     AiRecipeDraftResponseDto,
     AiRecipeImageStyleContract,
     GenerateNormalizedIngredientsParams,
@@ -166,7 +168,15 @@ json
   }
 }
 
-UWAGA: Pole "tips_raw" jest OPCJONALNE - dodaj je TYLKO jeśli źródło zawiera wskazówki. Jeśli brak wskazówek - po prostu POMIŃ to pole w JSON.
+UWAGA O POLACH:
+- "tips_raw" jest OPCJONALNE - dodaj je TYLKO jeśli źródło zawiera wskazówki. Jeśli brak wskazówek - po prostu POMIŃ to pole w JSON.
+- WSZYSTKIE INNE POLA SĄ WYMAGANE i MUSZĄ być obecne w odpowiedzi:
+  - "name" - zawsze wymagane (string)
+  - "description" - zawsze obecne (string lub null)
+  - "ingredients_raw" - zawsze wymagane (string)
+  - "steps_raw" - zawsze wymagane (string)
+  - "category_name" - zawsze obecne (string lub null jeśli nie pasuje do żadnej kategorii)
+  - "tags" - zawsze obecne (tablica stringów, może być pusta [])
 
 
 Dla NIEPOPRAWNEJ treści:
@@ -505,35 +515,44 @@ export async function generateRecipeDraft(
         "is_valid_recipe" in llmResponse &&
         (llmResponse as { is_valid_recipe: boolean }).is_valid_recipe === false
     ) {
-        const errorResponse = llmResponse as {
-            is_valid_recipe: false;
-            reasons: string[];
-        };
+        // Validate error response schema
+        const errorParseResult = AiRecipeDraftErrorResponseSchema.safeParse(llmResponse);
+        if (!errorParseResult.success) {
+            logger.error("Invalid error response from LLM", {
+                llmResponse,
+                zodError: errorParseResult.error
+            });
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "AI service returned invalid error response format",
+            );
+        }
+
+        const errorResponse = errorParseResult.data;
         logger.info("LLM determined content is not a valid recipe", {
             userId,
             reasons: errorResponse.reasons,
         });
         return {
             success: false,
-            reasons: errorResponse.reasons ||
-                ["Content does not appear to be a valid recipe"],
+            reasons: errorResponse.reasons,
         };
     }
 
-    // Parse successful response
-    const successResponse = llmResponse as {
-        is_valid_recipe: true;
-        draft: AiRecipeDraftDto;
-        meta: { confidence: number; warnings: string[] };
-    };
-
-    if (!successResponse.draft) {
-        logger.error("LLM response missing draft field", { llmResponse });
+    // Validate successful response schema
+    const successParseResult = AiRecipeDraftLlmResponseSchema.safeParse(llmResponse);
+    if (!successParseResult.success) {
+        logger.error("Invalid success response from LLM", {
+            llmResponse,
+            zodError: successParseResult.error
+        });
         throw new ApplicationError(
             "INTERNAL_ERROR",
-            "AI service returned incomplete response",
+            "AI service returned invalid response format",
         );
     }
+
+    const successResponse = successParseResult.data;
 
     // Validate draft content
     const validationErrors = validateDraftContent(successResponse.draft);
