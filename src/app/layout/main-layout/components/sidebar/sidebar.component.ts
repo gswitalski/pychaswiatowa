@@ -40,11 +40,11 @@ export class SidebarComponent {
             route: '/collections',
             icon: 'collections_bookmark',
         },
-        {
-            label: 'Zakupy',
-            route: '/shopping',
-            icon: 'shopping_cart',
-        },
+        // {
+        //     label: 'Zakupy',
+        //     route: '/shopping',
+        //     icon: 'shopping_cart',
+        // },
         {
             label: 'Ustawienia',
             route: '/settings',

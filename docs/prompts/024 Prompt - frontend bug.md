@@ -11,28 +11,17 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-strona
-http://localhost:4200/shopping
 
+component
+PageHeaderComponent
 
-wpisuję rezczną pozycję do list yi wciskam "Doda"
-
-nic sę nie dodaje
-
-endpoint
-- **`POST /shopping-list/items`**
-
-nie jest wywołany
-
-
+nie wyświtla tytułu ani podtytułu
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-POST /shopping-list/items jest wywałoanay i pozyja reczna pojawia się na liście zakupów
-
-
+komponent wyswietla tytuł i podtytuł
 
 </oczekiwane_zachowanie>
 
