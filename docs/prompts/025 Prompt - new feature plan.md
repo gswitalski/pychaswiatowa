@@ -12,20 +12,20 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-1. użytkownik może obsługiwać listę zakupów ze składnikami do przepisów które ma w swoim  planie
-2. Każde dodanei przepisu do planu ododaje składniki do listy zakupów.
-3. elementy na liście zakupów są brane z list składników znormalizowanych
-4. każdy składnik który jest powtórzeinirm innego składnika z tego samego przepisu lub z innego juest scalany w jeden element listy zakupów pod warucnkiem że jednostki smiary są takie same. ilosci jest sumowana
-np jesli w jednym przepisie jest cukier 200 g, a w drugim przepisie cukier 50 g, w czecim przepisie 1 łyżeczka cukru a w czwartym przepisie po prostu cukier bez ilości i jednostki to na liście zakupów ma się pojawić
-- cukier, 250 g
-- cukier, 1 łyżeczka 
-- cukier
 
-5. użytkowniek ma mozliwosc zaznaczenia które składniki juz posiada
-6. Skłądniki zaznaczone jako posiadane są przesortowane na sam dół
-7. uzytkownik może ddodac dowolny element do listu zakupów, który nie jest zwiazany z żadnym przepisem opisujac swoimi słowami co i ile ma kupić.
-8. Lista zakupów mna odzielny element w głównym menu : 'Zakupy'.
-9. Usunięcie przepisu z planu usuwa odpowiednie ilości składników z listy zakupów.
+aktualnie gdy użytkownik dodaje przepisy do swojego planu to budowana jest lista zakupów ze składników przepisów w ten sposób,
+że składniki o tej samej nazwie i tej samej jednostce są kumulowane (sumowanee) na jedną pozycję i tak to jest prezentowane później
+użytkownikowi.
+
+chcę trochę to zmienić.
+
+w bazie danych każdy skłądni z każdego przepisu ma być osobnym wierszem w tabelu. dodatkowo chcę w tabeli z listą zakupów mieć id i nazwe przepisu (te dwa pola mają być podane na freontend przez endoint pobierania listy zakupów  -do wykorzystania na przyszłość w następnym rozszerzeniu)
+
+kumulacja składnów będzie wykonywana na frontedndzie. 
+
+gdy usunę przepis z planu będą się po prostu usuwały elemnty z tym id przepisu ktry został usunięty
+
+
 
 
 </nowa_funkcjonalnosc>

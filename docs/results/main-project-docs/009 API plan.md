@@ -17,7 +17,7 @@ The API exposes the following primary resources:
 -   **Shopping List ("Zakupy")**: A per-user, persistent shopping list composed of:
     - recipe-derived items (built from `Recipe Normalized Ingredients` of recipes that are in "My Plan"),
     - user-added manual text items (not tied to any recipe).
-    Recipe-derived items are merged by (`name`, `unit`) and summed when possible (see endpoint notes).
+    Recipe-derived items are stored as **raw rows** (one row per recipe ingredient) and include `recipe_id` and `recipe_name` so that the **frontend** can group/sum items (see endpoint notes).
 -   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. This is provided by Supabase and consumed via the `supabase-js` client in the Angular app (no custom backend endpoints required for MVP).
 -   **AI Recipe Draft (Supabase Edge Function)**: Generates a structured "recipe draft" from either pasted text or a pasted image (OCR + LLM), to prefill the recipe form. The draft is returned to the client and is **not persisted** until the user explicitly saves the recipe via the standard `POST /recipes`.
 
@@ -1326,11 +1326,14 @@ Public endpoints are available without authentication:
 
 -   **Description**: Add a recipe to the authenticated user's "My Plan" list.
 -   **Side effects (MVP)**:
-    - After adding the recipe to the plan, the backend MUST update the user's Shopping List:
-        - read the recipe's `normalized_ingredients` (must be READY to contribute amounts; if not ready, the recipe contributes no items yet),
-        - upsert/merge shopping list items by (`name`, `unit`),
-        - sum `amount` for items where `unit != null` and `amount != null`,
-        - for `unit = null` (or unknown amounts), keep a single "name-only" item per name (no amount aggregation).
+    - After adding the recipe to the plan, the backend MUST update the user's Shopping List by creating **raw rows**:
+        - read the recipe's `normalized_ingredients` (must be READY to contribute items; if not ready, the recipe contributes no items yet),
+        - create **one shopping list row per normalized ingredient** for that recipe (no server-side merge/deduplication),
+        - each created row MUST include:
+            - `recipe_id`,
+            - `recipe_name` (snapshot at the time of adding the recipe to the plan),
+            - `name`, `amount` (nullable), `unit` (nullable),
+            - `is_owned = false` (default).
 -   **Request Payload**:
     ```json
     {
@@ -1354,8 +1357,7 @@ Public endpoints are available without authentication:
 
 -   **Description**: Remove a recipe from the authenticated user's "My Plan" list.
 -   **Side effects (MVP)**:
-    - After removing the recipe from the plan, the backend MUST update the user's Shopping List by subtracting the removed recipe's contribution:
-        - for items where `unit != null` and `amount != null`, subtract the contribution and delete the shopping list item if it reaches `0`,
+    - After removing the recipe from the plan, the backend MUST update the user's Shopping List by deleting all recipe-derived shopping list rows for that `recipe_id`:
         - manual text items MUST NOT be modified by this operation,
         - **Known limitation (MVP)**: editing a recipe while it is in the plan does not trigger any automatic shopping list recompute; the list may become stale.
 -   **Success Response**:
@@ -1384,6 +1386,8 @@ Public endpoints are available without authentication:
 -   **Description**: Retrieve the authenticated user's Shopping List.
 -   **Notes (MVP)**:
     - The list is **persistent** and contains both recipe-derived items (from recipes in "My Plan") and manual text items added by the user.
+    - Recipe-derived items are returned as **raw rows** (one row per recipe ingredient). The frontend is responsible for grouping/summing items for presentation.
+        - Recommended UI grouping key: (`name`, `unit`, `is_owned`). If `is_owned` differs, items MUST NOT be grouped together (prevents "partially owned" scenarios).
     - The API MAY return items already sorted for UI convenience:
         - `is_owned = false` first,
         - then `is_owned = true`,
@@ -1397,6 +1401,8 @@ Public endpoints are available without authentication:
             {
               "id": 1001,
               "kind": "RECIPE",
+              "recipe_id": 123,
+              "recipe_name": "Sernik klasyczny",
               "name": "cukier",
               "amount": 250,
               "unit": "g",
@@ -1405,6 +1411,8 @@ Public endpoints are available without authentication:
             {
               "id": 1002,
               "kind": "RECIPE",
+              "recipe_id": 456,
+              "recipe_name": "Szarlotka",
               "name": "cukier",
               "amount": 1,
               "unit": "łyżeczka",
@@ -1413,6 +1421,8 @@ Public endpoints are available without authentication:
             {
               "id": 1003,
               "kind": "RECIPE",
+              "recipe_id": 789,
+              "recipe_name": "Ciasto czekoladowe",
               "name": "cukier",
               "amount": null,
               "unit": null,

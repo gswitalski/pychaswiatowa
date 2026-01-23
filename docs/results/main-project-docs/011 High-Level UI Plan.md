@@ -308,7 +308,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 **16. Zakupy (lista zakupów)**
 - **Ścieżka:** `/shopping`
 - **Główny cel:** Umożliwić użytkownikowi przeglądanie i zarządzanie listą zakupów, która składa się z:
-    - pozycji pochodzących ze składników znormalizowanych przepisów w „Moim planie” (scalonych wg reguł),
+    - pozycji pochodzących ze składników znormalizowanych przepisów w „Moim planie” (backend zwraca surowe wiersze; **grupowanie i sumowanie wykonywane jest na frontendzie**),
     - ręcznych pozycji tekstowych dodanych przez użytkownika.
 - **Widoczność:** Widok prywatny, dostępny po zalogowaniu (App Shell z Sidebarem).
 - **Header:** Tytuł „Zakupy”. Brak „dużych” akcji globalnych w nagłówku (MVP).
@@ -320,6 +320,13 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - dla pozycji z przepisów: prezentacja jako `nazwa` + (opcjonalnie) `ilość jednostka` (np. `cukier, 250 g`; `cukier`),
     - dla pozycji ręcznych: prezentacja jako tekst użytkownika,
     - akcja usunięcia dla pozycji ręcznych (ikonka kosza) (MVP).
+- **Reguły grupowania (MVP, frontend):**
+    - widok domyślnie prezentuje pozycje **zgrupowane** (nie robimy przełącznika widoku na tym etapie),
+    - grupujemy wyłącznie pozycje „z przepisów”, które mają identyczne: (`nazwa`, `jednostka`, `is_owned`),
+    - dla pozycji zgrupowanych:
+        - jeśli `jednostka != null` i `ilosc != null`, ilości są sumowane,
+        - jeśli `jednostka = null` lub `ilosc = null`, pokazujemy „tylko nazwę” (bez sumowania ilości),
+    - jeśli identyczne składniki mają różne `is_owned` (scenariusz „częściowo odhaczone”, np. użytkownik odhaczył pozycję, a potem dodał nowy przepis z tym samym składnikiem), **nie grupujemy ich razem** – widoczne są jako osobne pozycje.
 - **Reguły sortowania (MVP):**
     - pozycje nieoznaczone jako „posiadane” są wyświetlane na górze,
     - pozycje oznaczone jako „posiadane” są przesortowane na dół i wizualnie zde-emfazyzowane (np. wyszarzone),
