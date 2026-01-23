@@ -11,17 +11,15 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-
-component
-PageHeaderComponent
-
-nie wyświtla tytułu ani podtytułu
+1. dodjaę przepis do mojeego planu
+2. wchodze na zakładkę "Zakupy"
+3. Lista zakupów jest pusta - muszę wcisnąć F5 żeby się odświeżyła
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-komponent wyswietla tytuł i podtytuł
+po przejściu na zakładkę "Zalupyt" mam aktualną liste elementów 
 
 </oczekiwane_zachowanie>
 

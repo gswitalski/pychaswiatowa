@@ -71,8 +71,15 @@ export class ShoppingPageComponent implements OnInit {
     readonly isAddingManual = this.shoppingListService.isAddingManual;
 
     ngOnInit(): void {
-        // Pobierz listę zakupów przy wejściu na widok
-        this.shoppingListService.loadShoppingList();
+        // Pobierz listę zakupów przy wejściu na widok (z uwzględnieniem zmian planu)
+        const lastPlanChange = this.myPlanService.lastChangedAt();
+        const lastShoppingLoad = this.shoppingListService.state().lastLoadedAt;
+
+        if (lastPlanChange !== null && (lastShoppingLoad === null || lastShoppingLoad < lastPlanChange)) {
+            this.shoppingListService.refreshShoppingList();
+        } else {
+            this.shoppingListService.loadShoppingList();
+        }
 
         // Odśwież listę zakupów po zmianach w "Moim planie"
         this.myPlanService.planChanges

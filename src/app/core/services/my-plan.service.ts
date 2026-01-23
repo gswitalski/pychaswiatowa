@@ -84,6 +84,12 @@ export class MyPlanService {
     readonly planChanges = new EventEmitter<PlanChangeEvent>();
 
     /**
+     * Znacznik czasu ostatniej zmiany planu (dodanie/usunięcie/wyczyszczenie).
+     * Używany do odświeżania widoków zależnych (np. lista zakupów).
+     */
+    readonly lastChangedAt = signal<number | null>(null);
+
+    /**
      * Stan danych planu
      */
     readonly planState = signal<MyPlanState>(INITIAL_PLAN_STATE);
@@ -302,6 +308,7 @@ export class MyPlanService {
             tap(() => {
                 // Po sukcesie odśwież plan i emituj zdarzenie
                 this.refreshPlan();
+                this.lastChangedAt.set(Date.now());
                 this.planChanges.emit({ type: 'added', recipeId: command.recipe_id });
             }),
             catchError((err) => this.handleError(err))
@@ -347,6 +354,7 @@ export class MyPlanService {
                     items: s.items.filter(item => item.recipe_id !== recipeId),
                     meta: { ...s.meta, total: Math.max(0, s.meta.total - 1) },
                 }));
+                this.lastChangedAt.set(Date.now());
                 this.planChanges.emit({ type: 'removed', recipeId });
             }),
             finalize(() => {
@@ -389,6 +397,8 @@ export class MyPlanService {
                     items: [],
                     meta: { ...s.meta, total: 0 },
                 }));
+                this.lastChangedAt.set(Date.now());
+
             }),
             finalize(() => {
                 // Zawsze resetuj isClearing
