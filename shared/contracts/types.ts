@@ -627,13 +627,17 @@ interface ShoppingListItemBase {
 
 /**
  * DTO for a shopping list item derived from recipe normalized ingredients.
- * Contains aggregated ingredient data with merge key (name, unit).
+ * Contains raw ingredient data per recipe (no aggregation).
  */
 export interface ShoppingListItemRecipeDto extends ShoppingListItemBase {
     kind: 'RECIPE';
+    /** Recipe ID that contributed this row. */
+    recipe_id: number;
+    /** Snapshot of recipe name at time of insertion. */
+    recipe_name: string;
     /** Ingredient name (normalized, singular nominative). */
     name: string;
-    /** Aggregated amount (sum of all recipe contributions), or null if unit is null. */
+    /** Raw amount from normalized ingredient, or null if unspecified. */
     amount: number | null;
     /** Ingredient unit (from normalized ingredients), or null for name-only items. */
     unit: NormalizedIngredientUnit | null;

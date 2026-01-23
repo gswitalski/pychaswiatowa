@@ -23,13 +23,15 @@ const SHOPPING_LIST_ITEM_MANUAL_SELECT = `
 /**
  * Columns to select for all shopping list items (both RECIPE and MANUAL).
  * Covers both ShoppingListItemRecipeDto and ShoppingListItemManualDto.
- * Note: RECIPE items will have name, amount, unit (text is null).
- *       MANUAL items will have text (name, amount, unit are null).
+ * Note: RECIPE items will have recipe_id/recipe_name/name/amount/unit (text is null).
+ *       MANUAL items will have text (name/amount/unit/recipe fields are null).
  */
 const SHOPPING_LIST_ITEM_ALL_SELECT = `
     id,
     user_id,
     kind,
+    recipe_id,
+    recipe_name,
     name,
     amount,
     unit,
@@ -169,6 +171,8 @@ interface ShoppingListItemRecipeDto {
     id: number;
     user_id: string;
     kind: 'RECIPE';
+    recipe_id: number;
+    recipe_name: string;
     name: string;
     amount: number | null;
     unit: string | null;

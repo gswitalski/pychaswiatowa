@@ -18,9 +18,8 @@ import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan
  * - Plan cannot exceed 50 items (enforced by DB trigger)
  * 
  * Side-effect (NEW):
- * - Updates shopping list based on normalized ingredients (if status=READY)
- * - Merges ingredients by (name, unit) key
- * - Sums amounts for items with non-null unit
+ * - Inserts raw shopping list rows based on normalized ingredients (if status=READY)
+ * - One row per normalized ingredient (no merging/aggregation)
  *
  * @param client - The authenticated Supabase client (user context)
  * @param userId - The ID of the authenticated user
@@ -58,13 +57,12 @@ export async function addRecipeToPlan(
             recipe_id: number;
             shopping_list_updated: boolean;
             items_added: number;
-            items_updated: number;
         };
 
         logger.info(
             `[addRecipeToPlan] Recipe ${recipeId} added to plan for user ${userId}. ` +
             `Shopping list updated: ${metadata.shopping_list_updated} ` +
-            `(${metadata.items_added} added, ${metadata.items_updated} updated)`
+            `(${metadata.items_added} rows added)`
         );
     } else {
         logger.info(

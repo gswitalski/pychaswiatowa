@@ -13,10 +13,8 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-### Nowe
-- **`DELETE /shopping-list/items/{id}`**
-    - Usuwa ręczną pozycję (`kind=MANUAL`); usuwanie pozycji z przepisów jest zabronione (403).
-
+- **`POST /plan/recipes`**
+    - **Co się zmieniło:** side-effect tworzy surowe wiersze listy zakupów (bez merge/sumowania po stronie backendu) oraz ustawia `recipe_name` jako snapshot.
 
 </api_changes_description>
 
