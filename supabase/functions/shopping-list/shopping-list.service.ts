@@ -5,6 +5,7 @@
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
+import { NormalizedIngredientUnit } from '../_shared/normalized-ingredients.ts';
 
 /**
  * Columns to select for manual shopping list items.
@@ -499,4 +500,80 @@ export async function clearShoppingList(
     logger.info('[clearShoppingList] Shopping list cleared successfully', {
         userId,
     });
+}
+
+/**
+ * Response type for deleting recipe-derived items group.
+ */
+export interface DeleteRecipeItemsGroupResponse {
+    deleted: number;
+}
+
+/**
+ * Deletes all recipe-derived shopping list items matching (name, unit, is_owned).
+ *
+ * Business rules:
+ * - Only RECIPE items are affected (kind enforced in service)
+ * - RLS ensures user can only delete their own items
+ * - Operation is idempotent (deleted count may be 0)
+ *
+ * @param client - The authenticated Supabase client (user context)
+ * @param userId - The ID of the authenticated user (for logging)
+ * @param params - Matching key for grouped items
+ * @returns Deleted count
+ * @throws ApplicationError
+ * - INTERNAL_ERROR: Database operation failed
+ */
+export async function deleteShoppingListRecipeItemsGroup(
+    client: TypedSupabaseClient,
+    userId: string,
+    params: {
+        name: string;
+        unit: NormalizedIngredientUnit | null;
+        isOwned: boolean;
+    }
+): Promise<DeleteRecipeItemsGroupResponse> {
+    const { name, unit, isOwned } = params;
+
+    logger.info('[deleteShoppingListRecipeItemsGroup] Deleting recipe items group', {
+        userId,
+        name,
+        unit,
+        isOwned,
+    });
+
+    let deleteQuery = client
+        .from('shopping_list_items')
+        .delete({ count: 'exact' })
+        .eq('user_id', userId)
+        .eq('kind', 'RECIPE')
+        .eq('name', name)
+        .eq('is_owned', isOwned);
+
+    deleteQuery = unit === null
+        ? deleteQuery.is('unit', null)
+        : deleteQuery.eq('unit', unit);
+
+    const { count, error } = await deleteQuery;
+
+    if (error) {
+        logger.error('[deleteShoppingListRecipeItemsGroup] Database error', {
+            userId,
+            error: error.message,
+            code: error.code,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to delete shopping list recipe items group'
+        );
+    }
+
+    const deleted = count ?? 0;
+
+    logger.info('[deleteShoppingListRecipeItemsGroup] Group deleted successfully', {
+        userId,
+        deleted,
+    });
+
+    return { deleted };
 }

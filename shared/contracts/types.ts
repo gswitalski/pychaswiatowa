@@ -684,6 +684,23 @@ export interface UpdateShoppingListItemCommand {
     is_owned: boolean;
 }
 
+/**
+ * Command model for deleting a group of recipe-derived shopping list items.
+ * Deletes all RECIPE items matching (name, unit, is_owned).
+ */
+export interface DeleteRecipeItemsGroupCommand {
+    name: string;
+    unit: NormalizedIngredientUnit | null;
+    is_owned: boolean;
+}
+
+/**
+ * Response DTO for DELETE /shopping-list/recipe-items/group endpoint.
+ */
+export interface DeleteRecipeItemsGroupResponseDto {
+    deleted: number;
+}
+
 // #endregion
 
 // #region --- AI Recipe Draft ---

@@ -6,12 +6,14 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
+import { NORMALIZED_INGREDIENT_UNITS } from '../_shared/normalized-ingredients.ts';
 import {
     createManualShoppingListItem,
     deleteManualShoppingListItem,
     clearShoppingList,
     getShoppingList,
     updateShoppingListItemIsOwned,
+    deleteShoppingListRecipeItemsGroup,
 } from './shopping-list.service.ts';
 
 /**
@@ -38,6 +40,20 @@ const PatchShoppingListItemSchema = z.object({
 });
 
 /**
+ * Zod schema for deleting a group of recipe-derived items.
+ * Matches DeleteRecipeItemsGroupCommand from shared/contracts/types.ts
+ */
+const DeleteRecipeItemsGroupSchema = z.object({
+    name: z
+        .string()
+        .min(1, 'Name cannot be empty')
+        .max(150, 'Name cannot exceed 150 characters')
+        .transform((value) => value.trim()),
+    unit: z.enum(NORMALIZED_INGREDIENT_UNITS).nullable(),
+    is_owned: z.boolean(),
+});
+
+/**
  * Main router for /shopping-list endpoints
  */
 export async function shoppingListRouter(req: Request): Promise<Response> {
@@ -56,6 +72,11 @@ export async function shoppingListRouter(req: Request): Promise<Response> {
     // Route: DELETE /shopping-list (root endpoint)
     if ((path === '' || path === '/') && method === 'DELETE') {
         return await handleDeleteShoppingList(req);
+    }
+
+    // Route: DELETE /recipe-items/group
+    if (path === '/recipe-items/group' && method === 'DELETE') {
+        return await handleDeleteShoppingListRecipeItemsGroup(req);
     }
 
     // Route: POST /items
@@ -391,4 +412,90 @@ export async function handleDeleteShoppingList(req: Request): Promise<Response> 
 
     // 3. Return 204 No Content
     return new Response(null, { status: 204 });
+}
+
+/**
+ * Handler for DELETE /shopping-list/recipe-items/group
+ * Deletes all RECIPE items matching (name, unit, is_owned).
+ *
+ * Request:
+ * - Body: { name: string, unit: NormalizedIngredientUnit | null, is_owned: boolean }
+ * - Headers: Authorization: Bearer <JWT>
+ *
+ * Response:
+ * - 200 OK with { deleted: number }
+ *
+ * Errors:
+ * - 400 Bad Request: Invalid JSON or validation error
+ * - 401 Unauthorized: Missing or invalid JWT
+ * - 500 Internal Server Error: Database error
+ */
+export async function handleDeleteShoppingListRecipeItemsGroup(
+    req: Request,
+): Promise<Response> {
+    // 1. Authenticate user
+    const { client, user } = await getAuthenticatedContext(req);
+
+    logger.info('[handleDeleteShoppingListRecipeItemsGroup] Deleting recipe item group', {
+        userId: user.id,
+    });
+
+    // 2. Parse and validate request body
+    let body: unknown;
+    try {
+        body = await req.json();
+    } catch (_error) {
+        logger.warn('[handleDeleteShoppingListRecipeItemsGroup] Invalid JSON', {
+            userId: user.id,
+        });
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'Invalid JSON in request body'
+        );
+    }
+
+    const validationResult = DeleteRecipeItemsGroupSchema.safeParse(body);
+    if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        logger.warn('[handleDeleteShoppingListRecipeItemsGroup] Validation error', {
+            userId: user.id,
+            field: firstError.path.join('.'),
+            message: firstError.message,
+        });
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            `${firstError.path.join('.')}: ${firstError.message}`
+        );
+    }
+
+    const { name, unit, is_owned: isOwned } = validationResult.data;
+
+    // 3. Additional validation: ensure name is not empty after trim
+    if (name.length === 0) {
+        logger.warn('[handleDeleteShoppingListRecipeItemsGroup] Empty name after trim', {
+            userId: user.id,
+        });
+        throw new ApplicationError(
+            'VALIDATION_ERROR',
+            'name: Name cannot be empty or contain only whitespace'
+        );
+    }
+
+    // 4. Call service to delete items
+    const result = await deleteShoppingListRecipeItemsGroup(client, user.id, {
+        name,
+        unit,
+        isOwned,
+    });
+
+    logger.info('[handleDeleteShoppingListRecipeItemsGroup] Items deleted successfully', {
+        userId: user.id,
+        deleted: result.deleted,
+    });
+
+    // 5. Return 200 OK with deleted count
+    return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+    });
 }
