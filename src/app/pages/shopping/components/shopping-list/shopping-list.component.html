@@ -1,9 +1,9 @@
 <mat-list class="shopping-list">
-    @for (item of items(); track item.id) {
+    @for (item of items(); track item.groupKey) {
         <pych-shopping-list-item
             [item]="item"
-            [isToggling]="isToggling(item.id)"
-            [isDeleting]="isDeleting(item.id)"
+            [isToggling]="isToggling(item)"
+            [isDeleting]="isDeleting(item)"
             (toggleOwned)="onToggleOwned($event)"
             (deleteManual)="onDeleteManual($event)"
         />

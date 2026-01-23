@@ -9,7 +9,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ShoppingListItemVm } from '../../../../core/services/shopping-list.service';
+import { ShoppingListGroupedItemVm } from '../../../../core/services/shopping-list.service';
 
 /**
  * Pojedynczy wiersz listy zakupów.
@@ -34,7 +34,7 @@ import { ShoppingListItemVm } from '../../../../core/services/shopping-list.serv
 })
 export class ShoppingListItemComponent {
     /** Pozycja listy */
-    item = input.required<ShoppingListItemVm>();
+    item = input.required<ShoppingListGroupedItemVm>();
 
     /** Czy trwa toggle */
     isToggling = input<boolean>(false);
@@ -43,7 +43,7 @@ export class ShoppingListItemComponent {
     isDeleting = input<boolean>(false);
 
     /** Event emitowany przy zmianie checkboxa */
-    toggleOwned = output<{ id: number; next: boolean }>();
+    toggleOwned = output<{ groupKey: string; next: boolean }>();
 
     /** Event emitowany przy usunięciu */
     deleteManual = output<number>();
@@ -53,7 +53,7 @@ export class ShoppingListItemComponent {
      */
     onCheckboxChange(checked: boolean): void {
         this.toggleOwned.emit({
-            id: this.item().id,
+            groupKey: this.item().groupKey,
             next: checked,
         });
     }
@@ -62,6 +62,12 @@ export class ShoppingListItemComponent {
      * Obsługuje kliknięcie przycisku usuwania
      */
     onDeleteClick(): void {
-        this.deleteManual.emit(this.item().id);
+        const item = this.item();
+
+        if (item.kind !== 'MANUAL') {
+            return;
+        }
+
+        this.deleteManual.emit(item.id);
     }
 }

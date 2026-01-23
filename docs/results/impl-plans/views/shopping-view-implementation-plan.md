@@ -1,60 +1,57 @@
-# Plan implementacji widoku Zakupy (lista zakupów)
+# Plan implementacji widoku Zakupy (lista zakupów) — **grupowanie po surowych wierszach**
 
 ## 1. Przegląd
 Widok **Zakupy** pod ścieżką **`/shopping`** pozwala zalogowanemu użytkownikowi:
-- przeglądać listę zakupów (pozycje z przepisów + pozycje ręczne),
+- przeglądać listę zakupów składającą się z:
+    - pozycji „z przepisów” (backend zwraca **surowe wiersze**, jeden wiersz = jeden składnik jednego przepisu),
+    - pozycji ręcznych (tekst użytkownika),
 - dodawać ręczne pozycje tekstowe,
 - oznaczać pozycje jako „posiadane” (toggling `is_owned`),
 - usuwać wyłącznie pozycje ręczne (`kind = 'MANUAL'`),
-- widzieć pozycje „posiadane” na dole listy (sortowanie).
+- widzieć pozycje „posiadane” na dole listy (sortowanie),
+- **widzieć pozycje z przepisów w widoku zgrupowanym**:
+    - grupujemy **wyłącznie** `kind='RECIPE'` po (`name`, `unit`, `is_owned`),
+    - w grupie **sumujemy ilości tylko wtedy**, gdy **dla wszystkich wierszy w grupie** `amount != null` i `unit != null`,
+    - gdy `unit = null` **lub** w grupie występuje choć jeden wiersz z `amount = null` → prezentujemy pozycję jako „tylko nazwa” (bez sumowania).
 
 Źródłem danych jest API (Supabase Edge Functions) zgodne z kontraktami z `shared/contracts/types.ts`. Frontend **nie wykonuje** bezpośrednich zapytań do tabel Supabase (`supabase.from(...)`) — używa wyłącznie `supabase.functions.invoke(...)`.
 
 ## 2. Routing widoku
-- **Nowa ścieżka**: `GET /shopping` (frontend route)
-- **Dostęp**: prywatny (zalogowany użytkownik).
+- **Ścieżka**: `/shopping`
+- **Dostęp**: prywatny (zalogowany użytkownik), w ramach App Shell.
 
-Zmiany w `src/app/app.routes.ts`:
-- dodać trasę w grupie `MainLayoutComponent` (z `authenticatedMatchGuard`):
-    - `path: 'shopping'`
-    - `loadComponent: () => import('./pages/shopping/shopping-page.component').then(m => m.ShoppingPageComponent)`
-    - `data: { breadcrumb: 'Zakupy' }`
-- (rekomendowane UX) dodać w grupie `PublicLayoutComponent` redirect dla gościa:
-    - `path: 'shopping'`
-    - `redirectTo: () => '/login?redirectTo=%2Fshopping'`
-    - `pathMatch: 'full'`
+W `src/app/app.routes.ts` (jeśli nie istnieje) dodaj trasę w grupie `MainLayoutComponent` (z guardem sesji):
+- `path: 'shopping'`
+- `loadComponent: () => import('./pages/shopping/shopping-page.component').then(m => m.ShoppingPageComponent)`
+- `data: { breadcrumb: 'Zakupy' }`
+
+(Opcjonalnie UX) dla gościa: redirect do logowania z `redirectTo=%2Fshopping`.
 
 ## 3. Struktura komponentów
-Rekomendowana struktura katalogów (zgodna z istniejącym układem `src/app/pages/*`):
+Utrzymujemy istniejącą strukturę katalogów (już jest w repo):
 
 ```
 src/app/pages/shopping/
-  shopping-page.component.ts
-  shopping-page.component.html
-  shopping-page.component.scss
-  components/
-    shopping-add-item-form/
-      shopping-add-item-form.component.ts|html|scss
-    shopping-list/
-      shopping-list.component.ts|html|scss
-    shopping-list-item/
-      shopping-list-item.component.ts|html|scss
+    shopping-page.component.ts|html|scss
+    components/
+        shopping-add-item-form/
+        shopping-list/
+        shopping-list-item/
 ```
 
 Wysokopoziomowy diagram drzewa komponentów:
 
 ```
 ShoppingPageComponent (pych-shopping-page)
-└─ PageHeaderComponent (pych-page-header)
-└─ ShoppingAddItemFormComponent (pych-shopping-add-item-form)
-└─ @if (loading/error/empty)
-   ├─ (loading) MatSpinner / custom loader
-   ├─ (error) ErrorState (inline) + przycisk "Spróbuj ponownie"
-   └─ (empty) EmptyStateComponent (pych-empty-state)
-└─ @else
-   └─ ShoppingListComponent (pych-shopping-list)
-      └─ @for item of itemsSorted
-         └─ ShoppingListItemComponent (pych-shopping-list-item)
+├─ PageHeaderComponent (pych-page-header)
+├─ ShoppingAddItemFormComponent (pych-shopping-add-item-form)
+└─ @if (loading/error/empty/content)
+   ├─ (loading) MatProgressSpinner
+   ├─ (error) inline error + "Spróbuj ponownie"
+   ├─ (empty) EmptyStateComponent (pych-empty-state)
+   └─ (content) ShoppingListComponent (pych-shopping-list)
+      └─ @for groupItem of groupedItemsSorted
+         └─ ShoppingListItemComponent (pych-shopping-list-item) // renderuje **pozycję zgrupowaną**
 ```
 
 ## 4. Szczegóły komponentów
@@ -64,87 +61,87 @@ ShoppingPageComponent (pych-shopping-page)
     - inicjalne pobranie listy zakupów,
     - renderowanie stanów: loading / error / empty / content,
     - przekazywanie danych i handlerów do komponentów dzieci,
-    - komunikaty użytkownika (Snackbar) dla sukcesów/błędów.
+    - komunikaty użytkownika (Snackbar) dla sukcesów/błędów mutacji.
 - **Główne elementy**:
     - `pych-page-header` z tytułem „Zakupy”
-    - sekcja „Dodaj pozycję” (`pych-shopping-add-item-form`)
-    - lista (`pych-shopping-list`) lub `pych-empty-state`
+    - `pych-shopping-add-item-form`
+    - `pych-shopping-list` (lista zgrupowana) lub `pych-empty-state`
 - **Obsługiwane interakcje**:
     - wejście na widok → `loadShoppingList()`
-    - klik „Spróbuj ponownie” → ponowny `loadShoppingList()`
-    - submit dodania pozycji → delegacja do serwisu + odświeżenie listy lokalnie
-    - toggle `is_owned` → delegacja do serwisu (optymistycznie)
-    - delete manual item → delegacja do serwisu (z opcjonalnym potwierdzeniem)
+    - retry po błędzie → `refreshShoppingList()`
+    - submit dodania pozycji → `addManualItem()`
+    - toggle `is_owned` na pozycji zgrupowanej:
+        - `MANUAL`: patch pojedynczego `id`
+        - `RECIPE`: patch **wszystkich wierszy w grupie** (`rowIds[]`)
+    - delete manual item → `deleteManualItem(id)`
 - **Obsługiwana walidacja**:
-    - brak walidacji routingu (poza wymaganiem sesji),
-    - UI nie wysyła żądań dla pustego tekstu (trim),
-    - UI blokuje wielokrotne wysyłanie podczas trwających operacji.
+    - input manual: `trim().length > 0`
+    - blokada wielokrotnego wysyłania w trakcie mutacji
 - **Typy (DTO i ViewModel)**:
-    - DTO: `GetShoppingListResponseDto`, `ShoppingListItemDto`, `AddManualShoppingListItemCommand`, `UpdateShoppingListItemCommand`, `ApiError`
-    - VM: `ShoppingPageVm` (opis w sekcji „Typy”)
+    - DTO: `GetShoppingListResponseDto`, `ShoppingListItemDto`, `ShoppingListItemRecipeDto`, `ShoppingListItemManualDto`, `AddManualShoppingListItemCommand`, `UpdateShoppingListItemCommand`, `ApiError`
+    - VM: `ShoppingListGroupedItemVm` (sekcja „Typy”)
 - **Propsy**: brak (komponent routowany).
 
 ### ShoppingAddItemFormComponent (`pych-shopping-add-item-form`)
-- **Opis komponentu**: Sekcja dodawania ręcznej pozycji. Implementacja jako Reactive Forms (spójnie z resztą aplikacji).
+- **Opis komponentu**: Sekcja dodawania ręcznej pozycji (Reactive Forms).
 - **Główne elementy**:
     - `mat-form-field` + `matInput` (placeholder np. „Dodaj coś…”, np. „papier toaletowy”)
-    - `mat-flat-button` „Dodaj” (disabled w zależności od walidacji i `isSubmitting`)
+    - `mat-flat-button` „Dodaj” (disabled zależnie od walidacji i `isSubmitting`)
 - **Obsługiwane interakcje**:
-    - Enter w polu (submit formularza)
+    - Enter (submit)
     - klik „Dodaj”
-- **Obsługiwana walidacja** (zgodnie z API `POST /shopping-list/items`):
+- **Obsługiwana walidacja** (kontrakt `POST /shopping-list/items`):
     - `text` wymagane i po `trim()` nie może być puste
-    - (opcjonalnie, jeśli backend wprowadzi limit) maksymalna długość — rekomendacja 200 znaków; w UI pokazujemy błąd walidacji zanim wyślemy request
+    - (opcjonalnie) limit długości — jeśli backend go wprowadzi, UI waliduje przed requestem
 - **Typy (DTO i ViewModel)**:
-    - VM: `ShoppingAddItemFormVm`:
-        - `text: FormControl<string>`
-        - `isSubmitting: boolean` (lub signal)
+    - `ShoppingAddItemFormVm` (Reactive Form)
 - **Propsy**:
     - `isSubmitting: boolean`
-    - `onAdd: (text: string) => void` (output event, np. `add = output<string>()`)
+    - output `add: string`
 
 ### ShoppingListComponent (`pych-shopping-list`)
-- **Opis komponentu**: Renderuje listę pozycji zakupów, już posortowaną wg reguł MVP:
-    - `is_owned = false` na górze,
-    - `is_owned = true` na dole + zde-emfazyzowanie wizualne.
+- **Opis komponentu**: Renderuje listę **zgrupowanych** pozycji zakupów:
+    - reguły sortowania:
+        - `isOwned=false` na górze,
+        - `isOwned=true` na dole,
+        - stabilnie wewnątrz grup po `primaryText` (`localeCompare('pl')`).
 - **Główne elementy**:
-    - `mat-list` / `mat-divider` (opcjonalnie) do separacji sekcji
-    - `@for` po elementach `itemsSorted`
+    - `mat-list`
+    - `@for` po `groupedItemsSorted`
 - **Obsługiwane interakcje**:
-    - delegacja do `ShoppingListItemComponent`
-- **Obsługiwana walidacja**:
-    - brak; komponent przyjmuje przygotowane dane i flagi loading/mutation per item.
+    - deleguje do `ShoppingListItemComponent`
+- **Obsługiwana walidacja**: brak (dostaje przygotowany VM).
 - **Typy (DTO i ViewModel)**:
-    - input: `ShoppingListItemVm[]`
+    - input: `ShoppingListGroupedItemVm[]`
 - **Propsy**:
-    - `items: ShoppingListItemVm[]`
-    - `toggleInProgressIds: Set<number>` (lub map `{[id]: boolean}`)
-    - `deleteInProgressIds: Set<number>`
+    - `items: ShoppingListGroupedItemVm[]`
+    - `toggleInProgressKeys: Set<string>` (klucze grup) **lub** `toggleInProgressRowIds: Set<number>` (jeśli blokujemy per-wiersz)
+    - `deleteInProgressIds: Set<number>` (manual per id)
     - outputy:
-        - `toggleOwned: (event: { id: number; next: boolean })`
-        - `deleteManual: (id: number)`
+        - `toggleOwned: { groupKey: string; next: boolean }`
+        - `deleteManual: number`
 
 ### ShoppingListItemComponent (`pych-shopping-list-item`)
-- **Opis komponentu**: Pojedynczy wiersz listy zakupów (pozycja z przepisu lub ręczna). Zapewnia:
-    - checkbox „posiadane” (`is_owned`),
-    - prezentację treści (dla `RECIPE`: `name + amount/unit`, dla `MANUAL`: `text`),
-    - akcję usunięcia wyłącznie dla `MANUAL`.
+- **Opis komponentu**: Pojedynczy wiersz listy w widoku **zgrupowanym**.
+    - `RECIPE`: prezentuje `name` oraz (opcjonalnie) zagregowane `amount unit` (tylko gdy sumowanie jest możliwe),
+    - `MANUAL`: prezentuje `text` i umożliwia usunięcie.
 - **Główne elementy**:
-    - `mat-checkbox` (leading)
-    - tekst/układ:
-        - `RECIPE`: `name` + (opcjonalnie) `amount unit`
-        - `MANUAL`: `text`
-    - `mat-icon-button` z `delete` (tylko `MANUAL`)
+    - `mat-checkbox` (leading) → steruje `isOwned`
+    - tekst:
+        - `primaryText` (np. `cukier`, `papier toaletowy`)
+        - `secondaryText` (np. `250 g` lub `null`)
+    - `mat-icon-button delete` (tylko `MANUAL`)
+    - (opcjonalnie UX) mała etykieta „×N” dla grupy `RECIPE`, aby pokazać że to suma z wielu wierszy
 - **Obsługiwane interakcje**:
-    - zmiana checkboxa → emit `toggleOwned`
-    - klik kosza → emit `deleteManual` (tylko `MANUAL`)
+    - zmiana checkboxa → emit `toggleOwned({ groupKey, next })`
+    - klik kosza → emit `deleteManual(id)` (tylko `MANUAL`)
 - **Obsługiwana walidacja**:
-    - nie pokazujemy przycisku usuwania dla `kind='RECIPE'` (zgodnie z `DELETE` → 403 dla RECIPE),
-    - blokujemy checkbox i przyciski podczas mutacji elementu (zapobiega multi-click).
+    - przycisk usuwania ukryty dla `RECIPE` (backend odrzuca DELETE dla `RECIPE`),
+    - blokada checkboxa w trakcie mutacji (dla całej grupy).
 - **Typy (DTO i ViewModel)**:
-    - `ShoppingListItemVm` (zawiera m.in. `id`, `kind`, `displayText`, `secondaryText`, `isOwned`)
+    - `ShoppingListGroupedItemVm`
 - **Propsy**:
-    - `item: ShoppingListItemVm`
+    - `item: ShoppingListGroupedItemVm`
     - `isToggling: boolean`
     - `isDeleting: boolean`
     - outputy:
@@ -152,158 +149,150 @@ ShoppingPageComponent (pych-shopping-page)
         - `deleteManual`
 
 ## 5. Typy
-Większość typów jest już dostępna w `shared/contracts/types.ts` i powinna być używana jako źródło prawdy dla integracji z API:
+Źródłem prawdy są istniejące typy w `shared/contracts/types.ts`:
 - **Response**: `GetShoppingListResponseDto` (`{ data, meta }`)
-- **Item**: `ShoppingListItemDto` (union: `ShoppingListItemRecipeDto | ShoppingListItemManualDto`)
+- **Item**: `ShoppingListItemDto` (`ShoppingListItemRecipeDto | ShoppingListItemManualDto`)
 - **Commands**:
     - `AddManualShoppingListItemCommand` (`{ text: string }`)
     - `UpdateShoppingListItemCommand` (`{ is_owned: boolean }`)
-- **Errors**: `ApiError` (frontendowy model błędu: `{ message: string; status: number }`)
+- **Errors**: `ApiError` (`{ message: string; status: number }`)
 
-Nowe typy ViewModel (rekomendowane, lokalne dla widoku, np. w `src/app/pages/shopping/models/shopping.models.ts`):
+Nowe/rekomendowane ViewModele dla widoku zgrupowanego (trzymane np. w `src/app/pages/shopping/models/shopping.models.ts` albo w serwisie, jeśli repo preferuje typy przy serwisach):
 
-- **`ShoppingListItemVm`**:
-    - `id: number`
+### `ShoppingListGroupedItemKey`
+- **Opis**: deterministyczny klucz grupowania dla `RECIPE`.
+- **Pola**:
+    - `name: string`
+    - `unit: NormalizedIngredientUnit | null`
+    - `is_owned: boolean`
+- **Serializacja**: `groupKey = \`${name}||${unit ?? 'null'}||${is_owned ? '1' : '0'}\`` (lub bezpieczniej JSON + base64); klucz musi być stabilny.
+
+### `ShoppingListGroupedItemVm`
+- **Pola wspólne**:
+    - `groupKey: string`
     - `kind: 'RECIPE' | 'MANUAL'`
-    - `isOwned: boolean` (mapowane z `is_owned`)
-    - `primaryText: string` (np. `cukier` lub `papier toaletowy`)
-    - `secondaryText: string | null` (np. `250 g`, `1 łyżeczka`, albo `null`)
-    - `canDelete: boolean` (tylko `kind='MANUAL'`)
-    - `raw: ShoppingListItemDto` (opcjonalnie — do debug/operacji)
+    - `isOwned: boolean`
+    - `primaryText: string`
+    - `secondaryText: string | null`
+    - `canDelete: boolean`
+- **Dla `RECIPE`**:
+    - `rowIds: number[]` (wszystkie surowe wiersze w grupie; potrzebne do grupowego toggle)
+    - `rowCount: number`
+    - `sumAmount: number | null` (tylko jeśli możliwe sumowanie)
+    - `unit: NormalizedIngredientUnit | null`
+    - (opcjonalnie) `recipeIds: number[]` / `recipeNames: string[]` — tylko do przyszłego drill-down, nie wymagane w MVP
+- **Dla `MANUAL`**:
+    - `id: number` (pojedynczy item)
+    - `rowIds: [id]` (dla ujednolicenia logiki blokad)
 
-- **`ShoppingListState`** (w serwisie, sygnały):
-    - `data: ShoppingListItemDto[]`
-    - `meta: GetShoppingListResponseDto['meta']`
-    - `isLoading: boolean`
-    - `isRefreshing: boolean` (jeśli wprowadzimy „odśwież” bez znikania danych)
-    - `error: ApiError | null`
-    - `lastLoadedAt: number | null` (opcjonalnie TTL jak w `MyPlanService`)
-
-- **`ShoppingListMutationState`**:
-    - `isAddingManual: boolean`
-    - `togglingItemIds: Set<number>`
-    - `deletingItemIds: Set<number>`
+### `ShoppingListMutationState` (rozszerzenie)
+- `isAddingManual: boolean`
+- `togglingGroupKeys: Set<string>` **lub** `togglingRowIds: Set<number>`
+- `deletingItemIds: Set<number>`
 
 ## 6. Zarządzanie stanem
-Rekomendacja: dodać `ShoppingListService` jako **singleton** w `src/app/core/services/` (analogicznie do `MyPlanService`).
+Rekomendacja (zgodna z regułami projektu): **signals + computed**, OnPush, bez „white flash” podczas odświeżania.
 
-Wzorzec:
-- Angular **signals** jako źródło prawdy (`signal`, `computed`),
-- minimalny RxJS: `from(...).pipe(map/catchError/finalize)` wokół `supabase.functions.invoke()`,
-- aktualizacje poprzez `state.update(...)` tam, gdzie zmieniamy fragment danych (żeby nie powodować „white flash” i utrzymać poprzednie dane widoczne podczas odświeżania).
+W `ShoppingListService` (singleton w `src/app/core/services/`):
+- `state: signal<ShoppingListState>` przechowuje **surowe** `ShoppingListItemDto[]` z API.
+- `groupedItems: computed<ShoppingListGroupedItemVm[]>`:
+    - rozdziela `MANUAL` (bez grupowania) i `RECIPE` (grupuje po `name/unit/is_owned`),
+    - wylicza `secondaryText`:
+        - jeśli **wszystkie** elementy grupy mają `amount != null` i `unit != null` → `sum = Σamount`, `secondaryText = \`${sum} ${unit}\``
+        - w przeciwnym razie `secondaryText = null`
+- `groupedItemsSorted: computed<ShoppingListGroupedItemVm[]>` sortuje wg reguł (isOwned → primaryText).
 
-Sugerowane computed:
-- `itemsVm`: mapowanie `ShoppingListItemDto[]` → `ShoppingListItemVm[]`
-- `itemsSorted`: sortowanie wg reguł:
-    - `is_owned=false` na górze,
-    - `is_owned=true` na dole,
-    - stabilnie wewnątrz grup po `primaryText` (localeCompare, `pl`).
-- `isEmpty`: `itemsSorted.length === 0 && !isLoading`
-
-Obsługa loadingów:
-- `isLoading` tylko przy pierwszym ładowaniu (gdy brak danych),
-- `isRefreshing` przy reloadzie, bez czyszczenia listy (zachować poprzednie dane z `opacity: 0.5` na kontenerze listy zgodnie z zasadami projektu).
+Mutacje:
+- `addManualItem(command)`:
+    - po sukcesie dopina nowy `MANUAL` do `state.data`
+- `toggleOwned(groupKey, next)`:
+    - `MANUAL`: patch jednego `id`
+    - `RECIPE`: patch **wszystkich** `rowIds[]` z grupy
+    - optymistycznie zmienia `is_owned` dla wszystkich dotkniętych surowych wierszy
+    - rollback całej grupy w przypadku błędu
+    - UI blokuje checkbox dla całej grupy w trakcie mutacji
+- `deleteManualItem(id)` bez zmian (tylko `MANUAL`)
 
 ## 7. Integracja API
-Wszystkie wywołania przez `SupabaseService.functions.invoke()`:
+Wszystkie wywołania przez `SupabaseService.functions.invoke()` (zgodnie z zasadą: frontend nie dotyka tabel Supabase):
 
 ### `GET /shopping-list`
-- **Wywołanie**: `invoke<GetShoppingListResponseDto>('shopping-list', { method: 'GET' })`
-- **Zastosowanie w UI**:
-    - na wejściu do widoku (`ngOnInit`)
-    - po udanych mutacjach opcjonalnie (preferowane: aktualizacja lokalna dla szybkości).
+- `invoke<GetShoppingListResponseDto>('shopping-list', { method: 'GET' })`
+- backend zwraca surowe wiersze `RECIPE` z polami m.in. `recipe_id`, `recipe_name`, `name`, `amount`, `unit`, `is_owned`.
+- frontend **ignoruje** `recipe_id/recipe_name` przy kluczu grupowania (zgodnie z wymaganiem grupowania po `name/unit/is_owned`).
 
 ### `POST /shopping-list/items`
-- **Wywołanie**: `invoke<ShoppingListItemManualDto>('shopping-list/items', { method: 'POST', body: { text } satisfies AddManualShoppingListItemCommand })`
-- **Zastosowanie w UI**:
-    - po sukcesie: dodać element do `state.data` (lokalnie) + zaktualizować `meta.manual_items` i `meta.total`
-    - wyczyścić input i pokazać Snackbar „Dodano”.
+- `invoke<ShoppingListItemManualDto>('shopping-list/items', { method: 'POST', body: AddManualShoppingListItemCommand })`
+- po sukcesie: dopiąć element lokalnie + zaktualizować `meta.manual_items` i `meta.total`.
 
 ### `PATCH /shopping-list/items/{id}`
-- **Wywołanie**: `invoke<ShoppingListItemDto>(\`shopping-list/items/${id}\`, { method: 'PATCH', body: { is_owned } satisfies UpdateShoppingListItemCommand })`
-- **Zastosowanie w UI**:
-    - optymistycznie ustawić `is_owned` lokalnie dla itemu,
-    - w razie błędu: cofnąć zmianę i pokazać komunikat.
+- `invoke<ShoppingListItemDto>(\`shopping-list/items/${id}\`, { method: 'PATCH', body: UpdateShoppingListItemCommand })`
+- w widoku zgrupowanym, dla `RECIPE` wykonujemy **wiele PATCH** (po jednym na `id`) aby utrwalić stan dla wszystkich surowych wierszy.
+    - rekomendacja techniczna: `from(rowIds).pipe(concatMap(id => patch...), toArray())` aby ograniczyć równoległość (bezpieczniej niż pełny `forkJoin` przy dużych grupach).
+    - błąd któregokolwiek requestu powoduje rollback całej grupy w UI.
 
 ### `DELETE /shopping-list/items/{id}`
-- **Wywołanie**: `invoke<void>(\`shopping-list/items/${id}\`, { method: 'DELETE' })`
-- **Zastosowanie w UI**:
-    - tylko dla `kind='MANUAL'`,
-    - po sukcesie: usunąć element lokalnie + zaktualizować `meta.manual_items` i `meta.total`.
+- `invoke<void>(\`shopping-list/items/${id}\`, { method: 'DELETE' })`
+- dozwolone tylko dla `MANUAL` (UI ukrywa akcję dla `RECIPE`).
 
 ## 8. Interakcje użytkownika
 - **Wejście na `/shopping`**:
-    - UI pokazuje loader (jeśli brak danych),
-    - pobiera listę zakupów,
-    - po sukcesie renderuje listę lub stan pusty.
+    - loader (gdy brak danych) / odświeżanie bez czyszczenia listy,
+    - po sukcesie: stan pusty lub lista zgrupowana.
 - **Dodanie ręcznej pozycji**:
-    - użytkownik wpisuje tekst i klika „Dodaj” / Enter,
-    - UI waliduje `trim().length > 0`,
-    - podczas requestu: blokuje input + przycisk,
-    - po sukcesie: element pojawia się na liście jako `MANUAL`, `is_owned=false`, Snackbar „Dodano”.
-- **Odhaczanie „posiadane”**:
-    - klik checkboxa na elemencie,
-    - UI blokuje checkbox tylko dla tego elementu do czasu odpowiedzi,
-    - po sukcesie: element trafia do odpowiedniej sekcji sortowania (na dół jeśli `is_owned=true`), jest wyszarzony (`opacity`).
+    - walidacja `trim()`,
+    - disable input/przycisk podczas requestu,
+    - po sukcesie: nowa pozycja widoczna, Snackbar „Dodano”.
+- **Odhaczanie „posiadane” (zgrupowane)**:
+    - `MANUAL`: standardowy toggle,
+    - `RECIPE`: toggle aktualizuje wszystkie wiersze w grupie (spójny stan `is_owned` w obrębie grupy),
+    - po sukcesie: pozycja przeskakuje (sortowanie) i jest zde-emfazyzowana,
+    - w trakcie: blokada checkboxa dla grupy.
 - **Usuwanie ręcznej pozycji**:
-    - widoczny tylko kosz przy `MANUAL`,
-    - po kliknięciu: (opcjonalnie) potwierdzenie w dialogu, albo natychmiastowe usunięcie,
-    - w trakcie requestu: blokada przycisku,
-    - po sukcesie: element znika, Snackbar „Usunięto”.
+    - tylko `MANUAL`,
+    - po sukcesie: znika + Snackbar „Usunięto”.
 
 ## 9. Warunki i walidacja
-- **Walidacja UI przed requestami**:
-    - `POST /shopping-list/items`: `text` po trim niepusty (oraz opcjonalnie limit długości, jeśli zostanie przyjęty w backendzie).
-    - `PATCH /shopping-list/items/{id}`:
-        - `id` dodatni,
-        - `is_owned` boolean (wynika z checkboxa).
-    - `DELETE /shopping-list/items/{id}`:
-        - `id` dodatni,
-        - akcja dostępna tylko dla `kind='MANUAL'` (ukryta dla `RECIPE`).
-- **Warunki UX**:
-    - brak „białych overlayów” przy ładowaniu; przy odświeżaniu utrzymujemy listę widoczną i stosujemy zde-emfazyzowanie kontenera.
-    - sortowanie: `is_owned=false` na górze, `is_owned=true` na dole.
+- **Walidacja UI**:
+    - `POST /shopping-list/items`: `text.trim().length > 0`
+    - `PATCH /shopping-list/items/{id}`: `id > 0`, `is_owned` boolean
+    - `DELETE /shopping-list/items/{id}`: tylko `MANUAL`
+- **Warunki grupowania (krytyczne)**:
+    - grupujemy **tylko** `RECIPE` po (`name`, `unit`, `is_owned`)
+    - sumowanie ilości tylko gdy `unit != null` oraz **wszystkie** `amount != null` w grupie
+    - jeśli `unit = null` lub choć jeden `amount = null` → prezentacja jako „tylko nazwa”
+- **Loading UX**:
+    - brak białych overlayów; przy odświeżaniu utrzymujemy dane i stosujemy np. `opacity: 0.5` na kontenerze listy.
 
 ## 10. Obsługa błędów
-Rekomendowane mapowanie błędów na komunikaty (w `ShoppingListService`, podobnie jak `MyPlanService`):
+Mapowanie błędów (w `ShoppingListService`) na komunikaty:
 - **401**: „Sesja wygasła. Zaloguj się ponownie.”
-- **400**:
-    - dla `POST`: „Wpisz nazwę pozycji.”
-    - dla `PATCH/DELETE`: „Nieprawidłowa pozycja listy.”
-- **403** (głównie DELETE na `RECIPE`): „Nie można usuwać pozycji pochodzących z przepisów.”
-- **404**: „Nie znaleziono pozycji listy (mogła zostać już usunięta).” (opcjonalnie: odświeżyć listę)
-- **500**: „Wystąpił błąd. Spróbuj ponownie.”
+- **400**: „Wpisz nazwę pozycji.” / „Nieprawidłowa pozycja listy.”
+- **403**: „Nie można usuwać pozycji pochodzących z przepisów.”
+- **404**: „Nie znaleziono pozycji listy (mogła zostać już usunięta).” (opcjonalnie: `refreshShoppingList()`)
+- **500+**: „Wystąpił błąd. Spróbuj ponownie.”
 
 Zasady:
-- błędy mutacji pokazujemy jako Snackbar (nie blokujemy całego widoku),
-- dla błędu `GET /shopping-list` pokazujemy stan błędu z akcją „Spróbuj ponownie”.
+- błędy mutacji → Snackbar (widok pozostaje interaktywny poza dotkniętą grupą),
+- błąd `GET` → stan błędu + akcja retry,
+- przy błędzie w grupowym toggle (częściowy failure) → rollback całej grupy i komunikat.
 
 ## 11. Kroki implementacji
-1. **Routing**: dodać trasę `/shopping` (auth) + (opcjonalnie) redirect dla gości; dodać `breadcrumb: 'Zakupy'`.
-2. **App Shell / Sidebar**:
-    - dodać pozycję menu „Zakupy” (`/shopping`) w `SidebarComponent`,
-    - rozszerzyć `PRIVATE_PATHS` w `MainLayoutComponent` o `'/shopping'`,
-    - rozszerzyć `MAIN_NAVIGATION_ITEMS` (`matchingRoutes`) o `'/shopping'`, żeby zakładka „Moja Pycha” była aktywna w tej sekcji.
-3. **Serwis API**: utworzyć `ShoppingListService` w `src/app/core/services/`:
-    - metody: `getShoppingList`, `addManualItem`, `updateItemOwned`, `deleteManualItem`,
-    - stan: `ShoppingListState` + `ShoppingListMutationState` jako signals,
-    - mapowanie błędów do `ApiError`.
-4. **Komponenty widoku**:
-    - `ShoppingPageComponent` (pobranie danych, stany, Snackbary),
-    - `ShoppingAddItemFormComponent` (reactive form + trim validator),
-    - `ShoppingListComponent` (render listy),
-    - `ShoppingListItemComponent` (checkbox + delete dla manual).
-5. **Styling i UX**:
-    - zde-emfazyzowanie `is_owned=true` (np. `opacity: 0.6`, brak białych overlayów),
-    - czytelne stany: loading/error/empty,
-    - aria-labels dla ikon (kosz, checkbox).
-6. **Testy jednostkowe (Vitest)**:
-    - `ShoppingListService`: mapowanie DTO→VM, sortowanie, obsługa błędów (401/403/404),
-    - `ShoppingAddItemFormComponent`: walidacja trim + disabled podczas submit.
-7. **Testy manualne (E2E / smoke)**:
-    - wejście na `/shopping` (zalogowany) → lista/empty,
-    - dodanie manual item → pojawia się na liście,
-    - toggle `is_owned` → element przeskakuje na dół,
-    - delete manual item → znika,
-    - symulacja błędu (np. odcięcie sieci) → poprawne komunikaty i brak utraty poprzednich danych.
-
+1. **Zweryfikować kontrakt API i typy**: potwierdzić, że `GET /shopping-list` zwraca surowe wiersze `RECIPE` z `recipe_id`, `recipe_name`, `name`, `amount`, `unit`, `is_owned` (zgodnie z `ShoppingListItemRecipeDto`).
+2. **Zaimplementować logikę grupowania w frontendzie**:
+    - dodać `groupedItems` + `groupedItemsSorted` w `ShoppingListService`,
+    - dodać stabilny `groupKey` oraz mapowanie surowych wierszy → `ShoppingListGroupedItemVm`.
+3. **Zaktualizować komponenty listy**:
+    - `ShoppingListComponent`: zamiast `ShoppingListItemVm[]` przyjmować `ShoppingListGroupedItemVm[]`,
+    - `ShoppingListItemComponent`: renderować pozycję zgrupowaną (`rowCount`, `secondaryText`), blokować checkbox per grupa.
+4. **Zaimplementować grupowy toggle**:
+    - handler w `ShoppingPageComponent`: emitować `{ groupKey, next }`,
+    - w serwisie: wykonać patch dla wszystkich `rowIds` grupy (z ograniczeniem równoległości) + rollback w razie błędu.
+5. **Zachować istniejące operacje manual**:
+    - `addManualItem` i `deleteManualItem` bez zmian semantycznych.
+6. **Dostępność i UX**:
+    - aria-labels dla ikon i checkboxów,
+    - brak białych overlayów w loading.
+7. **Testy (Vitest)**:
+    - testy grupowania: klucz (`name/unit/is_owned`), sumowanie ilości, zachowanie dla `unit=null` i `amount=null`,
+    - test grupowego toggle: optymistyczna zmiana + rollback.

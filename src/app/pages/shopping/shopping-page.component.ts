@@ -50,8 +50,8 @@ export class ShoppingPageComponent implements OnInit {
     /** Stan mutacji */
     readonly mutationState = this.shoppingListService.mutationState;
 
-    /** Posortowana lista elementów */
-    readonly itemsSorted = this.shoppingListService.itemsSorted;
+    /** Posortowana lista zgrupowanych elementów */
+    readonly groupedItemsSorted = this.shoppingListService.groupedItemsSorted;
 
     /** Czy lista jest pusta */
     readonly isEmpty = this.shoppingListService.isEmpty;
@@ -93,9 +93,9 @@ export class ShoppingPageComponent implements OnInit {
     /**
      * Obsługuje zmianę stanu "posiadane" pozycji
      */
-    onToggleOwned(event: { id: number; next: boolean }): void {
+    onToggleOwned(event: { groupKey: string; next: boolean }): void {
         this.shoppingListService
-            .updateItemOwned(event.id, event.next)
+            .toggleOwnedGroup(event.groupKey, event.next)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {

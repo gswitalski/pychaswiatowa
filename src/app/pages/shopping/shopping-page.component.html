@@ -38,8 +38,8 @@
         @else {
             <div class="shopping-page__list-container" [class.shopping-page__list-container--refreshing]="isRefreshing()">
                 <pych-shopping-list
-                    [items]="itemsSorted()"
-                    [toggleInProgressIds]="mutationState().togglingItemIds"
+                    [items]="groupedItemsSorted()"
+                    [toggleInProgressRowIds]="mutationState().togglingRowIds"
                     [deleteInProgressIds]="mutationState().deletingItemIds"
                     (toggleOwned)="onToggleOwned($event)"
                     (deleteManual)="onDeleteManual($event)"

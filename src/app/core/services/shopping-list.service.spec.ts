@@ -222,11 +222,12 @@ describe('ShoppingListService', () => {
         });
     });
 
-    describe('updateItemOwned()', () => {
-        it('powinien zaktualizować stan "posiadane" pozycji', async () => {
+    describe('toggleOwnedGroup()', () => {
+        it('powinien zaktualizować stan "posiadane" dla grupy', async () => {
             // Arrange
             const itemId = 1;
             const isOwned = true;
+            const groupKey = 'cukier||g||0';
 
             const existingItem: ShoppingListItemRecipeDto = {
                 id: itemId,
@@ -261,10 +262,10 @@ describe('ShoppingListService', () => {
             });
 
             // Act
-            const result = await firstValueFrom(service.updateItemOwned(itemId, isOwned));
+            const result = await firstValueFrom(service.toggleOwnedGroup(groupKey, isOwned));
 
             // Assert
-            expect(result).toEqual(updatedItem);
+            expect(result).toEqual([updatedItem]);
             expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith(
                 `shopping-list/items/${itemId}`,
                 {
@@ -282,6 +283,7 @@ describe('ShoppingListService', () => {
             // Arrange
             const itemId = 1;
             const isOwned = true;
+            const groupKey = 'cukier||g||0';
 
             const existingItem: ShoppingListItemRecipeDto = {
                 id: itemId,
@@ -312,7 +314,7 @@ describe('ShoppingListService', () => {
 
             // Act & Assert
             await expect(
-                firstValueFrom(service.updateItemOwned(itemId, isOwned))
+                firstValueFrom(service.toggleOwnedGroup(groupKey, isOwned))
             ).rejects.toMatchObject({
                 message: 'Nie znaleziono pozycji listy (mogła zostać już usunięta).',
                 status: 404,
@@ -323,14 +325,14 @@ describe('ShoppingListService', () => {
             expect(state.data[0].is_owned).toBe(false);
         });
 
-        it('powinien odrzucić nieprawidłowe ID', async () => {
+        it('powinien odrzucić nieprawidłowy klucz grupy', async () => {
             // Arrange
-            const itemId = 0;
             const isOwned = true;
+            const groupKey = '';
 
             // Act & Assert
             await expect(
-                firstValueFrom(service.updateItemOwned(itemId, isOwned))
+                firstValueFrom(service.toggleOwnedGroup(groupKey, isOwned))
             ).rejects.toMatchObject({
                 message: 'Nieprawidłowa pozycja listy.',
                 status: 400,
@@ -420,7 +422,7 @@ describe('ShoppingListService', () => {
         });
     });
 
-    describe('itemsSorted computed', () => {
+    describe('groupedItemsSorted computed', () => {
         it('powinien sortować pozycje: is_owned=false na górze, alfabetycznie', () => {
             // Arrange
             const items: ShoppingListItemRecipeDto[] = [
@@ -469,7 +471,7 @@ describe('ShoppingListService', () => {
             });
 
             // Act
-            const sorted = service.itemsSorted();
+            const sorted = service.groupedItemsSorted();
 
             // Assert
             expect(sorted).toHaveLength(3);
@@ -509,15 +511,15 @@ describe('ShoppingListService', () => {
             });
 
             // Act
-            const vm = service.itemsVm()[0];
+            const vm = service.groupedItems()[0];
 
             // Assert
-            expect(vm.id).toBe(1);
             expect(vm.kind).toBe('RECIPE');
             expect(vm.primaryText).toBe('cukier');
             expect(vm.secondaryText).toBe('250 g');
             expect(vm.canDelete).toBe(false);
             expect(vm.isOwned).toBe(false);
+            expect(vm.rowIds).toEqual([1]);
         });
 
         it('powinien poprawnie zmapować pozycję MANUAL', () => {
@@ -542,7 +544,7 @@ describe('ShoppingListService', () => {
             });
 
             // Act
-            const vm = service.itemsVm()[0];
+            const vm = service.groupedItems()[0];
 
             // Assert
             expect(vm.id).toBe(2);
@@ -551,6 +553,7 @@ describe('ShoppingListService', () => {
             expect(vm.secondaryText).toBe(null);
             expect(vm.canDelete).toBe(true);
             expect(vm.isOwned).toBe(false);
+            expect(vm.rowIds).toEqual([2]);
         });
     });
 

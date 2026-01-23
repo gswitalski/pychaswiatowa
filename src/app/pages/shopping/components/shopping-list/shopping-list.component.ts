@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
-import { ShoppingListItemVm } from '../../../../core/services/shopping-list.service';
+import { ShoppingListGroupedItemVm } from '../../../../core/services/shopping-list.service';
 import { ShoppingListItemComponent } from '../shopping-list-item/shopping-list-item.component';
 
 /**
@@ -22,16 +22,16 @@ import { ShoppingListItemComponent } from '../shopping-list-item/shopping-list-i
 })
 export class ShoppingListComponent {
     /** Lista pozycji (posortowana) */
-    items = input.required<ShoppingListItemVm[]>();
+    items = input.required<ShoppingListGroupedItemVm[]>();
 
     /** ID elementów w trakcie toggle */
-    toggleInProgressIds = input.required<Set<number>>();
+    toggleInProgressRowIds = input.required<Set<number>>();
 
     /** ID elementów w trakcie usuwania */
     deleteInProgressIds = input.required<Set<number>>();
 
     /** Event emitowany przy zmianie stanu "posiadane" */
-    toggleOwned = output<{ id: number; next: boolean }>();
+    toggleOwned = output<{ groupKey: string; next: boolean }>();
 
     /** Event emitowany przy usunięciu ręcznej pozycji */
     deleteManual = output<number>();
@@ -39,21 +39,25 @@ export class ShoppingListComponent {
     /**
      * Sprawdza czy element jest w trakcie toggle
      */
-    isToggling(id: number): boolean {
-        return this.toggleInProgressIds().has(id);
+    isToggling(item: ShoppingListGroupedItemVm): boolean {
+        return item.rowIds.some(rowId => this.toggleInProgressRowIds().has(rowId));
     }
 
     /**
      * Sprawdza czy element jest w trakcie usuwania
      */
-    isDeleting(id: number): boolean {
-        return this.deleteInProgressIds().has(id);
+    isDeleting(item: ShoppingListGroupedItemVm): boolean {
+        if (item.kind !== 'MANUAL') {
+            return false;
+        }
+
+        return this.deleteInProgressIds().has(item.id);
     }
 
     /**
      * Obsługuje toggle owned
      */
-    onToggleOwned(event: { id: number; next: boolean }): void {
+    onToggleOwned(event: { groupKey: string; next: boolean }): void {
         this.toggleOwned.emit(event);
     }
 

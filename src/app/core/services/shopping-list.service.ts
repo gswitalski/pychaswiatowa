@@ -1,5 +1,15 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Observable, from, map, catchError, throwError, tap, finalize } from 'rxjs';
+import {
+    Observable,
+    from,
+    map,
+    catchError,
+    throwError,
+    tap,
+    finalize,
+    concatMap,
+    toArray,
+} from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import {
     GetShoppingListResponseDto,
@@ -9,6 +19,7 @@ import {
     AddManualShoppingListItemCommand,
     UpdateShoppingListItemCommand,
     ApiError,
+    NormalizedIngredientUnit,
 } from '../../../../shared/contracts/types';
 
 /**
@@ -28,22 +39,38 @@ export interface ShoppingListState {
  */
 export interface ShoppingListMutationState {
     isAddingManual: boolean;
-    togglingItemIds: Set<number>;
+    togglingRowIds: Set<number>;
     deletingItemIds: Set<number>;
 }
 
 /**
- * ViewModel dla pojedynczej pozycji listy zakupów.
+ * ViewModel dla zgrupowanej pozycji listy zakupów.
  */
-export interface ShoppingListItemVm {
-    id: number;
+export interface ShoppingListGroupedItemBaseVm {
+    groupKey: string;
     kind: 'RECIPE' | 'MANUAL';
     isOwned: boolean;
     primaryText: string;
     secondaryText: string | null;
     canDelete: boolean;
-    raw: ShoppingListItemDto;
+    rowIds: number[];
 }
+
+export interface ShoppingListGroupedRecipeItemVm extends ShoppingListGroupedItemBaseVm {
+    kind: 'RECIPE';
+    rowCount: number;
+    sumAmount: number | null;
+    unit: NormalizedIngredientUnit | null;
+}
+
+export interface ShoppingListGroupedManualItemVm extends ShoppingListGroupedItemBaseVm {
+    kind: 'MANUAL';
+    id: number;
+}
+
+export type ShoppingListGroupedItemVm =
+    | ShoppingListGroupedRecipeItemVm
+    | ShoppingListGroupedManualItemVm;
 
 const INITIAL_STATE: ShoppingListState = {
     data: [],
@@ -56,7 +83,7 @@ const INITIAL_STATE: ShoppingListState = {
 
 const INITIAL_MUTATION_STATE: ShoppingListMutationState = {
     isAddingManual: false,
-    togglingItemIds: new Set(),
+    togglingRowIds: new Set(),
     deletingItemIds: new Set(),
 };
 
@@ -92,10 +119,78 @@ export class ShoppingListService {
     readonly mutationState = signal<ShoppingListMutationState>(INITIAL_MUTATION_STATE);
 
     /**
-     * Computed: lista elementów zmapowana na ViewModel
+     * Computed: lista zgrupowana wg reguł MVP
+     * - grupuje tylko RECIPE po name/unit/is_owned
+     * - MANUAL bez grupowania
      */
-    readonly itemsVm = computed<ShoppingListItemVm[]>(() => {
-        return this.state().data.map(item => this.mapToViewModel(item));
+    readonly groupedItems = computed<ShoppingListGroupedItemVm[]>(() => {
+        const items = this.state().data;
+        const manualItems: ShoppingListGroupedItemVm[] = [];
+        const recipeGroups = new Map<string, ShoppingListGroupedRecipeItemVm>();
+
+        for (const item of items) {
+            if (item.kind === 'MANUAL') {
+                const manual = item as ShoppingListItemManualDto;
+                manualItems.push({
+                    groupKey: this.buildManualGroupKey(manual.id),
+                    kind: 'MANUAL',
+                    id: manual.id,
+                    isOwned: manual.is_owned,
+                    primaryText: manual.text,
+                    secondaryText: null,
+                    canDelete: true,
+                    rowIds: [manual.id],
+                });
+                continue;
+            }
+
+            const recipe = item as ShoppingListItemRecipeDto;
+            const groupKey = this.buildRecipeGroupKey(recipe);
+            const existing = recipeGroups.get(groupKey);
+
+            if (!existing) {
+                recipeGroups.set(groupKey, {
+                    groupKey,
+                    kind: 'RECIPE',
+                    isOwned: recipe.is_owned,
+                    primaryText: recipe.name,
+                    secondaryText: null,
+                    canDelete: false,
+                    rowIds: [recipe.id],
+                    rowCount: 1,
+                    sumAmount:
+                        recipe.amount !== null && recipe.unit !== null ? recipe.amount : null,
+                    unit: recipe.unit ?? null,
+                });
+                continue;
+            }
+
+            existing.rowIds.push(recipe.id);
+            existing.rowCount += 1;
+
+            if (existing.sumAmount !== null && recipe.amount !== null && recipe.unit !== null) {
+                existing.sumAmount += recipe.amount;
+            } else {
+                existing.sumAmount = null;
+            }
+        }
+
+        const groupedRecipes = Array.from(recipeGroups.values()).map(group => {
+            if (group.sumAmount !== null && group.unit !== null) {
+                return {
+                    ...group,
+                    secondaryText: `${group.sumAmount} ${group.unit}`,
+                };
+            }
+
+            return {
+                ...group,
+                secondaryText: null,
+                sumAmount: null,
+            };
+        });
+
+        return [...manualItems, ...groupedRecipes];
     });
 
     /**
@@ -104,16 +199,14 @@ export class ShoppingListService {
      * - is_owned=true na dole
      * - stabilnie wewnątrz grup po primaryText (localeCompare, 'pl')
      */
-    readonly itemsSorted = computed<ShoppingListItemVm[]>(() => {
-        const items = [...this.itemsVm()];
-        
+    readonly groupedItemsSorted = computed<ShoppingListGroupedItemVm[]>(() => {
+        const items = [...this.groupedItems()];
+
         return items.sort((a, b) => {
-            // Najpierw sortuj po is_owned (false przed true)
             if (a.isOwned !== b.isOwned) {
                 return a.isOwned ? 1 : -1;
             }
-            
-            // Potem alfabetycznie po primaryText
+
             return a.primaryText.localeCompare(b.primaryText, 'pl');
         });
     });
@@ -122,7 +215,7 @@ export class ShoppingListService {
      * Computed: czy lista jest pusta (po załadowaniu)
      */
     readonly isEmpty = computed(() => {
-        return this.itemsSorted().length === 0 && !this.state().isLoading;
+        return this.groupedItemsSorted().length === 0 && !this.state().isLoading;
     });
 
     /**
@@ -161,10 +254,10 @@ export class ShoppingListService {
     readonly isAddingManual = computed(() => this.mutationState().isAddingManual);
 
     /**
-     * Sprawdza czy dany element jest w trakcie toggle
+     * Sprawdza czy dany wiersz jest w trakcie toggle
      */
-    isTogglingItem(itemId: number): boolean {
-        return this.mutationState().togglingItemIds.has(itemId);
+    isTogglingRow(itemId: number): boolean {
+        return this.mutationState().togglingRowIds.has(itemId);
     }
 
     /**
@@ -232,14 +325,15 @@ export class ShoppingListService {
 
         this.getShoppingList().subscribe({
             next: (response) => {
-                this.state.set({
+                this.state.update(s => ({
+                    ...s,
                     data: response.data,
                     meta: response.meta,
                     isLoading: false,
                     isRefreshing: false,
                     error: null,
                     lastLoadedAt: Date.now(),
-                });
+                }));
             },
             error: (err: ApiError) => {
                 this.state.update(s => ({
@@ -314,74 +408,90 @@ export class ShoppingListService {
      * Aktualizuje stan "posiadane" pozycji
      * PATCH /shopping-list/items/{id}
      */
-    updateItemOwned(itemId: number, isOwned: boolean): Observable<ShoppingListItemDto> {
+    toggleOwnedGroup(groupKey: string, isOwned: boolean): Observable<ShoppingListItemDto[]> {
         // Guard clause
-        if (!itemId || itemId <= 0) {
+        if (!groupKey) {
             return throwError(() => ({
                 message: 'Nieprawidłowa pozycja listy.',
                 status: 400,
             } as ApiError));
         }
 
-        // Dodaj do togglingItemIds
+        const group = this.groupedItems().find(item => item.groupKey === groupKey);
+
+        if (!group) {
+            return throwError(() => ({
+                message: 'Nieprawidłowa pozycja listy.',
+                status: 400,
+            } as ApiError));
+        }
+
+        // Dodaj do togglingRowIds
         this.mutationState.update(s => ({
             ...s,
-            togglingItemIds: new Set([...s.togglingItemIds, itemId]),
+            togglingRowIds: new Set([...s.togglingRowIds, ...group.rowIds]),
         }));
 
         // Optymistycznie zaktualizuj lokalnie
-        const previousItem = this.state().data.find(item => item.id === itemId);
+        const previousData = [...this.state().data];
+        const rowIds = new Set(group.rowIds);
         this.state.update(s => ({
             ...s,
-            data: s.data.map(item => 
-                item.id === itemId ? { ...item, is_owned: isOwned } : item
+            data: s.data.map(item =>
+                rowIds.has(item.id) ? { ...item, is_owned: isOwned } : item
             ),
         }));
 
         const command: UpdateShoppingListItemCommand = { is_owned: isOwned };
 
-        return from(
-            this.supabase.functions.invoke<ShoppingListItemDto>(`shopping-list/items/${itemId}`, {
-                method: 'PATCH',
-                body: command,
-            })
-        ).pipe(
-            map((response) => {
-                if (response.error) {
-                    throw this.mapError(response.error, response.error.status || 500);
-                }
-                if (!response.data) {
-                    throw this.mapError({ message: 'Brak danych w odpowiedzi' }, 500);
-                }
-                return response.data;
-            }),
-            tap((updatedItem) => {
-                // Zaktualizuj danymi z API (na wypadek różnic)
+        return from(group.rowIds).pipe(
+            concatMap(itemId =>
+                from(
+                    this.supabase.functions.invoke<ShoppingListItemDto>(
+                        `shopping-list/items/${itemId}`,
+                        {
+                            method: 'PATCH',
+                            body: command,
+                        }
+                    )
+                ).pipe(
+                    map((response) => {
+                        if (response.error) {
+                            throw this.mapError(response.error, response.error.status || 500);
+                        }
+                        if (!response.data) {
+                            throw this.mapError({ message: 'Brak danych w odpowiedzi' }, 500);
+                        }
+                        return response.data;
+                    })
+                )
+            ),
+            toArray(),
+            tap((updatedItems) => {
                 this.state.update(s => ({
                     ...s,
-                    data: s.data.map(item => 
-                        item.id === itemId ? updatedItem : item
-                    ),
+                    data: s.data.map(item => {
+                        const updated = updatedItems.find(updatedItem => updatedItem.id === item.id);
+                        return updated ?? item;
+                    }),
                 }));
             }),
             finalize(() => {
-                // Zawsze usuń z togglingItemIds
+                // Zawsze usuń z togglingRowIds
                 this.mutationState.update(s => {
-                    const newSet = new Set(s.togglingItemIds);
-                    newSet.delete(itemId);
-                    return { ...s, togglingItemIds: newSet };
+                    const newSet = new Set(s.togglingRowIds);
+                    for (const rowId of group.rowIds) {
+                        newSet.delete(rowId);
+                    }
+                    return { ...s, togglingRowIds: newSet };
                 });
             }),
             catchError((err) => {
                 // Rollback optymistycznej zmiany
-                if (previousItem) {
-                    this.state.update(s => ({
-                        ...s,
-                        data: s.data.map(item => 
-                            item.id === itemId ? previousItem : item
-                        ),
-                    }));
-                }
+                this.state.update(s => ({
+                    ...s,
+                    data: previousData,
+                }));
                 return this.handleError(err);
             })
         );
@@ -455,48 +565,19 @@ export class ShoppingListService {
     }
 
     /**
-     * Mapuje DTO na ViewModel
+     * Buduje klucz grupy dla pozycji RECIPE
      */
-    private mapToViewModel(item: ShoppingListItemDto): ShoppingListItemVm {
-        if (item.kind === 'RECIPE') {
-            const recipeItem = item as ShoppingListItemRecipeDto;
-            return {
-                id: recipeItem.id,
-                kind: 'RECIPE',
-                isOwned: recipeItem.is_owned,
-                primaryText: recipeItem.name,
-                secondaryText: this.formatRecipeItemSecondary(recipeItem),
-                canDelete: false,
-                raw: item,
-            };
-        } else {
-            const manualItem = item as ShoppingListItemManualDto;
-            return {
-                id: manualItem.id,
-                kind: 'MANUAL',
-                isOwned: manualItem.is_owned,
-                primaryText: manualItem.text,
-                secondaryText: null,
-                canDelete: true,
-                raw: item,
-            };
-        }
+    private buildRecipeGroupKey(item: ShoppingListItemRecipeDto): string {
+        const unit = item.unit ?? 'null';
+        const ownedFlag = item.is_owned ? '1' : '0';
+        return `${item.name}||${unit}||${ownedFlag}`;
     }
 
     /**
-     * Formatuje secondary text dla pozycji z przepisu
+     * Buduje klucz grupy dla pozycji MANUAL
      */
-    private formatRecipeItemSecondary(item: ShoppingListItemRecipeDto): string | null {
-        if (item.amount !== null && item.unit !== null) {
-            return `${item.amount} ${item.unit}`;
-        }
-        if (item.amount !== null) {
-            return `${item.amount}`;
-        }
-        if (item.unit !== null) {
-            return item.unit;
-        }
-        return null;
+    private buildManualGroupKey(itemId: number): string {
+        return `manual:${itemId}`;
     }
 
     /**
