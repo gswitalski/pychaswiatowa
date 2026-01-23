@@ -2,6 +2,10 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+
 
     &__content {
         flex: 1;
