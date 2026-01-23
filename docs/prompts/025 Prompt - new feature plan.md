@@ -13,18 +13,14 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-aktualnie gdy użytkownik dodaje przepisy do swojego planu to budowana jest lista zakupów ze składników przepisów w ten sposób,
-że składniki o tej samej nazwie i tej samej jednostce są kumulowane (sumowanee) na jedną pozycję i tak to jest prezentowane później
-użytkownikowi.
+aktualnie gdy użytkownik dodaje przepisy do swojego planu to budowana jest lista zakupów ze składników przepisów 
+uzytkownik może też oddać pozycję do listy ręcznie
+aby susunąć pozycję dodaną ręczni może uzyc ikonki kosza
+aby usunąć pozycję z przepisu musi usunąc z planu cały przepis
 
-chcę trochę to zmienić.
-
-w bazie danych każdy skłądni z każdego przepisu ma być osobnym wierszem w tabelu. dodatkowo chcę w tabeli z listą zakupów mieć id i nazwe przepisu (te dwa pola mają być podane na freontend przez endoint pobierania listy zakupów  -do wykorzystania na przyszłość w następnym rozszerzeniu)
-
-kumulacja składnów będzie wykonywana na frontedndzie. 
-
-gdy usunę przepis z planu będą się po prostu usuwały elemnty z tym id przepisu ktry został usunięty
-
+chce aby było mozliwe 
+1. usunięcie pojedynczego elementu z listy zakpó który pochodzi z przepisu (tak samo jak ręcznego elementu)
+2. wyczyszczenie listy zakupów jednym przyciskiem bez modyfikacji listy przepisów z planu
 
 
 

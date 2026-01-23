@@ -311,7 +311,10 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - pozycji pochodzących ze składników znormalizowanych przepisów w „Moim planie” (backend zwraca surowe wiersze; **grupowanie i sumowanie wykonywane jest na frontendzie**),
     - ręcznych pozycji tekstowych dodanych przez użytkownika.
 - **Widoczność:** Widok prywatny, dostępny po zalogowaniu (App Shell z Sidebarem).
-- **Header:** Tytuł „Zakupy”. Brak „dużych” akcji globalnych w nagłówku (MVP).
+- **Header:** Tytuł „Zakupy”.
+    - **Akcje w Page Header (MVP – rozszerzenie):**
+        - akcja **„Wyczyść listę”** (np. ikona kosza + etykieta, lub sama ikona z tooltipem) — otwiera modal potwierdzenia,
+        - (opcjonalnie przyszłościowo) akcje widoków/filtrów; w MVP pozostajemy przy domyślnym widoku zgrupowanym.
 - **Kluczowe elementy widoku:**
     - sekcja „Dodaj pozycję” z:
         - polem tekstowym (placeholder np. „Dodaj coś…”, przykłady: „papier toaletowy”, „kawa”),
@@ -319,7 +322,9 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - lista pozycji zakupów z kontrolką „posiadane” (checkbox) przy każdej pozycji,
     - dla pozycji z przepisów: prezentacja jako `nazwa` + (opcjonalnie) `ilość jednostka` (np. `cukier, 250 g`; `cukier`),
     - dla pozycji ręcznych: prezentacja jako tekst użytkownika,
-    - akcja usunięcia dla pozycji ręcznych (ikonka kosza) (MVP).
+    - akcja usunięcia (ikonka kosza) dla:
+        - pozycji ręcznych (jak dotychczas),
+        - pozycji „z przepisów” (MVP – rozszerzenie; usuwa całą grupę odpowiadającą kluczowi grupowania).
 - **Reguły grupowania (MVP, frontend):**
     - widok domyślnie prezentuje pozycje **zgrupowane** (nie robimy przełącznika widoku na tym etapie),
     - grupujemy wyłącznie pozycje „z przepisów”, które mają identyczne: (`nazwa`, `jednostka`, `is_owned`),
@@ -335,6 +340,18 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - szybkie odhaczanie (checkbox + duży obszar klikalny wiersza),
     - w pełni dostępne z klawiatury (tab order, aria-labels na ikonach, Enter dodaje pozycję),
     - czytelne stany pustego widoku: „Brak pozycji na liście zakupów” + wskazówka „Dodaj przepis do planu lub wpisz pozycję ręcznie”.
+    - **Usuwanie pozycji (MVP – rozszerzenie):**
+        - po kliknięciu ikonki kosza pozycja znika z listy i pojawia się Snackbar/Toast z akcją **„Cofnij”** (Undo),
+        - dla pozycji „z przepisów” usuwamy **całą grupę** (wszystkie wiersze w grupie: `nazwa`+`jednostka`+`is_owned`),
+        - usunięcie pozycji „z przepisów” **nie usuwa przepisu** z „Mojego planu” (plan bez zmian),
+        - dla dostępności: aria-label na koszu powinien jednoznacznie opisywać zakres (np. „Usuń pozycję: cukier 250 g”).
+    - **Wyczyść listę (MVP – rozszerzenie):**
+        - akcja w Page Header otwiera modal potwierdzenia,
+        - modal jasno komunikuje, że:
+            - lista zakupów zostanie wyczyszczona (pozycje ręczne i „z przepisów”),
+            - „Mój plan” nie zostanie zmodyfikowany,
+        - po potwierdzeniu lista staje się pusta; w MVP brak Undo dla tej operacji,
+        - po wyczyszczeniu lista pozostaje pusta do czasu kolejnej zmiany w planie (dodanie/usunięcie przepisu) lub dodania pozycji ręcznej.
     - *Uwaga (MVP):* jeśli użytkownik edytuje przepis będący w planie, lista zakupów może pozostać nieaktualna (brak automatycznej aktualizacji).
 
 ## 3. Mapa podróży użytkownika

@@ -1508,6 +1508,58 @@ Public endpoints are available without authentication:
 
 ---
 
+#### `DELETE /shopping-list/recipe-items/group`
+
+-   **Description**: Delete a **grouped** recipe-derived shopping list position (used by the UI, which renders recipe items grouped on the frontend).
+-   **Auth**: Required (`Authorization: Bearer <JWT>`).
+-   **Group semantics (MVP)**:
+    - The frontend groups recipe-derived items by (`name`, `unit`, `is_owned`).
+    - This endpoint deletes **all raw rows** for the authenticated user that match the provided group key:
+        - `kind = RECIPE`
+        - `name = <name>`
+        - `unit = <unit | null>`
+        - `is_owned = <bool>`
+    - The operation MUST NOT modify "My Plan" (it does not remove any recipe from the plan).
+-   **Request Payload**:
+    ```json
+    {
+      "name": "cukier",
+      "unit": "g",
+      "is_owned": false
+    }
+    ```
+    - `unit` MAY be `null` to target "name-only" groups.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "deleted": 3
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (missing/invalid fields)
+    -   **Code**: `401 Unauthorized`
+
+---
+
+#### `DELETE /shopping-list`
+
+-   **Description**: Clear the authenticated user's entire Shopping List (both recipe-derived and manual items).
+-   **Auth**: Required (`Authorization: Bearer <JWT>`).
+-   **Notes (MVP – extension)**:
+    - The operation MUST delete **all** shopping list rows for the authenticated user.
+    - The operation MUST NOT modify "My Plan" (plan recipes remain unchanged).
+    - After clearing, the list stays empty until:
+        - the user adds a new manual item, or
+        - the plan changes (add/remove recipe) and the backend side effects add/delete recipe-derived rows again.
+-   **Success Response**:
+    -   **Code**: `204 No Content`
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+
+---
+
 ### Search
 
 #### `GET /search/global`
