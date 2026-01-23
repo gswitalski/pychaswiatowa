@@ -459,3 +459,44 @@ export async function deleteManualShoppingListItem(
         itemId,
     });
 }
+
+/**
+ * Clears all shopping list items for the authenticated user.
+ *
+ * Business rules:
+ * - Removes both MANUAL and RECIPE items
+ * - Does not affect user's plan (separate tables)
+ * - RLS ensures only user's rows are deleted
+ *
+ * @param client - The authenticated Supabase client (user context)
+ * @param userId - The ID of the authenticated user (for logging)
+ * @throws ApplicationError
+ * - INTERNAL_ERROR: Database operation failed
+ */
+export async function clearShoppingList(
+    client: TypedSupabaseClient,
+    userId: string
+): Promise<void> {
+    logger.info('[clearShoppingList] Clearing shopping list items', { userId });
+
+    const { error } = await client
+        .from('shopping_list_items')
+        .delete()
+        .eq('user_id', userId);
+
+    if (error) {
+        logger.error('[clearShoppingList] Database error', {
+            userId,
+            error: error.message,
+            code: error.code,
+        });
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to clear shopping list'
+        );
+    }
+
+    logger.info('[clearShoppingList] Shopping list cleared successfully', {
+        userId,
+    });
+}

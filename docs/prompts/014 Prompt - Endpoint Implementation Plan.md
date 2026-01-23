@@ -13,8 +13,15 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-- **`POST /plan/recipes`**
-    - **Co się zmieniło:** side-effect tworzy surowe wiersze listy zakupów (bez merge/sumowania po stronie backendu) oraz ustawia `recipe_name` jako snapshot.
+### Nowe
+
+- **`DELETE /shopping-list/recipe-items/group`**
+    - **Co dochodzi**: usuwanie całej grupy pozycji pochodzących z przepisów po kluczu (`name`, `unit`, `is_owned`).
+    - **Uwagi**: nie modyfikuje „Mojego planu”.
+
+- **`DELETE /shopping-list`**
+    - **Co dochodzi**: wyczyszczenie całej listy zakupów (ręczne + z przepisów).
+    - **Uwagi**: nie modyfikuje „Mojego planu”; lista pozostaje pusta do kolejnej zmiany planu lub dodania pozycji ręcznej.
 
 </api_changes_description>
 

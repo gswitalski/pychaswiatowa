@@ -9,6 +9,7 @@ import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import {
     createManualShoppingListItem,
     deleteManualShoppingListItem,
+    clearShoppingList,
     getShoppingList,
     updateShoppingListItemIsOwned,
 } from './shopping-list.service.ts';
@@ -50,6 +51,11 @@ export async function shoppingListRouter(req: Request): Promise<Response> {
     // Route: GET /shopping-list (root endpoint)
     if ((path === '' || path === '/') && method === 'GET') {
         return await handleGetShoppingList(req);
+    }
+
+    // Route: DELETE /shopping-list (root endpoint)
+    if ((path === '' || path === '/') && method === 'DELETE') {
+        return await handleDeleteShoppingList(req);
     }
 
     // Route: POST /items
@@ -351,4 +357,38 @@ export async function handleGetShoppingList(req: Request): Promise<Response> {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
     });
+}
+
+/**
+ * Handler for DELETE /shopping-list
+ * Clears all shopping list items for the authenticated user.
+ *
+ * Request:
+ * - Headers: Authorization: Bearer <JWT>
+ * - No body
+ *
+ * Response:
+ * - 204 No Content
+ *
+ * Errors:
+ * - 401 Unauthorized: Missing or invalid JWT
+ * - 500 Internal Server Error: Database error
+ */
+export async function handleDeleteShoppingList(req: Request): Promise<Response> {
+    // 1. Authenticate user
+    const { client, user } = await getAuthenticatedContext(req);
+
+    logger.info('[handleDeleteShoppingList] Clearing shopping list', {
+        userId: user.id,
+    });
+
+    // 2. Call service to clear items
+    await clearShoppingList(client, user.id);
+
+    logger.info('[handleDeleteShoppingList] Shopping list cleared successfully', {
+        userId: user.id,
+    });
+
+    // 3. Return 204 No Content
+    return new Response(null, { status: 204 });
 }
