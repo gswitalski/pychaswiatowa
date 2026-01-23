@@ -12,6 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ShoppingListService } from '../../core/services/shopping-list.service';
+import { MyPlanService } from '../../core/services/my-plan.service';
 import { ShoppingAddItemFormComponent } from './components/shopping-add-item-form/shopping-add-item-form.component';
 import { ShoppingListComponent } from './components/shopping-list/shopping-list.component';
 import { ApiError } from '../../../../shared/contracts/types';
@@ -41,6 +42,7 @@ import { ApiError } from '../../../../shared/contracts/types';
 })
 export class ShoppingPageComponent implements OnInit {
     private readonly shoppingListService = inject(ShoppingListService);
+    private readonly myPlanService = inject(MyPlanService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -71,6 +73,13 @@ export class ShoppingPageComponent implements OnInit {
     ngOnInit(): void {
         // Pobierz listę zakupów przy wejściu na widok
         this.shoppingListService.loadShoppingList();
+
+        // Odśwież listę zakupów po zmianach w "Moim planie"
+        this.myPlanService.planChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => {
+                this.shoppingListService.refreshShoppingList();
+            });
     }
 
     /**
