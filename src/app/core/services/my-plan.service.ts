@@ -50,8 +50,8 @@ const PLAN_CACHE_TTL_MS = 60_000;
  * Zdarzenia zmian w planie
  */
 export interface PlanChangeEvent {
-    type: 'added' | 'removed';
-    recipeId: number;
+    type: 'added' | 'removed' | 'cleared';
+    recipeId?: number;
 }
 
 /**
@@ -398,6 +398,7 @@ export class MyPlanService {
                     meta: { ...s.meta, total: 0 },
                 }));
                 this.lastChangedAt.set(Date.now());
+                this.planChanges.emit({ type: 'cleared' });
 
             }),
             finalize(() => {

@@ -11,15 +11,19 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-1. dodjaę przepis do mojeego planu
-2. wchodze na zakładkę "Zakupy"
-3. Lista zakupów jest pusta - muszę wcisnąć F5 żeby się odświeżyła
+mam kilka przepisów w planie
+jestem naścieżce
+http://localhost:4200/shopping
+klikam na pych-my-plan-fab i wciskam "wyczyść plan"
+
+na stronie shopping ciągle widze składniki z usuniętych przepisów, muszę wcisnąć F5 aby list się odświeżyła
+
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-po przejściu na zakładkę "Zalupyt" mam aktualną liste elementów 
+lista zakupów odświeża się automatycznie
 
 </oczekiwane_zachowanie>
 

@@ -168,6 +168,15 @@ export class RecipeDetailPageComponent implements OnInit {
                     return;
                 }
 
+                // Wyczyść plan - wszystkie przepisy wypadają z planu
+                if (event.type === 'cleared') {
+                    this.state.update((s) => ({
+                        ...s,
+                        recipe: s.recipe ? { ...s.recipe, in_my_plan: false } : null,
+                    }));
+                    return;
+                }
+
                 // Jeśli zdarzenie dotyczy aktualnie wyświetlanego przepisu, zaktualizuj stan
                 if (event.recipeId === currentRecipe.id) {
                     const newInMyPlan = event.type === 'added';
