@@ -3,7 +3,7 @@
  * Responsible for request validation, calling services, and formatting responses.
  */
 
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'npm:zod@3.22.4';
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { generateSlug } from './utils.service.ts';

@@ -54,7 +54,15 @@ Deno.serve(async (req: Request) => {
             `[plan] ${method} ${path} - Error (${duration}ms)`,
             error
         );
-        return handleError(error);
+        const errorResponse = handleError(error);
+        
+        // Ensure CORS headers are present on error response
+        errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+        errorResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+        errorResponse.headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, x-client-info, apikey');
+        errorResponse.headers.set('Access-Control-Max-Age', '86400');
+        
+        return errorResponse;
     }
 });
 

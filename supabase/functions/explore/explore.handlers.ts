@@ -3,7 +3,7 @@
  * HTTP request handlers for explore endpoints with optional authentication.
  */
 
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'npm:zod@3.22.4';
 import { ApplicationError, handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { getOptionalAuthenticatedUser } from '../_shared/supabase-client.ts';
