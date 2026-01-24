@@ -77,7 +77,8 @@ jobs:
           supabase functions deploy recipes
           supabase functions deploy search
           supabase functions deploy tags
-          supabase functions deploy internal
+          # Internal worker uses custom auth (not JWT) - must skip Supabase JWT verification
+          supabase functions deploy internal --no-verify-jwt
           supabase functions deploy shopping-list
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
