@@ -11,35 +11,7 @@
 
 import { exploreRouter } from './explore.handlers.ts';
 import { logger } from '../_shared/logger.ts';
-
-/**
- * CORS headers for all responses.
- * Allows access from any origin with optional authentication.
- */
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type, Apikey',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
-
-/**
- * Adds CORS headers to the response.
- *
- * @param response - The original response
- * @returns New response with CORS headers added
- */
-function addCorsHeaders(response: Response): Response {
-    const newHeaders = new Headers(response.headers);
-    Object.entries(corsHeaders).forEach(([key, value]) => {
-        newHeaders.set(key, value);
-    });
-
-    return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: newHeaders,
-    });
-}
+import { handleCorsPreflightRequest, addCorsHeaders } from '../_shared/cors.ts';
 
 /**
  * Main request handler for the explore function.
@@ -54,11 +26,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     });
 
     // Handle CORS preflight requests
+    // CRITICAL: Must be at the top and return status 200
     if (req.method === 'OPTIONS') {
-        return new Response(null, {
-            status: 204,
-            headers: corsHeaders,
-        });
+        return handleCorsPreflightRequest();
     }
 
     try {

@@ -11,21 +11,13 @@
 import { logger } from '../_shared/logger.ts';
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { shoppingListRouter } from './shopping-list.handlers.ts';
-
-// CORS headers for all responses
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-};
+import { handleCorsPreflightRequest, corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {
     // Handle CORS preflight requests
+    // CRITICAL: Must be at the top and return status 200
     if (req.method === 'OPTIONS') {
-        return new Response(null, {
-            status: 204,
-            headers: corsHeaders,
-        });
+        return handleCorsPreflightRequest();
     }
 
     try {
