@@ -161,7 +161,7 @@ export class ShoppingListService {
                     isOwned: recipe.is_owned,
                     primaryText: recipe.name,
                     secondaryText: null,
-                    canDelete: true, // Zgodnie z planem - grupy z przepisów można usuwać
+                    canDelete: false,
                     rowIds: [recipe.id],
                     rowCount: 1,
                     sumAmount:
@@ -557,7 +557,7 @@ export class ShoppingListService {
         ).pipe(
             map((response) => {
                 if (response.error) {
-                    throw this.mapError(response.error, response.error.status || 500);
+                    throw this.mapError(response.error, response.error.status || 500, 'deleteManualItem');
                 }
                 return;
             }),
@@ -748,7 +748,11 @@ export class ShoppingListService {
     /**
      * Mapuje błędy API na czytelne komunikaty dla UI
      */
-    private mapError(error: unknown, statusCode?: number): ApiError {
+    private mapError(
+        error: unknown,
+        statusCode?: number,
+        context?: 'deleteManualItem'
+    ): ApiError {
         const normalizedError =
             typeof error === 'object' && error !== null
                 ? (error as Partial<ApiError>)
@@ -764,7 +768,11 @@ export class ShoppingListService {
                 message = message || 'Nieprawidłowe dane.';
                 break;
             case 403:
-                message = 'Brak uprawnień do wykonania tej operacji.';
+                if (context === 'deleteManualItem') {
+                    message = 'Nie można usuwać pozycji pochodzących z przepisów.';
+                    break;
+                }
+                message = normalizedError.message || 'Brak uprawnień do wykonania tej operacji.';
                 break;
             case 404:
                 message = 'Nie znaleziono pozycji listy (mogła zostać już usunięta).';

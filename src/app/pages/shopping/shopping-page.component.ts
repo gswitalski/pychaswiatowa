@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -84,7 +84,7 @@ export class ShoppingPageComponent implements OnInit {
     readonly canClear = this.shoppingListService.total;
 
     /** Snackbar ref dla akcji Undo przy usuwaniu grupy */
-    private pendingDeleteSnackBarRef: MatSnackBarRef<any> | null = null;
+    private pendingDeleteSnackBarRef: MatSnackBarRef<TextOnlySnackBar> | null = null;
 
     /** Komenda usuwania grupy oczekująca na wykonanie */
     private pendingDeleteCommand: DeleteRecipeItemsGroupCommand | null = null;
