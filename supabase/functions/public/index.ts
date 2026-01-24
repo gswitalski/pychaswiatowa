@@ -26,10 +26,19 @@
 
 import { publicRouter } from './public.handlers.ts';
 import { logger } from '../_shared/logger.ts';
-import { corsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 
 /**
- * Adds CORS headers and optional cache headers to the response.
+ * CORS headers for all responses.
+ * Allows anonymous access from any origin.
+ */
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type, Apikey',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+};
+
+/**
+ * Adds CORS headers to the response.
  *
  * @param response - The original response
  * @param addCacheHeaders - Whether to add cache-control headers for public content (default: false)
@@ -77,9 +86,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     });
 
     // Handle CORS preflight requests
-    // CRITICAL: Must be at the top and return status 200
     if (req.method === 'OPTIONS') {
-        return handleCorsPreflightRequest();
+        return new Response(null, {
+            status: 204,
+            headers: corsHeaders,
+        });
     }
 
     try {

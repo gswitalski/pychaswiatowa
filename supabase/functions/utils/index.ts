@@ -10,16 +10,26 @@
 import { logger } from '../_shared/logger.ts';
 import { handleError } from '../_shared/errors.ts';
 import { slugifyRouter } from './utils.handlers.ts';
-import { handleCorsPreflightRequest, corsHeaders } from '../_shared/cors.ts';
+
+/**
+ * CORS headers for public endpoint.
+ */
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const pathname = url.pathname;
 
     // Handle CORS preflight
-    // CRITICAL: Must be at the top and return status 200
     if (req.method === 'OPTIONS') {
-        return handleCorsPreflightRequest();
+        return new Response(null, {
+            status: 204,
+            headers: corsHeaders,
+        });
     }
 
     try {

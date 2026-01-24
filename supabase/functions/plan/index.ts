@@ -12,7 +12,6 @@
 import { logger } from '../_shared/logger.ts';
 import { handleError } from '../_shared/errors.ts';
 import { planRouter } from './plan.handlers.ts';
-import { handleCorsPreflightRequest } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {
     const startTime = Date.now();
@@ -24,9 +23,17 @@ Deno.serve(async (req: Request) => {
 
     try {
         // Handle CORS preflight
-        // CRITICAL: Must be at the top and return status 200
         if (method === 'OPTIONS') {
-            return handleCorsPreflightRequest();
+            return new Response(null, {
+                status: 204,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers':
+                        'Authorization, Content-Type, x-client-info, apikey',
+                    'Access-Control-Max-Age': '86400',
+                },
+            });
         }
 
         // Route to handlers

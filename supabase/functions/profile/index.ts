@@ -8,7 +8,30 @@
 
 import { profileRouter } from './profile.handlers.ts';
 import { logger } from '../_shared/logger.ts';
-import { handleCorsPreflightRequest, addCorsHeaders } from '../_shared/cors.ts';
+
+/**
+ * CORS headers for all responses.
+ */
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type, Apikey',
+    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+};
+
+/**
+ * Adds CORS headers to the response.
+ */
+function addCorsHeaders(response: Response): Response {
+    const newHeaders = new Headers(response.headers);
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+    });
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders,
+    });
+}
 
 /**
  * Main request handler for the profile function.
@@ -20,9 +43,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     });
 
     // Handle CORS preflight requests
-    // CRITICAL: Must be at the top and return status 200
     if (req.method === 'OPTIONS') {
-        return handleCorsPreflightRequest();
+        return new Response(null, {
+            status: 204,
+            headers: corsHeaders,
+        });
     }
 
     try {
