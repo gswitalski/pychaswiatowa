@@ -85,7 +85,7 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
 
 2. OPIS:
    - Wygeneruj krótki, przyjazny opis (1-3 zdania)
-   - Może być lekko dowcipny lub zawierać ciekawostkę
+   - Ma być lekko dowcipny oraz zawierać ciekawostkę na temat potrawy (nie używaj słowa "ciekawostka")
    - Jeśli nie da się stworzyć sensownego opisu, użyj null
 
 3. SKŁADNIKI (ingredients_raw):
@@ -103,7 +103,7 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    - Każdy krok w osobnej linii (separator: \n)
    - Sekcje/nagłówki poprzedź znakiem # (np. "# Przygotowanie ciasta")
    - ZAWSZE używaj bezokoliczników: "Wymieszaj" → "Wymieszać", "Dodaj" → "Dodać"
-   - tam gdzie to ma sens używaj trybu dokonanego np. "Wymieszać" zamiast "Mieszać". Ale gdy pada faza "podawać" to zachowaj formę niedokonaną.
+   - tam gdzie to ma sens używaj trybu dokonanego np. "Wymieszać" zamiast "Mieszać", "wylać" zamiast "wylewać", posmarować zamiast "smarować", "odczekać" zamiast "czekać", "Zsunąć" zamiast "zsuwać", "rozwałkować" zamiast "wałkować", "wlać" zamiast "wlewać". Ale gdy pada faza "podawać" to zachowaj formę niedokonaną.
    - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
    - wykrywaj nagłówki w sekcji kroków i przed nimi umieszczaj znak #
    - Lista NIE MOŻE być pusta
