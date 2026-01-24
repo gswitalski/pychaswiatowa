@@ -3,7 +3,8 @@
  * Provides functions to create authenticated Supabase clients.
  */
 
-import { createClient, SupabaseClient, User } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient, User } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Database } from './database.types.ts';
 import { ApplicationError } from './errors.ts';
 
