@@ -37,7 +37,6 @@ function getWorkerBatchSize(): number {
  * @throws ApplicationError with UNAUTHORIZED if secret is missing or invalid
  */
 function verifyInternalSecret(req: Request): void {
-    const providedSecret = req.headers.get('x-internal-worker-secret');
     const expectedSecret = Deno.env.get('INTERNAL_WORKER_SECRET');
 
     if (!expectedSecret) {
@@ -48,15 +47,29 @@ function verifyInternalSecret(req: Request): void {
         );
     }
 
-    if (!providedSecret || providedSecret !== expectedSecret) {
-        logger.warn('Invalid or missing internal worker secret', {
-            hasSecret: !!providedSecret,
-        });
-        throw new ApplicationError(
-            'UNAUTHORIZED',
-            'Authentication required'
-        );
+    // Method 1: Custom header (for manual testing)
+    const customHeader = req.headers.get('x-internal-worker-secret');
+    if (customHeader === expectedSecret) {
+        return;
     }
+
+    // Method 2: Authorization header (for pg_net/cron - pg_net filters custom headers)
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+        const token = authHeader.replace(/^Bearer\s+/i, '');
+        if (token === expectedSecret) {
+            return;
+        }
+    }
+
+    logger.warn('Invalid or missing internal worker secret', {
+        hasCustomHeader: !!customHeader,
+        hasAuthHeader: !!authHeader,
+    });
+    throw new ApplicationError(
+        'UNAUTHORIZED',
+        'Authentication required'
+    );
 }
 
 // #endregion
