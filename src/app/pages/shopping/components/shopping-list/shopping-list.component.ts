@@ -36,6 +36,9 @@ export class ShoppingListComponent {
     /** Event emitowany przy usunięciu ręcznej pozycji */
     deleteManual = output<number>();
 
+    /** Event emitowany przy usunięciu grupy z przepisów */
+    deleteRecipeGroup = output<string>();
+
     /**
      * Sprawdza czy element jest w trakcie toggle
      */
@@ -62,9 +65,16 @@ export class ShoppingListComponent {
     }
 
     /**
-     * Obsługuje usunięcie
+     * Obsługuje usunięcie ręcznej pozycji
      */
     onDeleteManual(id: number): void {
         this.deleteManual.emit(id);
+    }
+
+    /**
+     * Obsługuje usunięcie grupy z przepisów
+     */
+    onDeleteRecipeGroup(groupKey: string): void {
+        this.deleteRecipeGroup.emit(groupKey);
     }
 }

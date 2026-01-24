@@ -21,7 +21,7 @@
         }
     </div>
 
-    <!-- Przycisk usuwania (tylko MANUAL) -->
+    <!-- Przycisk usuwania (tylko gdy canDelete) -->
     @if (item().canDelete) {
         <button
             mat-icon-button
@@ -32,7 +32,7 @@
             class="shopping-list-item__delete"
         >
             @if (isDeleting()) {
-                <mat-spinner [diameter]="20" />
+                <mat-spinner [diameter]="20" aria-label="Usuwanie w toku" />
             } @else {
                 <mat-icon>delete</mat-icon>
             }

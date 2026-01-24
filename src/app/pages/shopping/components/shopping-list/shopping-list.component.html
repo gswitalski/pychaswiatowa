@@ -6,6 +6,7 @@
             [isDeleting]="isDeleting(item)"
             (toggleOwned)="onToggleOwned($event)"
             (deleteManual)="onDeleteManual($event)"
+            (deleteRecipeGroup)="onDeleteRecipeGroup($event)"
         />
         @if (!$last) {
             <mat-divider />

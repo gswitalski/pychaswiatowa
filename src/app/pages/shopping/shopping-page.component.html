@@ -1,5 +1,21 @@
 <div class="shopping-page">
-    <pych-page-header [title]="'Zakupy'" />
+    <pych-page-header [title]="'Zakupy'">
+        @if (canClear() > 0 && !isLoading()) {
+            <button
+                mat-icon-button
+                [disabled]="isClearing()"
+                (click)="onOpenClearDialog()"
+                matTooltip="Wyczyść listę"
+                aria-label="Wyczyść całą listę zakupów"
+            >
+                @if (isClearing()) {
+                    <mat-spinner [diameter]="24" aria-label="Czyszczenie listy w toku" />
+                } @else {
+                    <mat-icon>delete_sweep</mat-icon>
+                }
+            </button>
+        }
+    </pych-page-header>
 
     <div class="shopping-page__content">
         <!-- Formularz dodawania pozycji -->
@@ -12,8 +28,8 @@
 
         <!-- Stan: Ładowanie początkowe -->
         @if (isLoading()) {
-            <div class="shopping-page__loading">
-                <mat-spinner [diameter]="48" />
+            <div class="shopping-page__loading" role="status" aria-live="polite">
+                <mat-spinner [diameter]="48" aria-label="Ładowanie listy zakupów" />
                 <p>Ładowanie listy zakupów...</p>
             </div>
         }
@@ -21,7 +37,12 @@
         @else if (error()) {
             <div class="shopping-page__error">
                 <p class="shopping-page__error-message">{{ error()!.message }}</p>
-                <button mat-flat-button color="primary" (click)="onRetry()">
+                <button
+                    mat-flat-button
+                    color="primary"
+                    (click)="onRetry()"
+                    aria-label="Spróbuj załadować listę ponownie"
+                >
                     Spróbuj ponownie
                 </button>
             </div>
@@ -43,6 +64,7 @@
                     [deleteInProgressIds]="mutationState().deletingItemIds"
                     (toggleOwned)="onToggleOwned($event)"
                     (deleteManual)="onDeleteManual($event)"
+                    (deleteRecipeGroup)="onDeleteRecipeGroup($event)"
                 />
             </div>
         }

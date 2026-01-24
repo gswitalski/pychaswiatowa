@@ -18,6 +18,8 @@ import {
     ShoppingListItemManualDto,
     AddManualShoppingListItemCommand,
     UpdateShoppingListItemCommand,
+    DeleteRecipeItemsGroupCommand,
+    DeleteRecipeItemsGroupResponseDto,
     ApiError,
     NormalizedIngredientUnit,
 } from '../../../../shared/contracts/types';
@@ -41,6 +43,8 @@ export interface ShoppingListMutationState {
     isAddingManual: boolean;
     togglingRowIds: Set<number>;
     deletingItemIds: Set<number>;
+    deletingGroupKey: string | null;
+    isClearing: boolean;
 }
 
 /**
@@ -85,6 +89,8 @@ const INITIAL_MUTATION_STATE: ShoppingListMutationState = {
     isAddingManual: false,
     togglingRowIds: new Set(),
     deletingItemIds: new Set(),
+    deletingGroupKey: null,
+    isClearing: false,
 };
 
 /** TTL dla cache'u listy zakupów (60 sekund) */
@@ -155,7 +161,7 @@ export class ShoppingListService {
                     isOwned: recipe.is_owned,
                     primaryText: recipe.name,
                     secondaryText: null,
-                    canDelete: false,
+                    canDelete: true, // Zgodnie z planem - grupy z przepisów można usuwać
                     rowIds: [recipe.id],
                     rowCount: 1,
                     sumAmount:
@@ -254,6 +260,16 @@ export class ShoppingListService {
     readonly isAddingManual = computed(() => this.mutationState().isAddingManual);
 
     /**
+     * Computed: czy trwa czyszczenie listy
+     */
+    readonly isClearing = computed(() => this.mutationState().isClearing);
+
+    /**
+     * Computed: klucz grupy która jest obecnie usuwana
+     */
+    readonly deletingGroupKey = computed(() => this.mutationState().deletingGroupKey);
+
+    /**
      * Sprawdza czy dany wiersz jest w trakcie toggle
      */
     isTogglingRow(itemId: number): boolean {
@@ -265,6 +281,24 @@ export class ShoppingListService {
      */
     isDeletingItem(itemId: number): boolean {
         return this.mutationState().deletingItemIds.has(itemId);
+    }
+
+    /**
+     * Sprawdza czy dana grupa jest w trakcie usuwania
+     */
+    isDeletingGroup(groupKey: string): boolean {
+        return this.mutationState().deletingGroupKey === groupKey;
+    }
+
+    /**
+     * Ekstraktuje DeleteRecipeItemsGroupCommand z grupy recipe
+     */
+    extractDeleteCommandFromGroup(group: ShoppingListGroupedRecipeItemVm): DeleteRecipeItemsGroupCommand {
+        return {
+            name: group.primaryText,
+            unit: group.unit,
+            is_owned: group.isOwned,
+        };
     }
 
     /**
@@ -532,7 +566,7 @@ export class ShoppingListService {
                 this.state.update(s => {
                     const removedItem = s.data.find(item => item.id === itemId);
                     const isManual = removedItem?.kind === 'MANUAL';
-                    
+
                     return {
                         ...s,
                         data: s.data.filter(item => item.id !== itemId),
@@ -557,6 +591,128 @@ export class ShoppingListService {
     }
 
     /**
+     * Usuwa grupę pozycji z przepisów z listy zakupów
+     * DELETE /shopping-list/recipe-items/group
+     *
+     * Usuwa wszystkie pozycje RECIPE pasujące do (name, unit, is_owned).
+     */
+    deleteRecipeGroup(command: DeleteRecipeItemsGroupCommand): Observable<DeleteRecipeItemsGroupResponseDto> {
+        // Guard clause
+        if (!command.name || command.name.trim().length === 0) {
+            return throwError(() => ({
+                message: 'Nieprawidłowa grupa pozycji.',
+                status: 400,
+            } as ApiError));
+        }
+
+        // Znajdź grupę aby oznaczyć jako usuwana
+        const groupKey = this.buildRecipeGroupKeyFromCommand(command);
+
+        // Ustaw deletingGroupKey
+        this.mutationState.update(s => ({
+            ...s,
+            deletingGroupKey: groupKey,
+        }));
+
+        return from(
+            this.supabase.functions.invoke<DeleteRecipeItemsGroupResponseDto>(
+                'shopping-list/recipe-items/group',
+                {
+                    method: 'DELETE',
+                    body: command,
+                }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw this.mapError(response.error, response.error.status || 500);
+                }
+                if (!response.data) {
+                    throw this.mapError({ message: 'Brak danych w odpowiedzi' }, 500);
+                }
+                return response.data;
+            }),
+            tap((result) => {
+                // Po sukcesie usuń elementy lokalnie
+                if (result.deleted > 0) {
+                    this.state.update(s => {
+                        const filteredData = s.data.filter(item => {
+                            if (item.kind !== 'RECIPE') return true;
+                            const recipeItem = item as ShoppingListItemRecipeDto;
+                            return !(
+                                recipeItem.name === command.name &&
+                                recipeItem.unit === command.unit &&
+                                recipeItem.is_owned === command.is_owned
+                            );
+                        });
+
+                        return {
+                            ...s,
+                            data: filteredData,
+                            meta: {
+                                ...s.meta,
+                                total: Math.max(0, s.meta.total - result.deleted),
+                                recipe_items: Math.max(0, s.meta.recipe_items - result.deleted),
+                            },
+                        };
+                    });
+                }
+            }),
+            finalize(() => {
+                // Zawsze resetuj deletingGroupKey
+                this.mutationState.update(s => ({
+                    ...s,
+                    deletingGroupKey: null,
+                }));
+            }),
+            catchError((err) => this.handleError(err))
+        );
+    }
+
+    /**
+     * Czyści całą listę zakupów
+     * DELETE /shopping-list
+     *
+     * Uwaga: nie modyfikuje "Mojego planu".
+     */
+    clearShoppingList(): Observable<void> {
+        // Ustaw isClearing
+        this.mutationState.update(s => ({
+            ...s,
+            isClearing: true,
+        }));
+
+        return from(
+            this.supabase.functions.invoke('shopping-list', {
+                method: 'DELETE',
+            })
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw this.mapError(response.error, response.error.status || 500);
+                }
+                return;
+            }),
+            tap(() => {
+                // Po sukcesie wyczyść lokalny stan
+                this.state.update(s => ({
+                    ...s,
+                    data: [],
+                    meta: { total: 0, recipe_items: 0, manual_items: 0 },
+                }));
+            }),
+            finalize(() => {
+                // Zawsze resetuj isClearing
+                this.mutationState.update(s => ({
+                    ...s,
+                    isClearing: false,
+                }));
+            }),
+            catchError((err) => this.handleError(err))
+        );
+    }
+
+    /**
      * Resetuje cały stan (np. przy wylogowaniu)
      */
     resetState(): void {
@@ -571,6 +727,15 @@ export class ShoppingListService {
         const unit = item.unit ?? 'null';
         const ownedFlag = item.is_owned ? '1' : '0';
         return `${item.name}||${unit}||${ownedFlag}`;
+    }
+
+    /**
+     * Buduje klucz grupy z DeleteRecipeItemsGroupCommand
+     */
+    private buildRecipeGroupKeyFromCommand(command: DeleteRecipeItemsGroupCommand): string {
+        const unit = command.unit ?? 'null';
+        const ownedFlag = command.is_owned ? '1' : '0';
+        return `${command.name}||${unit}||${ownedFlag}`;
     }
 
     /**
@@ -596,10 +761,10 @@ export class ShoppingListService {
                 message = 'Sesja wygasła. Zaloguj się ponownie.';
                 break;
             case 400:
-                message = message || 'Wpisz nazwę pozycji.';
+                message = message || 'Nieprawidłowe dane.';
                 break;
             case 403:
-                message = 'Nie można usuwać pozycji pochodzących z przepisów.';
+                message = 'Brak uprawnień do wykonania tej operacji.';
                 break;
             case 404:
                 message = 'Nie znaleziono pozycji listy (mogła zostać już usunięta).';

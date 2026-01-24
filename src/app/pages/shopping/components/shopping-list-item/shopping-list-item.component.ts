@@ -45,8 +45,11 @@ export class ShoppingListItemComponent {
     /** Event emitowany przy zmianie checkboxa */
     toggleOwned = output<{ groupKey: string; next: boolean }>();
 
-    /** Event emitowany przy usunięciu */
+    /** Event emitowany przy usunięciu ręcznej pozycji */
     deleteManual = output<number>();
+
+    /** Event emitowany przy usunięciu grupy z przepisów */
+    deleteRecipeGroup = output<string>();
 
     /**
      * Obsługuje zmianę checkboxa
@@ -64,10 +67,10 @@ export class ShoppingListItemComponent {
     onDeleteClick(): void {
         const item = this.item();
 
-        if (item.kind !== 'MANUAL') {
-            return;
+        if (item.kind === 'MANUAL') {
+            this.deleteManual.emit(item.id);
+        } else if (item.kind === 'RECIPE') {
+            this.deleteRecipeGroup.emit(item.groupKey);
         }
-
-        this.deleteManual.emit(item.id);
     }
 }
