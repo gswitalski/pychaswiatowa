@@ -101,14 +101,54 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
 
 4. KROKI WYKONANIA (steps_raw):
    - Każdy krok w osobnej linii (separator: \n)
-   - Sekcje/nagłówki poprzedź znakiem # (np. "# Przygotowanie ciasta")
-   - ZAWSZE używaj bezokoliczników: "Wymieszaj" → "Wymieszać", "Dodaj" → "Dodać"
-   - ZAWSZE używaj trybu dokonanego np. "Wymieszać" zamiast "Mieszać", "wylać" zamiast "wylewać", posmarować zamiast "smarować", "odczekać" zamiast "czekać", "Zsunąć" zamiast "zsuwać", "rozwałkować" zamiast "wałkować", "wlać" zamiast "wlewać".
-   To jest bardzo ważne i pilnuj aby tryb dokonany był używany zawsze. W wyjątkowych przypadkach gdy wskazówka dotyczy fazy "podawać" to zachowaj formę niedokonaną. ALe używaj tego trybu tylko w bardzo mocno uzasadnionych przypadkach.
-      - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
+   - Sekcje/nagłówki poprzedź znakiem # (np. "# Przygotowanie", "# Sos")
+   - Każdy krok MUSI zaczynać się od bezokolicznika (np. "Dodać...", "Wymieszać...", "Zdjąć...")
+
+   KRYTYCZNA ZASADA JĘZYKOWA:
+   - W steps_raw używaj WYŁĄCZNIE bezokoliczników w ASPEKCIE DOKONANYM (czasowniki dokonane).
+     Czyli: "wymieszać", "dodać", "zdjąć", "posolić", "podsmażyć", "ugotować", "upiec", "odczekać", "schłodzić".
+   - Zabronione są formy niedokonane opisujące czynność jako proces:
+     np. "mieszać", "dodawać", "smażyć", "piec" (gdy chodzi o proces), "gotować" (gdy chodzi o proces), "kroić", "siekać", "mieszać się" itp.
+   - Jeśli w źródle są czasowniki niedokonane – MASZ OBOWIĄZEK przepisać je na formy dokonane.
+
+   WYJĄTEK (bardzo rzadki):
+   - Niedokonany może zostać użyty tylko dla zaleceń typu "podawać", "serwować", "przechowywać"
+     i tylko wtedy, gdy ma to sens jako ogólna rekomendacja, a nie pojedyncza czynność.
+
+   MAPA KONWERSJI (używaj gdy pasuje znaczeniowo):
+   - mieszać -> wymieszać
+   - dodawać -> dodać
+   - zdejmować -> zdjąć
+   - kroić -> pokroić
+   - siekać -> posiekać
+   - obierać -> obrać
+   - smażyć -> usmażyć / podsmażyć (jeśli krótko)
+   - gotować -> ugotować
+   - piec -> upiec
+   - dusić -> udusić
+   - blendować/miksować -> zblendować / zmiksować
+   - rozgrzewać -> rozgrzać
+   - studzić -> wystudzić
+   - schładzać -> schłodzić
+   - odstawiać -> odstawić
+   - czekać -> odczekać
+   - polewać/skrapiać -> polać / skropić
+   - smarować -> posmarować
+   - przelewać -> przelać
+   - wylewać -> wylać
+   - nakładać -> nałożyć
+
+   NOTACJA THERMOMIX:
+   - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
+
+   WALIDACJA PRZED ZWROTEM:
+   - Przed zwróceniem JSON sprawdź każdy krok: jeśli zawiera czasownik niedokonany procesu (np. "mieszać", "dodawać", "smażyć"),
+     popraw go na dokonany. Nie zostawiaj niedokonanych form przez przypadek.
+
    - wykrywaj nagłówki w sekcji kroków i przed nimi umieszczaj znak #
-   - nagłowki mają być pogrupowane sensownie. nie może być wiele nagłówków w jednej sekcji. zabronione jest stosowanie jednego nagłówka dla jednego kroku. grupuj tylko wtedy gdy mają sens wspólne.
+   - nagłówki mają być pogrupowane sensownie; nie stosuj jednego nagłówka dla jednego kroku
    - Lista NIE MOŻE być pusta
+
 
 5. WSKAZÓWKI (tips_raw) - OPCJONALNE:
    - Jeśli tekst zawiera dodatkowe wskazówki, porady lub ciekawostki kulinarne - wyekstrahuj je
@@ -146,6 +186,7 @@ Przed wygenerowaniem finalnej odpowiedzi, użyj tagów <scratchpad> do przemyśl
 5. Jaka kategoria najlepiej pasuje?
 6. Jakie tagi będą odpowiednie?
 7. Czy są jakieś ostrzeżenia lub problemy z jakością danych?
+8. Czy wszystkie czasowniki w steps_raw są w bezokoliczniku i w aspekcie dokonanym? Wypisz te, które poprawiłem.
 </scratchpad>
 
 FORMAT ODPOWIEDZI JSON:
