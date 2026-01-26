@@ -103,8 +103,9 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    - Każdy krok w osobnej linii (separator: \n)
    - Sekcje/nagłówki poprzedź znakiem # (np. "# Przygotowanie ciasta")
    - ZAWSZE używaj bezokoliczników: "Wymieszaj" → "Wymieszać", "Dodaj" → "Dodać"
-   - tam gdzie to ma sens używaj trybu dokonanego np. "Wymieszać" zamiast "Mieszać", "wylać" zamiast "wylewać", posmarować zamiast "smarować", "odczekać" zamiast "czekać", "Zsunąć" zamiast "zsuwać", "rozwałkować" zamiast "wałkować", "wlać" zamiast "wlewać". Ale gdy pada faza "podawać" to zachowaj formę niedokonaną.
-   - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
+   - ZAWSZE używaj trybu dokonanego np. "Wymieszać" zamiast "Mieszać", "wylać" zamiast "wylewać", posmarować zamiast "smarować", "odczekać" zamiast "czekać", "Zsunąć" zamiast "zsuwać", "rozwałkować" zamiast "wałkować", "wlać" zamiast "wlewać".
+   To jest bardzo ważne i pilnuj aby tryb dokonany był używany zawsze. W wyjątkowych przypadkach gdy wskazówka dotyczy fazy "podawać" to zachowaj formę niedokonaną. ALe używaj tego trybu tylko w bardzo mocno uzasadnionych przypadkach.
+      - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
    - wykrywaj nagłówki w sekcji kroków i przed nimi umieszczaj znak #
    - nagłowki mają być pogrupowane sensownie. nie może być wiele nagłówków w jednej sekcji. zabronione jest stosowanie jednego nagłówka dla jednego kroku. grupuj tylko wtedy gdy mają sens wspólne.
    - Lista NIE MOŻE być pusta
