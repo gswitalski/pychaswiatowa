@@ -107,13 +107,7 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    KRYTYCZNA ZASADA JĘZYKOWA:
    - W steps_raw używaj WYŁĄCZNIE bezokoliczników w ASPEKCIE DOKONANYM (czasowniki dokonane).
      Czyli: "wymieszać", "dodać", "zdjąć", "posolić", "podsmażyć", "ugotować", "upiec", "odczekać", "schłodzić".
-   - Zabronione są formy niedokonane opisujące czynność jako proces:
-     np. "mieszać", "dodawać", "smażyć", "piec" (gdy chodzi o proces), "gotować" (gdy chodzi o proces), "kroić", "siekać", "mieszać się" itp.
-   - Jeśli w źródle są czasowniki niedokonane – MASZ OBOWIĄZEK przepisać je na formy dokonane.
-
-   WYJĄTEK (bardzo rzadki):
-   - Niedokonany może zostać użyty tylko dla zaleceń typu "podawać", "serwować", "przechowywać"
-     i tylko wtedy, gdy ma to sens jako ogólna rekomendacja, a nie pojedyncza czynność.
+   - dozwolone są tyloko formy dokonane. ZAWSZE używaj formy dokonanej. Patrz mapa konwersji poniżej.   - Jeśli w źródle są czasowniki niedokonane – MASZ OBOWIĄZEK przepisać je na formy dokonane.
 
    MAPA KONWERSJI (używaj gdy pasuje znaczeniowo):
    - mieszać -> wymieszać
