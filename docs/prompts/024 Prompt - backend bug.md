@@ -13,12 +13,9 @@ Zapoznaj się z  projektem
 <aktualne_zachowanie>
 
 endpoint
-- **`DELETE /plan/recipes/{recipeId}`**
-    -  po usunięciu przepisu z planu backend powinien odejmujmować jego skłądniki  składników z listy zakupów (tyylko te które są w przepisie wg skłądników znormalizowanych i tylko taką ilsc jaka jest w przepisi
-    np jeśli wprzepisi jest 200 g cukru an na liscie 700 g cukru to poodjeciu przepisu powinnno być 500 g cukru
+http://127.0.0.1:54331/functions/v1/shopping-list/recipe-items/group
 
-    aktualnie usuniecie przepisu nie usuwa niczego z planu zakupów
-
+nie usuwa grupy z planu zakupów. element jest usuwany tylko na frontendzie. po odświeżeniu ekranu znowu jsie pojaiwa. dotyczy elementów pochodzących z przepisu
 
 
 </aktualne_zachowanie>

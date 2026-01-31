@@ -517,7 +517,7 @@ describe('ShoppingListService', () => {
             expect(vm.kind).toBe('RECIPE');
             expect(vm.primaryText).toBe('cukier');
             expect(vm.secondaryText).toBe('250 g');
-            expect(vm.canDelete).toBe(false);
+            expect(vm.canDelete).toBe(true);
             expect(vm.isOwned).toBe(false);
             expect(vm.rowIds).toEqual([1]);
         });
