@@ -343,7 +343,9 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - **Usuwanie pozycji (MVP – rozszerzenie):**
         - po kliknięciu ikonki kosza pozycja znika z listy i pojawia się Snackbar/Toast z akcją **„Cofnij”** (Undo),
         - dla pozycji „z przepisów” usuwamy **całą grupę** (wszystkie wiersze w grupie: `nazwa`+`jednostka`+`is_owned`),
+        - usuwanie działa identycznie niezależnie od stanu `is_owned` (użytkownik może usuwać także pozycje oznaczone jako posiadane),
         - usunięcie pozycji „z przepisów” **nie usuwa przepisu** z „Mojego planu” (plan bez zmian),
+        - jeśli po usunięciu użytkownik zmieni „Mój plan” (np. doda nowy przepis), pozycja może pojawić się ponownie jako nowe wiersze wynikające z aktualizacji listy zakupów na zdarzeniach planu (w MVP nie utrzymujemy „wykluczeń”),
         - dla dostępności: aria-label na koszu powinien jednoznacznie opisywać zakres (np. „Usuń pozycję: cukier 250 g”).
     - **Wyczyść listę (MVP – rozszerzenie):**
         - akcja w Page Header otwiera modal potwierdzenia,

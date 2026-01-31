@@ -4,7 +4,7 @@ Oto dokumenty projektu, które musisz przeanalizować:
 
 <dokumenty_projektu>
 
-
+@docs/results/main-project-docs/ 
 
 </dokumenty_projektu>
 
@@ -12,16 +12,8 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-
-aktualnie gdy użytkownik dodaje przepisy do swojego planu to budowana jest lista zakupów ze składników przepisów 
-uzytkownik może też oddać pozycję do listy ręcznie
-aby susunąć pozycję dodaną ręczni może uzyc ikonki kosza
-aby usunąć pozycję z przepisu musi usunąc z planu cały przepis
-
-chce aby było mozliwe 
-1. usunięcie pojedynczego elementu z listy zakpó który pochodzi z przepisu (tak samo jak ręcznego elementu)
-2. wyczyszczenie listy zakupów jednym przyciskiem bez modyfikacji listy przepisów z planu
-
+usuwanie pojedynczej pozycji z listy zakupów
+aktualnie dla pozycji dodanej redcznie moge kliknac w ikone kosza i usunąć ją. nie mogę jednak tego zrobić dla pozycji pochodzącejz z przepisu z planu. chcę jednak mieć taką możliwośc
 
 
 </nowa_funkcjonalnosc>

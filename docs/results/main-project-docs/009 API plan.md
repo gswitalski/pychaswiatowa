@@ -1520,6 +1520,12 @@ Public endpoints are available without authentication:
         - `unit = <unit | null>`
         - `is_owned = <bool>`
     - The operation MUST NOT modify "My Plan" (it does not remove any recipe from the plan).
+    - The operation is intentionally aligned with the default **grouped UI**:
+        - deleting a displayed position deletes the entire group matching (`name`, `unit`, `is_owned`),
+        - the same behavior applies for `is_owned=false` and `is_owned=true` (user can delete "owned" groups as well).
+    - **Plan-driven updates after deletion (MVP)**:
+        - if, after deletion, the user changes "My Plan" (e.g., adds a new recipe), the same ingredient may appear again as **new rows** created by the plan side effects,
+        - in MVP we do not maintain a persistent "exclusions" list for deleted groups.
 -   **Request Payload**:
     ```json
     {
