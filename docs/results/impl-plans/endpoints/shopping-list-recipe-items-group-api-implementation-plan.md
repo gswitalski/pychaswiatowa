@@ -15,6 +15,12 @@ Endpoint usuwa wszystkie wiersze z tabeli `shopping_list_items` dla zalogowanego
 
 To jest backendowy odpowiednik operacji „usuń pozycję” w UI, gdzie frontend renderuje listę zakupów jako zgrupowaną po (`name`, `unit`, `is_owned`), ale w bazie przechowuje „raw rows” (po jednym wierszu na składnik z przepisu).
 
+Doprecyzowania (MVP):
+
+- Usuwanie działa **identycznie** dla `is_owned=false` i `is_owned=true` (można usuwać także grupy oznaczone jako „posiadane”).
+- Operacja **nie modyfikuje** „Mojego planu”.
+- Po późniejszej zmianie planu (np. dodaniu przepisu) te same składniki mogą pojawić się ponownie jako nowe wiersze (w MVP nie utrzymujemy „wykluczeń” dla usuniętych grup).
+
 ## 2. Szczegóły żądania
 
 - **Metoda HTTP**: `DELETE`
@@ -36,28 +42,30 @@ To jest backendowy odpowiednik operacji „usuń pozycję” w UI, gdzie fronten
 ```
 
 Uwagi:
-- `unit` może być `null` (dla grup typu „name-only”).
-- `name` i `unit` muszą odpowiadać wartościom przechowywanym w `shopping_list_items` (dla `RECIPE` są to wartości backendowe, nie swobodne teksty użytkownika).
+- `unit` może być `null` (dla grup typu „name-only”) albo jedną z wartości `NormalizedIngredientUnit` (kontrolowana lista jednostek).
+- `name` musi odpowiadać wartościom przechowywanym w `shopping_list_items` dla `kind='RECIPE'` (to wartości pochodzące z normalizacji składników).
+
+Przykład dla `unit = null`:
+
+```json
+{
+    "name": "sól",
+    "unit": null,
+    "is_owned": true
+}
+```
 
 ## 3. Wykorzystywane typy
 
-### 3.1. Istniejące (frontend/shared)
+### 3.1. Istniejące (shared)
 
 W `shared/contracts/types.ts` istnieją typy powiązane z listą zakupów:
 - `ShoppingListItemDto`, `GetShoppingListResponseDto`
 - `NormalizedIngredientUnit` (kontrolowana lista jednostek)
+- `DeleteRecipeItemsGroupCommand`
+- `DeleteRecipeItemsGroupResponseDto`
 
-### 3.2. Do dodania (rekomendowane, aby spiąć kontrakt API)
-
-W `shared/contracts/types.ts` dodać:
-- **Command**: `DeleteRecipeItemsGroupCommand`
-  - `name: string`
-  - `unit: NormalizedIngredientUnit | null`
-  - `is_owned: boolean`
-- **Response DTO**: `DeleteRecipeItemsGroupResponseDto`
-  - `deleted: number`
-
-> Jeśli projekt celowo unika dodawania typów dla endpointów „pomocniczych”, można pominąć, ale wtedy kontrakt jest opisany tylko w dokumentacji.
+> Kontrakt DTO/Command jest już zdefiniowany w kodzie współdzielonym, więc backend powinien trzymać się tych typów 1:1.
 
 ## 4. Przepływ danych
 
@@ -126,12 +134,12 @@ Mechanizm: rzucanie `ApplicationError` i globalny `handleError` (w `supabase/fun
   - złożony indeks dla szybkich kasowań grup:
     - `(user_id, kind, name, unit, is_owned)`
 - Unikać pobierania wszystkich wierszy przed kasowaniem; kasować bezpośrednio filtrem.
-- Opcjonalnie pobierać `count` usuniętych rekordów („exact”) – kosztowne przy dużej liczbie wierszy, ale akceptowalne w MVP; w razie problemów zwracać `deleted` na podstawie długości `data` z `select('id')` (lub pominąć liczbę i zwracać `200` bez payload – ale to zmienia kontrakt).
+- Liczbę usuniętych rekordów zwracać jako `deleted` (zgodnie z kontraktem endpointu). W Supabase JS można to uzyskać przez `delete({ count: 'exact' })` (rekomendowane w MVP ze względu na UX/Undo), z uwzględnieniem ewentualnych kosztów dla dużych zbiorów danych.
 
 ## 8. Kroki implementacji
 
-1. **Kontrakt (opcjonalnie, ale rekomendowane)**:
-   - Dodać do `shared/contracts/types.ts`:
+1. **Kontrakt**:
+   - Użyć istniejących typów z `shared/contracts/types.ts`:
      - `DeleteRecipeItemsGroupCommand`
      - `DeleteRecipeItemsGroupResponseDto`
 2. **Routing** (`supabase/functions/shopping-list/shopping-list.handlers.ts`):
@@ -140,8 +148,8 @@ Mechanizm: rzucanie `ApplicationError` i globalny `handleError` (w `supabase/fun
    - Pamiętać o zasadzie: bardziej specyficzne ścieżki sprawdzać przed mniej specyficznymi.
 3. **Walidacja Zod (handler)**:
    - Schema:
-     - `name`: `string`, `trim`, `min(1)`, `max(150)` (spójnie z innymi limitami; alternatywnie `max(200)` jak dla manual)
-     - `unit`: `z.enum([...])` lub `null` (lista zgodna z `NormalizedIngredientUnit`)
+     - `name`: `string`, `trim`, `min(1)`, sensowny `max` (np. `150`)
+     - `unit`: `z.enum([...NormalizedIngredientUnit...]).nullable()`
      - `is_owned`: `boolean`
 4. **Handler**:
    - `handleDeleteShoppingListRecipeItemsGroup(req)`:

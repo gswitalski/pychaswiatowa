@@ -264,6 +264,70 @@ Content-Type: application/json
 }
 
 ###############################################################################
+### DELETE /shopping-list/recipe-items/group - Delete grouped recipe items
+###############################################################################
+
+### DELETE-GROUP-1. SUCCESS: Delete group with unit
+DELETE {{baseUrl}}/shopping-list/recipe-items/group
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "cukier",
+  "unit": "g",
+  "is_owned": false
+}
+
+### DELETE-GROUP-2. SUCCESS: Delete group with unit = null
+DELETE {{baseUrl}}/shopping-list/recipe-items/group
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "sól",
+  "unit": null,
+  "is_owned": true
+}
+
+### DELETE-GROUP-3. VALIDATION ERROR: Missing name
+DELETE {{baseUrl}}/shopping-list/recipe-items/group
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "unit": "g",
+  "is_owned": false
+}
+
+### DELETE-GROUP-4. VALIDATION ERROR: Invalid unit
+DELETE {{baseUrl}}/shopping-list/recipe-items/group
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "cukier",
+  "unit": "kg",
+  "is_owned": false
+}
+
+### DELETE-GROUP-5. VALIDATION ERROR: Invalid JSON
+DELETE {{baseUrl}}/shopping-list/recipe-items/group
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{invalid json}
+
+### DELETE-GROUP-6. UNAUTHORIZED: Missing Authorization header
+DELETE {{baseUrl}}/shopping-list/recipe-items/group
+Content-Type: application/json
+
+{
+  "name": "cukier",
+  "unit": "g",
+  "is_owned": false
+}
+
+###############################################################################
 ### NOTES
 ###############################################################################
 

@@ -1,4 +1,4 @@
-Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest stworzenie szczegółowego planu wdrożenia punktów końcowych REST API. Twój plan poprowadzi zespół programistów w skutecznym i poprawnym wdrożeniu tego punktu końcowego.
+ Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest stworzenie szczegółowego planu wdrożenia punktów końcowych REST API. Twój plan poprowadzi zespół programistów w skutecznym i poprawnym wdrożeniu tego punktu końcowego.
 
 Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
@@ -6,22 +6,22 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 1. API plan
 <api_plan>
 
-
+@docs/results/main-project-docs/009 API plan.md 
 
 </api_plan>
 
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
-### Nowe
+### Zmienione / doprecyzowane
 
 - **`DELETE /shopping-list/recipe-items/group`**
-    - **Co dochodzi**: usuwanie całej grupy pozycji pochodzących z przepisów po kluczu (`name`, `unit`, `is_owned`).
-    - **Uwagi**: nie modyfikuje „Mojego planu”.
+    - **Co się zmieniło / doprecyzowano**:
+        - endpoint jest jednoznacznie powiązany z widokiem zgrupowanym: usuwa całą grupę (`name`, `unit`, `is_owned`),
+        - działa identycznie dla `is_owned=false` i `is_owned=true`,
+        - operacja nie modyfikuje „Mojego planu”,
+        - po późniejszej zmianie planu te same składniki mogą pojawić się ponownie jako nowe wiersze (brak „wykluczeń” w MVP).
 
-- **`DELETE /shopping-list`**
-    - **Co dochodzi**: wyczyszczenie całej listy zakupów (ręczne + z przepisów).
-    - **Uwagi**: nie modyfikuje „Mojego planu”; lista pozostaje pusta do kolejnej zmiany planu lub dodania pozycji ręcznej.
 
 </api_changes_description>
 
@@ -29,28 +29,28 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 3. Related database resources:
 <related_db_resources>
 
-
+@docs/results/main-project-docs/008 DB Plan.md 
 
 </related_db_resources>
 
 4. Definicje typów:
 <type_definitions>
 
-
+@shared/contracts/types.ts 
 
 </type_definitions>
 
 5. Tech stack:
 <tech_stack>
 
-
+@docs/results/main-project-docs/006 Tech Stack.md 
 
 </tech_stack>
 
 6. Implementation rules:
 <implementation_rules>
 
-
+@.cursor/rules/backend.mdc 
 
 </implementation_rules>
 

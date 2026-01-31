@@ -16,7 +16,7 @@ import { ShoppingListGroupedItemVm } from '../../../../core/services/shopping-li
  * Zapewnia:
  * - checkbox "posiadane" (is_owned)
  * - prezentację treści (RECIPE: name + amount/unit, MANUAL: text)
- * - akcję usunięcia (tylko MANUAL)
+ * - akcję usunięcia (MANUAL oraz RECIPE)
  */
 @Component({
     selector: 'pych-shopping-list-item',

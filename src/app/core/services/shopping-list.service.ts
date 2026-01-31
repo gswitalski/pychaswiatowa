@@ -161,7 +161,7 @@ export class ShoppingListService {
                     isOwned: recipe.is_owned,
                     primaryText: recipe.name,
                     secondaryText: null,
-                    canDelete: false,
+                    canDelete: true,
                     rowIds: [recipe.id],
                     rowCount: 1,
                     sumAmount:
