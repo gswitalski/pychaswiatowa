@@ -2,22 +2,25 @@
     <nav class="sidebar__nav">
         <mat-nav-list>
             @for (item of navigationItems; track item.route) {
-                <a
-                    mat-list-item
-                    [routerLink]="item.route"
-                    routerLinkActive="active"
-                    [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
-                    class="sidebar__nav-item"
-                    (click)="onNavigate()"
-                >
-                    <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-                    <span matListItemTitle>{{ item.label }}</span>
-                </a>
+                @if (item.route !== '/collections') {
+                    <a
+                        mat-list-item
+                        [routerLink]="item.route"
+                        routerLinkActive="active"
+                        [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+                        class="sidebar__nav-item"
+                        (click)="onNavigate()"
+                    >
+                        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+                        <span matListItemTitle>{{ item.label }}</span>
+                    </a>
+                }
             }
+
+            <!-- Sekcja drzewa kolekcji (zamiast zwykłego linku) -->
+            <pych-sidebar-collections-tree (navigationClick)="onNavigate()" />
         </mat-nav-list>
     </nav>
-
-    <pych-sidebar-collections-tree (navigationClick)="onNavigate()" />
 
     <div class="sidebar__footer">
         <mat-nav-list>

@@ -2,14 +2,13 @@
     <div class="sidebar-collections-tree__root">
         <button
             type="button"
-            mat-list-item
             class="sidebar-collections-tree__root-link"
             [class.sidebar-collections-tree__root-link--active]="isCollectionsRouteActive()"
             [attr.aria-current]="isCollectionsRouteActive() ? 'page' : null"
             (click)="onNavigateToCollections()"
         >
-            <mat-icon matListItemIcon aria-hidden="true">collections_bookmark</mat-icon>
-            <span matListItemTitle>Kolekcje</span>
+            <mat-icon aria-hidden="true">collections_bookmark</mat-icon>
+            <span class="sidebar-collections-tree__root-label">Kolekcje</span>
         </button>
         <button
             type="button"
@@ -105,11 +104,10 @@
                                 </div>
                             }
 
-                            <mat-nav-list class="sidebar-collections-tree__recipes-list">
+                            <div class="sidebar-collections-tree__recipes-list">
                                 @for (recipe of recipesState.items; track recipe.id) {
                                     <button
                                         type="button"
-                                        mat-list-item
                                         class="sidebar-collections-tree__recipe"
                                         [class.sidebar-collections-tree__recipe--active]="isRecipeActive(recipe.id)"
                                         [attr.aria-current]="isRecipeActive(recipe.id) ? 'page' : null"
@@ -123,14 +121,14 @@
                                                 loading="lazy"
                                             />
                                         } @else {
-                                            <mat-icon aria-hidden="true">restaurant_menu</mat-icon>
+                                            <mat-icon class="sidebar-collections-tree__recipe-icon" aria-hidden="true">restaurant_menu</mat-icon>
                                         }
                                         <span class="sidebar-collections-tree__recipe-name">
                                             {{ recipe.name }}
                                         </span>
                                     </button>
                                 }
-                            </mat-nav-list>
+                            </div>
 
                             @if (recipesState.status === 'ready' && recipesState.pageInfo?.truncated) {
                                 <div class="sidebar-collections-tree__hint" role="status" aria-live="polite">
