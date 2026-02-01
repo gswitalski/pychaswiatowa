@@ -4,6 +4,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { NavigationItem } from '../../../../shared/models/ui.models';
 import { LayoutService } from '../../../../core/services/layout.service';
+import { SidebarCollectionsTreeComponent } from './sidebar-collections-tree.component';
 
 /**
  * Sidebar navigation component with static list of navigation items.
@@ -11,7 +12,13 @@ import { LayoutService } from '../../../../core/services/layout.service';
 @Component({
     selector: 'pych-sidebar',
     standalone: true,
-    imports: [RouterLink, RouterLinkActive, MatListModule, MatIconModule],
+    imports: [
+        RouterLink,
+        RouterLinkActive,
+        MatListModule,
+        MatIconModule,
+        SidebarCollectionsTreeComponent,
+    ],
     templateUrl: './sidebar.component.html',
     styleUrl: './sidebar.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,11 +41,6 @@ export class SidebarComponent {
             label: 'Moje przepisy',
             route: '/my-recipies',
             icon: 'menu_book',
-        },
-        {
-            label: 'Kolekcje',
-            route: '/collections',
-            icon: 'collections_bookmark',
         },
         // {
         //     label: 'Zakupy',

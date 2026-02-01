@@ -20,14 +20,21 @@ Najpierw przejrzyj następujące informacje:
 
 <user_stories>
 
+### Nowe
+
+- **US-055 — Nawigacja po kolekcjach w Sidebarze (drzewo: kolekcje → przepisy)**
+    - **Co dodano**:
+        - „Kolekcje” w Sidebarze jest drzewem rozwijalnym (poziom 1: Kolekcje → poziom 2: kolekcje → poziom 3: przepisy),
+        - lista przepisów kolekcji jest ładowana **leniwe** dopiero po rozwinięciu danej kolekcji,
+        - element przepisu pokazuje **nazwę** oraz **małą miniaturę** z ilustracji (jeśli istnieje),
+        - kliknięcie przepisu nawiguję do `/recipes/:id-:slug`.
+
 ### Zmienione / doprecyzowane
 
-- **US-053 — Usuwanie pojedynczej pozycji z listy zakupów pochodzącej z przepisu**
+- **US-011 — Tworzenie i zarządzanie kolekcjami przepisów**
     - **Co się zmieniło / doprecyzowano**:
-        - usuwanie dotyczy **całej grupy** widocznej w UI (klucz: `nazwa`, `jednostka`, `is_owned`),
-        - usuwanie działa również dla pozycji oznaczonych jako **posiadane** (`is_owned=true`),
-        - po usunięciu użytkownik ma akcję **„Cofnij”** (Undo), która przywraca usuniętą grupę w oknie czasowym,
-        - po późniejszej zmianie „Mojego planu” (np. dodanie przepisu) ten sam składnik może pojawić się ponownie jako **nowe wiersze** (w MVP nie utrzymujemy „wykluczeń”).
+        - `/collections` pozostaje widokiem do zarządzania kolekcjami (lista/tworzenie/edycja/usuwanie),
+        - Sidebar zapewnia dodatkową, szybszą ścieżkę nawigacji do przepisów w kolekcji (bez zmiany istniejących flow zarządzania).
 
 
 </user_stories>
@@ -38,13 +45,16 @@ Najpierw przejrzyj następujące informacje:
 
 ### Zmienione / doprecyzowane
 
-- **Widok: Zakupy (`/shopping`)**
+- **App Shell — Sidebar: „Kolekcje” jako drzewo**
     - **Co się zmieniło / doprecyzowano**:
-        - ikonka kosza przy pozycji „z przepisu” usuwa **grupę**, a nie pojedynczy wiersz,
-        - kosz działa identycznie niezależnie od `is_owned` (także dla „posiadane”),
-        - po usunięciu pokazujemy Snackbar/Toast z akcją **„Cofnij”** (Undo),
-        - po kolejnych zmianach „Mojego planu” pozycje mogą wracać (wynik aktualizacji listy zakupów na zdarzeniach planu).
+        - kliknięcie w etykietę „Kolekcje” prowadzi do `/collections`,
+        - chevron obok „Kolekcje” zwija/rozwija (bez nawigacji),
+        - po rozwinięciu kolekcji (poziom 2) dociągana jest lista przepisów (poziom 3),
+        - element przepisu prezentuje miniaturę (z `image_path`) + nazwę; fallback ikonka gdy brak zdjęcia.
 
+- **Widok: Lista Kolekcji (`/collections`)**
+    - **Co się zmieniło / doprecyzowano**:
+        - jest osiągalny przez kliknięcie w etykietę „Kolekcje” w Sidebarze (nie przez chevron).
 
 
 </views>

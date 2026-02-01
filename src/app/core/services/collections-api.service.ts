@@ -5,6 +5,7 @@ import {
     CollectionListItemDto,
     CollectionDetailDto,
     CreateCollectionCommand,
+    GetCollectionRecipesResponseDto,
     UpdateCollectionCommand,
 } from '../../../../shared/contracts/types';
 
@@ -103,6 +104,44 @@ export class CollectionsApiService {
     }
 
     /**
+     * Pobiera listę przepisów w kolekcji (na potrzeby sidebara)
+     * GET /collections/{id}/recipes
+     * @param collectionId - ID kolekcji
+     * @param limit - Limit techniczny (domyślnie 500)
+     * @param sort - Pole sortowania (domyślnie 'name.asc')
+     */
+    getCollectionRecipesForSidebar(
+        collectionId: number,
+        limit = 500,
+        sort = 'name.asc'
+    ): Observable<GetCollectionRecipesResponseDto> {
+        const queryParams = new URLSearchParams();
+        queryParams.append('limit', limit.toString());
+        queryParams.append('sort', sort);
+
+        return from(
+            this.supabase.functions.invoke<GetCollectionRecipesResponseDto>(
+                `collections/${collectionId}/recipes?${queryParams.toString()}`,
+                {
+                    method: 'GET',
+                }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    const error = new Error(response.error.message) as Error & { status?: number };
+                    error.status = this.extractStatusFromError(response.error) || 500;
+                    throw error;
+                }
+                if (!response.data) {
+                    throw new Error('Nie znaleziono kolekcji');
+                }
+                return response.data;
+            })
+        );
+    }
+
+    /**
      * Pobiera szczegóły kolekcji wraz z pełną listą przepisów (batch, bez paginacji UI)
      * GET /collections/{id}
      * @param id - ID kolekcji
@@ -160,5 +199,15 @@ export class CollectionsApiService {
                 }
             })
         );
+    }
+
+    private extractStatusFromError(error: {
+        message?: string;
+        status?: number;
+        context?: { status?: number };
+    }): number | null {
+        if (error.status) return error.status;
+        if (error.context?.status) return error.context.status;
+        return null;
     }
 }

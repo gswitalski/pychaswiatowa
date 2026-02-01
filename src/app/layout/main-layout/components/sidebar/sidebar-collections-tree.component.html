@@ -1,0 +1,146 @@
+<div class="sidebar-collections-tree">
+    <div class="sidebar-collections-tree__root">
+        <button
+            type="button"
+            mat-list-item
+            class="sidebar-collections-tree__root-link"
+            [class.sidebar-collections-tree__root-link--active]="isCollectionsRouteActive()"
+            [attr.aria-current]="isCollectionsRouteActive() ? 'page' : null"
+            (click)="onNavigateToCollections()"
+        >
+            <mat-icon matListItemIcon aria-hidden="true">collections_bookmark</mat-icon>
+            <span matListItemTitle>Kolekcje</span>
+        </button>
+        <button
+            type="button"
+            mat-icon-button
+            class="sidebar-collections-tree__root-toggle"
+            [attr.aria-label]="state().isCollectionsExpanded ? 'Zwiń kolekcje' : 'Rozwiń kolekcje'"
+            (click)="onToggleCollections($event)"
+        >
+            <mat-icon aria-hidden="true">
+                {{ state().isCollectionsExpanded ? 'expand_less' : 'expand_more' }}
+            </mat-icon>
+        </button>
+    </div>
+
+    @if (state().isCollectionsExpanded) {
+        <div
+            class="sidebar-collections-tree__collections"
+            [class.sidebar-collections-tree__collections--loading]="state().collectionsLoading && hasCollections()"
+            [attr.aria-busy]="state().collectionsLoading"
+        >
+            @if (state().collectionsLoading && !hasCollections()) {
+                <div class="sidebar-collections-tree__loading" role="status" aria-live="polite">
+                    Ładowanie kolekcji...
+                </div>
+            }
+
+            @if (state().collectionsError) {
+                <div class="sidebar-collections-tree__error" role="status" aria-live="polite">
+                    <span>{{ state().collectionsError }}</span>
+                    <button type="button" mat-button (click)="onRetryLoadCollections()">
+                        Spróbuj ponownie
+                    </button>
+                </div>
+            }
+
+            @if (showCollectionsEmptyState()) {
+                <div class="sidebar-collections-tree__empty" role="status" aria-live="polite">
+                    Brak kolekcji.
+                </div>
+            }
+
+            @for (collection of state().collections; track collection.id) {
+                @let recipesState = getRecipesState(collection.id);
+                <div class="sidebar-collections-tree__collection">
+                    <div class="sidebar-collections-tree__collection-row">
+                        <span
+                            class="sidebar-collections-tree__collection-name"
+                            [class.sidebar-collections-tree__collection-name--active]="isCollectionActive(collection.id)"
+                        >
+                            {{ collection.name }}
+                        </span>
+                        <button
+                            type="button"
+                            mat-icon-button
+                            class="sidebar-collections-tree__collection-toggle"
+                            [attr.aria-label]="'Rozwiń kolekcję: ' + collection.name"
+                            (click)="onToggleCollection($event, collection.id)"
+                        >
+                            <mat-icon aria-hidden="true">
+                                {{ isCollectionExpanded(collection.id) ? 'expand_less' : 'expand_more' }}
+                            </mat-icon>
+                        </button>
+                    </div>
+
+                    @if (isCollectionExpanded(collection.id)) {
+                        <div
+                            class="sidebar-collections-tree__recipes"
+                            [class.sidebar-collections-tree__recipes--loading]="recipesState.status === 'loading' && recipesState.items.length > 0"
+                            [attr.aria-busy]="recipesState.status === 'loading'"
+                        >
+                            @if (recipesState.status === 'loading' && recipesState.items.length === 0) {
+                                <div class="sidebar-collections-tree__loading" role="status" aria-live="polite">
+                                    Ładowanie przepisów...
+                                </div>
+                            }
+
+                            @if (recipesState.status === 'error') {
+                                <div class="sidebar-collections-tree__error" role="status" aria-live="polite">
+                                    <span>{{ recipesState.errorMessage }}</span>
+                                    <button
+                                        type="button"
+                                        mat-button
+                                        (click)="onRetryLoadRecipes($event, collection.id)"
+                                    >
+                                        Spróbuj ponownie
+                                    </button>
+                                </div>
+                            }
+
+                            @if (recipesState.status === 'ready' && recipesState.items.length === 0) {
+                                <div class="sidebar-collections-tree__empty" role="status" aria-live="polite">
+                                    Brak przepisów w tej kolekcji.
+                                </div>
+                            }
+
+                            <mat-nav-list class="sidebar-collections-tree__recipes-list">
+                                @for (recipe of recipesState.items; track recipe.id) {
+                                    <button
+                                        type="button"
+                                        mat-list-item
+                                        class="sidebar-collections-tree__recipe"
+                                        [class.sidebar-collections-tree__recipe--active]="isRecipeActive(recipe.id)"
+                                        [attr.aria-current]="isRecipeActive(recipe.id) ? 'page' : null"
+                                        (click)="onNavigateToRecipe(recipe.id, recipe.name)"
+                                    >
+                                        @if (recipe.image_path) {
+                                            <img
+                                                class="sidebar-collections-tree__recipe-image"
+                                                [src]="getRecipeImageUrl(recipe.image_path) || ''"
+                                                alt=""
+                                                loading="lazy"
+                                            />
+                                        } @else {
+                                            <mat-icon aria-hidden="true">restaurant_menu</mat-icon>
+                                        }
+                                        <span class="sidebar-collections-tree__recipe-name">
+                                            {{ recipe.name }}
+                                        </span>
+                                    </button>
+                                }
+                            </mat-nav-list>
+
+                            @if (recipesState.status === 'ready' && recipesState.pageInfo?.truncated) {
+                                <div class="sidebar-collections-tree__hint" role="status" aria-live="polite">
+                                    Nie udało się załadować wszystkich przepisów (limit techniczny).
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
