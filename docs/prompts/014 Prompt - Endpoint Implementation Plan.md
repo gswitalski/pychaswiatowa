@@ -13,14 +13,18 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. List zmian i nowych funkcjonalności w API
 <api_changes_description>
 
+### Nowe
+
+- **`GET /collections/{id}/recipes`**
+    - **Co dodano**:
+        - endpoint do pobrania listy przepisów w kolekcji w formie „lekko” pod Sidebara (pola: `id`, `name`, `image_path`),
+        - wspiera `limit` i stabilne sortowanie (domyślnie `name.asc`).
+
 ### Zmienione / doprecyzowane
 
-- **`DELETE /shopping-list/recipe-items/group`**
+- **`GET /collections/{id}`**
     - **Co się zmieniło / doprecyzowano**:
-        - endpoint jest jednoznacznie powiązany z widokiem zgrupowanym: usuwa całą grupę (`name`, `unit`, `is_owned`),
-        - działa identycznie dla `is_owned=false` i `is_owned=true`,
-        - operacja nie modyfikuje „Mojego planu”,
-        - po późniejszej zmianie planu te same składniki mogą pojawić się ponownie jako nowe wiersze (brak „wykluczeń” w MVP).
+        - elementy w `recipes.data` zawierają `image_path`, aby UI mogło renderować miniatury/karty bez dodatkowych zapytań.
 
 
 </api_changes_description>

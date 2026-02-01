@@ -11,6 +11,7 @@ import { logger } from '../_shared/logger.ts';
 import {
     getCollections,
     getCollectionById,
+    getCollectionRecipes,
     createCollection,
     updateCollection,
     deleteCollection,
@@ -20,6 +21,7 @@ import {
 import {
     CollectionListItemDto,
     CollectionDetailDto,
+    GetCollectionRecipesResponseDto,
     CreateCollectionCommand,
     UpdateCollectionCommand,
 } from './collections.types.ts';
@@ -42,6 +44,12 @@ const paginationSchema = z.object({
 const collectionBatchQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(500).default(500),
     sort: z.string().regex(/^(created_at|name)\.(asc|desc)$/).default('created_at.desc'),
+});
+
+/** Schema for collection recipes query parameters (GET /collections/{id}/recipes) */
+const collectionRecipesQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(500).default(500),
+    sort: z.string().regex(/^(created_at|name)\.(asc|desc)$/).default('name.asc'),
 });
 
 /** Schema for creating a new collection */
@@ -357,6 +365,53 @@ async function handleAddRecipeToCollection(req: Request, collectionId: number): 
 }
 
 /**
+ * Handles GET /collections/{id}/recipes request.
+ * Returns a minimal list of recipes for sidebar tree.
+ */
+async function handleGetCollectionRecipes(req: Request, collectionId: number): Promise<Response> {
+    try {
+        logger.info('Handling GET /collections/:id/recipes request', { collectionId });
+
+        const { client, user } = await getAuthenticatedContext(req);
+
+        const queryParams = getQueryParams(req.url);
+        const queryResult = collectionRecipesQuerySchema.safeParse({
+            limit: queryParams.get('limit') ?? 500,
+            sort: queryParams.get('sort') ?? 'name.asc',
+        });
+
+        if (!queryResult.success) {
+            return createValidationErrorResponse(queryResult.error);
+        }
+
+        const { limit, sort } = queryResult.data;
+        const [sortField, sortDirection] = sort.split('.') as [string, 'asc' | 'desc'];
+
+        const response: GetCollectionRecipesResponseDto = await getCollectionRecipes(
+            client,
+            user.id,
+            collectionId,
+            limit,
+            sortField,
+            sortDirection
+        );
+
+        logger.info('GET /collections/:id/recipes completed successfully', {
+            userId: user.id,
+            collectionId,
+            limit,
+            sort,
+            returned: response.pageInfo.returned,
+            truncated: response.pageInfo.truncated,
+        });
+
+        return createSuccessResponse(response);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Handles DELETE /collections/{collectionId}/recipes/{recipeId} request.
  * Removes a recipe from a collection.
  */
@@ -442,11 +497,15 @@ export async function collectionsRouter(req: Request): Promise<Response> {
             return createValidationErrorResponse(collectionIdResult.error);
         }
 
+        if (method === 'GET') {
+            return handleGetCollectionRecipes(req, collectionIdResult.data);
+        }
+
         if (method === 'POST') {
             return handleAddRecipeToCollection(req, collectionIdResult.data);
         }
 
-        return createMethodNotAllowedResponse(['POST']);
+        return createMethodNotAllowedResponse(['GET', 'POST']);
     }
 
     // Route: /collections/{id} - GET, PUT, DELETE

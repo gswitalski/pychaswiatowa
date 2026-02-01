@@ -399,6 +399,11 @@ export type CollectionListItemDto = Pick<
 export type RecipeInCollectionDto = Pick<Recipe, 'id' | 'name'>;
 
 /**
+ * DTO for a minimal recipe item in the sidebar list.
+ */
+export type RecipeSidebarListItemDto = Pick<Recipe, 'id' | 'name' | 'image_path'>;
+
+/**
  * DTO for the detailed view of a single collection, including a batch list of its recipes.
  * Uses RecipeListItemDto to allow displaying full recipe cards with images.
  * Returns all recipes in one batch (no UI pagination) with truncated flag.
@@ -409,6 +414,15 @@ export type CollectionDetailDto = CollectionListItemDto & {
         pageInfo: CollectionRecipesPageInfoDto;
     };
 };
+
+/**
+ * DTO for GET /collections/{id}/recipes response (sidebar list).
+ */
+export interface GetCollectionRecipesResponseDto {
+    collection_id: number;
+    data: RecipeSidebarListItemDto[];
+    pageInfo: CollectionRecipesPageInfoDto;
+}
 
 /**
  * Command model for creating a new collection.

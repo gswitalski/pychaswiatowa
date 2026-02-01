@@ -37,6 +37,15 @@ export interface RecipeListItemDto {
 }
 
 /**
+ * DTO for a minimal recipe item in the sidebar list.
+ */
+export interface RecipeSidebarListItemDto {
+    id: number;
+    name: string;
+    image_path: string | null;
+}
+
+/**
  * DTO for a recipe item within a collection detail view (backward compatibility).
  * @deprecated Użyj RecipeListItemDto zamiast tego.
  */
@@ -84,6 +93,15 @@ export interface CollectionDetailDto extends CollectionListItemDto {
         data: RecipeListItemDto[];
         pageInfo: CollectionRecipesPageInfoDto;
     };
+}
+
+/**
+ * DTO for GET /collections/{id}/recipes response (sidebar list).
+ */
+export interface GetCollectionRecipesResponseDto {
+    collection_id: number;
+    data: RecipeSidebarListItemDto[];
+    pageInfo: CollectionRecipesPageInfoDto;
 }
 
 // #endregion

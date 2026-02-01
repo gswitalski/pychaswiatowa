@@ -10,6 +10,8 @@ import {
     CollectionListItemDto,
     CollectionDetailDto,
     RecipeListItemDto,
+    RecipeSidebarListItemDto,
+    GetCollectionRecipesResponseDto,
     CreateCollectionCommand,
     UpdateCollectionCommand,
 } from './collections.types.ts';
@@ -32,6 +34,9 @@ const RECIPE_SELECT_COLUMNS = `
     servings,
     is_termorobot
 `;
+
+/** Columns to select for sidebar recipe list in collection. */
+const RECIPE_SIDEBAR_SELECT_COLUMNS = 'id, name, image_path';
 
 // #region --- Collection CRUD Operations ---
 
@@ -142,126 +147,102 @@ export async function getCollectionById(
 
     const totalCount = totalItems ?? 0;
 
-    // Fetch recipes in batch with sorting and limit
-    // Strategy: Get recipe_ids from recipe_collections, then fetch full recipe data with sorting
-    const { data: recipeCollections, error: recipesError } = await client
-        .from('recipe_collections')
-        .select('recipe_id')
-        .eq('collection_id', collectionId)
+    // Fetch recipes in batch with sorting and limit (limit AFTER sort)
+    const ascending = sortDirection === 'asc';
+    const { data: recipeData, error: recipeDetailsError } = await client
+        .from('recipes')
+        .select(`${RECIPE_SELECT_COLUMNS}, recipe_collections!inner(collection_id)`)
+        .eq('recipe_collections.collection_id', collectionId)
+        .is('deleted_at', null)
+        .order(sortField, { ascending })
+        .order('id', { ascending: true })
         .range(0, limit - 1);
 
-    if (recipesError) {
-        logger.error('Database error while fetching recipe_collections', {
+    if (recipeDetailsError) {
+        logger.error('Database error while fetching recipe details', {
             collectionId,
-            errorCode: recipesError.code,
-            errorMessage: recipesError.message,
+            errorCode: recipeDetailsError.code,
+            errorMessage: recipeDetailsError.message,
         });
-        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipes from collection');
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe details');
     }
 
-    // Fetch recipe details with sorting and deleted_at filter
-    let recipes: RecipeListItemDto[] = [];
-    if (recipeCollections && recipeCollections.length > 0) {
-        const recipeIds = recipeCollections.map((rc) => rc.recipe_id);
+    // Pobierz unikalne user_id przepisów
+    const uniqueUserIds = [...new Set(recipeData?.map((r: any) => r.user_id) || [])];
 
-        // Build order configuration based on sortField and sortDirection
-        const ascending = sortDirection === 'asc';
+    // Pobierz profile autorów
+    const { data: profilesData, error: profilesError } = await client
+        .from('profiles')
+        .select('id, username')
+        .in('id', uniqueUserIds);
 
-        const { data: recipeData, error: recipeDetailsError } = await client
-            .from('recipes')
-            .select(RECIPE_SELECT_COLUMNS)
-            .in('id', recipeIds)
-            .is('deleted_at', null)
-            .order(sortField, { ascending })
-            .order('id', { ascending }); // Tie-breaker for stable sorting
-
-        if (recipeDetailsError) {
-            logger.error('Database error while fetching recipe details', {
-                collectionId,
-                recipeIds,
-                errorCode: recipeDetailsError.code,
-                errorMessage: recipeDetailsError.message,
-            });
-            throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe details');
-        }
-
-        // Pobierz unikalne user_id przepisów
-        const uniqueUserIds = [...new Set(recipeData?.map((r: any) => r.user_id) || [])];
-
-        // Pobierz profile autorów
-        const { data: profilesData, error: profilesError } = await client
-            .from('profiles')
-            .select('id, username')
-            .in('id', uniqueUserIds);
-
-        if (profilesError) {
-            logger.error('Database error while fetching profiles', {
-                collectionId,
-                userIds: uniqueUserIds,
-                errorCode: profilesError.code,
-                errorMessage: profilesError.message,
-            });
-            throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch author profiles');
-        }
-
-        // Pobierz unikalne category_id (non-null)
-        const uniqueCategoryIds = [...new Set(
-            recipeData?.map((r: any) => r.category_id).filter((id: any) => id !== null) || []
-        )];
-
-        // Pobierz kategorie
-        let categoriesData: any[] = [];
-        if (uniqueCategoryIds.length > 0) {
-            const { data: cats, error: categoriesError } = await client
-                .from('categories')
-                .select('id, name')
-                .in('id', uniqueCategoryIds);
-
-            if (categoriesError) {
-                logger.error('Database error while fetching categories', {
-                    collectionId,
-                    categoryIds: uniqueCategoryIds,
-                    errorCode: categoriesError.code,
-                    errorMessage: categoriesError.message,
-                });
-                // Don't throw - categories are optional, continue with null names
-            } else {
-                categoriesData = cats || [];
-            }
-        }
-
-        // Stwórz mapy dla szybkiego dostępu
-        const profilesMap = new Map(
-            (profilesData || []).map((p: any) => [p.id, p])
-        );
-        const categoriesMap = new Map(
-            categoriesData.map((c: any) => [c.id, c.name])
-        );
-
-        // Mapujemy dane z bazy na RecipeListItemDto
-        recipes = (recipeData ?? []).map((recipe: any) => {
-            const profile = profilesMap.get(recipe.user_id);
-            const categoryName = recipe.category_id ? categoriesMap.get(recipe.category_id) || null : null;
-
-            return {
-                id: recipe.id,
-                name: recipe.name,
-                image_path: recipe.image_path,
-                created_at: recipe.created_at,
-                visibility: recipe.visibility as 'PRIVATE' | 'SHARED' | 'PUBLIC',
-                is_owner: recipe.user_id === userId,
-                in_my_collections: true, // Zawsze true, bo przepis jest w aktualnie przeglądanej kolekcji
-                author: {
-                    id: recipe.user_id,
-                    username: profile?.username || 'Unknown',
-                },
-                category_id: recipe.category_id,
-                category_name: categoryName,
-                servings: recipe.servings,
-                is_termorobot: recipe.is_termorobot,
-            };
+    if (profilesError) {
+        logger.error('Database error while fetching profiles', {
+            collectionId,
+            userIds: uniqueUserIds,
+            errorCode: profilesError.code,
+            errorMessage: profilesError.message,
         });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch author profiles');
     }
+
+    // Pobierz unikalne category_id (non-null)
+    const uniqueCategoryIds = [...new Set(
+        recipeData?.map((r: any) => r.category_id).filter((id: any) => id !== null) || []
+    )];
+
+    // Pobierz kategorie
+    let categoriesData: any[] = [];
+    if (uniqueCategoryIds.length > 0) {
+        const { data: cats, error: categoriesError } = await client
+            .from('categories')
+            .select('id, name')
+            .in('id', uniqueCategoryIds);
+
+        if (categoriesError) {
+            logger.error('Database error while fetching categories', {
+                collectionId,
+                categoryIds: uniqueCategoryIds,
+                errorCode: categoriesError.code,
+                errorMessage: categoriesError.message,
+            });
+            // Don't throw - categories are optional, continue with null names
+        } else {
+            categoriesData = cats || [];
+        }
+    }
+
+    // Stwórz mapy dla szybkiego dostępu
+    const profilesMap = new Map(
+        (profilesData || []).map((p: any) => [p.id, p])
+    );
+    const categoriesMap = new Map(
+        categoriesData.map((c: any) => [c.id, c.name])
+    );
+
+    // Mapujemy dane z bazy na RecipeListItemDto
+    const recipes: RecipeListItemDto[] = (recipeData ?? []).map((recipe: any) => {
+        const profile = profilesMap.get(recipe.user_id);
+        const categoryName = recipe.category_id ? categoriesMap.get(recipe.category_id) || null : null;
+
+        return {
+            id: recipe.id,
+            name: recipe.name,
+            image_path: recipe.image_path,
+            created_at: recipe.created_at,
+            visibility: recipe.visibility as 'PRIVATE' | 'SHARED' | 'PUBLIC',
+            is_owner: recipe.user_id === userId,
+            in_my_collections: true, // Zawsze true, bo przepis jest w aktualnie przeglądanej kolekcji
+            author: {
+                id: recipe.user_id,
+                username: profile?.username || 'Unknown',
+            },
+            category_id: recipe.category_id,
+            category_name: categoryName,
+            servings: recipe.servings,
+            is_termorobot: recipe.is_termorobot,
+        };
+    });
 
     // Build pageInfo
     const returned = recipes.length;
@@ -286,6 +267,118 @@ export async function getCollectionById(
                 returned,
                 truncated,
             },
+        },
+    };
+}
+
+/**
+ * Retrieves recipes in a collection for sidebar list (minimal fields).
+ *
+ * @param client - The authenticated Supabase client
+ * @param userId - The ID of the authenticated user
+ * @param collectionId - The ID of the collection to retrieve
+ * @param limit - Maximum number of recipes to return (1-500)
+ * @param sortField - Field to sort by ('created_at' or 'name')
+ * @param sortDirection - Sort direction ('asc' or 'desc')
+ * @returns GetCollectionRecipesResponseDto
+ * @throws ApplicationError with NOT_FOUND if collection doesn't exist or doesn't belong to user
+ */
+export async function getCollectionRecipes(
+    client: TypedSupabaseClient,
+    userId: string,
+    collectionId: number,
+    limit: number = 500,
+    sortField: string = 'name',
+    sortDirection: 'asc' | 'desc' = 'asc'
+): Promise<GetCollectionRecipesResponseDto> {
+    logger.info('Fetching collection recipes (sidebar list)', {
+        userId,
+        collectionId,
+        limit,
+        sortField,
+        sortDirection,
+    });
+
+    const { error: collectionError } = await client
+        .from('collections')
+        .select('id')
+        .eq('id', collectionId)
+        .eq('user_id', userId)
+        .single();
+
+    if (collectionError) {
+        if (collectionError.code === 'PGRST116') {
+            logger.warn('Collection not found', { userId, collectionId });
+            throw new ApplicationError('NOT_FOUND', 'Collection not found');
+        }
+        logger.error('Database error while verifying collection', {
+            userId,
+            collectionId,
+            errorCode: collectionError.code,
+            errorMessage: collectionError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to verify collection');
+    }
+
+    const { count: totalItems, error: countError } = await client
+        .from('recipes')
+        .select('id, recipe_collections!inner(collection_id)', { count: 'exact', head: true })
+        .eq('recipe_collections.collection_id', collectionId)
+        .is('deleted_at', null);
+
+    if (countError) {
+        logger.error('Database error while counting collection recipes', {
+            collectionId,
+            errorCode: countError.code,
+            errorMessage: countError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to count collection recipes');
+    }
+
+    const ascending = sortDirection === 'asc';
+    const { data: recipesData, error: recipesError } = await client
+        .from('recipes')
+        .select(`${RECIPE_SIDEBAR_SELECT_COLUMNS}, recipe_collections!inner(collection_id)`)
+        .eq('recipe_collections.collection_id', collectionId)
+        .is('deleted_at', null)
+        .order(sortField, { ascending })
+        .order('id', { ascending: true })
+        .range(0, limit - 1);
+
+    if (recipesError) {
+        logger.error('Database error while fetching collection recipes', {
+            collectionId,
+            errorCode: recipesError.code,
+            errorMessage: recipesError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch collection recipes');
+    }
+
+    const recipes: RecipeSidebarListItemDto[] = (recipesData ?? []).map((recipe: any) => ({
+        id: recipe.id,
+        name: recipe.name,
+        image_path: recipe.image_path,
+    }));
+
+    const returned = recipes.length;
+    const totalCount = totalItems ?? 0;
+    const truncated = totalCount > limit;
+
+    logger.info('Collection recipes fetched successfully', {
+        userId,
+        collectionId,
+        returned,
+        totalCount,
+        truncated,
+    });
+
+    return {
+        collection_id: collectionId,
+        data: recipes,
+        pageInfo: {
+            limit,
+            returned,
+            truncated,
         },
     };
 }
