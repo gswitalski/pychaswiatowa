@@ -1198,7 +1198,7 @@ Public endpoints are available without authentication:
           "description": "Recipes for the holidays.",
           "recipes": {
             "data": [
-              { "id": 1, "name": "Apple Pie" }
+              { "id": 1, "name": "Apple Pie", "image_path": "recipes/1/cover_1700000000.webp" }
             ],
             "pageInfo": {
               "limit": 500,
@@ -1211,6 +1211,43 @@ Public endpoints are available without authentication:
 -   **Notes**:
     - The UI for `/collections/:id` does not paginate; it renders the returned list in full.
     - If `pageInfo.truncated = true`, the client should show a clear message that not all recipes could be loaded due to a technical limit.
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+    -   **Code**: `404 Not Found`
+
+---
+
+#### `GET /collections/{id}/recipes`
+
+-   **Description**: Retrieve a list of recipes that belong to a single collection. Intended for lazy-loading the 3rd level of the Sidebar "Collections tree" (collection → recipes) without loading full collection details.
+-   **Query Parameters**:
+    -   `limit` (optional, integer, default: 500): Safety limit for the number of recipes returned in one response (Sidebar should use a single batch).
+    -   `sort` (optional, string, default: `name.asc`): Sort order for recipes. Must be stable. e.g., `name.asc`, `created_at.desc`.
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "collection_id": 1,
+          "data": [
+            {
+              "id": 1,
+              "name": "Apple Pie",
+              "image_path": "recipes/1/cover_1700000000.webp"
+            }
+          ],
+          "pageInfo": {
+            "limit": 500,
+            "returned": 40,
+            "truncated": false
+          }
+        }
+        ```
+-   **Notes (MVP)**:
+    - The response intentionally returns a **minimal recipe summary** (`id`, `name`, `image_path`) suitable for Sidebar rendering (miniature + name).
+    - If a recipe has no image, `image_path` is `null` and the UI shows a fallback icon/avatar.
+    - If `pageInfo.truncated = true`, the UI should show a clear message that not all recipes could be loaded due to a technical limit.
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
     -   **Code**: `403 Forbidden`

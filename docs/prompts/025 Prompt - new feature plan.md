@@ -12,8 +12,23 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 
 <nowa_funkcjonalnosc>
 
-usuwanie pojedynczej pozycji z listy zakupów
-aktualnie dla pozycji dodanej redcznie moge kliknac w ikone kosza i usunąć ją. nie mogę jednak tego zrobić dla pozycji pochodzącejz z przepisu z planu. chcę jednak mieć taką możliwośc
+
+Zmianie podlega wyswietlanie kolekcji
+
+Aktualnie po wciscieniu w nwawigacji bocznej opcji "kolekcje" w kontencie pokazuje się lista kolekcji a po kliknięciu w kolekcję otwiera sie lista z karatmi przepsiów w tej kolekcji
+
+Opis zmiany:
+
+Opcja "Kolekcje" rozwija się wpodopcje z listą moich kolekcji np
+
+"Śniadania"
+"Sprawdzone risotta"
+"Dania popisowe"
+
+każda opcja odrugieo poziomu rozwija sie w lpodopcje z przepisami w tej kolekcji. 
+
+kolekcje można zwijac i rozwijać tak jak opcje głowna "Kolekcje"
+kliknięcie w przepis powłduje załadownie przepisu do kontentu
 
 
 </nowa_funkcjonalnosc>

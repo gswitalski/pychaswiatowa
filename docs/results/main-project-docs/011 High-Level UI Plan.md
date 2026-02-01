@@ -8,6 +8,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 1.  **Globalny Sidebar (Lewa strona):** Zawiera wyłącznie linki nawigacyjne (Moja Pycha, Przepisy, Kolekcje, Zakupy, Ustawienia). Nie zawiera przycisków akcji. Sidebar jest widoczny wyłącznie w sekcjach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/shopping/**`, `/settings/**`.
 2.  **Globalny Topbar (Góra):** Zawiera stałą główną nawigację (zakładki) **Moja Pycha** (`/dashboard`) i **Odkrywaj przepisy** (`/explore`) z wyróżnieniem aktywnej pozycji, stałą ikonę/akcję globalnego wyszukiwania (Omnibox, np. jako overlay) oraz profil użytkownika. Breadcrumbs są wyświetlane jako element orientacyjny na głębszych trasach (np. wewnątrz kolekcji).
 3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
+    - **Uwaga (MVP – zmiana dot. Kolekcji):** pozycja „Kolekcje” w Sidebarze działa jako **drzewo nawigacyjne** (kolekcje → przepisy) z leniwym ładowaniem list przepisów per kolekcja. Kliknięcie w etykietę „Kolekcje” prowadzi do `/collections` (zarządzanie kolekcjami), a chevron służy do zwijania/rozwijania.
 
 ### Role i uprawnienia (RBAC – przygotowanie)
 
@@ -261,6 +262,7 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 - **Kluczowe informacje do wyświetlenia:** Lista istniejących kolekcji z opcjami edycji i usunięcia.
 - **Kluczowe komponenty widoku:** `mat-list` lub `mat-card` do wyświetlania kolekcji, przycisk do tworzenia nowej, komponent "stanu pustego".
 - **Względy UX, dostępności i bezpieczeństwa:** Potwierdzenie usunięcia kolekcji w oknie modalnym.
+    - **Wejście do widoku:** kliknięcie w etykietę „Kolekcje” w Sidebarze prowadzi do tego widoku (chevron nie powinien nawigować).
 
 **12. Szczegóły Kolekcji**
 - **Ścieżka:** `/collections/:id`
@@ -377,7 +379,15 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
     - w Topbarze dostępna jest stała główna nawigacja: `Moja Pycha` (`/dashboard`) i `Odkrywaj przepisy` (`/explore`).
 - **Nawigacja dla zalogowanych (App Shell):**
-    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Moje kolekcje`, `Zakupy`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/shopping/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
+    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Kolekcje`, `Zakupy`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/shopping/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
+        - **Kolekcje jako drzewo (MVP):**
+            - poziom 1: „Kolekcje” (pozycja główna) z chevron,
+            - poziom 2: lista kolekcji użytkownika (każda z własnym chevron),
+            - poziom 3: lista przepisów w kolekcji (element: mała miniatura z ilustracji przepisu + nazwa),
+            - **lazy-load:** lista przepisów dla kolekcji jest pobierana dopiero po rozwinięciu tej kolekcji,
+            - kliknięcie w etykietę „Kolekcje” prowadzi do `/collections` (zarządzanie kolekcjami),
+            - kliknięcie w chevron zwija/rozwija (bez nawigacji),
+            - kliknięcie w przepis na poziomie 3 nawiguję do `/recipes/:id-:slug`.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
         - **Główna nawigacja (stała):** Zakładki "Moja Pycha" oraz "Odkrywaj przepisy" z wyróżnieniem aktywnej pozycji. **Lista pozycji jest zahardkodowana we froncie** (konfiguracja statyczna) i przygotowana pod przyszłe moduły: blog, menu, zakupy.
         - **Breadcrumbs (kontekstowe):** Ścieżka powrotu wyświetlana na głębszych trasach (np. `Kolekcje > Święta`).
@@ -409,4 +419,8 @@ Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności o
 - **Drawer „Mój plan” (`MyPlanDrawerComponent`):** Panel wysuwany z prawej strony pokazujący listę przepisów w planie (miniatura + nazwa + kosz), z akcjami: „Wyczyść” i „Zamknij” oraz z overlay zamykającym po kliknięciu.
 - **Pływający przycisk „Mój plan” (`MyPlanFabComponent`):** Globalny przycisk widoczny po zalogowaniu, gdy plan ma ≥ 1 element. Umieszczony w prawym dolnym rogu i otwierający drawer „Mój plan”.
 - **Serwis planu (`MyPlanService`):** Warstwa komunikacji z API planu oraz źródło stanu UI (czy drawer jest otwarty, czy plan ma elementy) wykorzystywana w komponentach globalnych (App Shell) i na szczegółach przepisu.
+- **Drzewo kolekcji w Sidebarze (`CollectionsSidebarTreeComponent`):** Komponent Sidebara renderujący zagnieżdżoną nawigację „Kolekcje → (kolekcje) → (przepisy)”.
+    - **Źródła danych:** lista kolekcji z `GET /collections`, a przepisy dla danej kolekcji dociągane leniwie po jej rozwinięciu (dedykowany endpoint kolekcji).
+    - **UI elementu przepisu:** miniatura z ilustracji przepisu (np. `mat-list-item` + `mat-icon`/`mat-avatar` z obrazem) + nazwa; fallback (np. ikonka) gdy brak `image_path`.
+    - **Zachowanie:** chevron rozwija/zwija bez nawigacji; kliknięcie w etykietę „Kolekcje” nawiguję do `/collections`; kliknięcie w przepis nawiguję do `/recipes/:id-:slug`.
 - **Lista edytowalnych elementów (`EditableListComponent`):** Komponent do zarządzania listą składników/kroków/wskazówek w formularzu, wspierający dodawanie, usuwanie, edycję "in-line" oraz zmianę kolejności za pomocą "przeciągnij i upuść".
