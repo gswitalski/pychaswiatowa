@@ -11,7 +11,7 @@
     &__root-link {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         flex: 1;
         padding: 8px 16px;
         border: none;
@@ -22,6 +22,7 @@
         border-radius: 8px;
         transition: background-color 150ms ease;
         min-height: 48px;
+        font-family: var(--mat-sys-body-large-font, Roboto, sans-serif);
 
         mat-icon {
             color: var(--mat-sys-on-surface-variant);
@@ -49,10 +50,11 @@
     }
 
     &__root-label {
-        font-size: 14px;
+        font-size: 1rem;
         font-weight: 400;
-        letter-spacing: 0.0178571429em;
-        line-height: 1.25rem;
+        line-height: 1.5rem;
+        letter-spacing: 0.03125em;
+        color: var(--mat-sys-on-surface);
     }
 
     &__root-toggle {
