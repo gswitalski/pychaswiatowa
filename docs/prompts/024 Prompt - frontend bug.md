@@ -11,19 +11,18 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-mam kilka przepisów w planie
-jestem naścieżce
-http://localhost:4200/shopping
-klikam na pych-my-plan-fab i wciskam "wyczyść plan"
+strona 
+https://pychaswiatowa.pl/dashboard
 
-na stronie shopping ciągle widze składniki z usuniętych przepisów, muszę wcisnąć F5 aby list się odświeżyła
-
+wyswaitla okstatnio dodane prepisy przez uzytkownika ale nie wykurzystuje do tego komponentu pych-recipe-card przez źle się one wyświetlają
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-lista zakupów odświeża się automatycznie
+strona 
+https://pychaswiatowa.pl/dashboard
+do wyswietlania ostatnich przepisów wykorzystuje komponent pych-recipe-card.
 
 </oczekiwane_zachowanie>
 

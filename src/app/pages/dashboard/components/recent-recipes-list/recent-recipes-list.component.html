@@ -4,21 +4,12 @@
     @if (hasRecipes) {
         <div class="recipes-grid">
             @for (recipe of recipes; track recipe.id) {
-                <mat-card class="recipe-card" [routerLink]="['/recipes', recipe.id]">
-                    <div class="recipe-image">
-                        @if (recipe.image_path) {
-                            <img [src]="recipe.image_path" [alt]="recipe.name" />
-                        } @else {
-                            <div class="placeholder-image">
-                                <mat-icon>restaurant</mat-icon>
-                            </div>
-                        }
-                    </div>
-                    <mat-card-content>
-                        <h3 class="recipe-name">{{ recipe.name }}</h3>
-                        <p class="recipe-date">{{ recipe.created_at | date: 'dd.MM.yyyy' }}</p>
-                    </mat-card-content>
-                </mat-card>
+                <pych-recipe-card
+                    [recipe]="toCardData(recipe)"
+                    [routeType]="'private'"
+                    [isOwnRecipe]="recipe.is_owner"
+                    [inMyCollections]="recipe.in_my_collections"
+                    [visibility]="recipe.visibility" />
             }
         </div>
     } @else {

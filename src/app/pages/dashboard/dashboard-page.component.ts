@@ -81,7 +81,7 @@ export class DashboardPageComponent implements OnInit {
 
         forkJoin({
             profile: this.profileService.getProfile(),
-            recipes: this.recipesService.getRecipes({ sort: 'created_at.desc', limit: 5 }),
+            recipes: this.recipesService.getRecipes({ sort: 'created_at.desc', limit: 8 }),
         }).subscribe({
             next: ({ profile, recipes }) => {
                 this.state.update((s) => ({
