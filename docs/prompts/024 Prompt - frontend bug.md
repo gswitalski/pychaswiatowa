@@ -11,18 +11,15 @@ Zapoznaj się z dokumnetacją projektu
 
 <aktualne_zachowanie>
 
-strona 
-https://pychaswiatowa.pl/dashboard
+w komponencie pych-toolbar, z lewej strony znajduje się log link
 
-wyswaitla okstatnio dodane prepisy przez uzytkownika ale nie wykurzystuje do tego komponentu pych-recipe-card przez źle się one wyświetlają
+jednak nie jest to logo ale sam napis
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-strona 
-https://pychaswiatowa.pl/dashboard
-do wyswietlania ostatnich przepisów wykorzystuje komponent pych-recipe-card.
+z lewej stronu znajdue sie logo (z assets/logo-small.png)  za lgo ten sam napis cioo teraz. całosć jest klikalna (do home)
 
 </oczekiwane_zachowanie>
 

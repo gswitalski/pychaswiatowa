@@ -30,6 +30,13 @@
         margin-left: 8px;
     }
 
+    &__logo-image {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+        display: block;
+    }
+
     &__logo-text {
         font-size: 1.5rem;
         font-weight: 600;
@@ -120,6 +127,11 @@
     .topbar {
         &__search-container {
             display: none;
+        }
+
+        &__logo-image {
+            width: 24px;
+            height: 24px;
         }
 
         &__logo-text {
