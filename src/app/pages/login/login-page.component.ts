@@ -68,9 +68,10 @@ export class LoginPageComponent {
             await this.authService.signIn(credentials.email, credentials.password);
 
             // Get redirect URL from query params and validate it
-            const redirectTo =
+            const returnUrl =
+                this.route.snapshot.queryParamMap.get('returnUrl') ??
                 this.route.snapshot.queryParamMap.get('redirectTo');
-            const safeRedirectUrl = this.validateRedirectUrl(redirectTo);
+            const safeRedirectUrl = this.validateRedirectUrl(returnUrl);
 
             this.router.navigateByUrl(safeRedirectUrl);
         } catch (error) {

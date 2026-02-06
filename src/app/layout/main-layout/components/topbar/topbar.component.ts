@@ -39,6 +39,9 @@ export class TopbarComponent {
     /** Check if mobile viewport */
     readonly isMobile = this.layoutService.isMobile;
 
+    /** Check if mobile or tablet viewport */
+    readonly isMobileOrTablet = this.layoutService.isMobileOrTablet;
+
     /**
      * Toggle sidebar visibility
      */

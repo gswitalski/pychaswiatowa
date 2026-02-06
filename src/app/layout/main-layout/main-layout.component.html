@@ -34,11 +34,18 @@
         </mat-sidenav>
 
         <mat-sidenav-content class="main-layout__content">
-            <main class="main-layout__main">
+            <main
+                class="main-layout__main"
+                [style.padding-bottom]="bottomBarPadding()"
+            >
                 <router-outlet />
             </main>
         </mat-sidenav-content>
     </mat-sidenav-container>
+
+    @if (isMobileOrTablet()) {
+    <pych-bottom-navigation-bar />
+    }
 
     <!-- FAB "Mój plan" -->
     <pych-my-plan-fab />

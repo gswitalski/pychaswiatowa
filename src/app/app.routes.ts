@@ -200,7 +200,7 @@ export const routes: Routes = [
                 path: 'dashboard',
                 redirectTo: () => {
                     // Redirect guests to login with return URL
-                    return '/login?redirectTo=%2Fdashboard';
+                    return '/login?returnUrl=%2Fdashboard';
                 },
                 pathMatch: 'full',
             },
@@ -208,7 +208,7 @@ export const routes: Routes = [
                 path: 'shopping',
                 redirectTo: () => {
                     // Redirect guests to login with return URL
-                    return '/login?redirectTo=%2Fshopping';
+                    return '/login?returnUrl=%2Fshopping';
                 },
                 pathMatch: 'full',
             },

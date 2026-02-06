@@ -28,6 +28,15 @@ export class LayoutService {
         initialValue: false,
     });
 
+    // Mobile or tablet state (< 960px) - reactive to viewport changes
+    private readonly isMobileOrTabletObservable$ = this.breakpointObserver
+        .observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
+        .pipe(map((result) => result.matches));
+
+    public readonly isMobileOrTablet = toSignal(this.isMobileOrTabletObservable$, {
+        initialValue: false,
+    });
+
     constructor() {
         // Auto-close sidebar on mobile viewport
         this.breakpointObserver

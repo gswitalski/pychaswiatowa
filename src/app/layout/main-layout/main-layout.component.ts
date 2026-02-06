@@ -1,6 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     inject,
     DestroyRef,
     OnInit,
@@ -15,6 +16,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TopbarComponent } from './components/topbar/topbar.component';
 import { MyPlanDrawerComponent } from '../../shared/components/my-plan-drawer/my-plan-drawer.component';
 import { MyPlanFabComponent } from '../../shared/components/my-plan-fab/my-plan-fab.component';
+import { BottomNavigationBarComponent } from './components/bottom-navigation-bar/bottom-navigation-bar.component';
 
 /**
  * Main application layout component (App Shell).
@@ -31,6 +33,7 @@ import { MyPlanFabComponent } from '../../shared/components/my-plan-fab/my-plan-
         TopbarComponent,
         MyPlanDrawerComponent,
         MyPlanFabComponent,
+        BottomNavigationBarComponent,
     ],
     templateUrl: './main-layout.component.html',
     styleUrl: './main-layout.component.scss',
@@ -50,6 +53,16 @@ export class MainLayoutComponent implements OnInit {
 
     /** Mobile viewport state */
     readonly isMobile = this.layoutService.isMobile;
+
+    /** Mobile/tablet viewport state */
+    readonly isMobileOrTablet = this.layoutService.isMobileOrTablet;
+
+    /** Dynamic bottom padding for mobile bottom bar */
+    readonly bottomBarPadding = computed(() =>
+        this.isMobileOrTablet()
+            ? 'calc(var(--pych-bottom-bar-height, 64px) + env(safe-area-inset-bottom, 0px))'
+            : '0px'
+    );
 
     /** Sidebar visibility state (conditional rendering based on route) */
     readonly shouldShowSidebar = this.layoutService.shouldShowSidebar;
