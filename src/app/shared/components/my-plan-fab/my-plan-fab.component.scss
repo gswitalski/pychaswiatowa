@@ -39,9 +39,9 @@
 }
 
 // Responsywność - na małych ekranach
-@media (max-width: 599px) {
+@media (max-width: 959px) {
     .my-plan-fab {
-        bottom: 16px;
+        bottom: calc(16px + var(--pych-bottom-bar-height, 64px) + env(safe-area-inset-bottom, 0px));
         right: 16px;
 
         // Na mobile chowamy label i pokazujemy tylko ikonę z badge
@@ -56,9 +56,15 @@
     .my-plan-fab {
         bottom: calc(24px + env(safe-area-inset-bottom));
         right: calc(24px + env(safe-area-inset-right));
+    }
 
-        @media (max-width: 599px) {
-            bottom: calc(16px + env(safe-area-inset-bottom));
+    @media (max-width: 959px) {
+        .my-plan-fab {
+            bottom: calc(
+                16px +
+                var(--pych-bottom-bar-height, 64px) +
+                env(safe-area-inset-bottom, 0px)
+            );
             right: calc(16px + env(safe-area-inset-right));
         }
     }
