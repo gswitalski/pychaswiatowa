@@ -19,22 +19,22 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-
 ### Nowe
 
-- **US-055 — Nawigacja po kolekcjach w Sidebarze (drzewo: kolekcje → przepisy)**
+- **US-056 — Mobilna nawigacja dolna (Bottom Bar) zamiast hamburgera**
     - **Co dodano**:
-        - „Kolekcje” w Sidebarze jest drzewem rozwijalnym (poziom 1: Kolekcje → poziom 2: kolekcje → poziom 3: przepisy),
-        - lista przepisów kolekcji jest ładowana **leniwe** dopiero po rozwinięciu danej kolekcji,
-        - element przepisu pokazuje **nazwę** oraz **małą miniaturę** z ilustracji (jeśli istnieje),
-        - kliknięcie przepisu nawiguję do `/recipes/:id-:slug`.
+        - na mobile/tablet (breakpoint ~ `< 960px`) główna nawigacja działa jako Bottom Bar przypięty na dole,
+        - 3 pozycje: `Odkrywaj` (`/explore`), `Moja Pycha` (`/dashboard`), `Zakupy` (`/shopping`),
+        - przekierowanie gościa do logowania dla ścieżek prywatnych (`/dashboard`, `/shopping`) z powrotem po sukcesie (returnUrl),
+        - wymaganie `padding-bottom` + safe-area, aby Bottom Bar nie zasłaniał treści.
 
 ### Zmienione / doprecyzowane
 
-- **US-011 — Tworzenie i zarządzanie kolekcjami przepisów**
+- **US-014 — Globalna nawigacja i orientacja (App Shell)**
     - **Co się zmieniło / doprecyzowano**:
-        - `/collections` pozostaje widokiem do zarządzania kolekcjami (lista/tworzenie/edycja/usuwanie),
-        - Sidebar zapewnia dodatkową, szybszą ścieżkę nawigacji do przepisów w kolekcji (bez zmiany istniejących flow zarządzania).
+        - Topbar (desktop-first) zawiera 3 pozycje: `Odkrywaj przepisy`, `Moja Pycha`, `Zakupy`,
+        - na mobile/tablet usunięto założenie „hamburger/drawer” dla menu głównego — zastąpione przez Bottom Bar,
+        - doprecyzowano widoczność Sidebara o `/shopping/**` oraz zachowanie gościa dla pozycji prywatnych.
 
 
 </user_stories>
@@ -43,18 +43,25 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
+### Nowe
+
+- **App Shell (mobile/tablet) — Bottom Bar**
+    - **Co dodano**:
+        - globalny, przypięty pasek na dole z 3 ikonami + etykietami dla nawigacji głównej,
+        - aktywna pozycja jest wyróżniona,
+        - layout widoków uwzględnia `padding-bottom` + safe-area.
+
 ### Zmienione / doprecyzowane
 
-- **App Shell — Sidebar: „Kolekcje” jako drzewo**
+- **App Shell — Topbar**
     - **Co się zmieniło / doprecyzowano**:
-        - kliknięcie w etykietę „Kolekcje” prowadzi do `/collections`,
-        - chevron obok „Kolekcje” zwija/rozwija (bez nawigacji),
-        - po rozwinięciu kolekcji (poziom 2) dociągana jest lista przepisów (poziom 3),
-        - element przepisu prezentuje miniaturę (z `image_path`) + nazwę; fallback ikonka gdy brak zdjęcia.
+        - na desktopie główna nawigacja zawiera `Odkrywaj przepisy`, `Moja Pycha`, `Zakupy`,
+        - na mobile/tablet zakładki głównej nawigacji nie są pokazywane w Topbarze (zastępuje je Bottom Bar).
 
-- **Widok: Lista Kolekcji (`/collections`)**
+- **Nawigacja na widokach publicznych (`/`, `/explore`, `/explore/recipes/:id-:slug`)**
     - **Co się zmieniło / doprecyzowano**:
-        - jest osiągalny przez kliknięcie w etykietę „Kolekcje” w Sidebarze (nie przez chevron).
+        - na mobile/tablet obowiązuje Bottom Bar (również dla gościa),
+        - kliknięcie `Moja Pycha` / `Zakupy` jako gość prowadzi do logowania (z powrotem do docelowej ścieżki po sukcesie).
 
 
 </views>
