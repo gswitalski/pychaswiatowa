@@ -30,7 +30,7 @@ export class LayoutService {
 
     // Mobile or tablet state (< 960px) - reactive to viewport changes
     private readonly isMobileOrTabletObservable$ = this.breakpointObserver
-        .observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
+        .observe(['(max-width: 959.99px)'])
         .pipe(map((result) => result.matches));
 
     public readonly isMobileOrTablet = toSignal(this.isMobileOrTabletObservable$, {

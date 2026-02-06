@@ -216,3 +216,13 @@
     }
 }
 
+@media (max-width: 959px) {
+    .my-plan-drawer {
+        height: calc(
+            100% -
+            var(--pych-bottom-bar-height, 64px) -
+            env(safe-area-inset-bottom, 0px)
+        );
+    }
+}
+
