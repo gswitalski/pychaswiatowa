@@ -19,6 +19,7 @@ The API exposes the following primary resources:
     - user-added manual text items (not tied to any recipe).
     Recipe-derived items are stored as **raw rows** (one row per recipe ingredient) and include `recipe_id` and `recipe_name` so that the **frontend** can group/sum items (see endpoint notes).
 -   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. This is provided by Supabase and consumed via the `supabase-js` client in the Angular app (no custom backend endpoints required for MVP).
+-   **UI Navigation (frontend-only)**: Main navigation layout (Topbar tabs on desktop-first, Bottom Bar on mobile/tablet) is a frontend concern and is **hardcoded** in the Angular app (no API-driven menu config in MVP). This change does not require new API endpoints.
 -   **AI Recipe Draft (Supabase Edge Function)**: Generates a structured "recipe draft" from either pasted text or a pasted image (OCR + LLM), to prefill the recipe form. The draft is returned to the client and is **not persisted** until the user explicitly saves the recipe via the standard `POST /recipes`.
 
 ## 2. Endpoints

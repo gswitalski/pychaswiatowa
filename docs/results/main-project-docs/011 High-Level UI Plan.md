@@ -373,13 +373,18 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
 
 ## 4. Układ i struktura nawigacji
 
-- **Nawigacja dla gości:** Topbar zawiera stałą główną nawigację: `Moja Pycha` (do `/dashboard`) i `Odkrywaj przepisy` (do `/explore`) oraz akcje po prawej stronie: `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
+- **Nawigacja dla gości:**
+    - **Desktop-first:** Topbar zawiera stałą główną nawigację: `Odkrywaj przepisy` (do `/explore`), `Moja Pycha` (do `/dashboard`) oraz `Zakupy` (do `/shopping`) oraz akcje po prawej stronie: `Zaloguj` i `Zarejestruj`. Na landing (`/`) dodatkowo widoczne jest pole wyszukiwania publicznych przepisów.
+    - **Mobile/Tablet (breakpoint ~ `< 960px`):** główna nawigacja **znika z góry** (nie używamy hamburgera/drawera dla menu głównego) i jest dostępna jako **Bottom Bar** przypięty na dole ekranu z trzema pozycjami: `Odkrywaj` (`/explore`), `Moja Pycha` (`/dashboard`), `Zakupy` (`/shopping`). Kliknięcie w `Moja Pycha` lub `Zakupy` jako gość przekierowuje do logowania (z powrotem do docelowej ścieżki po sukcesie). Bottom Bar nie zasłania treści (zapewniony `padding-bottom` + obsługa safe-area).
 - **Nawigacja na publicznych widokach dla zalogowanych:** Publiczne ścieżki (`/`, `/explore`, `/explore/recipes/:id-:slug`) korzystają z Topbara (bez Sidebara). Dodatkowo `/explore/recipes/:id` pozostaje jako ścieżka kompatybilności wstecznej i jest normalizowana do kanonicznego URL:
     - brak przycisków "Zaloguj" i "Zarejestruj",
     - w Topbarze dostępny jest profil użytkownika (menu + wylogowanie),
-    - w Topbarze dostępna jest stała główna nawigacja: `Moja Pycha` (`/dashboard`) i `Odkrywaj przepisy` (`/explore`).
+    - w Topbarze dostępna jest stała główna nawigacja: `Odkrywaj przepisy` (`/explore`), `Moja Pycha` (`/dashboard`) i `Zakupy` (`/shopping`) (desktop-first),
+    - na mobile/tablet główna nawigacja jest dostępna jako **Bottom Bar** (jak wyżej).
 - **Nawigacja dla zalogowanych (App Shell):**
-    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Kolekcje`, `Zakupy`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/shopping/**`, `/settings/**`. Na mobile zwijany (Hamburger) lub Bottom Bar.
+    - **Sidebar (Lewa strona):** Główny panel nawigacyjny. Zawiera linki: `Moja Pycha` (route: `/dashboard`), `Moje przepisy`, `Kolekcje`, `Zakupy`, `Ustawienia`. Nie zawiera akcji operacyjnych. Sidebar jest widoczny wyłącznie na ścieżkach: `/dashboard`, `/my-recipies` (alias: `/my-recipes`), `/recipes/**`, `/collections/**`, `/shopping/**`, `/settings/**`.
+        - **Mobile/Tablet:** Sidebar nie jest używany jako główna nawigacja — menu główne działa jako **Bottom Bar** przypięty na dole ekranu (3 pozycje: `Odkrywaj`, `Moja Pycha`, `Zakupy`).
+        - **UX:** Bottom Bar jest zawsze przypięty (również w długich formularzach), a layout widoków uwzględnia dodatkowy margines/padding na dole.
         - **Kolekcje jako drzewo (MVP):**
             - poziom 1: „Kolekcje” (pozycja główna) z chevron,
             - poziom 2: lista kolekcji użytkownika (każda z własnym chevron),
@@ -389,7 +394,8 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
             - kliknięcie w chevron zwija/rozwija (bez nawigacji),
             - kliknięcie w przepis na poziomie 3 nawiguję do `/recipes/:id-:slug`.
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
-        - **Główna nawigacja (stała):** Zakładki "Moja Pycha" oraz "Odkrywaj przepisy" z wyróżnieniem aktywnej pozycji. **Lista pozycji jest zahardkodowana we froncie** (konfiguracja statyczna) i przygotowana pod przyszłe moduły: blog, menu, zakupy.
+        - **Główna nawigacja (stała):** Zakładki `Odkrywaj przepisy`, `Moja Pycha`, `Zakupy` z wyróżnieniem aktywnej pozycji (desktop-first). **Lista pozycji jest zahardkodowana we froncie** (konfiguracja statyczna).
+            - **Mobile/Tablet:** zakładki głównej nawigacji nie są wyświetlane w Topbarze (zastępuje je Bottom Bar).
         - **Breadcrumbs (kontekstowe):** Ścieżka powrotu wyświetlana na głębszych trasach (np. `Kolekcje > Święta`).
         - **Omnibox:** Globalne wyszukiwanie dostępne zawsze (np. jako ikona otwierająca overlay).
         - **Profil:** Avatar i menu użytkownika.
@@ -418,6 +424,7 @@ Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności o
     - **Dostępność:** focus trap, `Esc` zamyka, checkboxy dostępne z klawiatury, aria-labels dla akcji.
 - **Drawer „Mój plan” (`MyPlanDrawerComponent`):** Panel wysuwany z prawej strony pokazujący listę przepisów w planie (miniatura + nazwa + kosz), z akcjami: „Wyczyść” i „Zamknij” oraz z overlay zamykającym po kliknięciu.
 - **Pływający przycisk „Mój plan” (`MyPlanFabComponent`):** Globalny przycisk widoczny po zalogowaniu, gdy plan ma ≥ 1 element. Umieszczony w prawym dolnym rogu i otwierający drawer „Mój plan”.
+- **Dolny pasek nawigacji (`BottomNavigationBarComponent`):** Globalny Bottom Bar dla mobile/tablet (breakpoint ~ `< 960px`) zastępujący główną nawigację w Topbarze oraz hamburger/drawer dla menu głównego. Zawiera 3 pozycje (ikona + etykieta): `Odkrywaj` (`/explore`), `Moja Pycha` (`/dashboard`), `Zakupy` (`/shopping`), z wyróżnieniem aktywnej pozycji. Jest przypięty na dole i wymaga zapewnienia `padding-bottom` + safe-area w layoutach.
 - **Serwis planu (`MyPlanService`):** Warstwa komunikacji z API planu oraz źródło stanu UI (czy drawer jest otwarty, czy plan ma elementy) wykorzystywana w komponentach globalnych (App Shell) i na szczegółach przepisu.
 - **Drzewo kolekcji w Sidebarze (`CollectionsSidebarTreeComponent`):** Komponent Sidebara renderujący zagnieżdżoną nawigację „Kolekcje → (kolekcje) → (przepisy)”.
     - **Źródła danych:** lista kolekcji z `GET /collections`, a przepisy dla danej kolekcji dociągane leniwie po jej rozwinięciu (dedykowany endpoint kolekcji).

@@ -13,22 +13,10 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-Zmianie podlega wyswietlanie kolekcji
+głowne menu na górze ekranu zawier opcje "Odkrywaj przepisy", "Moja Pycha" i "Zakupy"
 
-Aktualnie po wciscieniu w nwawigacji bocznej opcji "kolekcje" w kontencie pokazuje się lista kolekcji a po kliknięciu w kolekcję otwiera sie lista z karatmi przepsiów w tej kolekcji
+dla uządzeń mobilnych to menu zwija się w hamburge. Chce to zmienić chce aby dla użądzeń mobilnyvh (Tablet, kmórka, menu znikało z góry i żeby pojawiało się w postaci tool bara przypięte na dole ekranu w postaci odpiednich ikonek)
 
-Opis zmiany:
-
-Opcja "Kolekcje" rozwija się wpodopcje z listą moich kolekcji np
-
-"Śniadania"
-"Sprawdzone risotta"
-"Dania popisowe"
-
-każda opcja odrugieo poziomu rozwija sie w lpodopcje z przepisami w tej kolekcji. 
-
-kolekcje można zwijac i rozwijać tak jak opcje głowna "Kolekcje"
-kliknięcie w przepis powłduje załadownie przepisu do kontentu
 
 
 </nowa_funkcjonalnosc>
