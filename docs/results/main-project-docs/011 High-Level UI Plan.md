@@ -9,6 +9,9 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
 2.  **Globalny Topbar (Góra):** Zawiera stałą główną nawigację (zakładki) **Moja Pycha** (`/dashboard`) i **Odkrywaj przepisy** (`/explore`) z wyróżnieniem aktywnej pozycji, stałą ikonę/akcję globalnego wyszukiwania (Omnibox, np. jako overlay) oraz profil użytkownika. Breadcrumbs są wyświetlane jako element orientacyjny na głębszych trasach (np. wewnątrz kolekcji).
 3.  **Page Header (Nagłówek Strony):** Znajduje się nad treścią każdego widoku. To tutaj umieszczone są tytuł strony oraz wszystkie przyciski akcji (Dodaj, Edytuj, Zapisz), zapewniając przewidywalność interfejsu.
     - **Uwaga (MVP – zmiana dot. Kolekcji):** pozycja „Kolekcje” w Sidebarze działa jako **drzewo nawigacyjne** (kolekcje → przepisy) z leniwym ładowaniem list przepisów per kolekcja. Kliknięcie w etykietę „Kolekcje” prowadzi do `/collections` (zarządzanie kolekcjami), a chevron służy do zwijania/rozwijania.
+4.  **Globalna Stopka (Dół):** Stopka widoczna na wszystkich stronach głównych i podstronach aplikacji (publicznych, prywatnych i auth), z wyjątkiem technicznego widoku `/auth/callback`, który może wyświetlać tylko krótki loader/handler.
+    - **Zawartość:** `© {bieżący_rok} PychaŚwiatowa. Wszelkie prawa zastrzeżone.` + linki: `Warunki korzystania (Regulamin)` (`/legal/terms`), `Polityka prywatności` (`/legal/privacy`), `Wydawca serwisu` (`/legal/publisher`).
+    - **Zachowanie:** stopka jest elementem treści (nie-sticky). Layouty muszą uwzględniać przypięty Bottom Bar na mobile/tablet (brak zasłaniania stopki przez Bottom Bar; poprawny `padding-bottom` + safe-area).
 
 ### Role i uprawnienia (RBAC – przygotowanie)
 
@@ -91,6 +94,30 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
     - wykonuje nawigację do kanonicznej ścieżki `/.../recipes/:id-:slug` z `replaceUrl=true`.
 - **Zachowanie (error path):**
     - jeśli przepis nie istnieje lub użytkownik nie ma dostępu, handler pokazuje ten sam komunikat co standardowy widok szczegółów (np. 404/403 zgodnie z kontekstem).
+
+**3b. Warunki korzystania (Regulamin)**
+- **Ścieżka:** `/legal/terms`
+- **Główny cel:** Udostępnienie strony informacyjnej z regulaminem serwisu (statyczny tekst).
+- **Kluczowe informacje do wyświetlenia:** Tytuł strony + treść regulaminu.
+- **Zakres MVP:** W ramach tego zadania strona może zawierać **placeholder** treści (docelowa treść zostanie dostarczona osobno). Istotne jest istnienie routingu i stabilnej ścieżki URL.
+- **Kluczowe komponenty widoku:** `PageHeaderComponent` (tytuł), kontener z treścią (np. `mat-card` / `mat-typography`).
+- **Względy UX i dostępności:** Strona jest publiczna (bez wymogu logowania), spójna z layoutem bez Sidebara. Link do strony jest dostępny w stopce na każdej stronie.
+
+**3c. Polityka prywatności**
+- **Ścieżka:** `/legal/privacy`
+- **Główny cel:** Udostępnienie strony informacyjnej z polityką prywatności (statyczny tekst).
+- **Kluczowe informacje do wyświetlenia:** Tytuł strony + treść polityki prywatności.
+- **Zakres MVP:** Strona może zawierać **placeholder** treści (docelowa treść zostanie dostarczona osobno).
+- **Kluczowe komponenty widoku:** `PageHeaderComponent`, kontener z treścią (np. `mat-card` / `mat-typography`).
+- **Względy UX i dostępności:** Publiczna, czytelna typografia (nagłówki, odstępy), poprawna nawigacja klawiaturą. Link w stopce.
+
+**3d. Wydawca serwisu**
+- **Ścieżka:** `/legal/publisher`
+- **Główny cel:** Udostępnienie strony informacyjnej o wydawcy serwisu (statyczny tekst).
+- **Kluczowe informacje do wyświetlenia:** Tytuł strony + treść informacyjna o wydawcy.
+- **Zakres MVP:** Strona może zawierać **placeholder** treści (docelowa treść zostanie dostarczona osobno).
+- **Kluczowe komponenty widoku:** `PageHeaderComponent`, kontener z treścią (np. `mat-card` / `mat-typography`).
+- **Względy UX i dostępności:** Publiczna, spójna z resztą aplikacji. Link w stopce.
 
 **4. Logowanie**
 - **Ścieżka:** `/login`
@@ -425,6 +452,7 @@ Poniższe komponenty będą reużywalne i kluczowe dla zapewnienia spójności o
 - **Drawer „Mój plan” (`MyPlanDrawerComponent`):** Panel wysuwany z prawej strony pokazujący listę przepisów w planie (miniatura + nazwa + kosz), z akcjami: „Wyczyść” i „Zamknij” oraz z overlay zamykającym po kliknięciu.
 - **Pływający przycisk „Mój plan” (`MyPlanFabComponent`):** Globalny przycisk widoczny po zalogowaniu, gdy plan ma ≥ 1 element. Umieszczony w prawym dolnym rogu i otwierający drawer „Mój plan”.
 - **Dolny pasek nawigacji (`BottomNavigationBarComponent`):** Globalny Bottom Bar dla mobile/tablet (breakpoint ~ `< 960px`) zastępujący główną nawigację w Topbarze oraz hamburger/drawer dla menu głównego. Zawiera 3 pozycje (ikona + etykieta): `Odkrywaj` (`/explore`), `Moja Pycha` (`/dashboard`), `Zakupy` (`/shopping`), z wyróżnieniem aktywnej pozycji. Jest przypięty na dole i wymaga zapewnienia `padding-bottom` + safe-area w layoutach.
+- **Stopka (`FooterComponent`):** Globalna stopka renderowana w layoutach aplikacji. Zawiera informację o prawach autorskich (`© {bieżący_rok} PychaŚwiatowa. Wszelkie prawa zastrzeżone.`) oraz linki do: `/legal/terms`, `/legal/privacy`, `/legal/publisher`. Stopka jest elementem treści (nie-sticky) i może być pominięta na technicznym widoku `/auth/callback`.
 - **Serwis planu (`MyPlanService`):** Warstwa komunikacji z API planu oraz źródło stanu UI (czy drawer jest otwarty, czy plan ma elementy) wykorzystywana w komponentach globalnych (App Shell) i na szczegółach przepisu.
 - **Drzewo kolekcji w Sidebarze (`CollectionsSidebarTreeComponent`):** Komponent Sidebara renderujący zagnieżdżoną nawigację „Kolekcje → (kolekcje) → (przepisy)”.
     - **Źródła danych:** lista kolekcji z `GET /collections`, a przepisy dla danej kolekcji dociągane leniwie po jej rozwinięciu (dedykowany endpoint kolekcji).

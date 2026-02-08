@@ -13,12 +13,17 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-głowne menu na górze ekranu zawier opcje "Odkrywaj przepisy", "Moja Pycha" i "Zakupy"
+chce dodać na stronie  każdej głownej i na każdej podstronie stopkę
+stopka ma zawierać:
+- informację o prawach autorskich
+- linki do podstron ze statyczym tekstem:
+  - warunki korzystania (regulamin)
+  - polityka prywatności
+  - wydawca serwisu
 
-dla uządzeń mobilnych to menu zwija się w hamburge. Chce to zmienić chce aby dla użądzeń mobilnyvh (Tablet, kmórka, menu znikało z góry i żeby pojawiało się w postaci tool bara przypięte na dole ekranu w postaci odpiednich ikonek)
+samr treści podstron nie są częscią tego zaddania  (bedą dostarczone oddzialenie)
 
-
-
+  
 </nowa_funkcjonalnosc>
 
 Twoim zadaniem jest:
