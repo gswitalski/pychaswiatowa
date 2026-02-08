@@ -5,6 +5,7 @@ import {
     inject,
     DestroyRef,
     OnInit,
+    signal,
 } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,6 +18,7 @@ import { TopbarComponent } from './components/topbar/topbar.component';
 import { MyPlanDrawerComponent } from '../../shared/components/my-plan-drawer/my-plan-drawer.component';
 import { MyPlanFabComponent } from '../../shared/components/my-plan-fab/my-plan-fab.component';
 import { BottomNavigationBarComponent } from './components/bottom-navigation-bar/bottom-navigation-bar.component';
+import { FooterComponent } from '../../shared/components/footer/footer.component';
 
 /**
  * Main application layout component (App Shell).
@@ -34,6 +36,7 @@ import { BottomNavigationBarComponent } from './components/bottom-navigation-bar
         MyPlanDrawerComponent,
         MyPlanFabComponent,
         BottomNavigationBarComponent,
+        FooterComponent,
     ],
     templateUrl: './main-layout.component.html',
     styleUrl: './main-layout.component.scss',
@@ -73,9 +76,14 @@ export class MainLayoutComponent implements OnInit {
     /** My Plan has items (for FAB visibility) */
     readonly myPlanHasItems = this.myPlanService.hasItems;
 
+    /** Footer visibility (hide on /auth/callback) */
+    readonly isAuthCallbackRoute = signal(false);
+
     ngOnInit(): void {
         // Prefetch plan data for FAB visibility
         this.myPlanService.prefetchPlan();
+
+        this.isAuthCallbackRoute.set(this.checkAuthCallbackRoute(this.router.url));
 
         // Set initial sidebar visibility based on current URL
         const initialShouldShow = this.checkSidebarVisibility(this.router.url);
@@ -90,6 +98,7 @@ export class MainLayoutComponent implements OnInit {
             .subscribe((event) => {
                 const shouldShow = this.checkSidebarVisibility(event.urlAfterRedirects);
                 this.layoutService.setShouldShowSidebar(shouldShow);
+                this.isAuthCallbackRoute.set(this.checkAuthCallbackRoute(event.urlAfterRedirects));
 
                 // Close sidebar on navigation (mobile only)
                 if (this.isMobile()) {
@@ -103,6 +112,13 @@ export class MainLayoutComponent implements OnInit {
      */
     private checkSidebarVisibility(url: string): boolean {
         return this.PRIVATE_PATHS.some(path => url.startsWith(path));
+    }
+
+    /**
+     * Determine if footer should be hidden for auth callback route.
+     */
+    private checkAuthCallbackRoute(url: string): boolean {
+        return url.startsWith('/auth/callback');
     }
 
     /**

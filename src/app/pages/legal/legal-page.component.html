@@ -1,0 +1,29 @@
+<div class="legal-page">
+    <pych-page-header [title]="title()" />
+    <div class="legal-page__content">
+        <mat-card class="legal-page__card mat-typography">
+            @switch (pageId()) {
+                @case ('terms') {
+                    <p class="legal-page__text">
+                        Treść warunków korzystania zostanie uzupełniona wkrótce.
+                    </p>
+                }
+                @case ('privacy') {
+                    <p class="legal-page__text">
+                        Treść polityki prywatności zostanie uzupełniona wkrótce.
+                    </p>
+                }
+                @case ('publisher') {
+                    <p class="legal-page__text">
+                        Treść informacji o wydawcy serwisu zostanie uzupełniona wkrótce.
+                    </p>
+                }
+                @default {
+                    <p class="legal-page__text">
+                        Treść zostanie uzupełniona wkrótce.
+                    </p>
+                }
+            }
+        </mat-card>
+    </div>
+</div>

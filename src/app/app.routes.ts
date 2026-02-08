@@ -29,6 +29,39 @@ export const routes: Routes = [
                         (m) => m.ExplorePageComponent
                     ),
             },
+            {
+                path: 'legal/terms',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then(
+                        (m) => m.LegalPageComponent
+                    ),
+                data: {
+                    page: 'terms',
+                    title: 'Warunki korzystania (Regulamin)',
+                },
+            },
+            {
+                path: 'legal/privacy',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then(
+                        (m) => m.LegalPageComponent
+                    ),
+                data: {
+                    page: 'privacy',
+                    title: 'Polityka prywatności',
+                },
+            },
+            {
+                path: 'legal/publisher',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then(
+                        (m) => m.LegalPageComponent
+                    ),
+                data: {
+                    page: 'publisher',
+                    title: 'Wydawca serwisu',
+                },
+            },
             // Kanoniczny URL z slugiem - explore/recipes/:id-:slug
             {
                 matcher: exploreRecipeIdSlugMatcher,
@@ -177,6 +210,39 @@ export const routes: Routes = [
                     import('./pages/explore/explore-page.component').then(
                         (m) => m.ExplorePageComponent
                     ),
+            },
+            {
+                path: 'legal/terms',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then(
+                        (m) => m.LegalPageComponent
+                    ),
+                data: {
+                    page: 'terms',
+                    title: 'Warunki korzystania (Regulamin)',
+                },
+            },
+            {
+                path: 'legal/privacy',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then(
+                        (m) => m.LegalPageComponent
+                    ),
+                data: {
+                    page: 'privacy',
+                    title: 'Polityka prywatności',
+                },
+            },
+            {
+                path: 'legal/publisher',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then(
+                        (m) => m.LegalPageComponent
+                    ),
+                data: {
+                    page: 'publisher',
+                    title: 'Wydawca serwisu',
+                },
             },
             // Kanoniczny URL z slugiem - explore/recipes/:id-:slug
             {

@@ -1,6 +1,11 @@
 <div class="public-layout">
     <pych-public-header />
-    <router-outlet />
+    <main class="public-layout__main">
+        <router-outlet />
+        @if (!isAuthCallbackRoute()) {
+            <pych-footer />
+        }
+    </main>
 </div>
 
 

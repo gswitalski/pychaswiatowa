@@ -39,6 +39,9 @@
                 [style.padding-bottom]="bottomBarPadding()"
             >
                 <router-outlet />
+                @if (!isAuthCallbackRoute()) {
+                    <pych-footer />
+                }
             </main>
         </mat-sidenav-content>
     </mat-sidenav-container>

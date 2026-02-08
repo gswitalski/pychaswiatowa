@@ -19,22 +19,12 @@ Najpierw przejrzyj następujące informacje:
 4. User Stories:
 
 <user_stories>
-### Nowe
-
-- **US-056 — Mobilna nawigacja dolna (Bottom Bar) zamiast hamburgera**
-    - **Co dodano**:
-        - na mobile/tablet (breakpoint ~ `< 960px`) główna nawigacja działa jako Bottom Bar przypięty na dole,
-        - 3 pozycje: `Odkrywaj` (`/explore`), `Moja Pycha` (`/dashboard`), `Zakupy` (`/shopping`),
-        - przekierowanie gościa do logowania dla ścieżek prywatnych (`/dashboard`, `/shopping`) z powrotem po sukcesie (returnUrl),
-        - wymaganie `padding-bottom` + safe-area, aby Bottom Bar nie zasłaniał treści.
-
-### Zmienione / doprecyzowane
-
-- **US-014 — Globalna nawigacja i orientacja (App Shell)**
-    - **Co się zmieniło / doprecyzowano**:
-        - Topbar (desktop-first) zawiera 3 pozycje: `Odkrywaj przepisy`, `Moja Pycha`, `Zakupy`,
-        - na mobile/tablet usunięto założenie „hamburger/drawer” dla menu głównego — zastąpione przez Bottom Bar,
-        - doprecyzowano widoczność Sidebara o `/shopping/**` oraz zachowanie gościa dla pozycji prywatnych.
+- **Nowe**
+    - **US-057 – Globalna stopka i strony informacyjne (Regulamin / Polityka prywatności / Wydawca)**  
+      Dodano historyjkę opisującą globalną stopkę na wszystkich stronach (z wyjątkiem technicznego `/auth/callback`) oraz publiczne strony legal pod ścieżkami:
+        - `/legal/terms`
+        - `/legal/privacy`
+        - `/legal/publisher`
 
 
 </user_stories>
@@ -43,25 +33,15 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <views>
 
-### Nowe
+- **Zmienione**
+    - **Layouty aplikacji (publiczne / prywatne / auth)**: dodano założenie globalnej stopki jako elementu treści (nie-sticky), z uwzględnieniem `padding-bottom` / safe-area na mobile/tablet (żeby nie wchodziła pod Bottom Bar).  
+      *Zmiana*: nowe, stałe miejsce w UI z linkami do stron legal i informacją o prawach autorskich.
 
-- **App Shell (mobile/tablet) — Bottom Bar**
-    - **Co dodano**:
-        - globalny, przypięty pasek na dole z 3 ikonami + etykietami dla nawigacji głównej,
-        - aktywna pozycja jest wyróżniona,
-        - layout widoków uwzględnia `padding-bottom` + safe-area.
+- **Nowe**
+    - **Warunki korzystania (Regulamin)** (`/legal/terms`) – strona publiczna ze statycznym tekstem (MVP: placeholder).
+    - **Polityka prywatności** (`/legal/privacy`) – strona publiczna ze statycznym tekstem (MVP: placeholder).
+    - **Wydawca serwisu** (`/legal/publisher`) – strona publiczna ze statycznym tekstem (MVP: placeholder).
 
-### Zmienione / doprecyzowane
-
-- **App Shell — Topbar**
-    - **Co się zmieniło / doprecyzowano**:
-        - na desktopie główna nawigacja zawiera `Odkrywaj przepisy`, `Moja Pycha`, `Zakupy`,
-        - na mobile/tablet zakładki głównej nawigacji nie są pokazywane w Topbarze (zastępuje je Bottom Bar).
-
-- **Nawigacja na widokach publicznych (`/`, `/explore`, `/explore/recipes/:id-:slug`)**
-    - **Co się zmieniło / doprecyzowano**:
-        - na mobile/tablet obowiązuje Bottom Bar (również dla gościa),
-        - kliknięcie `Moja Pycha` / `Zakupy` jako gość prowadzi do logowania (z powrotem do docelowej ścieżki po sukcesie).
 
 
 </views>

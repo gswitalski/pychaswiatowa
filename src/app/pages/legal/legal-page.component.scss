@@ -1,0 +1,37 @@
+.legal-page {
+    display: flex;
+    flex-direction: column;
+
+    &__content {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 24px;
+    }
+
+    &__card {
+        background-color: var(--mat-sys-surface-container);
+        border: 1px solid var(--mat-sys-outline-variant);
+        border-radius: 16px;
+        padding: 16px 20px;
+    }
+
+    &__text {
+        margin: 0;
+        color: var(--mat-sys-on-surface);
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+}
+
+@media (max-width: 960px) {
+    .legal-page {
+        &__content {
+            padding: 16px;
+        }
+
+        &__card {
+            padding: 16px;
+        }
+    }
+}
