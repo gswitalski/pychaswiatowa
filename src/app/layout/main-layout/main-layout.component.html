@@ -38,7 +38,9 @@
                 class="main-layout__main"
                 [style.padding-bottom]="bottomBarPadding()"
             >
-                <router-outlet />
+                <div class="main-layout__page-content">
+                    <router-outlet />
+                </div>
                 @if (!isAuthCallbackRoute()) {
                     <pych-footer />
                 }

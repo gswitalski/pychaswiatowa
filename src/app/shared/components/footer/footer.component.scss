@@ -17,7 +17,8 @@
 
     &__copyright {
         margin: 0;
-        font-size: 0.875rem;
+        font-size: 1rem;
+        font-weight: 500;
         color: var(--mat-sys-inverse-on-surface);
     }
 
@@ -31,6 +32,7 @@
         font-size: 0.875rem;
         color: var(--mat-sys-inverse-on-surface);
         text-decoration: none;
+        margin-right: 64px;
 
         &:hover {
             color: var(--mat-sys-inverse-primary);
