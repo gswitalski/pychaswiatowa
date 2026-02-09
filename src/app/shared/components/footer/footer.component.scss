@@ -30,13 +30,13 @@
 
     &__link {
         font-size: 0.875rem;
-        color: var(--mat-sys-inverse-on-surface);
+        color: var(-mat-sys-primary-fixed-dim);
         text-decoration: none;
         margin-right: 64px;
 
         &:hover {
             color: var(--mat-sys-inverse-primary);
-            text-decoration: underline;
+            text-decoration: none;
         }
 
         &:focus-visible {
