@@ -260,12 +260,18 @@ BEGIN
     RAISE NOTICE '📝 Creating policies for RECIPES table...';
 END $$;
 
--- rls policy: authenticated users can select their own non-deleted recipes
+-- rls policy: authenticated users can select own recipes and public recipes (non-deleted)
 CREATE POLICY "authenticated users can select own recipes"
     on public.recipes
     for select
     to authenticated
-    using (auth.uid() = user_id and deleted_at is null);
+    using (
+        deleted_at is null
+        and (
+            auth.uid() = user_id
+            or visibility = 'PUBLIC'
+        )
+    );
 
 -- rls policy: authenticated users can insert their own recipes
 create policy "authenticated users can insert own recipes"
@@ -499,47 +505,74 @@ BEGIN
     RAISE NOTICE '🔗 Creating policies for RECIPE_COLLECTIONS table...';
 END $$;
 
--- rls policy: authenticated users can select recipe_collections for their own recipes
+-- rls policy: authenticated users can select recipe_collections for their own collections
+-- and recipes they can access (own or public, non-deleted)
 CREATE POLICY "authenticated users can select own recipe collections"
     on public.recipe_collections
     for select
     to authenticated
     using (
         exists (
+            select 1 from public.collections
+            where collections.id = recipe_collections.collection_id
+            and collections.user_id = auth.uid()
+        )
+        and
+        exists (
             select 1 from public.recipes
             where recipes.id = recipe_collections.recipe_id
-            and recipes.user_id = auth.uid()
+            and recipes.deleted_at is null
+            and (
+                recipes.user_id = auth.uid()
+                or recipes.visibility = 'PUBLIC'
+            )
         )
     );
 
--- rls policy: authenticated users can insert recipe_collections for their own recipes and collections
+-- rls policy: authenticated users can insert recipe_collections into their own collections
+-- for recipes they can access (own or public, non-deleted)
 create policy "authenticated users can insert own recipe collections"
     on public.recipe_collections
     for insert
     to authenticated
     with check (
         exists (
-            select 1 from public.recipes
-            where recipes.id = recipe_collections.recipe_id
-            and recipes.user_id = auth.uid()
-        )
-        and exists (
             select 1 from public.collections
             where collections.id = recipe_collections.collection_id
             and collections.user_id = auth.uid()
         )
+        and exists (
+            select 1 from public.recipes
+            where recipes.id = recipe_collections.recipe_id
+            and recipes.deleted_at is null
+            and (
+                recipes.user_id = auth.uid()
+                or recipes.visibility = 'PUBLIC'
+            )
+        )
     );
 
--- rls policy: authenticated users can delete recipe_collections for their own recipes
+-- rls policy: authenticated users can delete recipe_collections from their own collections
+-- for recipes they can access (own or public, non-deleted)
 CREATE POLICY "authenticated users can delete own recipe collections"
     ON public.recipe_collections
     FOR DELETE
     TO authenticated
     USING (
         EXISTS (
+            SELECT 1 FROM public.collections
+            WHERE collections.id = recipe_collections.collection_id
+            AND collections.user_id = auth.uid()
+        )
+        AND
+        EXISTS (
             SELECT 1 FROM public.recipes
             WHERE recipes.id = recipe_collections.recipe_id
-            AND recipes.user_id = auth.uid()
+            AND recipes.deleted_at is null
+            AND (
+                recipes.user_id = auth.uid()
+                OR recipes.visibility = 'PUBLIC'
+            )
         )
     );
 

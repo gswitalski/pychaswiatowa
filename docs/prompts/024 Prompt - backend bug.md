@@ -12,11 +12,20 @@ Zapoznaj się z  projektem
 
 <aktualne_zachowanie>
 
+dla użytkownka który nie jest autorem tego przepisu 
+
 endpoint
-http://127.0.0.1:54331/functions/v1/shopping-list/recipe-items/group
+Request URL
+https://fxgonghylivohevdrdnt.supabase.co/functions/v1/recipes/221/collections
+Request Method
+PUT
 
-nie usuwa grupy z planu zakupów. element jest usuwany tylko na frontendzie. po odświeżeniu ekranu znowu jsie pojaiwa. dotyczy elementów pochodzących z przepisu
+zwraca
+Status Code
+404 Not Found
 
+
+Tp: niedawno właczyłem polityki RLS na produkcji (ten bład występuje tylko na produkcji)
 
 </aktualne_zachowanie>
 
