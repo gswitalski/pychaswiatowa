@@ -1,0 +1,54 @@
+<section class="admin-dashboard">
+    <header class="admin-dashboard__header">
+        <h1 class="admin-dashboard__title">Panel administracyjny</h1>
+        <p class="admin-dashboard__description">
+            Funkcje administracyjne są przygotowywane i będą wdrażane w kolejnych iteracjach.
+        </p>
+        <div class="admin-dashboard__actions">
+            <button
+                mat-stroked-button
+                type="button"
+                (click)="refreshSummary()"
+                [disabled]="isLoading()">
+                Odśwież podsumowanie
+            </button>
+            @if (isLoading()) {
+            <mat-spinner diameter="20" />
+            }
+        </div>
+    </header>
+
+    @if (errorMessage()) {
+    <mat-card class="admin-dashboard__status-card" appearance="outlined">
+        <mat-card-content>
+            <p>{{ errorMessage() }}</p>
+        </mat-card-content>
+    </mat-card>
+    }
+
+    @if (summary()) {
+    <mat-card class="admin-dashboard__status-card" appearance="outlined">
+        <mat-card-header>
+            <mat-card-title>Podsumowanie API (MVP)</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>Wersja: {{ summary()!.version }}</p>
+            <p>Wygenerowano: {{ summary()!.generated_at }}</p>
+            <p>Opis: {{ summary()!.notes }}</p>
+        </mat-card-content>
+    </mat-card>
+    }
+
+    <div class="admin-dashboard__cards" [class.admin-dashboard__cards--loading]="isLoading()">
+        @for (card of featureCards; track card.title) {
+        <mat-card class="admin-dashboard__card" appearance="outlined">
+            <mat-card-header>
+                <mat-card-title>{{ card.title }}</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <p>{{ card.description }}</p>
+            </mat-card-content>
+        </mat-card>
+        }
+    </div>
+</section>

@@ -2,54 +2,34 @@ Jako starszy programista frontendu Twoim zadaniem jest stworzenie szczegółoweg
 
 Najpierw przejrzyj następujące informacje:
 
-1. Product Requirements Document (PRD):
-<prd>
-
-@docs/results/main-project-docs/004 prd.md 
-
-</prd>
-
-2. UI Plan:
-<ui_plan>
-
-@docs/results/main-project-docs/011 High-Level UI Plan.md 
-
-</ui_plan>
-
-4. User Stories:
-
-<user_stories>
-- **Nowe**
-    - **US-057 – Globalna stopka i strony informacyjne (Regulamin / Polityka prywatności / Wydawca)**  
-      Dodano historyjkę opisującą globalną stopkę na wszystkich stronach (z wyjątkiem technicznego `/auth/callback`) oraz publiczne strony legal pod ścieżkami:
-        - `/legal/terms`
-        - `/legal/privacy`
-        - `/legal/publisher`
+1. Podsumowanei projektu):
+<project_summary>
 
 
-</user_stories>
+
+</project_summary>
+
+2. Nowe wymagania do zaimplementowania:
+<new_requirements>
+
+
+
+</new_requirements>
+
 
 
 3. Widok do implementacji / zmiany w widokach
-<views>
-
-- **Zmienione**
-    - **Layouty aplikacji (publiczne / prywatne / auth)**: dodano założenie globalnej stopki jako elementu treści (nie-sticky), z uwzględnieniem `padding-bottom` / safe-area na mobile/tablet (żeby nie wchodziła pod Bottom Bar).  
-      *Zmiana*: nowe, stałe miejsce w UI z linkami do stron legal i informacją o prawach autorskich.
-
-- **Nowe**
-    - **Warunki korzystania (Regulamin)** (`/legal/terms`) – strona publiczna ze statycznym tekstem (MVP: placeholder).
-    - **Polityka prywatności** (`/legal/privacy`) – strona publiczna ze statycznym tekstem (MVP: placeholder).
-    - **Wydawca serwisu** (`/legal/publisher`) – strona publiczna ze statycznym tekstem (MVP: placeholder).
+<ui_plan>
 
 
 
-</views>
+</ui_plan>
 
 5. Endpoint Description:
 <endpoint_description>
 
-@docs/results/main-project-docs/009 API plan.md 
+
+
 </endpoint_description>
 
 

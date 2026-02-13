@@ -21,7 +21,7 @@
 
     @if (!isMobileOrTablet()) {
     <div class="topbar__center">
-        <pych-main-navigation class="topbar__main-navigation" />
+        <pych-main-navigation class="topbar__main-navigation" [items]="mainNavItems()" />
     </div>
     }
 
@@ -45,6 +45,12 @@
                 <mat-icon>settings</mat-icon>
                 <span>Ustawienia</span>
             </a>
+            @if (isAdmin()) {
+            <a mat-menu-item routerLink="/admin/dashboard">
+                <mat-icon>admin_panel_settings</mat-icon>
+                <span>Admin</span>
+            </a>
+            }
             <button mat-menu-item (click)="logout()">
                 <mat-icon>logout</mat-icon>
                 <span>Wyloguj się</span>

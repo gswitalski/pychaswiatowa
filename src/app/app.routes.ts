@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { PublicLayoutComponent } from './layout/public-layout/public-layout.component';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { authenticatedMatchGuard } from './core/guards/authenticated-match.guard';
+import { adminRoleMatchGuard } from './core/guards/admin-role-match.guard';
 import { guestOnlyMatchGuard } from './core/guards/guest-only-match.guard';
 import {
     exploreRecipeIdSlugMatcher,
@@ -129,6 +130,13 @@ export const routes: Routes = [
                         (m) => m.ShoppingPageComponent
                     ),
                 data: { breadcrumb: 'Zakupy' },
+            },
+            {
+                path: 'admin',
+                loadChildren: () =>
+                    import('./pages/admin/admin.routes').then((m) => m.adminRoutes),
+                canMatch: [adminRoleMatchGuard],
+                data: { breadcrumb: 'Panel administracyjny' },
             },
             {
                 path: 'settings',
@@ -275,6 +283,22 @@ export const routes: Routes = [
                 redirectTo: () => {
                     // Redirect guests to login with return URL
                     return '/login?returnUrl=%2Fshopping';
+                },
+                pathMatch: 'full',
+            },
+            {
+                path: 'admin',
+                redirectTo: () => {
+                    // Redirect guests to login with return URL
+                    return '/login?returnUrl=%2Fadmin';
+                },
+                pathMatch: 'full',
+            },
+            {
+                path: 'admin/dashboard',
+                redirectTo: () => {
+                    // Redirect guests to login with return URL
+                    return '/login?returnUrl=%2Fadmin%2Fdashboard';
                 },
                 pathMatch: 'full',
             },

@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    inject,
+    input,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +14,10 @@ import { LayoutService } from '../../../../core/services/layout.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { OmniboxComponent } from '../../../../shared/components/omnibox/omnibox.component';
 import { MainNavigationComponent } from '../../../../shared/components/main-navigation/main-navigation.component';
+import {
+    MainNavigationItem,
+    MAIN_NAVIGATION_ITEMS,
+} from '../../../../shared/models/ui.models';
 
 /**
  * Top bar component containing breadcrumbs, global search, and user menu.
@@ -41,6 +51,27 @@ export class TopbarComponent {
 
     /** Check if mobile or tablet viewport */
     readonly isMobileOrTablet = this.layoutService.isMobileOrTablet;
+
+    /** Whether the current user has admin role */
+    readonly isAdmin = computed(() => this.authService.appRole() === 'admin');
+
+    /** Topbar navigation items with conditional Admin entry */
+    readonly mainNavItems = computed<MainNavigationItem[]>(() => {
+        if (!this.isAdmin()) {
+            return MAIN_NAVIGATION_ITEMS;
+        }
+
+        return [
+            ...MAIN_NAVIGATION_ITEMS,
+            {
+                label: 'Admin',
+                route: '/admin/dashboard',
+                exact: false,
+                ariaLabel: 'Przejdź do panelu administracyjnego',
+                matchingRoutes: ['/admin'],
+            },
+        ];
+    });
 
     /**
      * Toggle sidebar visibility
