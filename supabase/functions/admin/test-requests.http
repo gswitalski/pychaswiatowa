@@ -1,0 +1,78 @@
+### Test Admin Endpoints
+### Use REST Client extension in VS Code to execute these requests
+
+@baseUrl = http://localhost:54331/functions/v1
+@adminToken = YOUR_ADMIN_JWT_TOKEN_HERE
+@userToken = YOUR_NON_ADMIN_JWT_TOKEN_HERE
+
+###############################################################################
+### GET /admin/summary
+###############################################################################
+
+### SUMMARY-1. SUCCESS: Admin token
+GET {{baseUrl}}/admin/summary
+Authorization: Bearer {{adminToken}}
+
+### SUMMARY-2. UNAUTHORIZED: Missing Authorization header
+GET {{baseUrl}}/admin/summary
+
+### SUMMARY-3. UNAUTHORIZED: Invalid token
+GET {{baseUrl}}/admin/summary
+Authorization: Bearer invalid_token_here
+
+### SUMMARY-4. FORBIDDEN: Non-admin role
+GET {{baseUrl}}/admin/summary
+Authorization: Bearer {{userToken}}
+
+### SUMMARY-5. METHOD NOT ALLOWED
+POST {{baseUrl}}/admin/summary
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "unexpected": true
+}
+
+###############################################################################
+### GET /admin/health
+###############################################################################
+
+### HEALTH-1. SUCCESS: Admin token
+GET {{baseUrl}}/admin/health
+Authorization: Bearer {{adminToken}}
+
+### HEALTH-2. UNAUTHORIZED: Missing Authorization header
+GET {{baseUrl}}/admin/health
+
+### HEALTH-3. UNAUTHORIZED: Invalid token
+GET {{baseUrl}}/admin/health
+Authorization: Bearer invalid_token_here
+
+### HEALTH-4. FORBIDDEN: Non-admin role
+GET {{baseUrl}}/admin/health
+Authorization: Bearer {{userToken}}
+
+### HEALTH-5. METHOD NOT ALLOWED
+DELETE {{baseUrl}}/admin/health
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### Routing and CORS
+###############################################################################
+
+### ROUTE-1. NOT FOUND: Unknown path
+GET {{baseUrl}}/admin/unknown
+Authorization: Bearer {{adminToken}}
+
+### ROUTE-2. OPTIONS preflight summary
+OPTIONS {{baseUrl}}/admin/summary
+Origin: http://localhost:4200
+Access-Control-Request-Method: GET
+Access-Control-Request-Headers: Authorization
+
+### ROUTE-3. OPTIONS preflight health
+OPTIONS {{baseUrl}}/admin/health
+Origin: http://localhost:4200
+Access-Control-Request-Method: GET
+Access-Control-Request-Headers: Authorization
+

@@ -529,6 +529,30 @@ export interface MeDto {
     app_role: AppRole;
 }
 
+/**
+ * DTO for GET /admin/summary endpoint response.
+ * Provides admin dashboard summary placeholder data in MVP.
+ */
+export interface AdminSummaryDto {
+    version: string;
+    generated_at: string;
+    notes: string;
+    metrics: {
+        users_total: number | null;
+        recipes_total: number | null;
+        public_recipes_total: number | null;
+    };
+}
+
+/**
+ * DTO for GET /admin/health endpoint response.
+ * Provides basic health check status for admin area.
+ */
+export interface AdminHealthDto {
+    status: 'ok';
+    checked_at: string;
+}
+
 // #endregion
 
 // #region --- Auth ---
