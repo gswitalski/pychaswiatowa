@@ -13,7 +13,8 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
- dla użytkowników którzy maja ustawiną rolę admi che aby w głownyum górnym menu pokazała się opcja 'Admin' . po wejści w ta opcję masi epokazac dashboard admina (na razie z pustą zawaerosci - ewentualnie placeholder)
+aktualnie nie mozna wynegerować za pomocą AI obrazka do przepsiu podczas tworzenia nowego przepisu. Trzeba najpier przepis zapisać, a potem otworzyć go ponownie aby mieć dostepna funkcję generowania za pomocą AI.
+Chce aby taka możliwość była od razu podczas tworzenia przepisu
 
 </nowa_funkcjonalnosc>
 

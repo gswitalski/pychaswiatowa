@@ -20,6 +20,8 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 3. Lista zmian i nowych funkcjonalności w API
 <api_definition>
 
+</api_definition>
+
 
 4. Definicje typów:
 <type_definitions>
