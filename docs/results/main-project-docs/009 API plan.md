@@ -26,6 +26,7 @@ The API exposes the following primary resources:
     - `/legal/publisher` (Wydawca serwisu)
     In MVP these pages are implemented as SPA routes with placeholder content and **do not require any API endpoints**.
 -   **AI Recipe Draft (Supabase Edge Function)**: Generates a structured "recipe draft" from either pasted text or a pasted image (OCR + LLM), to prefill the recipe form. The draft is returned to the client and is **not persisted** until the user explicitly saves the recipe via the standard `POST /recipes`.
+-   **Admin (admin-only, MVP placeholder)**: A minimal admin-only API surface intended to support an admin dashboard placeholder (`/admin/dashboard`). In MVP it can return stub data (no real admin tools yet).
 
 ## 2. Endpoints
 
@@ -1670,6 +1671,52 @@ Public endpoints are available without authentication:
 
 ---
 
+### Admin (admin-only)
+
+All endpoints in the `/admin/*` namespace are **admin-only** and MUST enforce authorization server-side (not just in UI):
+- `401 Unauthorized` — missing/invalid JWT
+- `403 Forbidden` — valid JWT but `app_role !== 'admin'`
+
+#### `GET /admin/summary`
+
+-   **Description**: Minimal summary for the admin dashboard. In MVP this endpoint may return a stub payload (placeholder; no real metrics yet).
+-   **Auth**: Required (JWT) + `app_role = 'admin'`
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload** (MVP — stub example):
+        ```json
+        {
+          "version": "mvp-stub",
+          "generated_at": "2026-02-11T22:00:00Z",
+          "notes": "Admin dashboard placeholder; dane zostaną dodane w kolejnych iteracjach.",
+          "metrics": {
+            "users_total": null,
+            "recipes_total": null,
+            "public_recipes_total": null
+          }
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+
+#### `GET /admin/health` (optional)
+
+-   **Description**: Simple diagnostics endpoint for admin use (future-proofing). In MVP it can return a trivial status payload.
+-   **Auth**: Required (JWT) + `app_role = 'admin'`
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload** (example):
+        ```json
+        {
+          "status": "ok",
+          "checked_at": "2026-02-11T22:00:00Z"
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `403 Forbidden`
+
 ### Profiles
 
 #### `GET /profile`
@@ -1734,7 +1781,7 @@ Public endpoints are available without authentication:
 -   **Application Roles (RBAC – preparation)**:
     - JWT MUST include `app_role` claim: `user | premium | admin`.
     - Future premium/admin features SHOULD enforce access using RLS / policies that can read JWT claims (e.g., via `auth.jwt()` in PostgreSQL).
-    - In MVP, no endpoints are additionally restricted by `app_role` yet (foundation only).
+    - In MVP, selected endpoints MAY be restricted by `app_role` (e.g., `/admin/*` requires `admin`). The authorization MUST be enforced server-side.
 
 ## 4. Validation and Business Logic
 

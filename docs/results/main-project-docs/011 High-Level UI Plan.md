@@ -385,6 +385,19 @@ Centralnym elementem dla zalogowanego użytkownika jest **Layout typu "Holy Grai
         - po wyczyszczeniu lista pozostaje pusta do czasu kolejnej zmiany w planie (dodanie/usunięcie przepisu) lub dodania pozycji ręcznej.
     - *Uwaga (MVP):* jeśli użytkownik edytuje przepis będący w planie, lista zakupów może pozostać nieaktualna (brak automatycznej aktualizacji).
 
+**17. Panel administracyjny (Admin Dashboard — placeholder)**
+- **Ścieżki:**
+    - `/admin` (kontener/layout; domyślnie przekierowuje na `/admin/dashboard`)
+    - `/admin/dashboard`
+- **Dostęp:** tylko dla użytkowników z rolą `admin` (`app_role === 'admin'`).
+    - Dla zalogowanego nie-admina: przekierowanie na `/forbidden`.
+    - Dla niezalogowanego: standardowa ochrona tras prywatnych (np. przekierowanie na `/login`), zgodna z istniejącym mechanizmem.
+- **Cel (MVP):** Udostępnić bezpieczny punkt wejścia do przyszłej sekcji administracyjnej — na MVP widok jest placeholderem bez realnych narzędzi.
+- **UI (MVP):**
+    - nagłówek strony: „Panel administracyjny”,
+    - krótki opis + 2–4 karty/kafelki „Wkrótce” (np. Statystyki / Użytkownicy / Moderacja / Konfiguracja),
+    - spójność wizualna z resztą App Shell (Angular Material, odstępy, typografia).
+
 ## 3. Mapa podróży użytkownika
 
 Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dodaniu i zorganizowaniu pierwszego przepisu:
@@ -423,6 +436,11 @@ Główny przepływ pracy dla nowego użytkownika koncentruje się na łatwym dod
     - **Topbar (Góra):** Pasek kontekstowy. Zawiera:
         - **Główna nawigacja (stała):** Zakładki `Odkrywaj przepisy`, `Moja Pycha`, `Zakupy` z wyróżnieniem aktywnej pozycji (desktop-first). **Lista pozycji jest zahardkodowana we froncie** (konfiguracja statyczna).
             - **Mobile/Tablet:** zakładki głównej nawigacji nie są wyświetlane w Topbarze (zastępuje je Bottom Bar).
+        - **Sekcja admin (tylko `admin`, MVP):**
+            - desktop-first: w Topbarze widoczna jest pozycja **„Admin”** prowadząca do `/admin/dashboard`,
+            - mobile/tablet: Bottom Bar bez zmian; „Admin” jest dostępny w menu użytkownika (fallback),
+            - wejście na `/admin/*` jest chronione guardem po roli (`app_role === 'admin'`) i dla braku dostępu przekierowuje na `/forbidden`,
+            - link „Admin” nie może „migać” — jest renderowany dopiero po bootstrapie roli (np. `GET /me`).
         - **Breadcrumbs (kontekstowe):** Ścieżka powrotu wyświetlana na głębszych trasach (np. `Kolekcje > Święta`).
         - **Omnibox:** Globalne wyszukiwanie dostępne zawsze (np. jako ikona otwierająca overlay).
         - **Profil:** Avatar i menu użytkownika.

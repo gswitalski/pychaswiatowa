@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-type LegalLinkVm = {
+interface LegalLinkVm {
     label: string;
     path: string;
     ariaLabel?: string;
-};
+}
 
 /**
  * Global footer component with legal navigation links.

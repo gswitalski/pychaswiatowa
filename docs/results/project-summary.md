@@ -13,6 +13,7 @@
 
 - Podejście **desktop-first** z pełną responsywnością (mobile/tablet)
 - System kont z potwierdzeniem e-mail i rolami (`user`, `premium`, `admin`) w JWT
+- Sekcja administracyjna **(placeholder)** dostępna tylko dla roli `admin` pod `/admin/*` (guard + widoczność w nawigacji bez „migania”)
 - Pełny CRUD przepisów z formularzem zawierającym: nazwę, opis, porcje, czasy, flagi (Termorobot/Grill), klasyfikację (dieta/kuchnia/trudność), składniki, kroki, wskazówki, zdjęcie
 - Trzy poziomy widoczności przepisu: Prywatny, Współdzielony, Publiczny
 - Organizacja: kategorie (predefiniowane), tagi (własne), kolekcje (nazwane zbiory przepisów)
@@ -29,7 +30,7 @@
 - Zarządzanie spiżarnią
 - Funkcje społecznościowe (znajomi, komentarze, oceny)
 - Zaawansowane wartości odżywcze, drag&drop kolejności kroków, historia zmian
-- Rozbudowany panel administracyjny, zarządzanie rolami z UI
+- Rozbudowany panel administracyjny (poza prostym placeholderem dashboardu admina), zarządzanie rolami z UI
 
 ---
 
@@ -89,6 +90,8 @@
 | US-055 | Drzewo kolekcji w Sidebarze | 3 poziomy: Kolekcje -> kolekcja -> przepisy, lazy-load, miniatura+nazwa. |
 | US-056 | Bottom Bar (mobile/tablet) | 3 pozycje: Odkrywaj, Moja Pycha, Zakupy. Breakpoint ~960px. |
 | US-057 | Stopka + strony prawne | Footer na wszystkich stronach. `/legal/terms`, `/legal/privacy`, `/legal/publisher`. |
+| US-ADM-001 | Admin: dostęp z nawigacji | Tylko `admin`: pozycja „Admin” w Topbarze (desktop) i w menu użytkownika (mobile/tablet). Link do `/admin/dashboard`. |
+| US-ADM-002 | Admin: blokada dostępu | Wejście na `/admin/*` bez roli `admin` przekierowuje na `/forbidden` (dla niezalogowanych działa standardowa ochrona tras prywatnych, np. `/login`). |
 
 ---
 
@@ -325,6 +328,12 @@ Prywatne endpointy wymagają JWT (`Authorization: Bearer <token>`). Publiczne en
 | `PUT` | `/profile` | Aktualizacja profilu (username). |
 | `GET` | `/me` | Minimalne dane sesji (id, username, app_role). Bootstrap App Shell. |
 
+### Admin (admin-only)
+
+| Metoda | URL | Opis |
+|---|---|---|
+| `GET` | `/admin/summary` | Minimalne podsumowanie dla dashboardu admina. Na MVP może zwracać stub/placeholder. Wymaga JWT + `app_role = admin` (401/403). |
+
 ### Utilities
 
 | Metoda | URL | Opis |
@@ -359,6 +368,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Widok | Ścieżka | Opis |
 |---|---|---|
 | Moja Pycha (Dashboard) | `/dashboard` | Strona startowa po logowaniu: kafelki nawigacyjne, ostatnie przepisy. |
+| Admin - Dashboard | `/admin`, `/admin/dashboard` | Sekcja administracyjna tylko dla roli `admin`: link „Admin” w Topbarze (desktop) i w menu użytkownika (mobile/tablet). `/admin` przekierowuje na `/admin/dashboard`. Dashboard na MVP jako placeholder (nagłówek + karty „Wkrótce”). |
 | Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Lista przepisów: własne + publiczne z moich kolekcji. Filtry (kategoria, tag, Termorobot, Grill), sortowanie, load more po 12. Badge "W moich kolekcjach", ikonki widoczności. Przycisk "Dodaj przepis" (kreator). |
 | Szczegóły przepisu (prywatny) | `/recipes/:id-:slug` | Jak widok publiczny, ale z Sidebarem. Pełne akcje dla autora. Normalizacja URL. |
 | Kreator - wybór trybu | `/recipes/new/start` | Opcje: "Pusty formularz" lub "Z tekstu/zdjęcia (AI)". |
@@ -369,7 +379,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Szczegóły kolekcji | `/collections/:id` | Wszystkie przepisy kolekcji (bez paginacji, limit 500). Usuwanie z kolekcji. |
 | Zakupy | `/shopping` | Lista zakupów: pozycje z planu (zgrupowane) + ręczne. Odhaczanie, usuwanie, czyszczenie listy. |
 | Ustawienia | `/settings` | Zmiana username, hasła. |
-| Brak dostępu | `/forbidden` | Komunikat 403 (przyszłościowo: role premium/admin). |
+| Brak dostępu | `/forbidden` | Komunikat 403 (wymuszany m.in. przez guardy ról, np. wejście na `/admin/*` bez `admin`). |
 
 ### Komponenty globalne / overlay
 
