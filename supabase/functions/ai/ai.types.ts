@@ -57,6 +57,9 @@ export const IMAGE_OUTPUT_HEIGHT = 1024;
 /** Maximum reference image size after base64 decoding (bytes) - 2 MB */
 export const MAX_REFERENCE_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
+/** Maximum prompt hint length for recipe image generation */
+export const MAX_PROMPT_HINT_LENGTH = 400;
+
 /** Required output format for normalized ingredients */
 export const REQUIRED_NORMALIZED_INGREDIENTS_OUTPUT_FORMAT = 'pycha_normalized_ingredients_v1' as const;
 
@@ -241,7 +244,7 @@ const RecipeContentItemSchema = z.object({
  * Schema for recipe data in image generation request.
  */
 const AiRecipeImageRecipeSchema = z.object({
-    id: z.number().int().positive('Recipe ID must be a positive integer'),
+    id: z.number().int().positive('Recipe ID must be a positive integer').nullable().optional(),
     name: z.string()
         .min(1, 'Recipe name is required')
         .max(MAX_RECIPE_NAME_LENGTH, `Recipe name cannot exceed ${MAX_RECIPE_NAME_LENGTH} characters`)
@@ -271,6 +274,9 @@ const AiRecipeImageRecipeSchema = z.object({
         .optional(),
     is_termorobot: z.boolean().optional().default(false),
     is_grill: z.boolean().optional().default(false),
+    diet_type: z.string().min(1).max(30).nullable().optional().transform(s => s?.trim() || null),
+    cuisine: z.string().min(1).max(50).nullable().optional().transform(s => s?.trim() || null),
+    difficulty: z.string().min(1).max(20).nullable().optional().transform(s => s?.trim() || null),
     category_name: z.string()
         .min(1)
         .max(MAX_CATEGORY_NAME_LENGTH, `Category name cannot exceed ${MAX_CATEGORY_NAME_LENGTH} characters`)
@@ -330,6 +336,13 @@ const AiRecipeImageReferenceImageSchema = z.discriminatedUnion('source', [
 export const AiRecipeImageRequestSchema = z.object({
     recipe: AiRecipeImageRecipeSchema,
     output: AiRecipeImageOutputSchema,
+    prompt_hint: z.string()
+        .max(MAX_PROMPT_HINT_LENGTH, `prompt_hint cannot exceed ${MAX_PROMPT_HINT_LENGTH} characters`)
+        .optional()
+        .transform(s => {
+            const trimmed = s?.trim();
+            return trimmed ? trimmed : undefined;
+        }),
     language: z.string().optional().default('pl'),
     output_format: z.literal(REQUIRED_IMAGE_OUTPUT_FORMAT, {
         errorMap: () => ({ message: `output_format must be "${REQUIRED_IMAGE_OUTPUT_FORMAT}"` }),
@@ -345,6 +358,18 @@ export const AiRecipeImageRequestSchema = z.object({
             code: z.ZodIssueCode.custom,
             message: 'reference_image is required when mode is "with_reference"',
             path: ['reference_image'],
+        });
+    }
+
+    // Validation: storage_path reference requires recipe.id (edit mode only)
+    if (
+        data.reference_image?.source === 'storage_path' &&
+        !data.recipe.id
+    ) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'reference_image.source="storage_path" requires recipe.id',
+            path: ['reference_image', 'source'],
         });
     }
 });
@@ -413,6 +438,7 @@ export interface GenerateRecipeImageParams {
     userId: string;
     recipe: AiRecipeImageRecipeData;
     language: string;
+    promptHint?: string;
     resolvedMode: Exclude<AiRecipeImageMode, 'auto'>;
     referenceImage?: ReferenceImageData;
 }

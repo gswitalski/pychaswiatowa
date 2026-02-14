@@ -771,6 +771,7 @@ function validateRecipeForImageGeneration(
  */
 function buildRecipeContext(
     recipe: GenerateRecipeImageParams["recipe"],
+    promptHint?: string,
 ): string {
     const ingredientsSummary = buildIngredientsSummary(recipe.ingredients);
     const stepsSummary = buildStepsSummary(recipe.steps);
@@ -812,6 +813,21 @@ function buildRecipeContext(
         tagsNote = `\nTags: ${recipe.tags.slice(0, 5).join(", ")}`;
     }
 
+    // Add optional classification context when available.
+    let classificationNote = "";
+    if (recipe.diet_type || recipe.cuisine || recipe.difficulty) {
+        const classificationParts: string[] = [];
+        if (recipe.diet_type) classificationParts.push(`Diet: ${recipe.diet_type}`);
+        if (recipe.cuisine) classificationParts.push(`Cuisine: ${recipe.cuisine}`);
+        if (recipe.difficulty) classificationParts.push(`Difficulty: ${recipe.difficulty}`);
+        classificationNote = `\nClassification: ${classificationParts.join(", ")}`;
+    }
+
+    let userHintNote = "";
+    if (promptHint) {
+        userHintNote = `\nUser hint: ${promptHint}`;
+    }
+
     return `<recipe>
 ${dishInfo}
 
@@ -819,7 +835,7 @@ Main ingredients: ${ingredientsSummary}
 
 Preparation steps:
 ${stepsSummary}
-${cookingMethodNote}${timingNote}${tagsNote}
+${cookingMethodNote}${timingNote}${tagsNote}${classificationNote}${userHintNote}
 </recipe>`;
 }
 
@@ -833,9 +849,10 @@ ${cookingMethodNote}${timingNote}${tagsNote}
  */
 function buildImagePromptRecipeOnly(
     recipe: GenerateRecipeImageParams["recipe"],
+    promptHint: string | undefined,
     _language: string,
 ): string {
-    const recipeContext = buildRecipeContext(recipe);
+    const recipeContext = buildRecipeContext(recipe, promptHint);
 
     const prompt = `You will be generating an image of a dish based on a recipe provided below.
 
@@ -888,9 +905,10 @@ Generate the image now based on these instructions.`;
  */
 function buildImagePromptWithReferenceGemini(
     recipe: GenerateRecipeImageParams["recipe"],
+    promptHint: string | undefined,
     _language: string,
 ): string {
-    const recipeContext = buildRecipeContext(recipe);
+    const recipeContext = buildRecipeContext(recipe, promptHint);
 
     const prompt = `You are given a REFERENCE IMAGE of a dish. Your task is to generate a NEW, ORIGINAL photograph of the same dish but with a completely different composition, angle, and setting.
 
@@ -1095,8 +1113,12 @@ async function callGeminiImageAPI(
         },
     };
 
-    // log payload
-    logger.info("Gemini API payload", { geminiPayload });
+    logger.info("Calling Gemini image API", {
+        promptLength: prompt.length,
+        referenceMimeType: referenceImage.mimeType,
+        referenceSizeBytes: referenceImage.bytes.length,
+        hasInlineImageData: true,
+    });
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), GEMINI_API_TIMEOUT_MS);
@@ -1214,7 +1236,7 @@ async function callGeminiImageAPI(
 export async function generateRecipeImage(
     params: GenerateRecipeImageParams,
 ): Promise<ImageGenerationResult> {
-    const { userId, recipe, language, resolvedMode, referenceImage } = params;
+    const { userId, recipe, language, promptHint, resolvedMode, referenceImage } = params;
 
     logger.info("Starting recipe image generation", {
         userId,
@@ -1222,6 +1244,7 @@ export async function generateRecipeImage(
         recipeName: recipe.name,
         language,
         mode: resolvedMode,
+        hasPromptHint: !!promptHint,
         hasReferenceImage: !!referenceImage,
         ingredientsCount: recipe.ingredients.length,
         stepsCount: recipe.steps.length,
@@ -1247,7 +1270,7 @@ export async function generateRecipeImage(
 
     if (resolvedMode === 'recipe_only') {
         // Recipe-only mode: use OpenAI Images API
-        const prompt = buildImagePromptRecipeOnly(recipe, language);
+        const prompt = buildImagePromptRecipeOnly(recipe, promptHint, language);
         logger.debug("Built recipe_only prompt", {
             userId,
             recipeId: recipe.id,
@@ -1278,7 +1301,7 @@ export async function generateRecipeImage(
         }
 
         // Build prompt for Gemini (image is passed directly)
-        const prompt = buildImagePromptWithReferenceGemini(recipe, language);
+        const prompt = buildImagePromptWithReferenceGemini(recipe, promptHint, language);
 
         logger.debug("Built with_reference prompt for Gemini", {
             userId,

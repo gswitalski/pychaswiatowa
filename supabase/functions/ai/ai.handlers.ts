@@ -9,6 +9,7 @@ import { getAuthenticatedContext, getSupabaseClientWithAuth } from '../_shared/s
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
+import { checkAiImageRateLimitWithStorage } from '../_shared/rate-limit.ts';
 import { generateRecipeDraft, generateRecipeImage, generateNormalizedIngredients } from './ai.service.ts';
 import {
     AiNormalizedIngredientsRequestSchema,
@@ -439,31 +440,38 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
         }
 
         const requestData = validationResult.data;
+        const recipeId = requestData.recipe.id ?? null;
+        let supabase = getSupabaseClientWithAuth(token);
 
-        // Step 5: Ownership check - verify recipe belongs to user (via RLS)
-        const supabase = getSupabaseClientWithAuth(token);
-        const { data: recipeExists, error: recipeError } = await supabase
-            .from('recipes')
-            .select('id')
-            .eq('id', requestData.recipe.id)
-            .is('deleted_at', null)
-            .single();
+        // Step 5: Ownership check - only for edit flow (when recipe.id is provided)
+        if (recipeId !== null) {
+            const { data: recipeExists, error: recipeError } = await supabase
+                .from('recipes')
+                .select('id')
+                .eq('id', recipeId)
+                .is('deleted_at', null)
+                .single();
 
-        if (recipeError || !recipeExists) {
-            logger.warn('Recipe not found or not owned by user', {
+            if (recipeError || !recipeExists) {
+                logger.warn('Recipe not found or not owned by user', {
+                    userId: user.id,
+                    recipeId,
+                    error: recipeError?.message,
+                });
+                return createNotFoundResponse(
+                    'Recipe not found or you do not have access to it'
+                );
+            }
+
+            logger.info('Recipe ownership verified', {
                 userId: user.id,
-                recipeId: requestData.recipe.id,
-                error: recipeError?.message,
+                recipeId,
             });
-            return createNotFoundResponse(
-                'Recipe not found or you do not have access to it'
-            );
+        } else {
+            logger.info('Skipping recipe ownership check for create flow (no recipe.id)', {
+                userId: user.id,
+            });
         }
-
-        logger.info('Recipe ownership verified', {
-            userId: user.id,
-            recipeId: requestData.recipe.id,
-        });
 
         // Step 6: Resolve mode (auto -> recipe_only or with_reference)
         const requestMode = requestData.mode || 'auto';
@@ -474,7 +482,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
             resolvedMode = hasReferenceImage ? 'with_reference' : 'recipe_only';
             logger.info('Mode auto-resolved', {
                 userId: user.id,
-                recipeId: requestData.recipe.id,
+                recipeId,
                 hasReferenceImage,
                 resolvedMode,
             });
@@ -482,12 +490,30 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
             resolvedMode = requestMode as Exclude<AiRecipeImageMode, 'auto'>;
             logger.info('Mode explicitly set', {
                 userId: user.id,
-                recipeId: requestData.recipe.id,
+                recipeId,
                 resolvedMode,
             });
         }
 
-        // Step 7: Handle reference image (if present)
+        // Step 7: Enforce server-side rate limit per user (cost protection)
+        const rateLimitCheck = await checkAiImageRateLimitWithStorage({
+            userId: user.id,
+            supabaseClient: supabase,
+        });
+        if (!rateLimitCheck.allowed) {
+            logger.warn('AI image rate limit exceeded', {
+                userId: user.id,
+                recipeId,
+                violatedWindow: rateLimitCheck.violatedWindow,
+                retryAfterSeconds: rateLimitCheck.retryAfterSeconds,
+            });
+            return createTooManyRequestsResponse(
+                'Rate limit exceeded for AI image generation. Please try again later.',
+                rateLimitCheck.retryAfterSeconds
+            );
+        }
+
+        // Step 8: Handle reference image (if present)
         let referenceImageData: ReferenceImageData | undefined;
         const warnings: string[] = [];
 
@@ -499,7 +525,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                     
                     logger.info('Downloading reference image from storage', {
                         userId: user.id,
-                        recipeId: requestData.recipe.id,
+                        recipeId,
                         imagePath: imagePath.substring(0, 50) + '...', // log prefix only for security
                     });
 
@@ -515,7 +541,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                     if (downloadError || !imageBlob) {
                         logger.warn('Failed to download reference image from storage', {
                             userId: user.id,
-                            recipeId: requestData.recipe.id,
+                            recipeId,
                             bucket,
                             filePath,
                             error: downloadError,
@@ -527,7 +553,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                             warnings.push('Reference image could not be loaded, using recipe_only mode');
                             logger.info('Falling back to recipe_only mode', {
                                 userId: user.id,
-                                recipeId: requestData.recipe.id,
+                                recipeId,
                             });
                         } else {
                             return createNotFoundResponse(
@@ -544,7 +570,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                             const maxSizeMB = MAX_REFERENCE_IMAGE_SIZE_BYTES / (1024 * 1024);
                             logger.warn('Reference image from storage exceeds size limit', {
                                 userId: user.id,
-                                recipeId: requestData.recipe.id,
+                                recipeId,
                                 imageSize: bytes.length,
                                 maxSize: MAX_REFERENCE_IMAGE_SIZE_BYTES,
                             });
@@ -561,7 +587,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
 
                         logger.info('Reference image loaded from storage', {
                             userId: user.id,
-                            recipeId: requestData.recipe.id,
+                            recipeId,
                             imageSize: bytes.length,
                             mimeType: referenceImageData.mimeType,
                         });
@@ -570,7 +596,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                     // Decode base64
                     logger.info('Decoding reference image from base64', {
                         userId: user.id,
-                        recipeId: requestData.recipe.id,
+                        recipeId,
                     });
 
                     const bytes = decodeBase64(requestData.reference_image.data_base64);
@@ -580,7 +606,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
                         const maxSizeMB = MAX_REFERENCE_IMAGE_SIZE_BYTES / (1024 * 1024);
                         logger.warn('Reference image from base64 exceeds size limit', {
                             userId: user.id,
-                            recipeId: requestData.recipe.id,
+                            recipeId,
                             imageSize: bytes.length,
                             maxSize: MAX_REFERENCE_IMAGE_SIZE_BYTES,
                         });
@@ -597,7 +623,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
 
                     logger.info('Reference image decoded from base64', {
                         userId: user.id,
-                        recipeId: requestData.recipe.id,
+                        recipeId,
                         imageSize: bytes.length,
                         mimeType: referenceImageData.mimeType,
                     });
@@ -605,7 +631,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
             } catch (error) {
                 logger.error('Error processing reference image', {
                     userId: user.id,
-                    recipeId: requestData.recipe.id,
+                    recipeId,
                     error: error instanceof Error ? error.message : 'Unknown error',
                 });
 
@@ -620,22 +646,23 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
             }
         }
 
-        // Step 8: Call service to generate recipe image
+        // Step 9: Call service to generate recipe image
         const result = await generateRecipeImage({
             userId: user.id,
             recipe: requestData.recipe,
             language: requestData.language,
+            promptHint: requestData.prompt_hint,
             resolvedMode,
             referenceImage: referenceImageData,
         });
 
         const duration = Date.now() - startTime;
 
-        // Step 9: Handle service result
+        // Step 10: Handle service result
         if (!result.success) {
             logger.warn('Recipe image generation failed - insufficient information', {
                 userId: user.id,
-                recipeId: requestData.recipe.id,
+                recipeId,
                 reasons: result.reasons,
                 duration,
             });
@@ -652,7 +679,7 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
 
         logger.info('Recipe image generated successfully', {
             userId: user.id,
-            recipeId: requestData.recipe.id,
+            recipeId,
             mode: result.data.meta.mode,
             hasWarnings: result.data.meta.warnings.length > 0,
             duration,

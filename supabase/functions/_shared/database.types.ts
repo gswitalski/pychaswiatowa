@@ -535,6 +535,20 @@ export type Database = {
         Args: { p_recipe_id: number }
         Returns: Json
       }
+      ai_rate_limit_hit: {
+        Args: {
+          p_key: string
+          p_limit: number
+          p_now?: string
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          retry_after_seconds: number
+          window_start: string
+        }[]
+      }
       clear_plan_and_update_shopping_list: {
         Args: Record<PropertyKey, never>
         Returns: Json

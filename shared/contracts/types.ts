@@ -960,12 +960,15 @@ export interface AiRecipeImageContentItem {
  * Recipe data for AI image generation request.
  */
 export interface AiRecipeImageRecipeDto {
-    id: number;
+    id?: number | null;
     name: string;
     description?: string | null;
     servings?: number | null;
     is_termorobot?: boolean;
     is_grill?: boolean;
+    diet_type?: RecipeDietType | null;
+    cuisine?: RecipeCuisine | null;
+    difficulty?: RecipeDifficulty | null;
     category_name?: string | null;
     ingredients: AiRecipeImageContentItem[];
     steps: AiRecipeImageContentItem[];
@@ -1005,6 +1008,7 @@ export type AiRecipeImageReferenceImageDto =
 export interface AiRecipeImageRequestDto {
     recipe: AiRecipeImageRecipeDto;
     output: AiRecipeImageOutputDto;
+    prompt_hint?: string;
     language?: string;
     output_format: 'pycha_recipe_image_v1';
     mode?: AiRecipeImageMode;
