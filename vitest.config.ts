@@ -30,12 +30,6 @@ export default defineConfig({
                 statements: 70,
             },
         },
-        pool: 'forks',
-        poolOptions: {
-            forks: {
-                singleFork: true,
-            },
-        },
         reporters: ['default'],
     },
     resolve: {

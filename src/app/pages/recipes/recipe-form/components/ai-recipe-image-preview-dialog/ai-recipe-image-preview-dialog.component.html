@@ -1,104 +1,102 @@
 <h2 mat-dialog-title>
     <mat-icon class="dialog-title-icon">auto_awesome</mat-icon>
-    Podgląd zdjęcia (AI)
+    Generuj zdjęcie AI
 </h2>
 
 <mat-dialog-content>
-    @if (isLoading()) {
-        <!-- Loading state -->
-        <div class="loading-container">
-            <mat-spinner diameter="64"></mat-spinner>
-            <p class="loading-text">Generujemy zdjęcie dla „{{ data.recipeName }}"...</p>
-            <p class="loading-hint">To może zająć do minuty</p>
-        </div>
-    } @else if (isError()) {
-        <!-- Error state -->
-        <div class="error-container">
-            <mat-icon class="error-icon">error_outline</mat-icon>
-            <p class="error-message">{{ errorMessage() }}</p>
-            @if (errorReasons().length > 0) {
-                <ul class="error-reasons">
-                    @for (reason of errorReasons(); track reason) {
-                        <li>{{ reason }}</li>
-                    }
-                </ul>
-            }
-        </div>
-    } @else if (isSuccess()) {
-        <!-- Success state -->
-        <div class="success-container">
-            <div class="image-preview">
-                <img
-                    [src]="imageDataUrl()"
-                    alt="Wygenerowane zdjęcie przepisu"
-                    class="generated-image"
-                />
+    <p class="recipe-name">Dla przepisu: „{{ data.recipeName }}”</p>
+    <p class="mode-info">Tryb: {{ modeLabel() }}</p>
+
+    <mat-form-field appearance="outline" class="prompt-hint-field">
+        <mat-label>Doprecyzowanie stylu (opcjonalne)</mat-label>
+        <textarea
+            matInput
+            rows="3"
+            [ngModel]="promptHint()"
+            (ngModelChange)="promptHint.set($event)"
+            [maxlength]="promptHintMaxLength"
+            placeholder="Np. zbliżenie, cieplejsze światło, rustykalna aranżacja"></textarea>
+        <mat-hint align="end">{{ promptHint().length }}/{{ promptHintMaxLength }}</mat-hint>
+    </mat-form-field>
+
+    <div class="preview-zone">
+        @if (isInitial()) {
+            <div class="initial-container">
+                <mat-icon class="initial-icon">image</mat-icon>
+                <p>Kliknij „Generuj”, aby utworzyć podgląd zdjęcia.</p>
             </div>
-            <p class="style-info">
-                <mat-icon class="info-icon">info</mat-icon>
-                {{ styleNoteText() }}
-            </p>
-        </div>
-    }
+        } @else if (isLoading()) {
+            <div class="loading-container">
+                <mat-spinner diameter="64"></mat-spinner>
+                <p class="loading-text">Generujemy zdjęcie...</p>
+                <p class="loading-hint">To może zająć do minuty</p>
+            </div>
+        } @else if (isError()) {
+            <div class="error-container">
+                <mat-icon class="error-icon">error_outline</mat-icon>
+                <p class="error-message">{{ errorMessage() }}</p>
+                @if (errorReasons().length > 0) {
+                    <ul class="error-reasons">
+                        @for (reason of errorReasons(); track reason) {
+                            <li>{{ reason }}</li>
+                        }
+                    </ul>
+                }
+            </div>
+        } @else if (isSuccess()) {
+            <div class="success-container">
+                <div class="image-preview">
+                    <img
+                        [src]="imageDataUrl()"
+                        alt="Wygenerowane zdjęcie przepisu"
+                        class="generated-image"
+                    />
+                </div>
+                <p class="style-info">
+                    <mat-icon class="info-icon">info</mat-icon>
+                    {{ styleNoteText() }}
+                </p>
+            </div>
+        }
+    </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    @if (isLoading()) {
-        <!-- Loading state: only reject button -->
+    <button
+        mat-stroked-button
+        type="button"
+        [disabled]="actionsDisabled()"
+        (click)="onCancel()">
+        Anuluj
+    </button>
+
+    <button
+        mat-stroked-button
+        type="button"
+        [disabled]="actionsDisabled() || isCooldownActive()"
+        (click)="onGenerate()">
+        @if (isCooldownActive()) {
+            Zaczekaj {{ cooldownRemainingSeconds() }} s
+        } @else {
+            {{ generateButtonLabel() }}
+        }
+    </button>
+
+    @if (isSuccess()) {
         <button
             mat-stroked-button
             type="button"
             [disabled]="actionsDisabled()"
-            (click)="onReject()"
-        >
-            Odrzuć
-        </button>
-    } @else if (isError()) {
-        <!-- Error state: regenerate and close buttons -->
-        <button
-            mat-stroked-button
-            type="button"
-            (click)="onRegenerate()"
-        >
-            Wygeneruj ponownie
-        </button>
-        <button
-            mat-stroked-button
-            type="button"
-            (click)="onCancel()"
-        >
-            Zamknij
-        </button>
-    } @else if (isSuccess()) {
-        <!-- Success state: reject, regenerate and apply buttons -->
-        <button
-            mat-stroked-button
-            type="button"
-            [disabled]="actionsDisabled()"
-            (click)="onReject()"
-        >
-            Odrzuć
-        </button>
-        <button
-            mat-stroked-button
-            type="button"
-            [disabled]="actionsDisabled()"
-            (click)="onRegenerate()"
-        >
-            Wygeneruj ponownie
+            (click)="onClearPreview()">
+            Usuń
         </button>
         <button
             mat-flat-button
             color="primary"
             type="button"
             [disabled]="actionsDisabled()"
-            (click)="onApply()"
-        >
-            @if (applying()) {
-                <mat-spinner diameter="20"></mat-spinner>
-            } @else {
-                Zastosuj
-            }
+            (click)="onApply()">
+            Użyj tego zdjęcia
         </button>
     }
 </mat-dialog-actions>

@@ -44,7 +44,7 @@ export const MAX_TAG_NAME_LENGTH = 50;
 export const MAX_RECIPE_CONTENT_ITEMS = 200;
 
 /** Maximum total payload size for recipe image request (characters) */
-export const MAX_IMAGE_REQUEST_PAYLOAD_SIZE = 40_000;
+export const MAX_IMAGE_REQUEST_PAYLOAD_SIZE = 4_000_000;
 
 /** Allowed output MIME types for recipe image (MVP: only webp via gpt-image-1) */
 export const ALLOWED_IMAGE_OUTPUT_MIME_TYPES = ['image/webp'] as const;

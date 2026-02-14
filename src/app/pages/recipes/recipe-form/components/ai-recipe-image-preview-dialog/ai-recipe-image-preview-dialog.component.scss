@@ -21,7 +21,7 @@ h2[mat-dialog-title] {
 
 mat-dialog-content {
     min-width: 400px;
-    min-height: 200px;
+    min-height: 280px;
     padding: 24px;
 
     @media (max-width: 600px) {
@@ -30,13 +30,60 @@ mat-dialog-content {
     }
 }
 
-// Loading state
+.recipe-name {
+    margin: 0 0 4px 0;
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface);
+}
+
+.mode-info {
+    margin: 0 0 16px 0;
+    font-size: 0.813rem;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.prompt-hint-field {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.preview-zone {
+    min-height: 220px;
+}
+
+.initial-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    border: 1px dashed var(--mat-sys-outline);
+    border-radius: 8px;
+    color: var(--mat-sys-on-surface-variant);
+    text-align: center;
+    padding: 16px;
+
+    .initial-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 36px;
+        margin-bottom: 10px;
+        color: var(--mat-sys-primary);
+    }
+
+    p {
+        margin: 0;
+        font-size: 0.875rem;
+    }
+}
+
 .loading-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 32px 16px;
+    min-height: 220px;
+    padding: 24px 16px;
     text-align: center;
 
     mat-spinner {
@@ -57,11 +104,11 @@ mat-dialog-content {
     }
 }
 
-// Error state
 .error-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    min-height: 220px;
     padding: 24px 16px;
     text-align: center;
 
@@ -94,7 +141,6 @@ mat-dialog-content {
     }
 }
 
-// Success state
 .success-container {
     display: flex;
     flex-direction: column;

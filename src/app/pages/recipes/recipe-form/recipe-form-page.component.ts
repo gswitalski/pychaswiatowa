@@ -23,7 +23,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -61,6 +61,7 @@ import {
     RecipeDietType,
     RecipeCuisine,
     RecipeDifficulty,
+    AiRecipeDraftImageMimeType,
 } from '../../../../../shared/contracts/types';
 
 export interface RecipeFormViewModel {
@@ -80,6 +81,17 @@ export interface RecipeFormViewModel {
     dietType: FormControl<RecipeDietType | null>;
     cuisine: FormControl<RecipeCuisine | null>;
     difficulty: FormControl<RecipeDifficulty | null>;
+}
+
+export function mapLinesToAiRecipeImageContentItems(lines: string[]): AiRecipeImageContentItem[] {
+    return lines.map((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('#')) {
+            return { type: 'header', content: trimmed.replace(/^#+\s*/, '') };
+        }
+
+        return { type: 'item', content: trimmed };
+    });
 }
 
 @Component({
@@ -104,6 +116,8 @@ export interface RecipeFormViewModel {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeFormPageComponent implements OnInit {
+    private static readonly AI_PROMPT_HINT_MAX_LENGTH = 400;
+
     private readonly fb = inject(FormBuilder);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
@@ -157,7 +171,7 @@ export class RecipeFormPageComponent implements OnInit {
     readonly currentImagePath = signal<string | null>(null);
 
     /** Pending image file (for create mode) */
-    private pendingImageFile: File | null = null;
+    private readonly pendingImageFile = signal<File | null>(null);
 
     /** Page title computed based on mode */
     readonly pageTitle = computed(() =>
@@ -177,30 +191,38 @@ export class RecipeFormPageComponent implements OnInit {
         return formInvalid || saving || imageUploading || aiGenerating;
     });
 
-    /** Computed: is AI image button visible (premium/admin only) */
+    /** Computed: is AI image button visible */
     readonly isAiImageButtonVisible = computed(() => {
+        return this.authService.isAuthenticated();
+    });
+
+    /** Computed: premium feature lock for basic users */
+    readonly isAiPremiumFeatureLocked = computed(() => {
         const role = this.authService.appRole();
-        return role === 'premium' || role === 'admin';
+        return role === 'user';
     });
 
     /** Computed: is AI image button disabled */
     readonly isAiImageButtonDisabled = computed(() => {
-        // Only available in edit mode
-        if (!this.recipeId()) {
+        if (this.isAiPremiumFeatureLocked()) {
             return true;
         }
+
         // Disabled during saving, image uploading, or AI generation
         return this.saving() || this.imageUploading() || this.aiGenerating();
     });
 
     /** Computed: has reference image for AI generation */
-    readonly hasAiReferenceImage = computed(() => !!this.currentImagePath());
+    readonly hasAiReferenceImage = computed(() =>
+        this.isEditMode() ? !!this.currentImagePath() : !!this.pendingImageFile()
+    );
 
     /** Computed: tooltip for AI image button */
     readonly aiImageTooltip = computed(() => {
-        if (!this.recipeId()) {
-            return 'Zapisz przepis, aby wygenerować zdjęcie AI';
+        if (this.isAiPremiumFeatureLocked()) {
+            return 'Funkcja Premium';
         }
+
         return this.hasAiReferenceImage()
             ? 'Generuj z referencją zdjęcia'
             : 'Generuj z przepisu';
@@ -569,7 +591,7 @@ export class RecipeFormPageComponent implements OnInit {
         switch (event.type) {
             case 'pendingFileChanged':
                 // Create mode - store pending file
-                this.pendingImageFile = event.file;
+                this.pendingImageFile.set(event.file);
                 break;
 
             case 'uploaded':
@@ -665,7 +687,7 @@ export class RecipeFormPageComponent implements OnInit {
         this.recipesService.createRecipe(command, null).subscribe({
             next: (recipe) => {
                 // If there's a pending image, upload it now
-                if (this.pendingImageFile) {
+                if (this.pendingImageFile()) {
                     this.uploadPendingImage(recipe.id, command.name);
                 } else {
                     // No pending image, navigate immediately
@@ -684,21 +706,26 @@ export class RecipeFormPageComponent implements OnInit {
      * Uploads pending image after recipe creation
      */
     private uploadPendingImage(recipeId: number, recipeName: string): void {
-        if (!this.pendingImageFile) {
+        const pendingFile = this.pendingImageFile();
+        if (!pendingFile) {
             this.saving.set(false);
             this.navigateToRecipe(recipeId, recipeName);
             return;
         }
 
-        this.recipesService.uploadRecipeImage(recipeId, this.pendingImageFile).subscribe({
+        this.recipesService.uploadRecipeImage(recipeId, pendingFile).subscribe({
             next: () => {
                 this.saving.set(false);
                 this.navigateToRecipe(recipeId, recipeName);
             },
             error: (err) => {
                 // Recipe was created, but image upload failed
-                // Still navigate to the recipe, but show error
                 console.error('Failed to upload image:', err);
+                this.snackBar.open(
+                    'Przepis zapisany, ale nie udało się wgrać zdjęcia.',
+                    undefined,
+                    { duration: 5000 }
+                );
                 this.saving.set(false);
                 this.navigateToRecipe(recipeId, recipeName);
             },
@@ -730,8 +757,7 @@ export class RecipeFormPageComponent implements OnInit {
      * Supports regeneration loop - user can request new image without closing dialog.
      */
     async onGenerateAiImage(): Promise<void> {
-        // Precondition: must be in edit mode
-        if (!this.recipeId()) {
+        if (this.isAiPremiumFeatureLocked() || this.aiGenerating()) {
             return;
         }
 
@@ -742,69 +768,40 @@ export class RecipeFormPageComponent implements OnInit {
             return;
         }
 
-        // Dialog configuration
+        this.aiGenerating.set(false);
+
         const dialogConfig = {
-            data: { recipeName: this.form.controls.name.value } as AiRecipeImageDialogData,
+            data: {
+                recipeName: this.form.controls.name.value,
+                modeLabel: this.hasAiReferenceImage() ? 'Z referencją zdjęcia' : 'Z przepisu',
+                isPremium: !this.isAiPremiumFeatureLocked(),
+                promptHintMaxLength: RecipeFormPageComponent.AI_PROMPT_HINT_MAX_LENGTH,
+            } as AiRecipeImageDialogData,
             disableClose: true,
             width: '560px',
             maxWidth: '95vw',
         };
 
-        // Start generation loop - supports regeneration requests
-        let shouldRegenerate = true;
+        const dialogRef = this.dialog.open(AiRecipeImagePreviewDialogComponent, dialogConfig);
 
-        while (shouldRegenerate) {
-            shouldRegenerate = false;
+        let lastGeneratedImage: { dataBase64: string; mimeType: string } | null = null;
+        const generateSubscription = dialogRef.componentInstance.generateRequested.subscribe(
+            ({ promptHint }) => {
+                void this.generateAiImageInDialog(dialogRef, promptHint, (image) => {
+                    lastGeneratedImage = image;
+                });
+            }
+        );
 
-            // Open dialog in loading state
-            const dialogRef = this.dialog.open(AiRecipeImagePreviewDialogComponent, dialogConfig);
-            this.aiGenerating.set(true);
+        const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
+        generateSubscription.unsubscribe();
 
-            try {
-                // Build request from current form data (may have changed since last generation)
-                const request = this.buildAiImageRequest();
-
-                // Call AI service
-                const response = await this.aiRecipeImageService.generateImage(request);
-
-                // Build data URL for preview
-                const dataUrl = `data:${response.image.mime_type};base64,${response.image.data_base64}`;
-
-                // Update dialog with success (pass resolved mode from API)
-                dialogRef.componentInstance.setSuccess(dataUrl, response.meta.mode);
-
-                // Generation complete - unblock upload to allow applying image
-                this.aiGenerating.set(false);
-
-                // Wait for dialog result
-                const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
-
-                if (result?.action === 'applied') {
-                    // Convert base64 to File and apply
-                    this.applyAiGeneratedImage(response.image.data_base64, response.image.mime_type);
-                } else if (result?.action === 'regenerate') {
-                    // User requested regeneration - loop will reopen dialog
-                    shouldRegenerate = true;
-                }
-            } catch (error) {
-                // Handle specific error types
-                const { message, reasons } = this.mapAiImageError(error);
-                dialogRef.componentInstance.setError(message, reasons);
-
-                // Generation failed - unblock UI
-                this.aiGenerating.set(false);
-
-                // Wait for dialog result
-                const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
-
-                if (result?.action === 'regenerate') {
-                    // User requested regeneration after error - loop will reopen dialog
-                    shouldRegenerate = true;
-                }
+        if (result?.action === 'applied') {
+            const generatedImage = lastGeneratedImage as { dataBase64: string; mimeType: string } | null;
+            if (generatedImage !== null) {
+                this.applyAiGeneratedImage(generatedImage.dataBase64, generatedImage.mimeType);
             }
         }
-
-        // Ensure aiGenerating is false when exiting
         this.aiGenerating.set(false);
     }
 
@@ -833,9 +830,9 @@ export class RecipeFormPageComponent implements OnInit {
     /**
      * Build AI image request DTO from current form values.
      */
-    private buildAiImageRequest(): AiRecipeImageRequestDto {
+    private async buildAiImageRequest(promptHint?: string): Promise<AiRecipeImageRequestDto> {
         const formValue = this.form.getRawValue();
-        const recipeId = this.recipeId()!;
+        const recipeId = this.recipeId();
 
         // Map category ID to category name
         let categoryName: string | null = null;
@@ -844,32 +841,20 @@ export class RecipeFormPageComponent implements OnInit {
             categoryName = category?.name ?? null;
         }
 
-        // Map ingredients to content items
-        const ingredients: AiRecipeImageContentItem[] = formValue.ingredients.map(line => {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('#')) {
-                return { type: 'header' as const, content: trimmed.replace(/^#+\s*/, '') };
-            }
-            return { type: 'item' as const, content: trimmed };
-        });
-
-        // Map steps to content items
-        const steps: AiRecipeImageContentItem[] = formValue.steps.map(line => {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('#')) {
-                return { type: 'header' as const, content: trimmed.replace(/^#+\s*/, '') };
-            }
-            return { type: 'item' as const, content: trimmed };
-        });
+        const ingredients = mapLinesToAiRecipeImageContentItems(formValue.ingredients);
+        const steps = mapLinesToAiRecipeImageContentItems(formValue.steps);
 
         const request: AiRecipeImageRequestDto = {
             recipe: {
-                id: recipeId,
+                id: recipeId ?? null,
                 name: formValue.name,
                 description: formValue.description || null,
                 servings: formValue.servings ?? null,
                 is_termorobot: formValue.isTermorobot,
                 is_grill: formValue.isGrill,
+                diet_type: formValue.dietType ?? null,
+                cuisine: formValue.cuisine ?? null,
+                difficulty: formValue.difficulty ?? null,
                 category_name: categoryName,
                 ingredients,
                 steps,
@@ -887,15 +872,64 @@ export class RecipeFormPageComponent implements OnInit {
             mode: 'auto',
         };
 
-        // Add reference_image if available
-        if (this.hasAiReferenceImage() && this.currentImagePath()) {
+        const normalizedPromptHint = promptHint?.trim();
+        if (normalizedPromptHint) {
+            request.prompt_hint = normalizedPromptHint;
+        }
+
+        // Add reference_image for edit mode
+        if (this.isEditMode() && this.currentImagePath()) {
             request.reference_image = {
                 source: 'storage_path',
                 image_path: this.currentImagePath()!,
             };
         }
 
+        // Add reference_image for create mode from pending file
+        if (!this.isEditMode()) {
+            const pendingFile = this.pendingImageFile();
+            if (pendingFile) {
+                const dataBase64 = await this.readFileAsBase64(pendingFile);
+                const mimeType = this.toAiDraftImageMimeType(pendingFile.type);
+                request.reference_image = {
+                    source: 'base64',
+                    mime_type: mimeType,
+                    data_base64: dataBase64,
+                };
+            }
+        }
+
         return request;
+    }
+
+    private async generateAiImageInDialog(
+        dialogRef: MatDialogRef<AiRecipeImagePreviewDialogComponent, AiRecipeImageDialogResult>,
+        promptHint: string | undefined,
+        onSuccess: (image: { dataBase64: string; mimeType: string }) => void
+    ): Promise<void> {
+        if (this.aiGenerating()) {
+            return;
+        }
+
+        this.aiGenerating.set(true);
+        dialogRef.componentInstance.setLoading();
+
+        try {
+            const request = await this.buildAiImageRequest(promptHint);
+            const response = await this.aiRecipeImageService.generateImage(request);
+            const dataUrl = `data:${response.image.mime_type};base64,${response.image.data_base64}`;
+
+            dialogRef.componentInstance.setSuccess(dataUrl, response.meta.mode);
+            onSuccess({
+                dataBase64: response.image.data_base64,
+                mimeType: response.image.mime_type,
+            });
+        } catch (error) {
+            const { message, reasons } = this.mapAiImageError(error);
+            dialogRef.componentInstance.setError(message, reasons);
+        } finally {
+            this.aiGenerating.set(false);
+        }
     }
 
     /**
@@ -969,6 +1003,37 @@ export class RecipeFormPageComponent implements OnInit {
             message: 'Nie udało się wygenerować zdjęcia. Spróbuj ponownie.',
             reasons: [],
         };
+    }
+
+    private toAiDraftImageMimeType(mimeType: string): AiRecipeDraftImageMimeType {
+        if (mimeType === 'image/png' || mimeType === 'image/jpeg' || mimeType === 'image/webp') {
+            return mimeType;
+        }
+
+        return 'image/webp';
+    }
+
+    private readFileAsBase64(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = reader.result;
+                if (typeof result !== 'string') {
+                    reject(new Error('Nieprawidłowy format danych obrazu referencyjnego.'));
+                    return;
+                }
+
+                const [prefix, data] = result.split(',', 2);
+                if (!prefix || !data) {
+                    reject(new Error('Nie udało się odczytać obrazu referencyjnego.'));
+                    return;
+                }
+
+                resolve(data);
+            };
+            reader.onerror = () => reject(new Error('Nie udało się odczytać obrazu referencyjnego.'));
+            reader.readAsDataURL(file);
+        });
     }
 
     onCancel(): void {
