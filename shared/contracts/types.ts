@@ -6,7 +6,6 @@
  * and type safety between the frontend and the backend.
  */
 import { Tables, TablesInsert, TablesUpdate } from '../types/database.types';
-import { FormControl } from '@angular/forms';
 
 // #region --- Base Entity Type Aliases ---
 
@@ -556,24 +555,6 @@ export interface AdminHealthDto {
 // #endregion
 
 // #region --- Auth ---
-
-/**
- * Represents the form controls for the registration form.
- */
-export interface RegisterFormViewModel {
-    email: FormControl<string>;
-    displayName: FormControl<string>;
-    password: FormControl<string>;
-    passwordConfirm: FormControl<string>;
-}
-
-/**
- * Represents the form controls for the login form.
- */
-export interface LoginFormViewModel {
-    email: FormControl<string>;
-    password: FormControl<string>;
-}
 
 /**
  * DTO for sending sign-in request to Supabase.

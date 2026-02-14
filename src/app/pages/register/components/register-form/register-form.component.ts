@@ -20,7 +20,13 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { RegisterFormViewModel } from '../../../../../../shared/contracts/types';
+
+interface RegisterFormViewModel {
+    email: FormControl<string>;
+    displayName: FormControl<string>;
+    password: FormControl<string>;
+    passwordConfirm: FormControl<string>;
+}
 
 @Component({
     selector: 'pych-register-form',

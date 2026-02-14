@@ -4,9 +4,22 @@
  */
 
 import { logger } from '../_shared/logger.ts';
-import type { AdminSummaryDto, AdminHealthDto } from '../../../shared/contracts/types.ts';
 
-export type { AdminSummaryDto, AdminHealthDto };
+export interface AdminSummaryDto {
+    version: string;
+    generated_at: string;
+    notes: string;
+    metrics: {
+        users_total: number | null;
+        recipes_total: number | null;
+        public_recipes_total: number | null;
+    };
+}
+
+export interface AdminHealthDto {
+    status: 'ok';
+    checked_at: string;
+}
 
 export async function getAdminSummary(): Promise<AdminSummaryDto> {
     logger.info('[admin] Generating summary stub');
