@@ -68,6 +68,7 @@ jobs:
           supabase functions deploy explore --no-verify-jwt
           supabase functions deploy public --no-verify-jwt
           # Auth-required endpoints keep default JWT verification
+          supabase functions deploy admin
           supabase functions deploy ai
           supabase functions deploy categories
           supabase functions deploy collections
