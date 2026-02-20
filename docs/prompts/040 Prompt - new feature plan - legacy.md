@@ -4,7 +4,7 @@ Oto dokumenty streszczczenie informacji o projekcie, które musisz przeanalizowa
 
 <project_summary>
 
-@docs/results/main-project-docs/ 
+
 
 </project_summary>
 
@@ -13,8 +13,16 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-aktualnie nie mozna wynegerować za pomocą AI obrazka do przepsiu podczas tworzenia nowego przepisu. Trzeba najpier przepis zapisać, a potem otworzyć go ponownie aby mieć dostepna funkcję generowania za pomocą AI.
-Chce aby taka możliwość była od razu podczas tworzenia przepisu
+w pliku @docs/regulamin.md
+
+znajduje się regulamin wrwisy w formacie markdown
+
+
+che aby ściażka http://localhost:4200/legal/terms
+
+wyswietlała ten regulamin.
+
+przy okazj zamin opcję w menu z "Warunki korzystania" na "Regulamin Serwisu"
 
 </nowa_funkcjonalnosc>
 
@@ -40,7 +48,7 @@ Wymagania dotyczące odpowiedzi:
 - Dla requirements: dodaj konkretne funkcje i przynajmniej jedną szczegółową historyjkę użytkownika
 - Dla planu UI: opisz nowy widok/widoki z uwzględnieniem UX i interfejsu
 - Dla planu API: dodaj konkretne endpointy z metodami HTTP, parametrami i odpowiedziami
-- pliki wynikowe umieśc w foldzedze docs.results/new-features/{nazwa-ficzera-po-angielsku}
+- pliki wynikowe umieśc w foldzedze docs/results/new-features/{nazwa-ficzera-po-angielsku}
 
 
 Twoja końcowa odpowiedź powinna zawierać trzy wyraźnie oznaczone sekcje:

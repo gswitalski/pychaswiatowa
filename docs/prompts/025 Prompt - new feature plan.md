@@ -13,15 +13,16 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-chce dodać na stronie  każdej głownej i na każdej podstronie stopkę
-stopka ma zawierać:
-- informację o prawach autorskich
-- linki do podstron ze statyczym tekstem:
-  - warunki korzystania (regulamin)
-  - polityka prywatności
-  - wydawca serwisu
+w pliku @docs/regulamin.md
 
-samr treści podstron nie są częscią tego zaddania  (bedą dostarczone oddzialenie)
+znajduje się regulamin wrwisy w formacie markdown
+
+
+che aby ściażka http://localhost:4200/legal/terms
+
+wyswietlała ten regulamin.
+
+przy okazj zamin opcję w menu z "Warunki korzystania" na "Regulamin Serwisu"
 
   
 </nowa_funkcjonalnosc>
