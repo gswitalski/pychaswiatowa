@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map, startWith } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { LegalMarkdownViewerComponent } from './components/legal-markdown-viewer/legal-markdown-viewer.component';
 
 type LegalPageId = 'terms' | 'privacy' | 'publisher';
 
@@ -15,7 +16,7 @@ interface LegalRouteData {
 @Component({
     selector: 'pych-legal-page',
     standalone: true,
-    imports: [MatCardModule, PageHeaderComponent],
+    imports: [MatCardModule, PageHeaderComponent, LegalMarkdownViewerComponent],
     templateUrl: './legal-page.component.html',
     styleUrl: './legal-page.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

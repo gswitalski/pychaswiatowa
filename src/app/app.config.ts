@@ -1,6 +1,8 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideAppInitializer } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { MatPaginatorIntl } from '@angular/material/paginator';
+import { provideMarkdown } from 'ngx-markdown';
 
 import { routes } from './app.routes';
 import { PolishPaginatorIntl } from './core/services/polish-paginator-intl';
@@ -13,6 +15,8 @@ export const appConfig: ApplicationConfig = {
         provideBrowserGlobalErrorListeners(),
         // add animations
         provideAnimations(),
+        provideHttpClient(),
+        provideMarkdown(),
         provideRouter(routes),
         { provide: MatPaginatorIntl, useClass: PolishPaginatorIntl },
         // Initialize auth state at app startup

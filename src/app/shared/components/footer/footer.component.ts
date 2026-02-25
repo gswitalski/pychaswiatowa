@@ -25,7 +25,7 @@ export class FooterComponent {
         { label: 'O nas', path: '#' },
         { label: 'FAQ', path: '#' },
         { label: 'Kontakt', path: '#' },
-        { label: 'Warunki korzystania', path: '/legal/terms' },
+        { label: 'Regulamin Serwisu', path: '/legal/terms' },
         { label: 'Wyłączenie odpowiedzialności', path: '#' },
         { label: 'Polityka prywatności', path: '/legal/privacy' },
         { label: 'Wydawca serwisu', path: '/legal/publisher' },

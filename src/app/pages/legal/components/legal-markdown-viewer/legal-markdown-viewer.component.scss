@@ -1,0 +1,30 @@
+.legal-markdown-viewer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    &--loading {
+        opacity: 0.7;
+    }
+
+    &__error {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--mat-sys-outline-variant);
+        background-color: var(--mat-sys-surface-container-low);
+    }
+
+    &__error-text {
+        margin: 0;
+        color: var(--mat-sys-on-surface);
+    }
+
+    &__content {
+        display: block;
+    }
+}

@@ -4,9 +4,7 @@
         <mat-card class="legal-page__card mat-typography">
             @switch (pageId()) {
                 @case ('terms') {
-                    <p class="legal-page__text">
-                        Treść warunków korzystania zostanie uzupełniona wkrótce.
-                    </p>
+                    <pych-legal-markdown-viewer [assetPath]="'/assets/legal/terms.md'" />
                 }
                 @case ('privacy') {
                     <p class="legal-page__text">

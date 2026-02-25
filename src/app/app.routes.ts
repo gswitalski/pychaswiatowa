@@ -38,7 +38,7 @@ export const routes: Routes = [
                     ),
                 data: {
                     page: 'terms',
-                    title: 'Warunki korzystania (Regulamin)',
+                    title: 'Regulamin Serwisu',
                 },
             },
             {
@@ -227,7 +227,7 @@ export const routes: Routes = [
                     ),
                 data: {
                     page: 'terms',
-                    title: 'Warunki korzystania (Regulamin)',
+                    title: 'Regulamin Serwisu',
                 },
             },
             {

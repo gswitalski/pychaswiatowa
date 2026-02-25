@@ -1,0 +1,29 @@
+<section
+    class="legal-markdown-viewer"
+    [class.legal-markdown-viewer--loading]="isLoading()"
+>
+    @if (isLoading()) {
+        <mat-progress-bar
+            mode="indeterminate"
+            aria-label="Wczytywanie regulaminu"
+        />
+    }
+
+    @if (errorMessage()) {
+        <div class="legal-markdown-viewer__error" role="alert">
+            <p class="legal-markdown-viewer__error-text">{{ errorMessage() }}</p>
+            <button
+                mat-stroked-button
+                type="button"
+                (click)="reload()"
+                [disabled]="isLoading()"
+            >
+                Odśwież
+            </button>
+        </div>
+    }
+
+    @if (content()) {
+        <markdown class="legal-markdown-viewer__content" [data]="content() ?? ''" />
+    }
+</section>
