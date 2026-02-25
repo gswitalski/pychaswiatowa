@@ -5,18 +5,28 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const sourcePath = resolve(__dirname, '../docs/regulamin.md');
-const targetPath = resolve(__dirname, '../public/assets/legal/terms.md');
+const legalAssetsToSync = [
+    {
+        sourcePath: resolve(__dirname, '../docs/regulamin.md'),
+        targetPath: resolve(__dirname, '../public/assets/legal/terms.md'),
+    },
+    {
+        sourcePath: resolve(__dirname, '../doc/pw.md'),
+        targetPath: resolve(__dirname, '../public/assets/legal/privacy.md'),
+    },
+];
 
 async function syncLegalTerms() {
-    await mkdir(dirname(targetPath), { recursive: true });
-    await cp(sourcePath, targetPath);
+    for (const legalAsset of legalAssetsToSync) {
+        await mkdir(dirname(legalAsset.targetPath), { recursive: true });
+        await cp(legalAsset.sourcePath, legalAsset.targetPath);
+    }
 }
 
 try {
     await syncLegalTerms();
-    console.log('[sync:legal] Zsynchronizowano docs/regulamin.md -> public/assets/legal/terms.md');
+    console.log('[sync:legal] Zsynchronizowano dokumenty prawne do public/assets/legal.');
 } catch (error) {
-    console.error('[sync:legal] Nie udalo sie zsynchronizowac pliku regulaminu.', error);
+    console.error('[sync:legal] Nie udalo sie zsynchronizowac dokumentow prawnych.', error);
     process.exitCode = 1;
 }

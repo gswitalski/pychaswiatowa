@@ -33,6 +33,7 @@ export class LegalMarkdownViewerComponent {
     private readonly http = inject(HttpClient);
 
     readonly assetPath = input.required<string>();
+    readonly documentName = input<string>('treści strony prawnej');
     private readonly reloadTick = signal<number>(0);
 
     readonly state = signal<LegalMarkdownViewerState>({
@@ -44,6 +45,7 @@ export class LegalMarkdownViewerComponent {
     readonly content = computed(() => this.state().content);
     readonly isLoading = computed(() => this.state().state === 'loading');
     readonly errorMessage = computed(() => this.state().errorMessage);
+    readonly loadingAriaLabel = computed(() => `Wczytywanie ${this.documentName()}`);
 
     constructor() {
         effect(() => {
@@ -57,12 +59,16 @@ export class LegalMarkdownViewerComponent {
         this.reloadTick.update((value) => value + 1);
     }
 
+    private createLoadErrorMessage(): string {
+        return `Nie udało się wczytać ${this.documentName()}. Spróbuj ponownie.`;
+    }
+
     private async load(assetPath: string): Promise<void> {
         if (!assetPath) {
             this.state.update((currentState) => ({
                 ...currentState,
                 state: 'error',
-                errorMessage: 'Nie udało się wczytać Regulaminu. Spróbuj ponownie.',
+                errorMessage: this.createLoadErrorMessage(),
             }));
             return;
         }
@@ -87,7 +93,7 @@ export class LegalMarkdownViewerComponent {
             this.state.update((currentState) => ({
                 ...currentState,
                 state: 'error',
-                errorMessage: 'Nie udało się wczytać Regulaminu. Spróbuj ponownie.',
+                errorMessage: this.createLoadErrorMessage(),
             }));
         }
     }

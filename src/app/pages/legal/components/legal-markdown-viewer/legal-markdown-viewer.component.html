@@ -5,7 +5,7 @@
     @if (isLoading()) {
         <mat-progress-bar
             mode="indeterminate"
-            aria-label="Wczytywanie regulaminu"
+            [attr.aria-label]="loadingAriaLabel()"
         />
     }
 

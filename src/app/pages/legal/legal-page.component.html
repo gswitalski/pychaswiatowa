@@ -4,12 +4,16 @@
         <mat-card class="legal-page__card mat-typography">
             @switch (pageId()) {
                 @case ('terms') {
-                    <pych-legal-markdown-viewer [assetPath]="'/assets/legal/terms.md'" />
+                    <pych-legal-markdown-viewer
+                        [assetPath]="'/assets/legal/terms.md'"
+                        [documentName]="'regulaminu'"
+                    />
                 }
                 @case ('privacy') {
-                    <p class="legal-page__text">
-                        Treść polityki prywatności zostanie uzupełniona wkrótce.
-                    </p>
+                    <pych-legal-markdown-viewer
+                        [assetPath]="'/assets/legal/privacy.md'"
+                        [documentName]="'polityki prywatności'"
+                    />
                 }
                 @case ('publisher') {
                     <p class="legal-page__text">
