@@ -24,10 +24,10 @@ export class FooterComponent {
     readonly legalLinks: LegalLinkVm[] = [
         { label: 'O nas', path: '#' },
         { label: 'FAQ', path: '#' },
-        { label: 'Kontakt', path: '#' },
+        // { label: 'Kontakt', path: '#' },
         { label: 'Regulamin Serwisu', path: '/legal/terms' },
-        { label: 'Wyłączenie odpowiedzialności', path: '#' },
+        // { label: 'Wyłączenie odpowiedzialności', path: '#' },
         { label: 'Polityka prywatności', path: '/legal/privacy' },
-        { label: 'Wydawca serwisu', path: '/legal/publisher' },
+        // { label: 'Wydawca serwisu', path: '/legal/publisher' },
     ];
 }

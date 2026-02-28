@@ -1,8 +1,7 @@
 # Polityka prywatności serwisu „PychaŚwiatowa”
 
-> **Wersja:** 0.1 (MVP)  
-> **Data publikacji:** \<YYYY-MM-DD\>  
-> **Ostatnia aktualizacja:** \<YYYY-MM-DD\>  
+> **Data publikacji:** 28.02.2026  
+> **Ostatnia aktualizacja:** 28.02.2026
 
 Niniejsza Polityka prywatności („**Polityka**”) opisuje zasady przetwarzania danych osobowych oraz informacje o plikach cookies i podobnych technologiach w związku z korzystaniem z serwisu internetowego „PychaŚwiatowa” („**Serwis**”).
 

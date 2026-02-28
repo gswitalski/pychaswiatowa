@@ -1,8 +1,7 @@
 # Regulamin serwisu „PychaŚwiatowa” (Warunki korzystania)
 
-> **Wersja:** 0.1 (MVP)  
-> **Data publikacji:** \<YYYY-MM-DD\>  
-> **Ostatnia aktualizacja:** \<YYYY-MM-DD\>  
+> **Data publikacji:** 28.02.2026
+> **Ostatnia aktualizacja:** 28.
 
 ## 1. Informacje podstawowe
 
