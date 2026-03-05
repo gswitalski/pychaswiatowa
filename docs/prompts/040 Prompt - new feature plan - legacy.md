@@ -13,16 +13,7 @@ Oto opis nowej funkcjonalności, którą należy dodać do projektu:
 <nowa_funkcjonalnosc>
 
 
-w pliku @docs/regulamin.md
-
-znajduje się regulamin wrwisy w formacie markdown
-
-
-che aby ściażka http://localhost:4200/legal/terms
-
-wyswietlała ten regulamin.
-
-przy okazj zamin opcję w menu z "Warunki korzystania" na "Regulamin Serwisu"
+dodanie checkboksa ze zgodą na otrzymywanie danych marketingowych przy rejestracji nowego uzytkownika
 
 </nowa_funkcjonalnosc>
 
