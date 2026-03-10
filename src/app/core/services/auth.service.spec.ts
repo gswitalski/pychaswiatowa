@@ -62,10 +62,10 @@ describe('AuthService', () => {
             const credentials: SignUpRequestDto = {
                 email: 'test@example.com',
                 password: 'password123',
-                options: {
-                    data: {
-                        displayName: 'Test User',
-                    },
+                username: 'Test User',
+                marketing_consent: {
+                    accepted: true,
+                    text_version: 'marketing-consent-pl-v1',
                 },
             };
 
@@ -87,7 +87,16 @@ describe('AuthService', () => {
             expect(mockSupabaseService.auth.signUp).toHaveBeenCalledWith({
                 email: credentials.email,
                 password: credentials.password,
-                options: credentials.options,
+                options: {
+                    data: {
+                        username: credentials.username,
+                        marketing_consent_accepted:
+                            credentials.marketing_consent.accepted,
+                        marketing_consent_text_version:
+                            credentials.marketing_consent.text_version,
+                    },
+                    emailRedirectTo: undefined,
+                },
             });
             expect(mockSupabaseService.auth.signUp).toHaveBeenCalledTimes(1);
         });
@@ -97,6 +106,11 @@ describe('AuthService', () => {
             const credentials: SignUpRequestDto = {
                 email: 'test@example.com',
                 password: 'password123',
+                username: 'Test User',
+                marketing_consent: {
+                    accepted: false,
+                    text_version: null,
+                },
             };
 
             const mockError = { message: 'User already exists' };

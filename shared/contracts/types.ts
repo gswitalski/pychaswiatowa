@@ -6,6 +6,7 @@
  * and type safety between the frontend and the backend.
  */
 import { Tables, TablesInsert, TablesUpdate } from '../types/database.types';
+import type { MarketingConsentTextVersion } from './marketing-consent';
 
 // #region --- Base Entity Type Aliases ---
 
@@ -567,14 +568,19 @@ export interface SignInRequestDto {
 /**
  * DTO for sending sign-up request to Supabase.
  */
+export interface MarketingConsentSignupDto {
+    accepted: boolean;
+    text_version: MarketingConsentTextVersion | null;
+}
+
+/**
+ * DTO for sending sign-up request in application domain format.
+ */
 export interface SignUpRequestDto {
     email: string;
     password: string;
-    options: {
-        data: {
-            username: string;
-        };
-    };
+    username: string;
+    marketing_consent: MarketingConsentSignupDto;
 }
 
 /**

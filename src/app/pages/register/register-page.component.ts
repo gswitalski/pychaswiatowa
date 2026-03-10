@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { RegisterFormComponent } from './components/register-form/register-form.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiError } from '../../../../shared/contracts/types';
+import { MARKETING_CONSENT_TEXT_VERSION } from '../../../../shared/contracts/marketing-consent';
 
 interface RegisterState {
     isLoading: boolean;
@@ -34,6 +35,7 @@ export class RegisterPageComponent {
         email: string;
         displayName: string;
         password: string;
+        marketingConsentAccepted: boolean;
     }): Promise<void> {
         this.state.update((s) => ({ ...s, isLoading: true, error: null }));
 
@@ -45,10 +47,12 @@ export class RegisterPageComponent {
                 {
                     email: formData.email,
                     password: formData.password,
-                    options: {
-                        data: {
-                            username: formData.displayName,
-                        },
+                    username: formData.displayName,
+                    marketing_consent: {
+                        accepted: formData.marketingConsentAccepted,
+                        text_version: formData.marketingConsentAccepted
+                            ? MARKETING_CONSENT_TEXT_VERSION
+                            : null,
                     },
                 },
                 callbackUrl

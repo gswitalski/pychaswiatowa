@@ -20,12 +20,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 interface RegisterFormViewModel {
     email: FormControl<string>;
     displayName: FormControl<string>;
     password: FormControl<string>;
     passwordConfirm: FormControl<string>;
+    marketingConsentAccepted: FormControl<boolean>;
 }
 
 @Component({
@@ -39,6 +41,7 @@ interface RegisterFormViewModel {
         MatFormFieldModule,
         MatInputModule,
         MatProgressSpinnerModule,
+        MatCheckboxModule,
     ],
     templateUrl: './register-form.component.html',
     styleUrl: './register-form.component.scss',
@@ -52,6 +55,7 @@ export class RegisterFormComponent implements OnInit {
         email: string;
         displayName: string;
         password: string;
+        marketingConsentAccepted: boolean;
     }>();
 
     form = new FormGroup<RegisterFormViewModel>(
@@ -71,6 +75,9 @@ export class RegisterFormComponent implements OnInit {
             passwordConfirm: new FormControl('', {
                 nonNullable: true,
                 validators: [Validators.required],
+            }),
+            marketingConsentAccepted: new FormControl(false, {
+                nonNullable: true,
             }),
         },
         { validators: this.passwordMatchValidator }
@@ -107,8 +114,14 @@ export class RegisterFormComponent implements OnInit {
 
     submitForm(): void {
         if (this.form.valid) {
-            const { email, displayName, password } = this.form.getRawValue();
-            this.registerSubmit.emit({ email, displayName, password });
+            const { email, displayName, password, marketingConsentAccepted } =
+                this.form.getRawValue();
+            this.registerSubmit.emit({
+                email,
+                displayName,
+                password,
+                marketingConsentAccepted,
+            });
         } else {
             this.form.markAllAsTouched();
         }

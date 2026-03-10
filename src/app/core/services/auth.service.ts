@@ -21,6 +21,12 @@ export interface AuthSessionViewModel {
     appRole: AppRole;
 }
 
+interface SupabaseSignUpMetadata {
+    username: string;
+    marketing_consent_accepted: boolean;
+    marketing_consent_text_version: string | null;
+}
+
 @Injectable({
     providedIn: 'root',
 })
@@ -43,11 +49,13 @@ export class AuthService {
         credentials: SignUpRequestDto,
         redirectTo?: string
     ): Promise<AuthResponse> {
+        const metadata = this.mapSignUpRequestToSupabaseMetadata(credentials);
+
         const { data, error } = await this.supabase.auth.signUp({
             email: credentials.email,
             password: credentials.password,
             options: {
-                ...credentials.options,
+                data: metadata,
                 emailRedirectTo: redirectTo,
             },
         });
@@ -57,6 +65,17 @@ export class AuthService {
         }
 
         return { data, error: null };
+    }
+
+    private mapSignUpRequestToSupabaseMetadata(
+        credentials: SignUpRequestDto
+    ): SupabaseSignUpMetadata {
+        return {
+            username: credentials.username,
+            marketing_consent_accepted: credentials.marketing_consent.accepted,
+            marketing_consent_text_version:
+                credentials.marketing_consent.text_version,
+        };
     }
 
     async signIn(email: string, password: string): Promise<AuthResponse> {
