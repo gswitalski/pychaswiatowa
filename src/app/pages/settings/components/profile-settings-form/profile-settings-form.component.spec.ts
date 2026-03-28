@@ -44,7 +44,6 @@ describe('ProfileSettingsFormComponent', () => {
         const { component } = createComponent();
 
         expect(component.form.getRawValue()).toEqual({
-            email: 'test@pychaswiatowa.pl',
             username: 'kucharz',
             marketingConsent: true,
         });
@@ -60,7 +59,6 @@ describe('ProfileSettingsFormComponent', () => {
         component.submitForm();
 
         expect(emitSpy).toHaveBeenCalledWith({
-            email: 'test@pychaswiatowa.pl',
             username: 'nowy-user',
             marketingConsent: true,
         });

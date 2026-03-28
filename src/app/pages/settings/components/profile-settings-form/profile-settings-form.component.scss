@@ -4,6 +4,31 @@
     align-items: start;
 }
 
+.email-block {
+    display: grid;
+    gap: 4px;
+}
+
+.email-label {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.email-value {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 500;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.email-hint {
+    margin: 0;
+    font-size: 1.2rem;
+    color: rgba(0, 0, 0, 0.6);
+}
+
 .full-width {
     width: 100%;
 }

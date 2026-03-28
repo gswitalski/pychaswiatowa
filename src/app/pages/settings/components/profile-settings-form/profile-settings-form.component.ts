@@ -20,13 +20,11 @@ import { MatInputModule } from '@angular/material/input';
 import { ProfileSettingsDto } from '../../../../../../shared/contracts/types';
 
 export interface ProfileSettingsFormValue {
-    email: string;
     username: string;
     marketingConsent: boolean;
 }
 
 interface ProfileSettingsFormModel {
-    email: FormControl<string>;
     username: FormControl<string>;
     marketingConsent: FormControl<boolean>;
 }
@@ -56,7 +54,6 @@ export class ProfileSettingsFormComponent implements OnChanges {
     @Output() saveProfile = new EventEmitter<ProfileSettingsFormValue>();
 
     readonly form = new FormGroup<ProfileSettingsFormModel>({
-        email: new FormControl('', { nonNullable: true }),
         username: new FormControl('', {
             nonNullable: true,
             validators: [
@@ -84,9 +81,8 @@ export class ProfileSettingsFormComponent implements OnChanges {
             return;
         }
 
-        const { email, username, marketingConsent } = this.form.getRawValue();
+        const { username, marketingConsent } = this.form.getRawValue();
         this.saveProfile.emit({
-            email,
             username: username.trim(),
             marketingConsent,
         });
@@ -120,7 +116,6 @@ export class ProfileSettingsFormComponent implements OnChanges {
 
         this.form.reset(
             {
-                email: this.profile.email,
                 username: this.profile.username,
                 marketingConsent: this.profile.marketing_consent,
             },

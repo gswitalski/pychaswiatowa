@@ -1,15 +1,9 @@
 <form [formGroup]="form" (ngSubmit)="submitForm()" class="profile-settings-form">
-    <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Adres e-mail</mat-label>
-        <input
-            matInput
-            type="email"
-            formControlName="email"
-            readonly
-            [attr.aria-readonly]="true"
-        />
-        <mat-hint>Adres e-mail jest powiązany z kontem i nie podlega edycji.</mat-hint>
-    </mat-form-field>
+    <div class="email-block">
+        <span class="email-label">Adres e-mail</span>
+        <p class="email-value">{{ profile?.email }}</p>
+
+    </div>
 
     <mat-form-field appearance="outline" class="full-width">
         <mat-label>Nazwa użytkownika</mat-label>

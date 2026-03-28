@@ -11,15 +11,24 @@ Zapoznaj się z  projektem
 
 <aktualne_zachowanie>
 
-endpoint
-https://fxgonghylivohevdrdnt.supabase.co/functions/v1/admin/summary
+endpoint 
+http://127.0.0.1:54331/functions/v1/profile/change-password
 
-zgłasza 
-summary	CORS error
+z body
 
+{
+    "current_password": "554G5rjnbdAanGR",
+    "new_password": "tobitobi2626"
+}
 
-ale tylko na produkcji (lokalnie dziła)
+zwraca
 
+błąd 500
+
+{
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to change password"
+}
 
 
 </aktualne_zachowanie>
