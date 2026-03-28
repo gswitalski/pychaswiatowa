@@ -132,6 +132,26 @@ export function getSupabaseServiceClient(): TypedSupabaseClient {
 }
 
 /**
+ * Creates an isolated anon client without persisted session.
+ * Useful for credentials verification flows that must not mutate request context.
+ */
+export function createEphemeralAnonClient(): TypedSupabaseClient {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Missing Supabase configuration');
+    }
+
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    });
+}
+
+/**
  * Decodes a JWT token without verification to extract the payload.
  * Used to check the 'role' claim to distinguish anon key from user token.
  *

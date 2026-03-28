@@ -481,6 +481,44 @@ export type ProfileDto = Pick<Profile, 'id' | 'username'>;
  */
 export type UpdateProfileCommand = Partial<Pick<Profile, 'username'>>;
 
+/**
+ * DTO for profile settings page.
+ * Contains read-only auth email and editable profile fields.
+ */
+export interface ProfileSettingsDto {
+    id: string;
+    email: string;
+    username: string;
+    marketing_consent: boolean;
+    marketing_consent_updated_at: string | null;
+    marketing_consent_text_version: MarketingConsentTextVersion | null;
+}
+
+/**
+ * Command model for updating profile settings.
+ */
+export interface UpdateProfileSettingsCommand {
+    username: string;
+    marketing_consent: boolean;
+    marketing_consent_text_version: MarketingConsentTextVersion | null;
+}
+
+/**
+ * Command model for profile password change.
+ */
+export interface ChangePasswordCommand {
+    current_password: string;
+    new_password: string;
+}
+
+/**
+ * Response DTO for successful password change.
+ */
+export interface ChangePasswordResponseDto {
+    status: 'ok';
+    message: string;
+}
+
 // #endregion
 
 // #region --- Search ---

@@ -10,13 +10,13 @@ Najpierw dokładnie przejrzyj dostarczony plan wdrożenia:
 
 <types>
 
-
+@shared/contracts/types.ts
 
 </types>
 
 <implementation_rules>
 
-
+@.cursor/rules/backend.mdc 
 
 </implementation_rules>
 

@@ -18,7 +18,8 @@ The API exposes the following primary resources:
     - recipe-derived items (built from `Recipe Normalized Ingredients` of recipes that are in "My Plan"),
     - user-added manual text items (not tied to any recipe).
     Recipe-derived items are stored as **raw rows** (one row per recipe ingredient) and include `recipe_id` and `recipe_name` so that the **frontend** can group/sum items (see endpoint notes).
--   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. This is provided by Supabase and consumed via the `supabase-js` client in the Angular app (no custom backend endpoints required for MVP).
+-   **Auth (Supabase Auth)**: Email/password signup & login, email verification, session management. Standard auth flows are provided by Supabase and consumed via the `supabase-js` client in the Angular app. For profile settings, MVP additionally introduces a backend-assisted password change flow exposed as `POST /profile/change-password`.
+-   **Profiles**: A per-user profile resource backed by `public.profiles` and aggregated with Supabase Auth data. It exposes read-only account data (`email`) together with editable profile settings (`username`, marketing consent fields) and a secure password change action.
 -   **UI Navigation (frontend-only)**: Main navigation layout (Topbar tabs on desktop-first, Bottom Bar on mobile/tablet) is a frontend concern and is **hardcoded** in the Angular app (no API-driven menu config in MVP). This change does not require new API endpoints.
 -   **Legal Pages (frontend-only)**: Static informational pages linked from the global footer:
     - `/legal/terms` (Warunki korzystania / Regulamin)
@@ -1721,16 +1722,28 @@ All endpoints in the `/admin/*` namespace are **admin-only** and MUST enforce au
 
 #### `GET /profile`
 
--   **Description**: Retrieve the profile for the authenticated user.
+-   **Description**: Retrieve the complete profile settings payload for the authenticated user. This endpoint is intended for the `/settings` view and aggregates data from both `auth.users` and `public.profiles`.
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
         ```json
         {
           "id": "a1b2c3d4-...",
-          "username": "john.doe"
+          "email": "john.doe@example.com",
+          "username": "john.doe",
+          "marketing_consent": true,
+          "marketing_consent_updated_at": "2026-03-27T18:30:00Z",
+          "marketing_consent_text_version": "marketing-consent-pl-v1"
         }
         ```
+-   **Response Field Notes**:
+    -   `email` is read-only and comes from Supabase Auth, not from `public.profiles`
+    -   `username`, `marketing_consent`, `marketing_consent_updated_at`, and `marketing_consent_text_version` come from `public.profiles`
+-   **Default / fallback behavior**:
+    -   If the authenticated profile exists but marketing consent fields were not explicitly set yet, the endpoint SHOULD return:
+        - `marketing_consent = false`
+        - `marketing_consent_updated_at = null`
+        - `marketing_consent_text_version = null`
 -   **Error Response**:
     -   **Code**: `401 Unauthorized`
     -   **Code**: `404 Not Found`
@@ -1739,20 +1752,80 @@ All endpoints in the `/admin/*` namespace are **admin-only** and MUST enforce au
 
 #### `PUT /profile`
 
--   **Description**: Update the profile for the authenticated user.
+-   **Description**: Update editable profile settings for the authenticated user. In MVP this includes `username` and the current marketing consent state. The endpoint does not allow changing `email`.
 -   **Request Payload**:
     ```json
     {
-      "username": "new.john.doe"
+      "username": "new.john.doe",
+      "marketing_consent": false,
+      "marketing_consent_text_version": "marketing-consent-pl-v1"
     }
     ```
+-   **Validation / rules**:
+    -   `username`: required, trimmed, `3-50` characters
+    -   `marketing_consent`: required boolean
+    -   `marketing_consent_text_version`: required `string`, MUST belong to the backend-supported allowlist
+    -   The client MUST NOT send `email`, `id`, or `marketing_consent_updated_at` as writable fields
+-   **Persistence behavior**:
+    -   When the user changes marketing consent, the backend MUST update:
+        - `marketing_consent`
+        - `marketing_consent_updated_at = now()`
+        - `marketing_consent_text_version = request value`
+    -   Because this endpoint uses `PUT`, the client should send the full snapshot of editable settings fields
 -   **Success Response**:
     -   **Code**: `200 OK`
-    -   **Payload**: (The full updated profile object)
+    -   **Payload**:
+        ```json
+        {
+          "id": "a1b2c3d4-...",
+          "email": "john.doe@example.com",
+          "username": "new.john.doe",
+          "marketing_consent": false,
+          "marketing_consent_updated_at": "2026-03-27T18:45:00Z",
+          "marketing_consent_text_version": "marketing-consent-pl-v1"
+        }
+        ```
 -   **Error Response**:
     -   **Code**: `400 Bad Request`
     -   **Code**: `401 Unauthorized`
     -   **Code**: `404 Not Found`
+    -   **Code**: `409 Conflict` (e.g. username uniqueness conflict, if enforced)
+    -   **Code**: `422 Unprocessable Entity` (e.g. unsupported or inconsistent marketing consent fields)
+
+---
+
+#### `POST /profile/change-password`
+
+-   **Description**: Securely change the authenticated user's password from the `/settings` view. This endpoint is separated from `PUT /profile` because password change is a distinct security-sensitive action.
+-   **Request Payload**:
+    ```json
+    {
+      "current_password": "OldSecret123!",
+      "new_password": "NewSecret123!"
+    }
+    ```
+-   **Validation / rules**:
+    -   `current_password`: required, non-empty
+    -   `new_password`: required, must satisfy the application's password policy
+    -   `confirm_password` is intentionally not part of the API contract; it is a frontend-only validation concern
+    -   The backend MUST verify `current_password` before performing the password update
+-   **Behavior**:
+    -   On success, the password is updated in Supabase Auth
+    -   The current session SHOULD remain active on the current device in MVP
+    -   MVP does not include forced logout of other devices/sessions
+-   **Success Response**:
+    -   **Code**: `200 OK`
+    -   **Payload**:
+        ```json
+        {
+          "status": "ok",
+          "message": "Password updated successfully."
+        }
+        ```
+-   **Error Response**:
+    -   **Code**: `400 Bad Request` (missing fields, invalid new password, password policy violation)
+    -   **Code**: `401 Unauthorized`
+    -   **Code**: `422 Unprocessable Entity` (invalid current password)
 
 ---
 
@@ -1804,6 +1877,13 @@ All endpoints in the `/admin/*` namespace are **admin-only** and MUST enforce au
         - max file size: `10 MB`
     -   `tags.name`: required, 1-50 characters.
     -   `collections.name`: required, 1-100 characters.
+    -   `PUT /profile`:
+        - `username`: required, trimmed, 3-50 characters
+        - `marketing_consent`: required boolean
+        - `marketing_consent_text_version`: required `string`, validated against supported consent text versions
+    -   `POST /profile/change-password`:
+        - `current_password`: required, non-empty
+        - `new_password`: required, must satisfy current password policy
 -   **Business Logic**:
     -   **Recipe time consistency**: If both `prep_time_minutes` and `total_time_minutes` are provided (non-null), then `total_time_minutes` MUST be greater than or equal to `prep_time_minutes`. Otherwise the API MUST return `400 Bad Request` with a clear validation error payload.
     -   **Text Parsing**: For `POST /recipes` and `PUT /recipes`, the API will accept `ingredients_raw` and `steps_raw` as plain text, and MAY accept `tips_raw` (optional) as plain text. A dedicated PostgreSQL function, called via RPC, will parse this text into the structured `jsonb` format required by the database (`ingredients`, `steps`, `tips`). Lines starting with `#` will be converted to `{"type": "header", ...}` objects. For lines in `steps_raw`, the parser will strip leading numbering (like "1.", "2.") and bullet points to ensure clean data storage. This allows the frontend to implement automatic, continuous numbering across sections without duplication.
@@ -1816,3 +1896,6 @@ All endpoints in the `/admin/*` namespace are **admin-only** and MUST enforce au
         - If amount/unit cannot be determined reliably, store only `name` (`amount=null`, `unit=null`).
     -   **Tag Management**: When creating/updating a recipe, the list of tag names provided will be used to find existing tags or create new ones for the user, and then associate them with the recipe. This logic will be handled within the database transaction for creating/updating the recipe.
     -   **Soft Deletes**: `DELETE /recipes/{id}` performs a soft delete by setting the `deleted_at` field. All `GET` requests for recipes will automatically filter out records where `deleted_at` is not null.
+    -   **Profile settings aggregation**: `GET /profile` combines read-only identity data from Supabase Auth (`email`) with editable data stored in `public.profiles` (`username`, marketing consent fields).
+    -   **Profile settings updates**: `PUT /profile` updates only whitelisted profile fields and the backend MUST set `marketing_consent_updated_at` itself when the consent decision changes.
+    -   **Password change security**: `POST /profile/change-password` MUST verify the user's current password before updating the new one; frontend-only validation is not sufficient.

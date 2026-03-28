@@ -8,12 +8,19 @@ Oto dokumenty streszczczenie informacji o projekcie, które musisz przeanalizowa
 
 </project_summary>
 
-Oto opis nowej funkcjonalności, którą należy dodać do projektu:
-
 <nowa_funkcjonalnosc>
 
 
-dodanie checkboksa ze zgodą na otrzymywanie danych marketingowych przy rejestracji nowego uzytkownika
+Pod ścieżką 
+https://pychaswiatowa.pl/settings
+
+ma sie pojawić formularz do modyfikacji profilu uzytkownika
+Formularz ma wyświetlić login czyli email) - tylko do odczytu
+
+użytkownik może zmienić nazwę wyświetlaną (inpunt tekstowy) oraz zminić wartośc zgody na otrzymywanie materiaów marketingowych
+
+Dodatkowo jest przycisk "zmien hasło" który wyświetla popupa . W tym poppupie uzytkownik musie podać stare i nowe hjasło aby zmienić swoje hasło.
+
 
 </nowa_funkcjonalnosc>
 
@@ -43,7 +50,7 @@ Wymagania dotyczące odpowiedzi:
 
 
 Twoja końcowa odpowiedź powinna zawierać trzy wyraźnie oznaczone sekcje:
-1. wymgania (finkcjie i historyjki_)
+1. wymagania (funkcje i historyjki)
 2. Nowe lub zmienone widoki w planie UI  
 3. Nowe lub zmienione API w planie API
 
