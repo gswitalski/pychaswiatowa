@@ -14,6 +14,7 @@ import {
     verifyCurrentPassword,
 } from './profile.service.ts';
 import { createEphemeralAnonClient } from '../_shared/supabase-client.ts';
+import { createServiceRoleClient } from '../_shared/supabase-client.ts';
 import {
     changePasswordSchema,
     updateProfileSettingsSchema,
@@ -114,7 +115,7 @@ export async function handleUpdateProfile(_req: Request): Promise<Response> {
 export async function handleChangePassword(_req: Request): Promise<Response> {
     try {
         logger.info('Handling POST /profile/change-password request');
-        const { client, user } = await getAuthenticatedContext(_req);
+        const { user } = await getAuthenticatedContext(_req);
 
         let body: unknown;
         try {
@@ -157,8 +158,10 @@ export async function handleChangePassword(_req: Request): Promise<Response> {
             currentPassword: payload.current_password,
         });
 
+        const adminClient = createServiceRoleClient();
         await changePassword({
-            client,
+            adminClient,
+            userId: user.id,
             newPassword: payload.new_password,
         });
 

@@ -225,12 +225,15 @@ export async function verifyCurrentPassword(params: {
  * Changes password for currently authenticated user.
  */
 export async function changePassword(params: {
-    client: TypedSupabaseClient;
+    adminClient: TypedSupabaseClient;
+    userId: string;
     newPassword: string;
 }): Promise<void> {
-    const { client, newPassword } = params;
+    const { adminClient, userId, newPassword } = params;
 
-    const { error } = await client.auth.updateUser({ password: newPassword });
+    const { error } = await adminClient.auth.admin.updateUserById(userId, {
+        password: newPassword,
+    });
     if (!error) {
         return;
     }
