@@ -1,0 +1,66 @@
+.profile-settings-page {
+    display: grid;
+    gap: 20px;
+    padding: 20px;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.settings-card {
+    display: grid;
+    gap: 14px;
+    padding: 20px;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.section-info {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    line-height: 1.45;
+}
+
+.error-state {
+    display: grid;
+    gap: 12px;
+    align-items: start;
+}
+
+.success-message {
+    margin: 4px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    color: #1b5e20;
+    line-height: 1.4;
+}
+
+.security-button {
+    width: fit-content;
+    min-width: 180px;
+}
+
+@media (max-width: 768px) {
+    .profile-settings-page {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .settings-card {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .security-button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+    }
+}

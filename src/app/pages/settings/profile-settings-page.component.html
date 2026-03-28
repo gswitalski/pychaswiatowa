@@ -1,0 +1,48 @@
+<pych-page-header title="Ustawienia" />
+
+<section class="profile-settings-page">
+    <mat-card appearance="outlined" class="settings-card">
+        <h2 class="section-title">Dane konta</h2>
+
+        @if (loadingOverlayVisible()) {
+            <p class="section-info">Odświeżanie danych profilu...</p>
+        }
+
+        @if (isInitialLoading() && !profile()) {
+            <p class="section-info">Ładowanie ustawień profilu...</p>
+        } @else if (loadError()) {
+            <div class="error-state">
+                <p>{{ loadError() }}</p>
+                <button mat-stroked-button type="button" (click)="retryLoad()">
+                    Spróbuj ponownie
+                </button>
+            </div>
+        } @else if (canRenderForm()) {
+            <pych-profile-settings-form
+                [profile]="profile()"
+                [isLoading]="isInitialLoading()"
+                [isSaving]="isSavingProfile()"
+                [submitError]="saveError()?.message ?? null"
+                [submitErrorStatus]="saveError()?.status ?? null"
+                (saveProfile)="handleSaveProfile($event)"
+            />
+        }
+
+        @if (lastSuccessMessage()) {
+            <p class="success-message">{{ lastSuccessMessage() }}</p>
+        }
+    </mat-card>
+
+    <mat-card appearance="outlined" class="settings-card">
+        <h2 class="section-title">Bezpieczeństwo</h2>
+        <p class="section-info">Zmień hasło bez opuszczania strony ustawień.</p>
+        <button
+            mat-stroked-button
+            type="button"
+            class="security-button"
+            (click)="openChangePasswordDialog()"
+        >
+            Zmień hasło
+        </button>
+    </mat-card>
+</section>

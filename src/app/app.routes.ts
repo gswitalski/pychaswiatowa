@@ -141,8 +141,8 @@ export const routes: Routes = [
             {
                 path: 'settings',
                 loadComponent: () =>
-                    import('./pages/dashboard/dashboard-page.component').then(
-                        (m) => m.DashboardPageComponent
+                    import('./pages/settings/profile-settings-page.component').then(
+                        (m) => m.ProfileSettingsPageComponent
                     ),
                 data: { breadcrumb: 'Ustawienia' },
             },

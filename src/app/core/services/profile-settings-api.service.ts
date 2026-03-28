@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, from, map } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import {
+    ApiError,
     ChangePasswordCommand,
     ChangePasswordResponseDto,
     ProfileSettingsDto,
@@ -25,10 +26,10 @@ export class ProfileSettingsApiService {
         ).pipe(
             map((response) => {
                 if (response.error) {
-                    throw new Error(response.error.message);
+                    throw this.mapError(response.error);
                 }
                 if (!response.data) {
-                    throw new Error('Profile settings not found');
+                    throw this.mapError({ message: 'Profile settings not found' }, 404);
                 }
                 return response.data;
             })
@@ -49,10 +50,13 @@ export class ProfileSettingsApiService {
         ).pipe(
             map((response) => {
                 if (response.error) {
-                    throw new Error(response.error.message);
+                    throw this.mapError(response.error);
                 }
                 if (!response.data) {
-                    throw new Error('Failed to update profile settings');
+                    throw this.mapError(
+                        { message: 'Failed to update profile settings' },
+                        500
+                    );
                 }
                 return response.data;
             })
@@ -76,13 +80,36 @@ export class ProfileSettingsApiService {
         ).pipe(
             map((response) => {
                 if (response.error) {
-                    throw new Error(response.error.message);
+                    throw this.mapError(response.error);
                 }
                 if (!response.data) {
-                    throw new Error('Failed to change password');
+                    throw this.mapError({ message: 'Failed to change password' }, 500);
                 }
                 return response.data;
             })
         );
+    }
+
+    private mapError(error: unknown, fallbackStatus = 500): ApiError {
+        if (!error || typeof error !== 'object') {
+            return {
+                message: 'Wystąpił nieoczekiwany błąd.',
+                status: fallbackStatus,
+            };
+        }
+
+        const errorRecord = error as Record<string, unknown>;
+        const message =
+            typeof errorRecord['message'] === 'string' &&
+            errorRecord['message'].trim().length > 0
+                ? errorRecord['message']
+                : 'Wystąpił nieoczekiwany błąd.';
+
+        const status =
+            typeof errorRecord['status'] === 'number'
+                ? errorRecord['status']
+                : fallbackStatus;
+
+        return { message, status };
     }
 }

@@ -1,0 +1,45 @@
+<form [formGroup]="form" (ngSubmit)="submitForm()" class="profile-settings-form">
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Adres e-mail</mat-label>
+        <input
+            matInput
+            type="email"
+            formControlName="email"
+            readonly
+            [attr.aria-readonly]="true"
+        />
+        <mat-hint>Adres e-mail jest powiązany z kontem i nie podlega edycji.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nazwa użytkownika</mat-label>
+        <input
+            matInput
+            type="text"
+            formControlName="username"
+            maxlength="50"
+            autocomplete="nickname"
+        />
+        @if (form.controls.username.invalid && form.controls.username.touched) {
+            <mat-error>{{ getUsernameErrorMessage() }}</mat-error>
+        }
+    </mat-form-field>
+
+    <mat-checkbox formControlName="marketingConsent">
+        Chcę otrzymywać informacje marketingowe.
+    </mat-checkbox>
+
+    @if (submitError) {
+        <p class="submit-error">{{ submitError }}</p>
+    }
+
+    <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        class="submit-button"
+        [disabled]="isLoading || isSaving || form.invalid || !form.dirty"
+    >
+        {{ saveLabel }}
+    </button>
+</form>

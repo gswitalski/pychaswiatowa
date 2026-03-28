@@ -1,0 +1,26 @@
+.profile-settings-form {
+    display: grid;
+    gap: 16px;
+    align-items: start;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.submit-error {
+    margin: 0;
+    color: #b00020;
+}
+
+.submit-button {
+    width: fit-content;
+    min-width: 180px;
+}
+
+@media (max-width: 768px) {
+    .submit-button {
+        width: 100%;
+        min-width: 0;
+    }
+}
