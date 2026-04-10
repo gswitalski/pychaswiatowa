@@ -591,6 +591,60 @@ export interface AdminHealthDto {
     checked_at: string;
 }
 
+/**
+ * Allowed sort fields for GET /admin/users endpoint.
+ */
+export type AdminUsersSortBy =
+    | 'created_at'
+    | 'login'
+    | 'last_sign_in_at'
+    | 'recipes_count';
+
+/**
+ * Generic sort direction used by admin endpoints.
+ */
+export type SortDirection = 'asc' | 'desc';
+
+/**
+ * Query DTO for GET /admin/users endpoint.
+ */
+export interface GetAdminUsersQueryDto {
+    page?: number;
+    page_size?: number;
+    sort_by?: AdminUsersSortBy;
+    sort_dir?: SortDirection;
+}
+
+/**
+ * DTO for a single user row in admin users table.
+ */
+export interface AdminUserListItemDto {
+    id: string;
+    login: string;
+    username: string;
+    role: AppRole;
+    created_at: string;
+    last_sign_in_at: string | null;
+    recipes_count: number;
+}
+
+/**
+ * DTO for GET /admin/users endpoint response.
+ */
+export interface GetAdminUsersResponseDto {
+    data: AdminUserListItemDto[];
+    pagination: {
+        currentPage: number;
+        pageSize: number;
+        totalPages: number;
+        totalItems: number;
+    };
+    sorting: {
+        sort_by: AdminUsersSortBy;
+        sort_dir: SortDirection;
+    };
+}
+
 // #endregion
 
 // #region --- Auth ---

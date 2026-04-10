@@ -10,9 +10,14 @@ import { logger } from '../_shared/logger.ts';
 import {
     getAdminSummary,
     getAdminHealth,
+    getAdminUsers,
     type AdminSummaryDto,
     type AdminHealthDto,
 } from './admin.service.ts';
+import {
+    validateAdminUsersQuery,
+    type GetAdminUsersResponseDto,
+} from './admin.types.ts';
 
 function createSuccessResponse<T>(data: T, status = 200): Response {
     return new Response(JSON.stringify(data), {
@@ -100,6 +105,19 @@ export async function handleGetAdminHealth(req: Request): Promise<Response> {
     }
 }
 
+export async function handleGetAdminUsers(req: Request): Promise<Response> {
+    try {
+        const { userId } = await requireAdminContext(req);
+        const query = validateAdminUsersQuery(new URL(req.url).searchParams);
+        const response: GetAdminUsersResponseDto = await getAdminUsers({ query });
+
+        logger.info('[admin] GET /admin/users completed', { userId, query });
+        return createSuccessResponse(response);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
 export async function adminRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
     const path = new URL(req.url).pathname;
@@ -122,6 +140,13 @@ export async function adminRouter(req: Request): Promise<Response> {
     if (subPath === '/health') {
         if (method === 'GET') {
             return handleGetAdminHealth(req);
+        }
+        return createMethodNotAllowedResponse(method, 'GET, OPTIONS');
+    }
+
+    if (subPath === '/users') {
+        if (method === 'GET') {
+            return handleGetAdminUsers(req);
         }
         return createMethodNotAllowedResponse(method, 'GET, OPTIONS');
     }

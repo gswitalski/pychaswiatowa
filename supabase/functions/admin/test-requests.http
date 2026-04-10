@@ -57,6 +57,50 @@ DELETE {{baseUrl}}/admin/health
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
+### GET /admin/users
+###############################################################################
+
+### USERS-1. SUCCESS: Default query
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+
+### USERS-2. SUCCESS: Custom pagination and sorting
+GET {{baseUrl}}/admin/users?page=2&page_size=10&sort_by=login&sort_dir=asc
+Authorization: Bearer {{adminToken}}
+
+### USERS-3. BAD REQUEST: Invalid page
+GET {{baseUrl}}/admin/users?page=0
+Authorization: Bearer {{adminToken}}
+
+### USERS-4. BAD REQUEST: Invalid page_size
+GET {{baseUrl}}/admin/users?page_size=101
+Authorization: Bearer {{adminToken}}
+
+### USERS-5. BAD REQUEST: Invalid sort_by
+GET {{baseUrl}}/admin/users?sort_by=role
+Authorization: Bearer {{adminToken}}
+
+### USERS-6. BAD REQUEST: Invalid sort_dir
+GET {{baseUrl}}/admin/users?sort_dir=up
+Authorization: Bearer {{adminToken}}
+
+### USERS-7. UNAUTHORIZED: Missing Authorization header
+GET {{baseUrl}}/admin/users
+
+### USERS-8. FORBIDDEN: Non-admin role
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{userToken}}
+
+### USERS-9. METHOD NOT ALLOWED
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "unexpected": true
+}
+
+###############################################################################
 ### Routing and CORS
 ###############################################################################
 
@@ -72,6 +116,12 @@ Access-Control-Request-Headers: Authorization
 
 ### ROUTE-3. OPTIONS preflight health
 OPTIONS {{baseUrl}}/admin/health
+Origin: http://localhost:4200
+Access-Control-Request-Method: GET
+Access-Control-Request-Headers: Authorization
+
+### ROUTE-4. OPTIONS preflight users
+OPTIONS {{baseUrl}}/admin/users
 Origin: http://localhost:4200
 Access-Control-Request-Method: GET
 Access-Control-Request-Headers: Authorization
