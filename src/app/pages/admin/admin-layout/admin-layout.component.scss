@@ -1,0 +1,26 @@
+.admin-layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    min-height: 100%;
+    background: var(--mat-sys-surface);
+}
+
+.admin-layout__aside {
+    border-right: 1px solid var(--mat-sys-outline-variant);
+    min-height: 100%;
+}
+
+.admin-layout__content {
+    min-height: 100%;
+}
+
+@media (max-width: 960px) {
+    .admin-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-layout__aside {
+        border-right: none;
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+}

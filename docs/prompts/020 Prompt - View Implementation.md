@@ -3,7 +3,8 @@ Twoim zadaniem jest zaimplementowanie widoku frontendu w oparciu o podany plan i
 Najpierw przejrzyj plan implementacji:
 
 <implementation_plan>
-@docs\results\impl-plans\views\profile-settings-view-implementation-plan.md
+@docs\results\impl-plans\views\admin-sidebar-navigation-view-implementation-plan.md
+
 </implementation_plan>
 
 Teraz przejrzyj zasady implementacji:

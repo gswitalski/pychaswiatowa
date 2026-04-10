@@ -1,0 +1,25 @@
+<aside class="admin-aside-nav" aria-label="Nawigacja administracyjna">
+    <div class="admin-aside-nav__header">
+        <h2 class="admin-aside-nav__title">{{ sectionTitle() }}</h2>
+    </div>
+
+    <nav class="admin-aside-nav__nav">
+        <mat-nav-list>
+            @for (item of items(); track item.route) {
+                <a
+                    mat-list-item
+                    [routerLink]="item.route"
+                    routerLinkActive="active"
+                    [routerLinkActiveOptions]="{ exact: item.matchMode === 'exact' }"
+                    class="admin-aside-nav__item"
+                    [attr.aria-label]="item.ariaLabel ?? item.label"
+                >
+                    @if (item.icon) {
+                        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+                    }
+                    <span matListItemTitle>{{ item.label }}</span>
+                </a>
+            }
+        </mat-nav-list>
+    </nav>
+</aside>

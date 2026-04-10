@@ -11,15 +11,21 @@ Oto dokumenty streszczczenie informacji o projekcie, które musisz przeanalizowa
 <nowa_funkcjonalnosc>
 
 
-Pod ścieżką 
-https://pychaswiatowa.pl/settings
+Pop wybraniu ściezki 
+https://pychaswiatowa.pl/admin/
 
-ma sie pojawić formularz do modyfikacji profilu uzytkownika
-Formularz ma wyświetlić login czyli email) - tylko do odczytu
+system przekierowuje się na 
+https://pychaswiatowa.pl/admin/dashboard
 
-użytkownik może zmienić nazwę wyświetlaną (inpunt tekstowy) oraz zminić wartośc zgody na otrzymywanie materiaów marketingowych
+i tak ma zostac . jednak na tej scieżc (https://pychaswiatowa.pl/admin/dashboard)
+ma siępojawić menu aside z lewej strony (analogicnze samo jak na "moja pycha" )
 
-Dodatkowo jest przycisk "zmien hasło" który wyświetla popupa . W tym poppupie uzytkownik musie podać stare i nowe hjasło aby zmienić swoje hasło.
+mają  tam by dwie opcje:
+ - Dasboard
+ - Użytkownicy
+
+ Dashboard ma być wybrana domyslnie
+ Po najechaniu na użytkownicy ma się pojawić pusta stona z placeholderem (zawartośc do zaimplementowania później)
 
 
 </nowa_funkcjonalnosc>

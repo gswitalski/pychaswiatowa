@@ -1,0 +1,19 @@
+<section class="admin-users-placeholder">
+    <header class="admin-users-placeholder__header">
+        <h1 class="admin-users-placeholder__title">{{ title }}</h1>
+        <p class="admin-users-placeholder__description">{{ description }}</p>
+    </header>
+
+    <div class="admin-users-placeholder__grid">
+        @for (section of sections; track section.title) {
+            <mat-card appearance="outlined" class="admin-users-placeholder__card">
+                <mat-card-header>
+                    <mat-card-title>{{ section.title }}</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <p>{{ section.description }}</p>
+                </mat-card-content>
+            </mat-card>
+        }
+    </div>
+</section>
