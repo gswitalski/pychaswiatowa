@@ -1,0 +1,96 @@
+<section class="admin-users-table" [class.admin-users-table--refreshing]="state().isRefreshing">
+    @if (state().isInitialLoading) {
+    <div class="admin-users-table__status-block">
+        <mat-spinner diameter="24" />
+        <p>Ładowanie listy użytkowników...</p>
+    </div>
+    } @else if (state().hasError && !hasRows()) {
+    <div class="admin-users-table__status-block">
+        <p>{{ state().errorMessage }}</p>
+        <button mat-stroked-button type="button" (click)="onRetryClick()">Spróbuj ponownie</button>
+    </div>
+    } @else if (state().isEmpty) {
+    <div class="admin-users-table__status-block">
+        <p>Brak użytkowników do wyświetlenia.</p>
+    </div>
+    } @else {
+    @if (state().hasError && hasRows()) {
+    <div class="admin-users-table__inline-error">
+        <p>{{ state().errorMessage }}</p>
+        <button mat-stroked-button type="button" (click)="onRetryClick()">Spróbuj ponownie</button>
+    </div>
+    }
+
+    <div class="admin-users-table__scroll">
+        <table
+            mat-table
+            [dataSource]="rows()"
+            [trackBy]="trackByRowId"
+            matSort
+            matSortDisableClear
+            [matSortActive]="activeSortColumn()"
+            [matSortDirection]="sorting().sort_dir"
+            (matSortChange)="onMatSortChange($event)">
+            <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let row" [attr.title]="row.id">{{ row.displayId }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="login">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Login</th>
+                <td mat-cell *matCellDef="let row">{{ row.login }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="username">
+                <th mat-header-cell *matHeaderCellDef>Username</th>
+                <td mat-cell *matCellDef="let row">{{ row.username }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Data rejestracji</th>
+                <td mat-cell *matCellDef="let row">{{ row.createdAtLabel }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="lastSignInAt">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Data ostatniego logowania</th>
+                <td mat-cell *matCellDef="let row">{{ row.lastSignInAtLabel }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="recipesCount">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Liczba przepisów</th>
+                <td mat-cell *matCellDef="let row" class="admin-users-table__cell--number">
+                    {{ row.recipesCount }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="role">
+                <th mat-header-cell *matHeaderCellDef>Rola</th>
+                <td mat-cell *matCellDef="let row">
+                    <span
+                        class="admin-users-table__role"
+                        [class.admin-users-table__role--warn]="row.roleTone === 'warn'"
+                        [class.admin-users-table__role--accent]="row.roleTone === 'accent'"
+                        [class.admin-users-table__role--neutral]="row.roleTone === 'neutral'"
+                        [class.admin-users-table__role--default]="row.roleTone === 'default'">
+                        {{ row.roleLabel }}
+                    </span>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns()"></tr>
+        </table>
+    </div>
+
+    <mat-paginator
+        [length]="pagination().totalItems"
+        [pageSize]="pagination().pageSize"
+        [pageIndex]="paginatorPageIndex()"
+        [pageSizeOptions]="[pagination().pageSize]"
+        [hidePageSize]="true"
+        showFirstLastButtons
+        (page)="onMatPageChange($event)"
+        aria-label="Paginacja listy użytkowników">
+    </mat-paginator>
+    }
+</section>

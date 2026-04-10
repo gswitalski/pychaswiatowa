@@ -1,0 +1,13 @@
+<section class="admin-users-page">
+    <pych-admin-users-page-header [title]="title" [description]="description" />
+
+    <pych-admin-users-table
+        [rows]="rows()"
+        [state]="tableState()"
+        [pagination]="pagination()"
+        [sorting]="sorting()"
+        [displayedColumns]="displayedColumns"
+        (sortChange)="onSortChange($event)"
+        (pageChange)="onPageChange($event)"
+        (retry)="onRetry()" />
+</section>

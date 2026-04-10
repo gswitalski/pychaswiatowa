@@ -23,8 +23,8 @@ export const adminRoutes: Routes = [
             {
                 path: 'users',
                 loadComponent: () =>
-                    import('./admin-users-placeholder/admin-users-placeholder-page.component').then(
-                        (m) => m.AdminUsersPlaceholderPageComponent
+                    import('./admin-users/admin-users-page.component').then(
+                        (m) => m.AdminUsersPageComponent
                     ),
             },
         ],

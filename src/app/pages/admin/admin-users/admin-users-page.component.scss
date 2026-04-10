@@ -1,0 +1,11 @@
+.admin-users-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 2rem 4rem;
+}
+
+@media (max-width: 960px) {
+    .admin-users-page {
+        padding: 1.5rem 1rem 3rem;
+    }
+}

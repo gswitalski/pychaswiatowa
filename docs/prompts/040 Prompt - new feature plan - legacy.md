@@ -12,20 +12,19 @@ Oto dokumenty streszczczenie informacji o projekcie, które musisz przeanalizowa
 
 
 Pop wybraniu ściezki 
-https://pychaswiatowa.pl/admin/
+http://localhost:4200/admin/users
 
-system przekierowuje się na 
-https://pychaswiatowa.pl/admin/dashboard
+ma się pojawić tabelka z wszystkimu uzytkownikami zarejestrowanymi w sytemie zawierająca kolumny z wszystkimi podstawowymi danymi użytkwnika , kóre warto pokazać od razu w tabelce.
 
-i tak ma zostac . jednak na tej scieżc (https://pychaswiatowa.pl/admin/dashboard)
-ma siępojawić menu aside z lewej strony (analogicnze samo jak na "moja pycha" )
+ - id usera
+ - login
+ - nazwa
+ - data rejestracji
+ - data ostatnigo logowania
+ - liczba utworzonych prze z użytkneoka przepisów
+  -status
 
-mają  tam by dwie opcje:
- - Dasboard
- - Użytkownicy
-
- Dashboard ma być wybrana domyslnie
- Po najechaniu na użytkownicy ma się pojawić pusta stona z placeholderem (zawartośc do zaimplementowania później)
+  tabelka ma bc sortowana domyślnie po dacie rejestracji. ma być stronicowanie, sortowanie. nie ma być filtrowania na tym etapie
 
 
 </nowa_funkcjonalnosc>

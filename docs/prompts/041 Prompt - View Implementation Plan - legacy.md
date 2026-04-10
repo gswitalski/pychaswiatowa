@@ -2,7 +2,7 @@ Jako starszy programista frontendu Twoim zadaniem jest stworzenie szczegółoweg
 
 Najpierw przejrzyj następujące informacje:
 
-1. Podsumowanei projektu):
+1. Podsumowanei projektu:
 <project_summary>
 
 
