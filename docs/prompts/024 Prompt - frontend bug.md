@@ -3,23 +3,19 @@ Jesteś doświadczonym programistą aplikacji webowych. Twoim zadaniem jest prze
 Zapoznaj się z dokumnetacją projektu 
 
 <dokumentacja_projektu>
-
-
-
+@docs/results/project-summary.md 
 </dokumentacja_projektu>
 
 
 <aktualne_zachowanie>
 
-w komponencie pych-toolbar, z lewej strony znajduje się log link
-
-jednak nie jest to logo ale sam napis
+użytkownik z roluą 'User' ma z poziomu frontendu dostęp do funkcji generowania przepisu na podstawie tekstu lub obrazka
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-z lewej stronu znajdue sie logo (z assets/logo-small.png)  za lgo ten sam napis cioo teraz. całosć jest klikalna (do home)
+użytkowniek z rola User nie ma dostepu do tej funkc. Fuckja tylko da ról 'Premium' i 'Admin'
 
 </oczekiwane_zachowanie>
 

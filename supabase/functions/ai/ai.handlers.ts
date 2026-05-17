@@ -219,6 +219,8 @@ function decodeBase64(base64String: string): Uint8Array {
  * Handles POST /ai/recipes/draft request.
  * Generates a recipe draft from text or image using AI.
  *
+ * Premium feature - requires app_role of 'premium' or 'admin'.
+ *
  * @param req - The incoming HTTP request
  * @returns Response with generated recipe draft or error
  */
@@ -228,14 +230,31 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
     try {
         logger.info('Handling POST /ai/recipes/draft request');
 
-        // Authenticate user
+        // Step 1: Authenticate user (JWT verification)
         const { user } = await getAuthenticatedContext(req);
 
         logger.info('User authenticated for AI recipe draft', {
             userId: user.id,
         });
 
-        // Parse request body
+        // Step 2: Premium gating - verify app_role
+        const token = extractAuthToken(req);
+        const jwtPayload = extractAndValidateAppRole(token);
+
+        if (jwtPayload.app_role === 'user') {
+            logger.warn('Non-premium user attempted to access recipe draft generation', {
+                userId: user.id,
+                appRole: jwtPayload.app_role,
+            });
+            return createForbiddenPremiumResponse();
+        }
+
+        logger.info('Premium access verified', {
+            userId: user.id,
+            appRole: jwtPayload.app_role,
+        });
+
+        // Step 3: Parse request body
         let body: unknown;
         try {
             body = await req.json();

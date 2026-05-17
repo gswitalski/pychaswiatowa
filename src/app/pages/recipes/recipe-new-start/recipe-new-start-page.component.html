@@ -12,22 +12,35 @@
         @for (option of options; track option.route) {
         <mat-card
             class="option-card"
+            [class.option-card--locked]="isOptionLocked(option)"
             appearance="outlined"
             (click)="selectOption(option)"
             (keydown.enter)="selectOption(option)"
             (keydown.space)="selectOption(option)"
-            tabindex="0"
+            [tabindex]="isOptionLocked(option) ? -1 : 0"
             role="button"
-            [attr.aria-label]="option.title + ': ' + option.description">
+            [attr.aria-label]="option.title + ': ' + option.description"
+            [attr.aria-disabled]="isOptionLocked(option)"
+            [matTooltip]="isOptionLocked(option) ? 'Funkcja dostępna w planie Premium' : ''"
+            matTooltipPosition="above">
             <mat-card-content>
                 <div class="option-icon">
                     <mat-icon>{{ option.icon }}</mat-icon>
                 </div>
                 <h2 class="option-title">{{ option.title }}</h2>
                 <p class="option-description">{{ option.description }}</p>
+                @if (isOptionLocked(option)) {
+                <div class="premium-badge">
+                    <mat-icon>lock</mat-icon>
+                    <span>Premium</span>
+                </div>
+                }
             </mat-card-content>
             <mat-card-actions>
-                <button mat-flat-button color="primary">
+                <button
+                    mat-flat-button
+                    color="primary"
+                    [disabled]="isOptionLocked(option)">
                     Wybierz
                     <mat-icon>arrow_forward</mat-icon>
                 </button>
