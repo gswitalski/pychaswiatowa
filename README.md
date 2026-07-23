@@ -90,9 +90,8 @@ git push origin main
 
 ### Configuration & Documentation
 
-- 🚀 **[Deployment Quick Start](docs/deployment-quickstart.md)** - Essential steps for deployment with Gemini API
-- 📘 **[Full Deployment Guide](docs/deployment-guide-gemini.md)** - Comprehensive deployment documentation
-- 🔧 **[Environment Setup](ENV_SETUP.md)** - Configuration for local development and production
+- 🚀 **[Deployment Documentation](docs/deployment/README.md)** - Deployment guides, CI/CD, secrets, and RLS procedures
+- 🔧 **[Environment Setup](docs/configuration/environment-setup.md)** - Configuration for local development and production
 - 📋 **[Project Documentation](docs/results/main-project-docs/)** - PRD, API Plan, Tech Stack, and more
 
 ### Required GitHub Secrets

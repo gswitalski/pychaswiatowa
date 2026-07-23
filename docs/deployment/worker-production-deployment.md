@@ -1,4 +1,4 @@
-# Instrukcja Wdrożenia Workera Normalized Ingredients na Produkcję
+# Wdrożenie Workera Normalized Ingredients na Produkcję
 
 ## Spis treści
 1. [Wymagania wstępne](#wymagania-wstępne)
@@ -9,6 +9,8 @@
 6. [Krok 5: Testowanie](#krok-5-testowanie)
 7. [Krok 6: Monitoring](#krok-6-monitoring)
 8. [Troubleshooting](#troubleshooting)
+
+> **Sekrety workera** (`INTERNAL_WORKER_SECRET`, `OPENAI_API_KEY`) opisane w [Zarządzanie sekretami](./secrets-management.md).
 
 ---
 
@@ -553,5 +555,11 @@ W razie problemów:
 
 ---
 
-**Ostatnia aktualizacja**: 2026-01-18  
-**Wersja dokumentu**: 1.0
+**Powiązane dokumenty:**
+- [Zarządzanie sekretami](./secrets-management.md) – konfiguracja `INTERNAL_WORKER_SECRET` i `OPENAI_API_KEY`
+- [CI/CD Pipeline](./ci-cd-pipeline.md) – automatyczne wdrożenie Edge Functions
+
+---
+
+**Ostatnia aktualizacja:** 2026-07-21  
+**Wersja dokumentu:** 1.1

@@ -130,5 +130,5 @@ WHERE email LIKE '%@premium.com';
 - [API Plan - GET /me](../results/main-project-docs/009%20API%20plan.md)
 - [RBAC Changes](../results/changes/role-based-access-control-changes.md)
 - [ME Endpoint Implementation Plan](../results/impl-plans/endpoints/me-api-implementation-plan.md)
-- [Testing Guide - ME Endpoint](../testing/me-endpoint-testing-guide.md)
+- [Testing Guide - ME Endpoint](../testing/manual/me-endpoint.md)
 
