@@ -88,12 +88,47 @@ Zwraca paginowana liste uzytkownikow dla panelu administracyjnego.
 }
 ```
 
+### `PATCH /admin/users/{userId}/role`
+Zmienia role `app_role` wybranego uzytkownika (admin only).
+
+**Request:**
+- Method: `PATCH`
+- Path: `/functions/v1/admin/users/{userId}/role`
+- Headers:
+  - `Authorization: Bearer <JWT>` (required, admin only)
+  - `Content-Type: application/json`
+- Path params:
+  - `userId` (UUID istniejacego uzytkownika)
+- Body:
+```json
+{
+  "app_role": "premium"
+}
+```
+
+**Response:**
+- `200 OK`:
+```json
+{
+  "user": {
+    "id": "4ec7f8d2-c2d7-4d2f-bddc-113c6f5f6d1d",
+    "login": "ania@example.com",
+    "username": "ania",
+    "role": "premium",
+    "created_at": "2026-03-20T18:15:00Z",
+    "last_sign_in_at": "2026-04-10T07:42:11Z",
+    "recipes_count": 3
+  }
+}
+```
+
 ## Error Responses
 
 - `401 Unauthorized` - brak lub nieprawidlowy token
 - `403 Forbidden` - poprawny token, ale rola inna niz `admin`
-- `400 Bad Request` - nieprawidlowe parametry zapytania
-- `404 Not Found` - nieznana sciezka
+- `400 Bad Request` - nieprawidlowe parametry zapytania lub body (`userId`, `app_role`)
+- `404 Not Found` - nieznana sciezka lub brak uzytkownika docelowego
+- `409 Conflict` - proba zmiany wlasnej roli lub obnizenia roli ostatniego administratora
 - `405 Method Not Allowed` - niedozwolona metoda HTTP
 - `500 Internal Server Error` - blad nieoczekiwany
 

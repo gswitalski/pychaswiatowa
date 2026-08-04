@@ -3,8 +3,10 @@ import { from, map, Observable } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import {
     AdminSummaryDto,
+    AppRole,
     GetAdminUsersQueryDto,
     GetAdminUsersResponseDto,
+    UpdateAdminUserRoleResponseDto,
 } from '../../../../shared/contracts/types';
 
 @Injectable({
@@ -74,6 +76,36 @@ export class AdminApiService {
 
                 if (!response.data) {
                     throw new Error('Nie udało się pobrać podsumowania panelu administracyjnego');
+                }
+
+                return response.data;
+            })
+        );
+    }
+
+    updateUserRole(userId: string, appRole: AppRole): Observable<UpdateAdminUserRoleResponseDto> {
+        return from(
+            this.supabase.functions.invoke<UpdateAdminUserRoleResponseDto>(
+                `admin/users/${userId}/role`,
+                {
+                    method: 'PATCH',
+                    body: { app_role: appRole },
+                }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    const error = new Error(
+                        response.error.message || 'Błąd aktualizacji roli użytkownika'
+                    ) as Error & {
+                        status?: number;
+                    };
+                    error.status = this.extractStatusFromError(response.error) ?? 500;
+                    throw error;
+                }
+
+                if (!response.data) {
+                    throw new Error('Nie udało się zaktualizować roli użytkownika');
                 }
 
                 return response.data;

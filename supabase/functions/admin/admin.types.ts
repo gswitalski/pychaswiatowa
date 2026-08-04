@@ -40,6 +40,57 @@ export interface GetAdminUsersResponseDto {
     };
 }
 
+export interface UpdateAdminUserRoleCommand {
+    app_role: AppRole;
+}
+
+export interface UpdateAdminUserRoleResponseDto {
+    user: AdminUserListItemDto;
+}
+
+const APP_ROLES = ['user', 'premium', 'admin'] as const;
+
+export const AdminUserRoleParamsSchema = z.string().uuid({
+    message: 'Invalid user ID',
+});
+
+export const AdminUserRoleBodySchema = z.object({
+    app_role: z.enum(APP_ROLES),
+});
+
+export function validateAdminUserRoleParams(userId: string): string {
+    const validationResult = AdminUserRoleParamsSchema.safeParse(userId);
+    if (!validationResult.success) {
+        logger.warn('[admin] Invalid userId path param for role update', {
+            userId,
+            issues: validationResult.error.issues,
+        });
+        throw new ApplicationError('VALIDATION_ERROR', 'Nieprawidlowy identyfikator uzytkownika.');
+    }
+
+    return validationResult.data;
+}
+
+export async function parseAndValidateAdminUserRoleBody(req: Request): Promise<UpdateAdminUserRoleCommand> {
+    let body: unknown;
+    try {
+        body = await req.json();
+    } catch {
+        logger.warn('[admin] Invalid JSON body for role update');
+        throw new ApplicationError('VALIDATION_ERROR', 'Nieprawidlowe dane zadania.');
+    }
+
+    const validationResult = AdminUserRoleBodySchema.safeParse(body);
+    if (!validationResult.success) {
+        logger.warn('[admin] Invalid role update body', {
+            issues: validationResult.error.issues,
+        });
+        throw new ApplicationError('VALIDATION_ERROR', 'Nieprawidlowa rola uzytkownika.');
+    }
+
+    return validationResult.data;
+}
+
 const PositiveIntegerQueryStringSchema = z.string()
     .trim()
     .regex(/^\d+$/, 'Expected a positive integer')

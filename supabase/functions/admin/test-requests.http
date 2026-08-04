@@ -4,6 +4,7 @@
 @baseUrl = http://localhost:54331/functions/v1
 @adminToken = YOUR_ADMIN_JWT_TOKEN_HERE
 @userToken = YOUR_NON_ADMIN_JWT_TOKEN_HERE
+@targetUserId = TARGET_USER_UUID_HERE
 
 ###############################################################################
 ### GET /admin/summary
@@ -101,6 +102,83 @@ Content-Type: application/json
 }
 
 ###############################################################################
+### PATCH /admin/users/{userId}/role
+###############################################################################
+
+### ROLE-1. SUCCESS: Change role to premium
+PATCH {{baseUrl}}/admin/users/{{targetUserId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "app_role": "premium"
+}
+
+### ROLE-2. BAD REQUEST: Invalid userId
+PATCH {{baseUrl}}/admin/users/not-a-uuid/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "app_role": "user"
+}
+
+### ROLE-3. BAD REQUEST: Invalid app_role
+PATCH {{baseUrl}}/admin/users/{{targetUserId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "app_role": "superadmin"
+}
+
+### ROLE-4. BAD REQUEST: Missing app_role
+PATCH {{baseUrl}}/admin/users/{{targetUserId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{}
+
+### ROLE-5. UNAUTHORIZED: Missing Authorization header
+PATCH {{baseUrl}}/admin/users/{{targetUserId}}/role
+Content-Type: application/json
+
+{
+  "app_role": "user"
+}
+
+### ROLE-6. FORBIDDEN: Non-admin role
+PATCH {{baseUrl}}/admin/users/{{targetUserId}}/role
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "app_role": "user"
+}
+
+### ROLE-7. CONFLICT: Self role change (set targetUserId to admin own id)
+PATCH {{baseUrl}}/admin/users/{{targetUserId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "app_role": "user"
+}
+
+### ROLE-8. NOT FOUND: Unknown user
+PATCH {{baseUrl}}/admin/users/00000000-0000-4000-8000-000000000000/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "app_role": "user"
+}
+
+### ROLE-9. METHOD NOT ALLOWED
+GET {{baseUrl}}/admin/users/{{targetUserId}}/role
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
 ### Routing and CORS
 ###############################################################################
 
@@ -125,4 +203,10 @@ OPTIONS {{baseUrl}}/admin/users
 Origin: http://localhost:4200
 Access-Control-Request-Method: GET
 Access-Control-Request-Headers: Authorization
+
+### ROUTE-5. OPTIONS preflight user role update
+OPTIONS {{baseUrl}}/admin/users/{{targetUserId}}/role
+Origin: http://localhost:4200
+Access-Control-Request-Method: PATCH
+Access-Control-Request-Headers: Authorization, Content-Type
 

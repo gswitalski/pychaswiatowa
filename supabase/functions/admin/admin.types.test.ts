@@ -1,6 +1,10 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
 import { ApplicationError } from '../_shared/errors.ts';
-import { validateAdminUsersQuery } from './admin.types.ts';
+import {
+    validateAdminUsersQuery,
+    validateAdminUserRoleParams,
+    AdminUserRoleBodySchema,
+} from './admin.types.ts';
 
 function createSearchParams(raw: string): URLSearchParams {
     return new URLSearchParams(raw);
@@ -55,4 +59,36 @@ Deno.test('validateAdminUsersQuery: page_size=101 zwraca VALIDATION_ERROR', () =
     if (thrown instanceof ApplicationError) {
         assertEquals(thrown.code, 'VALIDATION_ERROR');
     }
+});
+
+Deno.test('validateAdminUserRoleParams: poprawny UUID przechodzi', () => {
+    const userId = '7c8966c3-bc93-4bda-bcd1-bdcfd2af7b99';
+    const result = validateAdminUserRoleParams(userId);
+    assertEquals(result, userId);
+});
+
+Deno.test('validateAdminUserRoleParams: nieprawidlowy UUID zwraca VALIDATION_ERROR', () => {
+    let thrown: unknown = null;
+    try {
+        validateAdminUserRoleParams('not-a-uuid');
+    } catch (error) {
+        thrown = error;
+    }
+
+    assertEquals(thrown instanceof ApplicationError, true);
+    if (thrown instanceof ApplicationError) {
+        assertEquals(thrown.code, 'VALIDATION_ERROR');
+    }
+});
+
+Deno.test('AdminUserRoleBodySchema: akceptuje dozwolone role', () => {
+    for (const app_role of ['user', 'premium', 'admin'] as const) {
+        const result = AdminUserRoleBodySchema.safeParse({ app_role });
+        assertEquals(result.success, true);
+    }
+});
+
+Deno.test('AdminUserRoleBodySchema: odrzuca nieprawidlowa role', () => {
+    const result = AdminUserRoleBodySchema.safeParse({ app_role: 'superadmin' });
+    assertEquals(result.success, false);
 });

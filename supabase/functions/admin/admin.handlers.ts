@@ -11,12 +11,16 @@ import {
     getAdminSummary,
     getAdminHealth,
     getAdminUsers,
+    updateUserRole,
     type AdminSummaryDto,
     type AdminHealthDto,
 } from './admin.service.ts';
 import {
     validateAdminUsersQuery,
+    validateAdminUserRoleParams,
+    parseAndValidateAdminUserRoleBody,
     type GetAdminUsersResponseDto,
+    type UpdateAdminUserRoleResponseDto,
 } from './admin.types.ts';
 
 function createSuccessResponse<T>(data: T, status = 200): Response {
@@ -118,6 +122,31 @@ export async function handleGetAdminUsers(req: Request): Promise<Response> {
     }
 }
 
+export async function handlePatchAdminUserRole(
+    req: Request,
+    targetUserId: string
+): Promise<Response> {
+    try {
+        const { userId: adminUserId } = await requireAdminContext(req);
+        const validatedTargetUserId = validateAdminUserRoleParams(targetUserId);
+        const command = await parseAndValidateAdminUserRoleBody(req);
+        const response: UpdateAdminUserRoleResponseDto = await updateUserRole({
+            adminUserId,
+            targetUserId: validatedTargetUserId,
+            appRole: command.app_role,
+        });
+
+        logger.info('[admin] PATCH /admin/users/:userId/role completed', {
+            adminUserId,
+            targetUserId: validatedTargetUserId,
+            appRole: command.app_role,
+        });
+        return createSuccessResponse(response);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
 export async function adminRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
     const path = new URL(req.url).pathname;
@@ -142,6 +171,14 @@ export async function adminRouter(req: Request): Promise<Response> {
             return handleGetAdminHealth(req);
         }
         return createMethodNotAllowedResponse(method, 'GET, OPTIONS');
+    }
+
+    const userRoleMatch = subPath.match(/^\/users\/([^/]+)\/role$/);
+    if (userRoleMatch) {
+        if (method === 'PATCH') {
+            return handlePatchAdminUserRole(req, userRoleMatch[1]);
+        }
+        return createMethodNotAllowedResponse(method, 'PATCH, OPTIONS');
     }
 
     if (subPath === '/users') {

@@ -14,17 +14,7 @@ Oto dokumenty streszczczenie informacji o projekcie, które musisz przeanalizowa
 Pop wybraniu ściezki 
 http://localhost:4200/admin/users
 
-ma się pojawić tabelka z wszystkimu uzytkownikami zarejestrowanymi w sytemie zawierająca kolumny z wszystkimi podstawowymi danymi użytkwnika , kóre warto pokazać od razu w tabelce.
-
- - id usera
- - login
- - nazwa
- - data rejestracji
- - data ostatnigo logowania
- - liczba utworzonych prze z użytkneoka przepisów
-  -status
-
-  tabelka ma bc sortowana domyślnie po dacie rejestracji. ma być stronicowanie, sortowanie. nie ma być filtrowania na tym etapie
+przy użytkowniku ma się pojawić ikonka ołowka do edycji uzytkownika. Po wybraniu ołowka ma się pojawić małe okno dialogowe, w którym będzie mozliwosć zmiany roli użytkownia.
 
 
 </nowa_funkcjonalnosc>

@@ -14,6 +14,7 @@ import {
     type GetAdminUsersQueryDto,
     type AdminUserListItemDto,
     type GetAdminUsersResponseDto,
+    type UpdateAdminUserRoleResponseDto,
 } from './admin.types.ts';
 
 const DEFAULT_ADMIN_USERS_PAGE = 1;
@@ -51,6 +52,16 @@ interface AdminUsersRpcClient {
         functionName: string,
         args: Record<string, unknown>
     ) => Promise<{ data: AdminUsersRpcRow[] | null; error: RpcErrorShape | null }>;
+}
+
+interface AdminUpdateUserRoleRpcRow {
+    id: string | null;
+    login: string | null;
+    username: string | null;
+    role: string | null;
+    created_at: string | null;
+    last_sign_in_at: string | null;
+    recipes_count: number | string | null;
 }
 
 export interface AdminSummaryDto {
@@ -129,6 +140,59 @@ function mapAdminUsersRowToDto(row: AdminUsersRpcRow): AdminUserListItemDto {
     };
 }
 
+function mapAdminUpdateUserRoleRowToDto(row: AdminUpdateUserRoleRpcRow): AdminUserListItemDto {
+    if (!row.id || !row.created_at) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Invalid admin user row received after role update');
+    }
+
+    return {
+        id: row.id,
+        login: row.login ?? '',
+        username: row.username ?? '',
+        role: mapRole(row.role),
+        created_at: row.created_at,
+        last_sign_in_at: row.last_sign_in_at ?? null,
+        recipes_count: toSafeNonNegativeNumber(row.recipes_count),
+    };
+}
+
+function mapAdminUpdateUserRoleRpcError(
+    error: RpcErrorShape,
+    params: { adminUserId: string; targetUserId: string }
+): never {
+    const errorMessage = error.message || '';
+
+    if (errorMessage.includes('NOT_FOUND')) {
+        logger.warn('[admin] Target user not found for role update', params);
+        throw new ApplicationError('NOT_FOUND', 'Uzytkownik nie zostal znaleziony.');
+    }
+
+    if (errorMessage.includes('CONFLICT: Cannot change your own role')) {
+        logger.warn('[admin] Self role change blocked', params);
+        throw new ApplicationError('CONFLICT', 'Nie mozesz zmienic wlasnej roli.');
+    }
+
+    if (errorMessage.includes('CONFLICT: Cannot demote the last administrator')) {
+        logger.warn('[admin] Last admin demotion blocked', params);
+        throw new ApplicationError(
+            'CONFLICT',
+            'Nie mozna obnizyc roli ostatniego administratora.'
+        );
+    }
+
+    if (errorMessage.includes('VALIDATION_ERROR')) {
+        throw new ApplicationError('VALIDATION_ERROR', 'Nieprawidlowa rola uzytkownika.');
+    }
+
+    logger.error('[admin] RPC error while updating user role', {
+        ...params,
+        errorCode: error.code,
+        errorMessage: error.message,
+        errorDetails: error.details,
+    });
+    throw new ApplicationError('INTERNAL_ERROR', 'Nie udalo sie zaktualizowac roli uzytkownika.');
+}
+
 async function getAdminUsersPageFromRpc(
     query: NormalizedAdminUsersQueryDto
 ): Promise<AdminUsersRpcRow[]> {
@@ -205,5 +269,39 @@ export async function getAdminUsers(
             sort_by: normalizedQuery.sort_by,
             sort_dir: normalizedQuery.sort_dir,
         },
+    };
+}
+
+/**
+ * Updates app_role for a target user (admin-only, enforced in handler).
+ * Uses transactional RPC with last-admin and self-change guards.
+ */
+export async function updateUserRole(params: {
+    adminUserId: string;
+    targetUserId: string;
+    appRole: AppRole;
+}): Promise<UpdateAdminUserRoleResponseDto> {
+    const { adminUserId, targetUserId, appRole } = params;
+    logger.info('[admin] Updating user role', { adminUserId, targetUserId, appRole });
+
+    const client = createServiceRoleClient() as unknown as AdminUsersRpcClient;
+    const { data, error } = await client.rpc('admin_update_user_role', {
+        p_target_user_id: targetUserId,
+        p_new_role: appRole,
+        p_actor_user_id: adminUserId,
+    });
+
+    if (error) {
+        mapAdminUpdateUserRoleRpcError(error, { adminUserId, targetUserId });
+    }
+
+    const rows = (data ?? []) as AdminUpdateUserRoleRpcRow[];
+    if (rows.length === 0) {
+        logger.error('[admin] Role update RPC returned no rows', { adminUserId, targetUserId });
+        throw new ApplicationError('INTERNAL_ERROR', 'Nie udalo sie zaktualizowac roli uzytkownika.');
+    }
+
+    return {
+        user: mapAdminUpdateUserRoleRowToDto(rows[0]),
     };
 }

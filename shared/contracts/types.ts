@@ -645,6 +645,20 @@ export interface GetAdminUsersResponseDto {
     };
 }
 
+/**
+ * Command model for PATCH /admin/users/{userId}/role.
+ */
+export interface UpdateAdminUserRoleCommand {
+    app_role: AppRole;
+}
+
+/**
+ * Response DTO for PATCH /admin/users/{userId}/role.
+ */
+export interface UpdateAdminUserRoleResponseDto {
+    user: AdminUserListItemDto;
+}
+
 // #endregion
 
 // #region --- Auth ---
