@@ -1,14 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import {
     AdminUserListItemDto,
     AppRole,
     GetAdminUsersQueryDto,
     GetAdminUsersResponseDto,
+    UpdateAdminUserRoleResponseDto,
 } from '../../../../../shared/contracts/types';
 import { AdminApiService } from '../../../core/services/admin-api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { AdminUsersPageHeaderComponent } from './admin-users-page-header.component';
 import { AdminUsersTableComponent } from './admin-users-table.component';
+import {
+    ChangeUserRoleDialogCloseResult,
+    ChangeUserRoleDialogComponent,
+} from './change-user-role-dialog.component';
 import {
     AdminUsersPageChangeEvent,
     AdminUsersSortChangeEvent,
@@ -19,19 +27,27 @@ import {
 @Component({
     selector: 'pych-admin-users-page',
     standalone: true,
-    imports: [AdminUsersPageHeaderComponent, AdminUsersTableComponent],
+    imports: [
+        AdminUsersPageHeaderComponent,
+        AdminUsersTableComponent,
+        MatDialogModule,
+        MatSnackBarModule,
+    ],
     templateUrl: './admin-users-page.component.html',
     styleUrl: './admin-users-page.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminUsersPageComponent implements OnInit {
     private readonly adminApi = inject(AdminApiService);
+    private readonly authService = inject(AuthService);
+    private readonly dialog = inject(MatDialog);
+    private readonly snackBar = inject(MatSnackBar);
     private readonly router = inject(Router);
     private latestRequestId = 0;
 
     readonly title = 'Użytkownicy';
     readonly description =
-        'Przegląd wszystkich kont w systemie. Ekran ma charakter wyłącznie informacyjny.';
+        'Przegląd kont w systemie. Administrator może zmieniać role użytkowników.';
     readonly displayedColumns: readonly string[] = [
         'id',
         'login',
@@ -40,7 +56,10 @@ export class AdminUsersPageComponent implements OnInit {
         'lastSignInAt',
         'recipesCount',
         'role',
+        'actions',
     ];
+
+    readonly currentAdminUserId = this.authService.userId;
 
     readonly query = signal<Required<GetAdminUsersQueryDto>>({
         page: 1,
@@ -125,6 +144,48 @@ export class AdminUsersPageComponent implements OnInit {
 
         this.query.set(nextQuery);
         this.loadUsers(nextQuery);
+    }
+
+    onEditRole(row: AdminUsersTableRowVm): void {
+        this.dialog
+            .open(ChangeUserRoleDialogComponent, {
+                width: '440px',
+                maxWidth: '95vw',
+                data: {
+                    user: row,
+                    updateUserRole: (userId: string, appRole: AppRole) =>
+                        this.adminApi.updateUserRole(userId, appRole),
+                },
+            })
+            .afterClosed()
+            .subscribe(
+                (result: ChangeUserRoleDialogCloseResult | UpdateAdminUserRoleResponseDto | undefined) => {
+                    if (!result) {
+                        return;
+                    }
+
+                    if (result === 'USER_NOT_FOUND') {
+                        this.snackBar.open(
+                            'Użytkownik nie jest już dostępny. Lista została odświeżona.',
+                            'Zamknij',
+                            { duration: 5000 }
+                        );
+                        this.loadUsers(this.query());
+                        return;
+                    }
+
+                    this.applyUpdatedUser(result.user);
+                    this.snackBar.open('Rola użytkownika została zmieniona.', 'Zamknij', {
+                        duration: 3000,
+                    });
+                }
+            );
+    }
+
+    private applyUpdatedUser(user: AdminUserListItemDto): void {
+        this.rows.update((rows) =>
+            rows.map((row) => (row.id === user.id ? this.mapUserToRow(user) : row))
+        );
     }
 
     private loadUsers(query: Required<GetAdminUsersQueryDto>): void {

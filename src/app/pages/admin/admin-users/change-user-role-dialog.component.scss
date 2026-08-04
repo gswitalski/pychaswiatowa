@@ -1,0 +1,43 @@
+.change-user-role-dialog__context {
+    margin-bottom: 1rem;
+}
+
+.change-user-role-dialog__user {
+    margin: 0 0 0.25rem;
+    font-weight: 500;
+}
+
+.change-user-role-dialog__current-role {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.875rem;
+}
+
+.change-user-role-dialog__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.change-user-role-dialog__field {
+    width: 100%;
+}
+
+.change-user-role-dialog__hint {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.change-user-role-dialog__error {
+    margin: 0;
+    color: var(--mat-sys-error);
+    font-size: 0.875rem;
+}
+
+.change-user-role-dialog__save {
+    min-width: 8.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

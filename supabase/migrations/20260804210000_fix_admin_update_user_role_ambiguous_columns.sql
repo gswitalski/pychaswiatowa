@@ -1,5 +1,4 @@
--- Migration: Atomic admin user role update with last-admin protection
--- Description: Updates app_role in auth.users.raw_app_meta_data and returns admin list row shape
+-- Fix: RETURNS TABLE output columns shadow table columns in PL/pgSQL (42702 ambiguous id)
 
 create or replace function public.admin_update_user_role(
     p_target_user_id uuid,
@@ -57,15 +56,15 @@ begin
         end if;
     end if;
 
-    update auth.users
+    update auth.users au
     set raw_app_meta_data = jsonb_set(
-            coalesce(raw_app_meta_data, '{}'::jsonb),
+            coalesce(au.raw_app_meta_data, '{}'::jsonb),
             '{app_role}',
             to_jsonb(p_new_role)
         ),
         updated_at = now()
-    where id = p_target_user_id
-      and deleted_at is null;
+    where au.id = p_target_user_id
+      and au.deleted_at is null;
 
     return query
     with recipes_agg as (
@@ -76,23 +75,31 @@ begin
         where r.deleted_at is null
           and r.user_id = p_target_user_id
         group by r.user_id
+    ),
+    result_row as (
+        select
+            au.id as out_id,
+            au.email::text as out_login,
+            coalesce(p.username, '')::text as out_username,
+            coalesce(au.raw_app_meta_data ->> 'app_role', 'user') as out_role,
+            au.created_at as out_created_at,
+            au.last_sign_in_at as out_last_sign_in_at,
+            coalesce(ra.recipes_count, 0)::bigint as out_recipes_count
+        from auth.users au
+        left join public.profiles p on p.id = au.id
+        left join recipes_agg ra on ra.user_id = au.id
+        where au.id = p_target_user_id
     )
     select
-        au.id,
-        au.email::text as login,
-        coalesce(p.username, '')::text as username,
-        coalesce(au.raw_app_meta_data ->> 'app_role', 'user') as role,
-        au.created_at,
-        au.last_sign_in_at,
-        coalesce(ra.recipes_count, 0)::bigint as recipes_count
-    from auth.users au
-    left join public.profiles p on p.id = au.id
-    left join recipes_agg ra on ra.user_id = au.id
-    where au.id = p_target_user_id;
+        rr.out_id,
+        rr.out_login,
+        rr.out_username,
+        rr.out_role,
+        rr.out_created_at,
+        rr.out_last_sign_in_at,
+        rr.out_recipes_count
+    from result_row rr;
 end;
 $$;
 
 grant execute on function public.admin_update_user_role(uuid, text, uuid) to service_role;
-
-comment on function public.admin_update_user_role(uuid, text, uuid) is
-    'Updates a user app_role in auth.users with self-change and last-admin guards; service_role only.';

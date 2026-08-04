@@ -7,7 +7,9 @@
         [pagination]="pagination()"
         [sorting]="sorting()"
         [displayedColumns]="displayedColumns"
+        [currentAdminUserId]="currentAdminUserId()"
         (sortChange)="onSortChange($event)"
         (pageChange)="onPageChange($event)"
-        (retry)="onRetry()" />
+        (retry)="onRetry()"
+        (editRole)="onEditRole($event)" />
 </section>

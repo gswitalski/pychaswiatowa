@@ -1,0 +1,51 @@
+<h2 mat-dialog-title>Zmień rolę użytkownika</h2>
+
+<mat-dialog-content>
+    <div class="change-user-role-dialog__context">
+        <p class="change-user-role-dialog__user">{{ userContextLabel }}</p>
+        <p class="change-user-role-dialog__current-role">
+            Bieżąca rola: <strong>{{ currentRoleLabel }}</strong>
+        </p>
+    </div>
+
+    <form [formGroup]="form" class="change-user-role-dialog__form">
+        <mat-form-field appearance="outline" class="change-user-role-dialog__field">
+            <mat-label>Nowa rola</mat-label>
+            <mat-select formControlName="appRole" [disabled]="isSubmitting">
+                @for (option of roleOptions; track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+            </mat-select>
+            @if (form.controls.appRole.invalid && form.controls.appRole.touched) {
+                <mat-error>Wybierz prawidłową rolę.</mat-error>
+            }
+        </mat-form-field>
+
+        <p class="change-user-role-dialog__hint">
+            Zmiana zacznie obowiązywać użytkownika po jego kolejnym zalogowaniu.
+        </p>
+
+        @if (submitError) {
+            <p class="change-user-role-dialog__error" role="alert">{{ submitError }}</p>
+        }
+    </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button type="button" [disabled]="isSubmitting" (click)="onCancel()">
+        Anuluj
+    </button>
+    <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        class="change-user-role-dialog__save"
+        [disabled]="isSaveDisabled"
+        (click)="onSubmit()">
+        @if (isSubmitting) {
+            <mat-spinner diameter="20" />
+        } @else {
+            Zapisz zmianę
+        }
+    </button>
+</mat-dialog-actions>

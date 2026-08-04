@@ -37,8 +37,15 @@
 }
 
 .admin-users-table__scroll table {
-    min-width: 1180px;
+    min-width: 1240px;
     width: 100%;
+}
+
+.admin-users-table__actions-header,
+.admin-users-table__actions-cell {
+    width: 4.5rem;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .admin-users-table__cell--number {
