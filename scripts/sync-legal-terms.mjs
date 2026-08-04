@@ -7,11 +7,11 @@ const __dirname = dirname(__filename);
 
 const legalAssetsToSync = [
     {
-        sourcePath: resolve(__dirname, '../docs/regulamin.md'),
+        sourcePath: resolve(__dirname, '../docs/legal-documents/regulamin.md'),
         targetPath: resolve(__dirname, '../public/assets/legal/terms.md'),
     },
     {
-        sourcePath: resolve(__dirname, '../doc/pw.md'),
+        sourcePath: resolve(__dirname, '../docs/legal-documents/pw.md'),
         targetPath: resolve(__dirname, '../public/assets/legal/privacy.md'),
     },
 ];
