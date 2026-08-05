@@ -34,7 +34,7 @@ interface ChangeUserRoleFormModel {
     appRole: FormControl<AppRole>;
 }
 
-const ROLE_OPTIONS: ReadonlyArray<{ value: AppRole; label: string }> = [
+const ROLE_OPTIONS: readonly { value: AppRole; label: string }[] = [
     { value: 'user', label: 'Użytkownik' },
     { value: 'premium', label: 'Premium' },
     { value: 'admin', label: 'Administrator' },

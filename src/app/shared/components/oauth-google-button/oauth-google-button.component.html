@@ -13,9 +13,13 @@
     (click)="handleClick()"
 >
     @if (isLoading) {
-        <mat-spinner diameter="20" aria-label="Trwa łączenie z Google"></mat-spinner>
+        <span class="oauth-google-button__content">
+            <mat-spinner diameter="20" aria-label="Trwa łączenie z Google"></mat-spinner>
+        </span>
     } @else {
-        <img src="/icons/google-logo.svg" alt="" aria-hidden="true" />
-        <span>{{ label }}</span>
+        <span class="oauth-google-button__content">
+            <img src="/icons/google-logo.svg" alt="" aria-hidden="true" />
+            <span>{{ label }}</span>
+        </span>
     }
 </button>

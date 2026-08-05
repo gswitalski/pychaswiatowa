@@ -14,12 +14,16 @@
 }
 
 .oauth-google-button {
-    display: flex;
     width: 100%;
     min-height: 48px;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
+
+    &__content {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
 
     img {
         width: 20px;

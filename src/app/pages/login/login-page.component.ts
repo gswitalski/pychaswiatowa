@@ -185,7 +185,7 @@ export class LoginPageComponent {
         const errorMessages: Record<string, string> = {
             access_denied: 'Anulowano logowanie przez Google.',
             oauth_error:
-                'Wystąpił błąd podczas logowania przez Google. Spróbuj ponownie.',
+                'Wystąpił błąd podczas logowania przez Google. Spróbuj ponownie. ' + errorCode,
             timeout: 'Przekroczono czas oczekiwania. Spróbuj ponownie.',
             profile_error:
                 'Wystąpił błąd podczas ładowania profilu. Zaloguj się ponownie.',
