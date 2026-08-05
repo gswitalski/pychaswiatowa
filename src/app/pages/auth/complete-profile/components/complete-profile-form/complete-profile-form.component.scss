@@ -1,0 +1,36 @@
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.submit-button {
+    min-height: 48px;
+    margin-top: 0.5rem;
+
+    mat-spinner {
+        margin: 0 auto;
+    }
+}
+
+.username-warning,
+.server-error {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.username-warning {
+    background-color: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+}
+
+.server-error {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+}

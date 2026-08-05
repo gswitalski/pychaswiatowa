@@ -76,6 +76,12 @@
                 }
             </button>
         </form>
+
+        <pych-oauth-google-button
+            label="Zarejestruj się przez Google"
+            [isLoading]="isGoogleLoading"
+            (clicked)="handleGoogleRegistration()"
+        />
     </mat-card-content>
 
     <mat-card-actions align="end">

@@ -4,7 +4,7 @@ Najpierw dokładnie przejrzyj dostarczony plan wdrożenia:
 
 <implementation_plan>
 
-
+@docs\results\impl-plans\endpoints\google-oauth-login-api-implementation-plan.md
 
 </implementation_plan>
 

@@ -1,0 +1,31 @@
+<div class="complete-profile-page">
+    <mat-card class="complete-profile-card">
+        @if (state().isLoadingSession) {
+            <mat-card-content class="loading-container">
+                <mat-spinner diameter="48" />
+                <p>Ładujemy dane profilu…</p>
+            </mat-card-content>
+        } @else {
+            <mat-card-header>
+                <mat-card-title>Uzupełnij profil</mat-card-title>
+                <mat-card-subtitle>
+                    Wybierz nazwę użytkownika, aby przejść do aplikacji.
+                </mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+                @if (state().googleEmail; as email) {
+                    <mat-chip-set aria-label="Zalogowane konto Google">
+                        <mat-chip>{{ email }}</mat-chip>
+                    </mat-chip-set>
+                }
+
+                <pych-complete-profile-form
+                    [isSaving]="state().isSaving"
+                    [serverError]="state().serverError"
+                    (save)="handleSave($event)"
+                />
+            </mat-card-content>
+        }
+    </mat-card>
+</div>

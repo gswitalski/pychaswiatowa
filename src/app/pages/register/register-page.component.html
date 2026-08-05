@@ -8,6 +8,8 @@
     <pych-register-form
         [isLoading]="state().isLoading"
         [prefillEmail]="prefillEmail"
+        [isGoogleLoading]="state().isGoogleLoading"
         (registerSubmit)="onRegisterSubmit($event)"
+        (registerWithGoogle)="handleGoogleRegistration()"
     />
 </div>

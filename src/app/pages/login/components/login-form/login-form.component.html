@@ -75,6 +75,18 @@
                 }
             </button>
         </form>
+
+        @if (oauthErrorMessage) {
+            <div class="oauth-error" role="alert">
+                {{ oauthErrorMessage }}
+            </div>
+        }
+
+        <pych-oauth-google-button
+            label="Zaloguj się przez Google"
+            [isLoading]="isGoogleLoading"
+            (clicked)="handleGoogleLogin()"
+        />
     </mat-card-content>
 
     <mat-card-actions align="end">

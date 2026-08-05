@@ -91,6 +91,24 @@ export class AuthService {
         return { data, error: null };
     }
 
+    async signInWithGoogle(): Promise<void> {
+        const { error } = await this.supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'select_account',
+                },
+            },
+        });
+
+        if (error) {
+            console.error('[AuthService] signInWithGoogle error:', error);
+            throw error;
+        }
+    }
+
     async signOut(): Promise<void> {
         const { error } = await this.supabase.auth.signOut();
 

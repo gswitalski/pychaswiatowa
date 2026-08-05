@@ -15,6 +15,7 @@ interface MockSupabaseService {
     auth: {
         signUp: ReturnType<typeof vi.fn>;
         signInWithPassword: ReturnType<typeof vi.fn>;
+        signInWithOAuth: ReturnType<typeof vi.fn>;
         signOut: ReturnType<typeof vi.fn>;
         getSession: ReturnType<typeof vi.fn>;
     };
@@ -39,6 +40,7 @@ describe('AuthService', () => {
             auth: {
                 signUp: vi.fn(),
                 signInWithPassword: vi.fn(),
+                signInWithOAuth: vi.fn(),
                 signOut: vi.fn(),
                 getSession: vi.fn(),
             },
@@ -186,6 +188,38 @@ describe('AuthService', () => {
 
             // Act & Assert
             await expect(service.signOut()).rejects.toEqual(mockError);
+        });
+    });
+
+    describe('signInWithGoogle()', () => {
+        it('powinien rozpocząć logowanie Google z poprawną konfiguracją OAuth', async () => {
+            mockSupabaseService.auth.signInWithOAuth.mockResolvedValue({
+                data: { provider: 'google', url: 'https://accounts.google.com' },
+                error: null,
+            });
+
+            await service.signInWithGoogle();
+
+            expect(mockSupabaseService.auth.signInWithOAuth).toHaveBeenCalledWith({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'select_account',
+                    },
+                },
+            });
+        });
+
+        it('powinien rzucić błąd zwrócony przez OAuth', async () => {
+            const error = { message: 'Google provider is disabled' };
+            mockSupabaseService.auth.signInWithOAuth.mockResolvedValue({
+                data: { provider: 'google', url: null },
+                error,
+            });
+
+            await expect(service.signInWithGoogle()).rejects.toEqual(error);
         });
     });
 

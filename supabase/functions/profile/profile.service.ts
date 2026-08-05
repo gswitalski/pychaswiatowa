@@ -26,6 +26,53 @@ const PROFILE_SETTINGS_SELECT_COLUMNS =
     'id, username, marketing_consent, marketing_consent_updated_at, marketing_consent_text_version';
 
 /**
+ * Response DTO for GET /profile/username-available.
+ * Kept in sync with UsernameAvailableResponseDto in shared/contracts/types.ts.
+ */
+export interface UsernameAvailableResponseDto {
+    available: boolean;
+}
+
+/**
+ * Escapes PostgreSQL ILIKE wildcard characters to compare usernames literally.
+ */
+function escapeIlikePattern(value: string): string {
+    return value.replace(/[\\%_]/g, '\\$&');
+}
+
+/**
+ * Checks whether a username is unused, with case-insensitive matching.
+ *
+ * @param params - Database client and username to check
+ * @returns Whether no existing profile has the requested username
+ * @throws ApplicationError with INTERNAL_ERROR code when the query fails
+ */
+export async function checkUsernameAvailable(params: {
+    client: TypedSupabaseClient;
+    username: string;
+}): Promise<UsernameAvailableResponseDto> {
+    const { client, username } = params;
+    const usernamePattern = escapeIlikePattern(username);
+
+    logger.info('Checking username availability');
+
+    const { count, error } = await client
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .ilike('username', usernamePattern);
+
+    if (error) {
+        logger.error('Failed to check username availability', {
+            errorCode: error.code,
+            errorMessage: error.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to check username availability');
+    }
+
+    return { available: count === 0 };
+}
+
+/**
  * Reads marketing consent versions from backend SQL source of truth.
  */
 async function getSupportedMarketingConsentTextVersions(

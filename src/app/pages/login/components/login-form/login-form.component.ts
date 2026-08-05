@@ -20,6 +20,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
     SignInRequestDto,
 } from '../../../../../../shared/contracts/types';
+import { OauthGoogleButtonComponent } from '../../../../shared/components/oauth-google-button/oauth-google-button.component';
 
 interface LoginFormViewModel {
     email: FormControl<string>;
@@ -37,6 +38,7 @@ interface LoginFormViewModel {
         MatFormFieldModule,
         MatInputModule,
         MatProgressSpinnerModule,
+        OauthGoogleButtonComponent,
     ],
     templateUrl: './login-form.component.html',
     styleUrl: './login-form.component.scss',
@@ -48,9 +50,12 @@ export class LoginFormComponent {
     @Input() requiresEmailConfirmation = false;
     @Input() resendCooldownSeconds = 0;
     @Input() isResending = false;
+    @Input() isGoogleLoading = false;
+    @Input() oauthErrorMessage: string | null = null;
 
     @Output() login = new EventEmitter<SignInRequestDto>();
     @Output() resendVerification = new EventEmitter<string>();
+    @Output() loginWithGoogle = new EventEmitter<void>();
 
     form = new FormGroup<LoginFormViewModel>({
         email: new FormControl('', {
@@ -88,6 +93,10 @@ export class LoginFormComponent {
         } else {
             emailControl.markAsTouched();
         }
+    }
+
+    handleGoogleLogin(): void {
+        this.loginWithGoogle.emit();
     }
 
     getEmailErrorMessage(): string {

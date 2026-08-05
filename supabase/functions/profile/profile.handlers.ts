@@ -7,6 +7,7 @@ import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
 import { ApplicationError, handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import {
+    checkUsernameAvailable,
     changePassword,
     getProfileSettings,
     ProfileSettingsDto,
@@ -18,6 +19,7 @@ import { createServiceRoleClient } from '../_shared/supabase-client.ts';
 import {
     changePasswordSchema,
     updateProfileSettingsSchema,
+    usernameAvailabilityQuerySchema,
 } from './profile.types.ts';
 
 /**
@@ -28,6 +30,40 @@ function createSuccessResponse<T>(data: T, status = 200): Response {
         status,
         headers: { 'Content-Type': 'application/json' },
     });
+}
+
+/**
+ * Handles GET /profile/username-available request.
+ * The endpoint is public and returns only the availability flag.
+ */
+export async function handleGetUsernameAvailable(req: Request): Promise<Response> {
+    try {
+        logger.info('Handling GET /profile/username-available request');
+
+        const url = new URL(req.url);
+        const parseResult = usernameAvailabilityQuerySchema.safeParse({
+            username: url.searchParams.get('username'),
+        });
+
+        if (!parseResult.success) {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                "Parametr 'username' musi mieć od 3 do 50 znaków i nie może zawierać białych znaków."
+            );
+        }
+
+        // This public lookup must bypass profile RLS, but exposes no owner data.
+        const client = createServiceRoleClient();
+        const result = await checkUsernameAvailable({
+            client,
+            username: parseResult.data.username,
+        });
+
+        logger.info('GET /profile/username-available completed successfully');
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
 }
 
 /**
@@ -199,6 +235,26 @@ export async function profileRouter(req: Request): Promise<Response> {
     logger.debug('Routing profile request', { method, path });
 
     // More specific route must be checked first.
+    if (path === '/username-available') {
+        if (method === 'GET') {
+            return handleGetUsernameAvailable(req);
+        }
+
+        return new Response(
+            JSON.stringify({
+                code: 'METHOD_NOT_ALLOWED',
+                message: `Method ${method} not allowed`,
+            }),
+            {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Allow': 'GET, OPTIONS',
+                },
+            }
+        );
+    }
+
     if (path === '/change-password') {
         if (method === 'POST') {
             return handleChangePassword(req);

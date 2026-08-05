@@ -8,6 +8,7 @@ import { MARKETING_CONSENT_TEXT_VERSION } from '../../../../shared/contracts/mar
 interface RegisterState {
     isLoading: boolean;
     error: ApiError | null;
+    isGoogleLoading: boolean;
 }
 
 @Component({
@@ -29,6 +30,7 @@ export class RegisterPageComponent {
     state = signal<RegisterState>({
         isLoading: false,
         error: null,
+        isGoogleLoading: false,
     });
 
     async onRegisterSubmit(formData: {
@@ -71,6 +73,32 @@ export class RegisterPageComponent {
             this.state.update((s) => ({ ...s, error: apiError }));
         } finally {
             this.state.update((s) => ({ ...s, isLoading: false }));
+        }
+    }
+
+    async handleGoogleRegistration(): Promise<void> {
+        this.state.update((s) => ({
+            ...s,
+            isGoogleLoading: true,
+            error: null,
+        }));
+
+        try {
+            await this.authService.signInWithGoogle();
+        } catch (error) {
+            console.error(
+                '[RegisterPageComponent] Google OAuth initialization failed:',
+                error
+            );
+            this.state.update((s) => ({
+                ...s,
+                error: {
+                    message: 'Logowanie przez Google jest chwilowo niedostępne.',
+                    status: 503,
+                },
+            }));
+        } finally {
+            this.state.update((s) => ({ ...s, isGoogleLoading: false }));
         }
     }
 

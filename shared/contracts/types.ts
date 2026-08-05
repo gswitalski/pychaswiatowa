@@ -664,6 +664,15 @@ export interface UpdateAdminUserRoleResponseDto {
 // #region --- Auth ---
 
 /**
+ * Response DTO for GET /profile/username-available endpoint.
+ * Indicates whether a username can be used during profile completion.
+ */
+export interface UsernameAvailableResponseDto {
+    /** True when no profile uses this username (case-insensitive). */
+    available: boolean;
+}
+
+/**
  * DTO for sending sign-in request to Supabase.
  */
 export interface SignInRequestDto {

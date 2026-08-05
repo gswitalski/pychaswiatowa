@@ -2,6 +2,7 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals
 import {
     changePasswordSchema,
     updateProfileSettingsSchema,
+    usernameAvailabilityQuerySchema,
 } from './profile.types.ts';
 
 Deno.test('updateProfileSettingsSchema: poprawny payload przechodzi walidację', () => {
@@ -37,6 +38,22 @@ Deno.test('changePasswordSchema: identyczne hasła zwracają błąd', () => {
     const result = changePasswordSchema.safeParse({
         current_password: 'SameSecret123!',
         new_password: 'SameSecret123!',
+    });
+
+    assertEquals(result.success, false);
+});
+
+Deno.test('usernameAvailabilityQuerySchema: poprawny username przechodzi walidację', () => {
+    const result = usernameAvailabilityQuerySchema.safeParse({
+        username: 'ania-kowalska',
+    });
+
+    assertEquals(result.success, true);
+});
+
+Deno.test('usernameAvailabilityQuerySchema: username ze spacją zwraca błąd', () => {
+    const result = usernameAvailabilityQuerySchema.safeParse({
+        username: 'ania kowalska',
     });
 
     assertEquals(result.success, false);

@@ -5,14 +5,14 @@ Najpierw przejrzyj następujące informacje:
 1. Podsumowanei projektu:
 <project_summary>
 
-
+@docs\results\project-summary.md
 
 </project_summary>
 
 2. Nowe wymagania do zaimplementowania:
 <new_requirements>
 
-
+@docs/results/new-features/google-oauth-login/google-oauth-login-requirements.md
 
 </new_requirements>
 
@@ -21,14 +21,14 @@ Najpierw przejrzyj następujące informacje:
 3. Widok do implementacji / zmiany w widokach
 <ui_plan>
 
-
+@docs/results/new-features/google-oauth-login/google-oauth-login-ui-plan.md
 
 </ui_plan>
 
 5. Endpoint Description:
 <endpoint_description>
 
-
+@docs/results/new-features/google-oauth-login/google-oauth-login-api-plan.md
 
 </endpoint_description>
 

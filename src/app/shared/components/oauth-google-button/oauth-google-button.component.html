@@ -1,0 +1,21 @@
+<div class="oauth-divider" aria-hidden="true">
+    <span></span>
+    <span>lub</span>
+    <span></span>
+</div>
+
+<button
+    mat-stroked-button
+    type="button"
+    class="oauth-google-button"
+    [attr.aria-label]="ariaLabel ?? label"
+    [disabled]="isLoading"
+    (click)="handleClick()"
+>
+    @if (isLoading) {
+        <mat-spinner diameter="20" aria-label="Trwa łączenie z Google"></mat-spinner>
+    } @else {
+        <img src="/icons/google-logo.svg" alt="" aria-hidden="true" />
+        <span>{{ label }}</span>
+    }
+</button>

@@ -14,6 +14,7 @@ import type {
     ChangePasswordResponseDto,
     ProfileSettingsDto,
     UpdateProfileSettingsCommand,
+    UsernameAvailableResponseDto,
 } from '../../../../shared/contracts/types';
 
 interface MockSupabaseService {
@@ -103,6 +104,41 @@ describe('ProfileSettingsApiService', () => {
             body: command,
         });
         expect(result).toEqual(responseData);
+    });
+
+    it.each([true, false])(
+        'powinien zwrócić dostępność nazwy użytkownika: %s',
+        async (available) => {
+            const username = 'test-user';
+            const responseData: UsernameAvailableResponseDto = { available };
+
+            mockSupabaseService.functions.invoke.mockResolvedValue({
+                data: responseData,
+                error: null,
+            });
+
+            const result = await firstValueFrom(service.checkUsernameAvailable(username));
+
+            expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith(
+                'profile/username-available?username=test-user',
+                { method: 'GET' }
+            );
+            expect(result).toEqual(responseData);
+        }
+    );
+
+    it('powinien mapować błąd sprawdzenia dostępności nazwy użytkownika', async () => {
+        mockSupabaseService.functions.invoke.mockResolvedValue({
+            data: null,
+            error: { message: 'Nieprawidłowa nazwa użytkownika', status: 400 },
+        });
+
+        await expect(
+            firstValueFrom(service.checkUsernameAvailable('invalid username'))
+        ).rejects.toEqual({
+            message: 'Nieprawidłowa nazwa użytkownika',
+            status: 400,
+        });
     });
 
     it('powinien zmienić hasło (POST /profile/change-password)', async () => {

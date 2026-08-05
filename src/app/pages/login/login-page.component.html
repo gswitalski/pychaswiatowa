@@ -5,8 +5,11 @@
         [requiresEmailConfirmation]="state().requiresEmailConfirmation"
         [resendCooldownSeconds]="state().cooldownRemainingSeconds"
         [isResending]="state().isResending"
+        [isGoogleLoading]="state().isGoogleLoading"
+        [oauthErrorMessage]="state().oauthErrorMessage"
         (login)="handleLogin($event)"
         (resendVerification)="handleResendVerification($event)"
+        (loginWithGoogle)="handleGoogleLogin()"
     />
 </div>
 

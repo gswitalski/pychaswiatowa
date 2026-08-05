@@ -21,6 +21,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { OauthGoogleButtonComponent } from '../../../../shared/components/oauth-google-button/oauth-google-button.component';
 
 interface RegisterFormViewModel {
     email: FormControl<string>;
@@ -42,6 +43,7 @@ interface RegisterFormViewModel {
         MatInputModule,
         MatProgressSpinnerModule,
         MatCheckboxModule,
+        OauthGoogleButtonComponent,
     ],
     templateUrl: './register-form.component.html',
     styleUrl: './register-form.component.scss',
@@ -50,6 +52,7 @@ interface RegisterFormViewModel {
 export class RegisterFormComponent implements OnInit {
     @Input() isLoading = false;
     @Input() prefillEmail = '';
+    @Input() isGoogleLoading = false;
 
     @Output() registerSubmit = new EventEmitter<{
         email: string;
@@ -57,6 +60,7 @@ export class RegisterFormComponent implements OnInit {
         password: string;
         marketingConsentAccepted: boolean;
     }>();
+    @Output() registerWithGoogle = new EventEmitter<void>();
 
     form = new FormGroup<RegisterFormViewModel>(
         {
@@ -125,6 +129,10 @@ export class RegisterFormComponent implements OnInit {
         } else {
             this.form.markAllAsTouched();
         }
+    }
+
+    handleGoogleRegistration(): void {
+        this.registerWithGoogle.emit();
     }
 
     getEmailErrorMessage(): string {

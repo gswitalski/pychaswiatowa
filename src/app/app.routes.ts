@@ -4,6 +4,8 @@ import { MainLayoutComponent } from './layout/main-layout/main-layout.component'
 import { authenticatedMatchGuard } from './core/guards/authenticated-match.guard';
 import { adminRoleMatchGuard } from './core/guards/admin-role-match.guard';
 import { guestOnlyMatchGuard } from './core/guards/guest-only-match.guard';
+import { oauthCompleteProfileGuard } from './core/guards/oauth-complete-profile.guard';
+import { usernameCompleteMatchGuard } from './core/guards/username-complete-match.guard';
 import {
     exploreRecipeIdSlugMatcher,
     exploreRecipeIdOnlyMatcher,
@@ -87,6 +89,7 @@ export const routes: Routes = [
                     import('./pages/dashboard/dashboard-page.component').then(
                         (m) => m.DashboardPageComponent
                     ),
+                canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Dashboard' },
             },
             {
@@ -95,6 +98,7 @@ export const routes: Routes = [
                     import('./pages/recipes/recipes-list/recipes-list-page.component').then(
                         (m) => m.RecipesListPageComponent
                     ),
+                canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Moje przepisy' },
             },
             {
@@ -113,6 +117,7 @@ export const routes: Routes = [
                     import('./pages/recipes/recipes.routes').then(
                         (m) => m.recipesRoutes
                     ),
+                canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Moje przepisy' },
             },
             {
@@ -121,6 +126,7 @@ export const routes: Routes = [
                     import('./pages/collections/collections.routes').then(
                         (m) => m.collectionsRoutes
                     ),
+                canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Kolekcje' },
             },
             {
@@ -129,13 +135,14 @@ export const routes: Routes = [
                     import('./pages/shopping/shopping-page.component').then(
                         (m) => m.ShoppingPageComponent
                     ),
+                canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Zakupy' },
             },
             {
                 path: 'admin',
                 loadChildren: () =>
                     import('./pages/admin/admin.routes').then((m) => m.adminRoutes),
-                canMatch: [adminRoleMatchGuard],
+                canMatch: [usernameCompleteMatchGuard, adminRoleMatchGuard],
                 data: { breadcrumb: 'Panel administracyjny' },
             },
             {
@@ -144,6 +151,7 @@ export const routes: Routes = [
                     import('./pages/settings/profile-settings-page.component').then(
                         (m) => m.ProfileSettingsPageComponent
                     ),
+                canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Ustawienia' },
             },
             // Auth routes - dostępne również dla zalogowanych (sesja może istnieć przy niezweryfikowanym e-mailu)
@@ -174,6 +182,14 @@ export const routes: Routes = [
                     import('./pages/auth/auth-callback/auth-callback-page.component').then(
                         (m) => m.AuthCallbackPageComponent
                     ),
+            },
+            {
+                path: 'auth/complete-profile',
+                loadComponent: () =>
+                    import('./pages/auth/complete-profile/complete-profile-page.component').then(
+                        (m) => m.CompleteProfilePageComponent
+                    ),
+                canActivate: [oauthCompleteProfileGuard],
             },
             {
                 path: 'email-confirmed',
@@ -347,6 +363,11 @@ export const routes: Routes = [
                     import('./pages/auth/auth-callback/auth-callback-page.component').then(
                         (m) => m.AuthCallbackPageComponent
                     ),
+            },
+            {
+                path: 'auth/complete-profile',
+                redirectTo: '/login',
+                pathMatch: 'full',
             },
             {
                 path: 'email-confirmed',

@@ -21,6 +21,8 @@ interface LoginState {
     isResending: boolean;
     cooldownRemainingSeconds: number;
     lastEmailUsed: string | null;
+    isGoogleLoading: boolean;
+    oauthErrorMessage: string | null;
 }
 
 @Component({
@@ -47,9 +49,16 @@ export class LoginPageComponent {
         isResending: false,
         cooldownRemainingSeconds: 0,
         lastEmailUsed: null,
+        isGoogleLoading: false,
+        oauthErrorMessage: null,
     });
 
     constructor() {
+        const oauthErrorMessage = this.getOauthErrorMessage(
+            this.route.snapshot.queryParamMap.get('error')
+        );
+        this.state.update((s) => ({ ...s, oauthErrorMessage }));
+
         this.destroyRef.onDestroy(() => {
             this.clearCooldownInterval();
         });
@@ -119,6 +128,26 @@ export class LoginPageComponent {
         }
     }
 
+    async handleGoogleLogin(): Promise<void> {
+        this.state.update((s) => ({
+            ...s,
+            isGoogleLoading: true,
+            oauthErrorMessage: null,
+        }));
+
+        try {
+            await this.authService.signInWithGoogle();
+        } catch (error) {
+            console.error('[LoginPageComponent] Google OAuth initialization failed:', error);
+            this.state.update((s) => ({
+                ...s,
+                oauthErrorMessage: 'Logowanie przez Google jest chwilowo niedostępne.',
+            }));
+        } finally {
+            this.state.update((s) => ({ ...s, isGoogleLoading: false }));
+        }
+    }
+
     private parseError(error: unknown): {
         message: string;
         requiresEmailConfirmation: boolean;
@@ -150,6 +179,23 @@ export class LoginPageComponent {
         };
 
         return errorMessages[message] ?? message;
+    }
+
+    private getOauthErrorMessage(errorCode: string | null): string | null {
+        const errorMessages: Record<string, string> = {
+            access_denied: 'Anulowano logowanie przez Google.',
+            oauth_error:
+                'Wystąpił błąd podczas logowania przez Google. Spróbuj ponownie.',
+            timeout: 'Przekroczono czas oczekiwania. Spróbuj ponownie.',
+            profile_error:
+                'Wystąpił błąd podczas ładowania profilu. Zaloguj się ponownie.',
+        };
+
+        if (!errorCode || !(errorCode in errorMessages)) {
+            return null;
+        }
+
+        return errorMessages[errorCode];
     }
 
     private validateRedirectUrl(url: string | null): string {

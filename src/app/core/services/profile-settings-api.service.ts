@@ -7,6 +7,7 @@ import {
     ChangePasswordResponseDto,
     ProfileSettingsDto,
     UpdateProfileSettingsCommand,
+    UsernameAvailableResponseDto,
 } from '../../../../shared/contracts/types';
 
 @Injectable({
@@ -57,6 +58,30 @@ export class ProfileSettingsApiService {
                         { message: 'Failed to update profile settings' },
                         500
                     );
+                }
+                return response.data;
+            })
+        );
+    }
+
+    /**
+     * Sprawdza, czy nazwa użytkownika jest dostępna.
+     */
+    checkUsernameAvailable(username: string): Observable<UsernameAvailableResponseDto> {
+        return from(
+            this.supabase.functions.invoke<UsernameAvailableResponseDto>(
+                `profile/username-available?username=${encodeURIComponent(username)}`,
+                {
+                    method: 'GET',
+                }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw this.mapError(response.error);
+                }
+                if (!response.data) {
+                    throw this.mapError({ message: 'Username check failed' }, 500);
                 }
                 return response.data;
             })

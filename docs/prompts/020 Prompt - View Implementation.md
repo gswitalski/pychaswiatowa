@@ -4,7 +4,7 @@ Najpierw przejrzyj plan implementacji:
 
 <implementation_plan>
 
-
+@docs\results\impl-plans\views\google-oauth-login-view-implementation-plan.md
 
 </implementation_plan>
 
@@ -12,6 +12,7 @@ Teraz przejrzyj zasady implementacji:
 
 <implementation_rules>
 
+@.cursor\rules\fronend.mdc
 
 </implementation_rules>
 

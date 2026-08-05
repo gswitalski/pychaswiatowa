@@ -1,0 +1,42 @@
+<form [formGroup]="form" (ngSubmit)="submitForm()">
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nazwa użytkownika</mat-label>
+        <input
+            matInput
+            formControlName="username"
+            autocomplete="username"
+            [readonly]="isSaving"
+        />
+        @if (form.controls.username.pending) {
+            <mat-spinner matSuffix diameter="16" aria-label="Sprawdzanie dostępności nazwy" />
+        }
+        <mat-hint>3–50 znaków, tylko litery, cyfry i podkreślenia</mat-hint>
+        @if (form.controls.username.invalid && form.controls.username.touched) {
+            <mat-error>{{ getUsernameErrorMessage() }}</mat-error>
+        }
+    </mat-form-field>
+
+    @if (usernameCheckWarning()) {
+        <p class="username-warning" role="status">
+            Nie można sprawdzić dostępności nazwy. Zostanie zweryfikowana przy zapisie.
+        </p>
+    }
+
+    @if (serverError) {
+        <p class="server-error" role="alert">{{ serverError }}</p>
+    }
+
+    <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        class="full-width submit-button"
+        [disabled]="isSaving || form.invalid || form.pending"
+    >
+        @if (isSaving) {
+            <mat-spinner diameter="20" aria-label="Zapisywanie profilu" />
+        } @else {
+            Zapisz i przejdź do aplikacji
+        }
+    </button>
+</form>

@@ -10,11 +10,8 @@ Oto dokumenty streszczczenie informacji o projekcie, które musisz przeanalizowa
 
 <nowa_funkcjonalnosc>
 
-
-Pop wybraniu ściezki 
-http://localhost:4200/admin/users
-
-przy użytkowniku ma się pojawić ikonka ołowka do edycji uzytkownika. Po wybraniu ołowka ma się pojawić małe okno dialogowe, w którym będzie mozliwosć zmiany roli użytkownia.
+Na ekranie logowania, jest dodatkowy przycisk "Zaloguj się przez Google"
+po wybraniu tego przycisku użytkownik może się zalogowac na swoje konto (email), ktre jest zgodne z logowaniem Google. Jesli takiego użytkownka nie ma jescze to będzie utworzony
 
 
 </nowa_funkcjonalnosc>
@@ -26,6 +23,7 @@ Twoim zadaniem jest:
    - '{nazwa-ficzera-po-angiesku}-requirements.md' - zapisz nowe funkcje i historyjki użytkownika
    - '{nazwa-ficzera-po-angiesku}-ui-plan.md' - zapisz opis nowych/zmienionych widokuów
    - '{nazwa-ficzera-po-angiesku}-api-plan.md' - zapisz opis nowych/zmienionych endopintów
+   - '{nazwa-ficzera-po-angiesku}-deployment-plan.md' - zapisz opis które trzeba wykonac poza kodem aby nowy ficzer działal np. utworzenie i skonfigurowanie zewnętrzej usługi, uzyskanie kluczy i zapisanie ich w odpowiednim miejscu itd.
    
 
 Przed przystąpieniem do tworzenia rozszerzeń, użyj scratchpad do zaplanowania swojego podejścia:
