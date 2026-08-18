@@ -22,5 +22,3 @@ import { MainNavigationComponent } from '../main-navigation/main-navigation.comp
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicHeaderComponent {}
-
-
