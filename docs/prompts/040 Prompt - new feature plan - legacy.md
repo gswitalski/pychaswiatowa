@@ -3,16 +3,27 @@ Jesteś doświadczonym analitykiem produktowym i architektem oprogramowania. Two
 Oto dokumenty streszczczenie informacji o projekcie, które musisz przeanalizować:
 
 <project_summary>
-
-
-
+@docs\results\project-summary.md
 </project_summary>
+
+<preminm_features>
+@docs\analizaf0funkcjonalnosci-premium-v02.md
+</preminm_features>
+
 
 <nowa_funkcjonalnosc>
 
-Na ekranie logowania, jest dodatkowy przycisk "Zaloguj się przez Google"
-po wybraniu tego przycisku użytkownik może się zalogowac na swoje konto (email), ktre jest zgodne z logowaniem Google. Jesli takiego użytkownka nie ma jescze to będzie utworzony
+Jednolity model uprawnień (entitlements)
 
+
+Opis:
+Jako system chcę jedno źródło prawdy o tym, co konto może zrobić (rola, trial, kredyty, limity Free), żeby UI i backend konsekwentnie odmawiały lub pozwalały na funkcje Premium.
+
+Kryteria akceptacji:
+Istnieje serwis/warstwa (frontend + backend) zwracająca dla sesji: app_role, status subskrypcji (none / trial / active / past_due / canceled), datę końca okresu, pozostałe kredyty per pula.
+admin ma co najmniej uprawnienia premium (bez reklam, dostęp do funkcji Premium), plus dostęp do /admin/*.
+Guardy i Edge Functions nie polegają wyłącznie na ukryciu przycisku w UI — decyzja jest weryfikowana po stronie serwera.
+Brak subskrypcji = traktowanie jak user (Free), nawet jeśli w JWT kiedyś była rola premium.
 
 </nowa_funkcjonalnosc>
 
@@ -20,10 +31,10 @@ Twoim zadaniem jest:
 
 1. Dokładnie przeanalizować wszystkie dostarczone podsumowanie projektu, aby zrozumieć obecną architekturę, funkcjonalności i strukturę aplikacji
 2. Na podstawie opisu nowej funkcjonalności, stworzyć odpowiednie dokumenty umozliwiające zaplanowanie nowej implementacji:
-   - '{nazwa-ficzera-po-angiesku}-requirements.md' - zapisz nowe funkcje i historyjki użytkownika
-   - '{nazwa-ficzera-po-angiesku}-ui-plan.md' - zapisz opis nowych/zmienionych widokuów
+   - '{nazwa-ficzera-po-angiesku}-requirements.md' - zapisz nowe funkcje i story tasks
    - '{nazwa-ficzera-po-angiesku}-api-plan.md' - zapisz opis nowych/zmienionych endopintów
-   - '{nazwa-ficzera-po-angiesku}-deployment-plan.md' - zapisz opis które trzeba wykonac poza kodem aby nowy ficzer działal np. utworzenie i skonfigurowanie zewnętrzej usługi, uzyskanie kluczy i zapisanie ich w odpowiednim miejscu itd.
+   - '{nazwa-ficzera-po-angiesku}-ui-plan.md' - zapisz opis nowych/zmienionych widoków
+   - '{nazwa-ficzera-po-angiesku}-deployment-plan.md' - zapisz opis które trzeba wykonac poza kodem aby nowy ficzer działal np. utworzenie i skonfigurowanie zewnętrzej usługi, uzyskanie kluczy i zapisanie ich w odpowiednim miejscu, migracja bazy itp.
    
 
 Przed przystąpieniem do tworzenia rozszerzeń, użyj scratchpad do zaplanowania swojego podejścia:
@@ -42,14 +53,14 @@ Wymagania dotyczące odpowiedzi:
 - pliki wynikowe umieśc w foldzedze docs/results/new-features/{nazwa-ficzera-po-angielsku}
 
 
-Twoja końcowa odpowiedź powinna zawierać trzy wyraźnie oznaczone sekcje:
-1. wymagania (funkcje i historyjki)
-2. Nowe lub zmienone widoki w planie UI  
-3. Nowe lub zmienione API w planie API
+Twoja końcowa odpowiedź powinna zawierać cztery wyraźnie oznaczone sekcje:
+1. wymagania (funkcje i taski)
+2. Nowe lub zmienione API w planie API
+3. Nowe lub zmienone widoki w planie UI  
+4. Plan wdrożenia
 
 
 Sformatuj swoją odpowiedź używając odpowiednich nagłówków i zachowując czytelną strukturę.
-
 
 
 UWAGA:
@@ -64,6 +75,4 @@ Moja rekomendacja:
 {treść rekomendacji}
 
 dopiero po udzieleniu przez zużytkownika odpowiedzi przystąp do wykonywannia powyższych poleceń. W swojej pracy uzyj odpowiedzi udzielonych przez użytkownika.
-
-
 

@@ -5,9 +5,7 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 1. Podsumowanie projektu
 <project_summary>
-
-
-
+@docs\results\project-summary.md
 </project_summary>
 
 2. Nowe wymagania do zaimplementowania
