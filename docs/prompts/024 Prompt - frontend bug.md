@@ -8,21 +8,25 @@ Zapoznaj się z dokumnetacją projektu
 
 
 <aktualne_zachowanie>
+Dostęp do obrazka assets/logo-small.png
 
-użytkownik z roluą 'User' ma z poziomu frontendu dostęp do funkcji generowania przepisu na podstawie tekstu lub obrazka
+mają tylko zalogowani użytkownicy, przez co obrazek nie jest widoczny na stronie przed zalogowaniem
+
+
+
 
 </aktualne_zachowanie>
 
 <oczekiwane_zachowanie>
 
-użytkowniek z rola User nie ma dostepu do tej funkc. Fuckja tylko da ról 'Premium' i 'Admin'
+Logo jest widoczne dla użytkowników niezalogowanych
 
 </oczekiwane_zachowanie>
 
 
 <implementation_rules>
 
-
+@.cursor\rules\fronend.mdc
 
 </implementation_rules>
 
