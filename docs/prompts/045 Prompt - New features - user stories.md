@@ -24,7 +24,7 @@ Każda historyjka musi zawierać:
 
 ### PS-{numer}: {Tytuł historyjki}
 
-Numeracje zacznij od {Nr}
+Numeracje zacznij od 63
 
 **Opis:** 
 Jako [rola/użytkownik], chcę [cel/potrzeba], aby [korzyść/wartość biznesowa].
@@ -43,7 +43,7 @@ Opis – w formacie Jako [rola], chcę [cel], aby [wartość].
 Kryteria akceptacji – konkretne, testowalne warunki (najlepiej w formie checklisty), które jednoznacznie określają, kiedy historyjka jest uznana za ukończoną.
 Zależności – jawne wskazanie historyjek blokujących (jeśli występują).
 Wymagania dotyczące dokumentu wynikowego
-Lokalizacja pliku: doc/{nazwa-obszaru-funkcjonalnego-po-angielsku}-user-stories.md
+Lokalizacja pliku: doc/new-features/{nazwa-obszaru-funkcjonalnego-po-angielsku}/{nazwa-obszaru-funkcjonalnego-po-angielsku}-user-stories.md
 Nazwa pliku: nazwa obszaru funkcjonalnego w języku angielskim, w formacie kebab-case, zakończona sufiksem -user-stories.md
 Język treści dokumentu: polski
 Format: Markdown
@@ -55,10 +55,10 @@ Krótkie streszczenie zakresu obszaru funkcjonalnego oraz celu dokumentu.
 
 ## Lista historyjek użytkownika
 
-### PS-001: ...
+### PS-63: ...
 ...
 
-### PS-002: ...
+### PS-64: ...
 ...
 
 (kolejne historyjki w ustalonej kolejności)
