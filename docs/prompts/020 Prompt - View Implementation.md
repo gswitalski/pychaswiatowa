@@ -4,7 +4,7 @@ Najpierw przejrzyj plan implementacji:
 
 <implementation_plan>
 
-@docs\results\impl-plans\views\google-oauth-login-view-implementation-plan.md
+
 
 </implementation_plan>
 

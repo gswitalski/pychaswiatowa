@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-    input,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,10 +8,7 @@ import { LayoutService } from '../../../../core/services/layout.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { OmniboxComponent } from '../../../../shared/components/omnibox/omnibox.component';
 import { MainNavigationComponent } from '../../../../shared/components/main-navigation/main-navigation.component';
-import {
-    MainNavigationItem,
-    MAIN_NAVIGATION_ITEMS,
-} from '../../../../shared/models/ui.models';
+import { MainNavigationItem, MAIN_NAVIGATION_ITEMS } from '../../../../shared/models/ui.models';
 
 /**
  * Top bar component containing breadcrumbs, global search, and user menu.
@@ -54,6 +45,9 @@ export class TopbarComponent {
 
     /** Whether the current user has admin role */
     readonly isAdmin = computed(() => this.authService.appRole() === 'admin');
+
+    /** Pricing is relevant only for authenticated users on the Free plan. */
+    readonly shouldShowPricingLink = computed(() => this.authService.appRole() === 'user');
 
     /** Topbar navigation items with conditional Admin entry */
     readonly mainNavItems = computed<MainNavigationItem[]>(() => {
@@ -94,4 +88,3 @@ export class TopbarComponent {
         }
     }
 }
-

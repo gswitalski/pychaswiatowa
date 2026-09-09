@@ -1,42 +1,51 @@
 <mat-toolbar class="topbar">
     <div class="topbar__left">
         @if (isMobile() && shouldShowSidebar()) {
-        <button
-            mat-icon-button
-            aria-label="Toggle menu"
-            (click)="toggleSidebar()"
-            class="topbar__menu-btn">
-            <mat-icon>menu</mat-icon>
-        </button>
+            <button
+                mat-icon-button
+                aria-label="Toggle menu"
+                (click)="toggleSidebar()"
+                class="topbar__menu-btn"
+            >
+                <mat-icon>menu</mat-icon>
+            </button>
         }
 
         <a routerLink="/" class="topbar__logo-link" aria-label="Przejdź do strony głównej">
-            <img
-                class="topbar__logo-image"
-                src="/logo-small.png"
-                alt="Logo PychaŚwiatowa" />
+            <img class="topbar__logo-image" src="/logo-small.png" alt="Logo PychaŚwiatowa" />
             <span class="topbar__logo-text">PychaŚwiatowa</span>
         </a>
     </div>
 
     @if (!isMobileOrTablet()) {
-    <div class="topbar__center">
-        <pych-main-navigation class="topbar__main-navigation" [items]="mainNavItems()" />
-    </div>
+        <div class="topbar__center">
+            <pych-main-navigation class="topbar__main-navigation" [items]="mainNavItems()" />
+        </div>
     }
 
     @if (false) {
-    <div class="topbar__search-container">
-        <pych-omnibox class="topbar__search" />
-    </div>
+        <div class="topbar__search-container">
+            <pych-omnibox class="topbar__search" />
+        </div>
     }
 
     <div class="topbar__right">
+        @if (shouldShowPricingLink()) {
+            <a
+                mat-button
+                routerLink="/pricing"
+                class="topbar__pricing-link"
+                aria-label="Przejdź do cennika"
+            >
+                Cennik
+            </a>
+        }
         <button
             mat-icon-button
             [matMenuTriggerFor]="userMenu"
             aria-label="Menu użytkownika"
-            class="topbar__avatar">
+            class="topbar__avatar"
+        >
             <mat-icon>account_circle</mat-icon>
         </button>
 
@@ -46,10 +55,10 @@
                 <span>Ustawienia</span>
             </a>
             @if (isAdmin()) {
-            <a mat-menu-item routerLink="/admin/dashboard">
-                <mat-icon>admin_panel_settings</mat-icon>
-                <span>Admin</span>
-            </a>
+                <a mat-menu-item routerLink="/admin/dashboard">
+                    <mat-icon>admin_panel_settings</mat-icon>
+                    <span>Admin</span>
+                </a>
             }
             <button mat-menu-item (click)="logout()">
                 <mat-icon>logout</mat-icon>

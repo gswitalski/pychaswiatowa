@@ -15,6 +15,21 @@ Oto dokumenty o projekcie, które musisz przeanalizować:
 
 <user_story>
 
+### PS-63: Strona cennika (/pricing) z ofertą Premium
+
+**Opis:**
+Jako odwiedzający aplikację (gość lub użytkownik Free), chcę zobaczyć przejrzystą stronę `/pricing` z porównaniem planów Free i Premium, aby podjąć świadomą decyzję o subskrypcji.
+
+**Kryteria akceptacji:**
+- [ ] Strona `/pricing` jest publicznie dostępna (bez logowania).
+- [ ] Tabela porównawcza zawiera plany Free i Premium (miesięczny i roczny).
+- [ ] Plan roczny jest wyróżniony jako domyślny/rekomendowany, z przeliczeniem na koszt miesięczny.
+- [ ] Wymienione są korzyści Premium: import URL/zdjęcie, planer, zaawansowane zakupy, brak reklam, pula AI, konto rodzinne.
+- [ ] Widoczne są ramy cenowe (orientacyjne PLN B2C) oraz informacja o 7-dniowym trialu.
+- [ ] CTA „Wybierz Premium" przekierowuje zalogowanego użytkownika do checkoutu, a niezalogowanego — do rejestracji.
+- [ ] Strona zawiera link do regulaminu subskrypcji.
+- [ ] Strona jest responsywna (desktop-first, mobile-friendly).
+
 
 </user_story>
 
@@ -24,7 +39,7 @@ Twoim zadaniem jest:
 2. Na podstawie opisu nowej funkcjonalności, stworzyć odpowiednie dokumenty umożliwiające zaplanowanie nowej implementacji:
    - 'PS-{story-no}-{nazwa-ficzera-po-angiesku}-api-plan.md' - zapisz opis nowych/zmienionych endopintów
    - 'PS-{story-no}-{nazwa-ficzera-po-angiesku}-ui-plan.md' - zapisz opis nowych/zmienionych widoków
-   - 'PS-{story-no}-{nazwa-ficzera-po-angiesku}-deployment-plan.md' - zapisz opis które trzeba wykonac poza kodem aby nowy ficzer działal np. utworzenie i skonfigurowanie zewnętrzej usługi, uzyskanie kluczy i zapisanie ich w odpowiednim miejscu, migracja bazy itp.
+   - 'PS-{story-no}-{nazwa-ficzera-po-angiesku}-deployment-plan.md' - zapisz opis które trzeba wykonac poza kodem aby nowy ficzer działal np. utworzenie i skonfigurowanie zewnętrzej usługi, uzyskanie kluczy i zapisanie ich w odpowiednim miejscu, migracja bazy itp. Zapis je w docs\results\new-features
    
 
 Przed przystąpieniem do tworzenia rozszerzeń, użyj scratchpad do zaplanowania swojego podejścia:
@@ -48,7 +63,6 @@ Twoja końcowa odpowiedź powinna zawierać cztery wyraźnie oznaczone sekcje:
 2. Nowe lub zmienione API w planie API
 3. Nowe lub zmienone widoki w planie UI  
 4. Plan wdrożenia
-
 
 Sformatuj swoją odpowiedź używając odpowiednich nagłówków i zachowując czytelną strukturę.
 

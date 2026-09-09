@@ -1,0 +1,251 @@
+<main class="pricing-page">
+    <section class="pricing-hero" aria-labelledby="pricing-title">
+        <h1 id="pricing-title">Wybierz plan dla siebie</h1>
+        <p>Prowadź swoją cyfrową książkę kucharską — bezpłatnie lub z Premium.</p>
+    </section>
+
+    <section class="pricing-toggle" aria-label="Okres rozliczeniowy">
+        <mat-button-toggle-group
+            [value]="billingPeriod()"
+            (change)="setBillingPeriod($event.value)"
+            aria-label="Wybierz okres rozliczeniowy"
+        >
+            <mat-button-toggle value="monthly">Miesięcznie</mat-button-toggle>
+            <mat-button-toggle value="yearly">Rocznie</mat-button-toggle>
+        </mat-button-toggle-group>
+        @if (billingPeriod() === 'yearly') {
+            <mat-chip class="pricing-toggle__saving">
+                Oszczędzasz ~{{ config.plans.premium.savingsPercent }}%
+            </mat-chip>
+        }
+    </section>
+
+    <section class="pricing-cards" aria-label="Dostępne plany">
+        <mat-card class="plan-card plan-card--premium">
+            <mat-card-header>
+                <div class="plan-card__heading">
+                    <mat-card-title>Premium</mat-card-title>
+                    <mat-chip class="plan-card__recommended">Rekomendowany</mat-chip>
+                </div>
+                <mat-card-subtitle>
+                    Więcej możliwości dla kulinarnych pasjonatów
+                </mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="plan-card__price" aria-live="polite">
+                    @if (billingPeriod() === 'yearly') {
+                        <span class="plan-card__old-price">
+                            {{
+                                config.plans.premium.priceMonthly / 100
+                                    | currency: 'PLN' : 'symbol' : '1.0-2' : 'pl'
+                            }}
+                            / mies.
+                        </span>
+                    }
+                    <strong>
+                        {{ premiumPrice() / 100 | currency: 'PLN' : 'symbol' : '1.0-2' : 'pl' }}
+                    </strong>
+                    <span>{{ premiumPriceSuffix() }}</span>
+                    @if (billingPeriod() === 'yearly') {
+                        <small>
+                            czyli
+                            {{
+                                config.plans.premium.priceYearlyMonthly / 100
+                                    | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl'
+                            }}
+                            / mies.
+                        </small>
+                    }
+                </div>
+                <mat-chip class="plan-card__trial">
+                    {{ config.trial.days }} dni bezpłatnego trialu
+                </mat-chip>
+                <ul class="plan-card__benefits">
+                    @for (benefit of benefits.premium; track benefit) {
+                        <li>
+                            <mat-icon aria-hidden="true">check_circle</mat-icon>
+                            <span>{{ benefit }}</span>
+                        </li>
+                    }
+                </ul>
+            </mat-card-content>
+            <mat-card-actions>
+                @if (showPremiumCta()) {
+                    @if (isAuthenticated() && appRole() === 'premium') {
+                        <button mat-flat-button disabled>Twój aktualny plan</button>
+                    } @else if (isAuthenticated()) {
+                        <a mat-flat-button routerLink="/checkout">Wybierz Premium</a>
+                    } @else {
+                        <a
+                            mat-flat-button
+                            routerLink="/register"
+                            [queryParams]="{ next: '/checkout' }"
+                        >
+                            Wybierz Premium
+                        </a>
+                    }
+                }
+            </mat-card-actions>
+        </mat-card>
+
+        <mat-card class="plan-card plan-card--free">
+            <mat-card-header>
+                <mat-card-title>Free</mat-card-title>
+                <mat-card-subtitle>Pełna prywatna książka kucharska</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="plan-card__price">
+                    <strong>0 zł</strong>
+                    <span>/ zawsze</span>
+                </div>
+                <ul class="plan-card__benefits">
+                    @for (benefit of benefits.free; track benefit) {
+                        <li>
+                            <mat-icon aria-hidden="true">check_circle</mat-icon>
+                            <span>{{ benefit }}</span>
+                        </li>
+                    }
+                </ul>
+            </mat-card-content>
+            <mat-card-actions>
+                @if (showFreeCta()) {
+                    @if (isAuthenticated()) {
+                        <button mat-stroked-button disabled>Twój aktualny plan</button>
+                    } @else {
+                        <a mat-stroked-button routerLink="/register">Zacznij za darmo</a>
+                    }
+                }
+            </mat-card-actions>
+        </mat-card>
+    </section>
+
+    <section class="pricing-comparison" aria-labelledby="comparison-title">
+        <h2 id="comparison-title">Porównaj plany</h2>
+
+        <div class="comparison-desktop">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Funkcja</th>
+                        <th scope="col">Free</th>
+                        <th scope="col">Premium</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (category of featureCategories; track category.name) {
+                        <tr class="comparison-category">
+                            <th colspan="3" scope="colgroup">{{ category.name }}</th>
+                        </tr>
+                        @for (feature of category.features; track feature.name) {
+                            <tr>
+                                <th scope="row">
+                                    {{ feature.name }}
+                                    @if (feature.comingSoon) {
+                                        <mat-chip>Wkrótce</mat-chip>
+                                    }
+                                </th>
+                                <td>
+                                    @switch (feature.freeAvailability) {
+                                        @case ('available') {
+                                            <mat-icon role="img" aria-label="Dostępne"
+                                                >check_circle</mat-icon
+                                            >
+                                        }
+                                        @case ('unavailable') {
+                                            <mat-icon
+                                                class="is-unavailable"
+                                                role="img"
+                                                aria-label="Niedostępne"
+                                                >remove</mat-icon
+                                            >
+                                        }
+                                        @default {
+                                            {{ feature.free }}
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    @switch (feature.premiumAvailability) {
+                                        @case ('available') {
+                                            <mat-icon role="img" aria-label="Dostępne"
+                                                >check_circle</mat-icon
+                                            >
+                                        }
+                                        @case ('unavailable') {
+                                            <mat-icon
+                                                class="is-unavailable"
+                                                role="img"
+                                                aria-label="Niedostępne"
+                                                >remove</mat-icon
+                                            >
+                                        }
+                                        @default {
+                                            {{ feature.premium }}
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <mat-accordion class="comparison-mobile" multi>
+            @for (category of featureCategories; track category.name) {
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>{{ category.name }}</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="comparison-mobile__features">
+                        @for (feature of category.features; track feature.name) {
+                            <article>
+                                <h3>
+                                    {{ feature.name }}
+                                    @if (feature.comingSoon) {
+                                        <mat-chip>Wkrótce</mat-chip>
+                                    }
+                                </h3>
+                                <dl>
+                                    <div>
+                                        <dt>Free</dt>
+                                        <dd>{{ feature.free }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Premium</dt>
+                                        <dd>{{ feature.premium }}</dd>
+                                    </div>
+                                </dl>
+                            </article>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+        </mat-accordion>
+    </section>
+
+    <section class="pricing-faq" aria-labelledby="faq-title">
+        <h2 id="faq-title">Najczęściej zadawane pytania</h2>
+        <mat-accordion>
+            @for (faq of faqItems; track faq.question) {
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>{{ faq.question }}</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <p>{{ faq.answer }}</p>
+                </mat-expansion-panel>
+            }
+        </mat-accordion>
+    </section>
+
+    <section class="pricing-footer-links" aria-label="Informacje prawne">
+        <p>Ceny orientacyjne, netto PLN B2C. Zmiana cen możliwa przed startem sprzedaży.</p>
+        <nav aria-label="Dokumenty dotyczące oferty">
+            <a routerLink="/legal/subscription">Regulamin subskrypcji</a>
+            <span aria-hidden="true">·</span>
+            <a routerLink="/legal/terms">Regulamin</a>
+            <span aria-hidden="true">·</span>
+            <a routerLink="/legal/privacy">Polityka prywatności</a>
+        </nav>
+    </section>
+</main>

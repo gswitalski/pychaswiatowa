@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { LegalMarkdownViewerComponent } from './components/legal-markdown-viewer/legal-markdown-viewer.component';
 
-type LegalPageId = 'terms' | 'privacy' | 'publisher';
+type LegalPageId = 'terms' | 'privacy' | 'publisher' | 'subscription';
 
 interface LegalRouteData {
     page: LegalPageId;
@@ -27,9 +27,9 @@ export class LegalPageComponent {
     private readonly routeData = toSignal(
         this.route.data.pipe(
             map((data) => data as Partial<LegalRouteData>),
-            startWith(this.route.snapshot.data as Partial<LegalRouteData>)
+            startWith(this.route.snapshot.data as Partial<LegalRouteData>),
         ),
-        { initialValue: this.route.snapshot.data as Partial<LegalRouteData> }
+        { initialValue: this.route.snapshot.data as Partial<LegalRouteData> },
     );
 
     readonly title = computed(() => this.routeData()?.title ?? 'Informacje');

@@ -43,4 +43,38 @@
             (retry)="onSectionRetry('seasonal')"
         /> -->
     </div>
+
+    @if (showPremiumPromotion()) {
+        <section class="premium-promotion" aria-labelledby="premium-promotion-title">
+            <div class="premium-promotion__content">
+                <div>
+                    <p class="premium-promotion__eyebrow">PychaŚwiatowa Premium</p>
+                    <h2 id="premium-promotion-title">Więcej z Premium</h2>
+                    <p class="premium-promotion__description">
+                        Rozwijaj swoją cyfrową książkę kucharską dzięki większym limitom i
+                        inteligentnym narzędziom.
+                    </p>
+                </div>
+                <ul>
+                    <li>
+                        <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+                        Miesięczna pula kredytów AI
+                    </li>
+                    <li>
+                        <mat-icon aria-hidden="true">event_note</mat-icon>
+                        Do 50 pozycji w planie
+                    </li>
+                    <li>
+                        <mat-icon aria-hidden="true">hide_source</mat-icon>
+                        Korzystanie bez reklam
+                    </li>
+                    <li>
+                        <mat-icon aria-hidden="true">speed</mat-icon>
+                        Wyższy priorytet zadań AI
+                    </li>
+                </ul>
+                <a mat-raised-button routerLink="/pricing">Zobacz plany</a>
+            </div>
+        </section>
+    }
 </main>

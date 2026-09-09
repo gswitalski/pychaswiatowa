@@ -15,15 +15,19 @@
                         [documentName]="'polityki prywatności'"
                     />
                 }
+                @case ('subscription') {
+                    <pych-legal-markdown-viewer
+                        [assetPath]="'/assets/legal/subscription-terms.md'"
+                        [documentName]="'regulaminu subskrypcji'"
+                    />
+                }
                 @case ('publisher') {
                     <p class="legal-page__text">
                         Treść informacji o wydawcy serwisu zostanie uzupełniona wkrótce.
                     </p>
                 }
                 @default {
-                    <p class="legal-page__text">
-                        Treść zostanie uzupełniona wkrótce.
-                    </p>
+                    <p class="legal-page__text">Treść zostanie uzupełniona wkrótce.</p>
                 }
             }
         </mat-card>

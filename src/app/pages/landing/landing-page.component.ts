@@ -1,11 +1,14 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     inject,
-    signal,
     OnInit,
+    signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { catchError, of, take } from 'rxjs';
 import { HeroComponent } from './components/hero/hero.component';
 import { PublicRecipesSearchComponent } from './components/public-recipes-search/public-recipes-search';
@@ -16,7 +19,7 @@ import {
     GetPublicRecipesParams,
 } from '../../core/services/public-recipes.service';
 import { PublicRecipeListItemDto } from '../../../../shared/contracts/types';
-import { SupabaseService } from '../../core/services/supabase.service';
+import { AuthService } from '../../core/services/auth.service';
 
 /**
  * Klucze sekcji na landing page
@@ -44,7 +47,7 @@ interface LandingSectionConfig {
 /**
  * Główny komponent landing page.
  * Wyświetla hero, wyszukiwarkę i sekcje z kuratorowanymi listami publicznych przepisów.
- * 
+ *
  * Na landing page wyszukiwarka nie pokazuje wyników bezpośrednio (showResults=false),
  * ale nawiguje do /explore z parametrem q.
  */
@@ -55,6 +58,9 @@ interface LandingSectionConfig {
         HeroComponent,
         PublicRecipesSearchComponent,
         PublicRecipesSectionComponent,
+        RouterLink,
+        MatButtonModule,
+        MatIconModule,
     ],
     templateUrl: './landing-page.component.html',
     styleUrl: './landing-page.component.scss',
@@ -63,12 +69,12 @@ interface LandingSectionConfig {
 export class LandingPageComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly publicRecipesService = inject(PublicRecipesService);
-    private readonly supabase = inject(SupabaseService);
+    private readonly authService = inject(AuthService);
 
-    /**
-     * Signal określający czy użytkownik jest zalogowany
-     */
-    isAuthenticated = signal<boolean>(false);
+    readonly isAuthenticated = this.authService.isAuthenticated;
+    readonly showPremiumPromotion = computed(
+        () => !this.authService.isAuthenticated() || this.authService.appRole() === 'user',
+    );
 
     /**
      * Konfiguracja sekcji z różnymi sortowaniami
@@ -101,27 +107,9 @@ export class LandingPageComponent implements OnInit {
         seasonal: { data: [], isLoading: true, errorMessage: null },
     });
 
-    async ngOnInit(): Promise<void> {
-        // Sprawdź stan uwierzytelnienia
-        await this.checkAuthStatus();
-
+    ngOnInit(): void {
         // Załaduj dane dla wszystkich sekcji równolegle
         this.loadAllSections();
-    }
-
-    /**
-     * Sprawdza stan uwierzytelnienia użytkownika
-     */
-    private async checkAuthStatus(): Promise<void> {
-        try {
-            const {
-                data: { session },
-            } = await this.supabase.auth.getSession();
-            this.isAuthenticated.set(session !== null);
-        } catch (error) {
-            console.error('Error checking auth status:', error);
-            this.isAuthenticated.set(false);
-        }
     }
 
     /**
@@ -185,20 +173,17 @@ export class LandingPageComponent implements OnInit {
                         [sectionKey]: {
                             data: state[sectionKey].data, // Zachowaj poprzednie dane
                             isLoading: false,
-                            errorMessage:
-                                error?.message || 'Nie udało się pobrać przepisów',
+                            errorMessage: error?.message || 'Nie udało się pobrać przepisów',
                         },
                     }));
                     return of(null);
-                })
+                }),
             )
             .subscribe((response) => {
                 if (!response) return; // Błąd już obsłużony w catchError
 
                 // Mapowanie DTO na RecipeCardData
-                const recipes = response.data.map((dto) =>
-                    this.mapToCardData(dto)
-                );
+                const recipes = response.data.map((dto) => this.mapToCardData(dto));
 
                 // Aktualizuj stan z nowymi danymi
                 this.sectionsState.update((state) => ({

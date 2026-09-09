@@ -1,10 +1,7 @@
 <mat-toolbar color="primary" class="public-header">
     <div class="public-header__left">
         <a routerLink="/" class="logo-link" aria-label="Przejdź do strony głównej">
-            <img
-                class="logo-image"
-                src="/logo-small.png"
-                alt="Logo PychaŚwiatowa" />
+            <img class="logo-image" src="/logo-small.png" alt="Logo PychaŚwiatowa" />
             <span class="logo-text">PychaŚwiatowa</span>
         </a>
     </div>
@@ -15,10 +12,9 @@
 
     <div class="public-header__right">
         <div class="header-actions">
+            <a mat-button routerLink="/pricing">Cennik</a>
             <a mat-button routerLink="/login">Zaloguj się</a>
             <a mat-raised-button color="accent" routerLink="/register">Zarejestruj się</a>
         </div>
     </div>
 </mat-toolbar>
-
-

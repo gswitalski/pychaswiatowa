@@ -87,6 +87,11 @@
         flex-shrink: 0;
     }
 
+    &__pricing-link {
+        color: var(--mat-sys-primary);
+        font-weight: 500;
+    }
+
     &__dashboard-link {
         margin-right: 8px;
         font-weight: 500;
@@ -143,4 +148,3 @@
         }
     }
 }
-

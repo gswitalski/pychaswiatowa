@@ -22,22 +22,39 @@ export const routes: Routes = [
                 path: '',
                 loadComponent: () =>
                     import('./pages/landing/landing-page.component').then(
-                        (m) => m.LandingPageComponent
+                        (m) => m.LandingPageComponent,
                     ),
             },
             {
                 path: 'explore',
                 loadComponent: () =>
                     import('./pages/explore/explore-page.component').then(
-                        (m) => m.ExplorePageComponent
+                        (m) => m.ExplorePageComponent,
                     ),
+            },
+            {
+                path: 'pricing',
+                loadComponent: () =>
+                    import('./pages/pricing/pricing-page').then((m) => m.PricingPageComponent),
+            },
+            {
+                path: 'checkout',
+                loadComponent: () =>
+                    import('./pages/checkout/checkout-page').then((m) => m.CheckoutPageComponent),
+            },
+            {
+                path: 'legal/subscription',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
+                data: {
+                    page: 'subscription',
+                    title: 'Regulamin subskrypcji',
+                },
             },
             {
                 path: 'legal/terms',
                 loadComponent: () =>
-                    import('./pages/legal/legal-page.component').then(
-                        (m) => m.LegalPageComponent
-                    ),
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
                 data: {
                     page: 'terms',
                     title: 'Regulamin Serwisu',
@@ -46,9 +63,7 @@ export const routes: Routes = [
             {
                 path: 'legal/privacy',
                 loadComponent: () =>
-                    import('./pages/legal/legal-page.component').then(
-                        (m) => m.LegalPageComponent
-                    ),
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
                 data: {
                     page: 'privacy',
                     title: 'Polityka prywatności',
@@ -57,9 +72,7 @@ export const routes: Routes = [
             {
                 path: 'legal/publisher',
                 loadComponent: () =>
-                    import('./pages/legal/legal-page.component').then(
-                        (m) => m.LegalPageComponent
-                    ),
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
                 data: {
                     page: 'publisher',
                     title: 'Wydawca serwisu',
@@ -70,7 +83,7 @@ export const routes: Routes = [
                 matcher: exploreRecipeIdSlugMatcher,
                 loadComponent: () =>
                     import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
-                        (m) => m.ExploreRecipeDetailPageComponent
+                        (m) => m.ExploreRecipeDetailPageComponent,
                     ),
                 data: { urlPrefix: 'explore/recipes' },
             },
@@ -79,7 +92,7 @@ export const routes: Routes = [
                 matcher: exploreRecipeIdOnlyMatcher,
                 loadComponent: () =>
                     import('./pages/recipes/recipe-url-normalization/recipe-url-normalization-page.component').then(
-                        (m) => m.RecipeUrlNormalizationPageComponent
+                        (m) => m.RecipeUrlNormalizationPageComponent,
                     ),
                 data: { context: 'public', urlPrefix: 'explore/recipes' },
             },
@@ -87,7 +100,7 @@ export const routes: Routes = [
                 path: 'dashboard',
                 loadComponent: () =>
                     import('./pages/dashboard/dashboard-page.component').then(
-                        (m) => m.DashboardPageComponent
+                        (m) => m.DashboardPageComponent,
                     ),
                 canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Dashboard' },
@@ -96,7 +109,7 @@ export const routes: Routes = [
                 path: 'my-recipies',
                 loadComponent: () =>
                     import('./pages/recipes/recipes-list/recipes-list-page.component').then(
-                        (m) => m.RecipesListPageComponent
+                        (m) => m.RecipesListPageComponent,
                     ),
                 canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Moje przepisy' },
@@ -114,9 +127,7 @@ export const routes: Routes = [
             {
                 path: 'recipes',
                 loadChildren: () =>
-                    import('./pages/recipes/recipes.routes').then(
-                        (m) => m.recipesRoutes
-                    ),
+                    import('./pages/recipes/recipes.routes').then((m) => m.recipesRoutes),
                 canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Moje przepisy' },
             },
@@ -124,7 +135,7 @@ export const routes: Routes = [
                 path: 'collections',
                 loadChildren: () =>
                     import('./pages/collections/collections.routes').then(
-                        (m) => m.collectionsRoutes
+                        (m) => m.collectionsRoutes,
                     ),
                 canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Kolekcje' },
@@ -133,15 +144,14 @@ export const routes: Routes = [
                 path: 'shopping',
                 loadComponent: () =>
                     import('./pages/shopping/shopping-page.component').then(
-                        (m) => m.ShoppingPageComponent
+                        (m) => m.ShoppingPageComponent,
                     ),
                 canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Zakupy' },
             },
             {
                 path: 'admin',
-                loadChildren: () =>
-                    import('./pages/admin/admin.routes').then((m) => m.adminRoutes),
+                loadChildren: () => import('./pages/admin/admin.routes').then((m) => m.adminRoutes),
                 canMatch: [usernameCompleteMatchGuard, adminRoleMatchGuard],
                 data: { breadcrumb: 'Panel administracyjny' },
             },
@@ -149,7 +159,7 @@ export const routes: Routes = [
                 path: 'settings',
                 loadComponent: () =>
                     import('./pages/settings/profile-settings-page.component').then(
-                        (m) => m.ProfileSettingsPageComponent
+                        (m) => m.ProfileSettingsPageComponent,
                     ),
                 canMatch: [usernameCompleteMatchGuard],
                 data: { breadcrumb: 'Ustawienia' },
@@ -159,35 +169,33 @@ export const routes: Routes = [
                 path: 'register',
                 loadComponent: () =>
                     import('./pages/register/register-page.component').then(
-                        (m) => m.RegisterPageComponent
+                        (m) => m.RegisterPageComponent,
                     ),
             },
             {
                 path: 'register/verify-sent',
                 loadComponent: () =>
                     import('./pages/auth/register-verify-sent/register-verify-sent-page.component').then(
-                        (m) => m.RegisterVerifySentPageComponent
+                        (m) => m.RegisterVerifySentPageComponent,
                     ),
             },
             {
                 path: 'login',
                 loadComponent: () =>
-                    import('./pages/login/login-page.component').then(
-                        (m) => m.LoginPageComponent
-                    ),
+                    import('./pages/login/login-page.component').then((m) => m.LoginPageComponent),
             },
             {
                 path: 'auth/callback',
                 loadComponent: () =>
                     import('./pages/auth/auth-callback/auth-callback-page.component').then(
-                        (m) => m.AuthCallbackPageComponent
+                        (m) => m.AuthCallbackPageComponent,
                     ),
             },
             {
                 path: 'auth/complete-profile',
                 loadComponent: () =>
                     import('./pages/auth/complete-profile/complete-profile-page.component').then(
-                        (m) => m.CompleteProfilePageComponent
+                        (m) => m.CompleteProfilePageComponent,
                     ),
                 canActivate: [oauthCompleteProfileGuard],
             },
@@ -195,14 +203,14 @@ export const routes: Routes = [
                 path: 'email-confirmed',
                 loadComponent: () =>
                     import('./pages/auth/email-confirmed/email-confirmed-page.component').then(
-                        (m) => m.EmailConfirmedPageComponent
+                        (m) => m.EmailConfirmedPageComponent,
                     ),
             },
             {
                 path: 'email-confirmation-invalid',
                 loadComponent: () =>
                     import('./pages/auth/email-confirmation-invalid/email-confirmation-invalid-page.component').then(
-                        (m) => m.EmailConfirmationInvalidPageComponent
+                        (m) => m.EmailConfirmationInvalidPageComponent,
                     ),
             },
             // Technical error page - no guard required
@@ -210,7 +218,7 @@ export const routes: Routes = [
                 path: 'forbidden',
                 loadComponent: () =>
                     import('./pages/forbidden/forbidden-page.component').then(
-                        (m) => m.ForbiddenPageComponent
+                        (m) => m.ForbiddenPageComponent,
                     ),
             },
         ],
@@ -225,22 +233,39 @@ export const routes: Routes = [
                 path: '',
                 loadComponent: () =>
                     import('./pages/landing/landing-page.component').then(
-                        (m) => m.LandingPageComponent
+                        (m) => m.LandingPageComponent,
                     ),
             },
             {
                 path: 'explore',
                 loadComponent: () =>
                     import('./pages/explore/explore-page.component').then(
-                        (m) => m.ExplorePageComponent
+                        (m) => m.ExplorePageComponent,
                     ),
+            },
+            {
+                path: 'pricing',
+                loadComponent: () =>
+                    import('./pages/pricing/pricing-page').then((m) => m.PricingPageComponent),
+            },
+            {
+                path: 'checkout',
+                loadComponent: () =>
+                    import('./pages/checkout/checkout-page').then((m) => m.CheckoutPageComponent),
+            },
+            {
+                path: 'legal/subscription',
+                loadComponent: () =>
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
+                data: {
+                    page: 'subscription',
+                    title: 'Regulamin subskrypcji',
+                },
             },
             {
                 path: 'legal/terms',
                 loadComponent: () =>
-                    import('./pages/legal/legal-page.component').then(
-                        (m) => m.LegalPageComponent
-                    ),
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
                 data: {
                     page: 'terms',
                     title: 'Regulamin Serwisu',
@@ -249,9 +274,7 @@ export const routes: Routes = [
             {
                 path: 'legal/privacy',
                 loadComponent: () =>
-                    import('./pages/legal/legal-page.component').then(
-                        (m) => m.LegalPageComponent
-                    ),
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
                 data: {
                     page: 'privacy',
                     title: 'Polityka prywatności',
@@ -260,9 +283,7 @@ export const routes: Routes = [
             {
                 path: 'legal/publisher',
                 loadComponent: () =>
-                    import('./pages/legal/legal-page.component').then(
-                        (m) => m.LegalPageComponent
-                    ),
+                    import('./pages/legal/legal-page.component').then((m) => m.LegalPageComponent),
                 data: {
                     page: 'publisher',
                     title: 'Wydawca serwisu',
@@ -273,7 +294,7 @@ export const routes: Routes = [
                 matcher: exploreRecipeIdSlugMatcher,
                 loadComponent: () =>
                     import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
-                        (m) => m.ExploreRecipeDetailPageComponent
+                        (m) => m.ExploreRecipeDetailPageComponent,
                     ),
                 data: { urlPrefix: 'explore/recipes' },
             },
@@ -282,7 +303,7 @@ export const routes: Routes = [
                 matcher: exploreRecipeIdOnlyMatcher,
                 loadComponent: () =>
                     import('./pages/recipes/recipe-url-normalization/recipe-url-normalization-page.component').then(
-                        (m) => m.RecipeUrlNormalizationPageComponent
+                        (m) => m.RecipeUrlNormalizationPageComponent,
                     ),
                 data: { context: 'public', urlPrefix: 'explore/recipes' },
             },
@@ -339,29 +360,27 @@ export const routes: Routes = [
                 path: 'register',
                 loadComponent: () =>
                     import('./pages/register/register-page.component').then(
-                        (m) => m.RegisterPageComponent
+                        (m) => m.RegisterPageComponent,
                     ),
             },
             {
                 path: 'register/verify-sent',
                 loadComponent: () =>
                     import('./pages/auth/register-verify-sent/register-verify-sent-page.component').then(
-                        (m) => m.RegisterVerifySentPageComponent
+                        (m) => m.RegisterVerifySentPageComponent,
                     ),
             },
             {
                 path: 'login',
                 loadComponent: () =>
-                    import('./pages/login/login-page.component').then(
-                        (m) => m.LoginPageComponent
-                    ),
+                    import('./pages/login/login-page.component').then((m) => m.LoginPageComponent),
             },
             // Email verification routes - dostępne również dla gości
             {
                 path: 'auth/callback',
                 loadComponent: () =>
                     import('./pages/auth/auth-callback/auth-callback-page.component').then(
-                        (m) => m.AuthCallbackPageComponent
+                        (m) => m.AuthCallbackPageComponent,
                     ),
             },
             {
@@ -373,14 +392,14 @@ export const routes: Routes = [
                 path: 'email-confirmed',
                 loadComponent: () =>
                     import('./pages/auth/email-confirmed/email-confirmed-page.component').then(
-                        (m) => m.EmailConfirmedPageComponent
+                        (m) => m.EmailConfirmedPageComponent,
                     ),
             },
             {
                 path: 'email-confirmation-invalid',
                 loadComponent: () =>
                     import('./pages/auth/email-confirmation-invalid/email-confirmation-invalid-page.component').then(
-                        (m) => m.EmailConfirmationInvalidPageComponent
+                        (m) => m.EmailConfirmationInvalidPageComponent,
                     ),
             },
             // Technical error page - no guard required
@@ -388,7 +407,7 @@ export const routes: Routes = [
                 path: 'forbidden',
                 loadComponent: () =>
                     import('./pages/forbidden/forbidden-page.component').then(
-                        (m) => m.ForbiddenPageComponent
+                        (m) => m.ForbiddenPageComponent,
                     ),
             },
         ],
