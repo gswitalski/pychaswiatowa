@@ -9,6 +9,7 @@ export type ErrorCode =
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'CONFLICT'
+    | 'AI_CREDITS_EXHAUSTED'
     | 'PAYLOAD_TOO_LARGE'
     | 'UNPROCESSABLE_ENTITY'
     | 'TOO_MANY_REQUESTS'
@@ -40,6 +41,7 @@ export class ApplicationError extends Error {
             UNAUTHORIZED: 401,
             FORBIDDEN: 403,
             CONFLICT: 409,
+            AI_CREDITS_EXHAUSTED: 402,
             PAYLOAD_TOO_LARGE: 413,
             UNPROCESSABLE_ENTITY: 422,
             TOO_MANY_REQUESTS: 429,
@@ -52,7 +54,7 @@ export class ApplicationError extends Error {
     /**
      * Creates a JSON-serializable error response object.
      */
-    toJSON(): { code: ErrorCode; message: string } {
+    toJSON(): Record<string, unknown> {
         return {
             code: this.code,
             message: this.message,

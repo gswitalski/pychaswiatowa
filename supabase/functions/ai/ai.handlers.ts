@@ -11,6 +11,7 @@ import { logger } from '../_shared/logger.ts';
 import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
 import { checkAiImageRateLimitWithStorage } from '../_shared/rate-limit.ts';
 import { generateRecipeDraft, generateRecipeImage, generateNormalizedIngredients } from './ai.service.ts';
+import { handleGetAiCredits } from './ai-credits.handlers.ts';
 import {
     AiNormalizedIngredientsRequestSchema,
     AiNormalizedIngredientsResponseDto,
@@ -896,6 +897,7 @@ async function handlePostAiRecipesNormalizedIngredients(req: Request): Promise<R
  * Handles all AI-related endpoints with URL pattern matching.
  *
  * Supported routes:
+ * - GET /ai/credits - Return the authenticated user's AI credit balance
  * - POST /ai/recipes/draft - Generate recipe draft from text or image
  * - POST /ai/recipes/image - Generate preview image of a recipe dish (premium)
  * - POST /ai/recipes/normalized-ingredients - Normalize ingredients for shopping lists
@@ -905,6 +907,14 @@ export async function aiRouter(req: Request): Promise<Response> {
     const path = getPathFromUrl(req.url);
 
     logger.debug('Routing AI request', { method, path });
+
+    // Route: GET /ai/credits
+    if (path === '/credits' || path === '/credits/') {
+        if (method === 'GET') {
+            return handleGetAiCredits(req);
+        }
+        return createMethodNotAllowedResponse(['GET']);
+    }
 
     // Route: POST /ai/recipes/normalized-ingredients (check first - most specific path)
     if (path === '/recipes/normalized-ingredients' || path === '/recipes/normalized-ingredients/') {

@@ -12,12 +12,25 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 <new_requirements>
 
+### PS-64: Model danych i egzekwowanie limitów kredytów AI
+
+**Opis:**
+Jako system, chcę przechowywać i egzekwować limity kredytów AI per użytkownik, aby kontrolować koszty infrastruktury i umożliwić model freemium (1–3 udane importy lifetime dla Free, miesięczna pula dla Premium).
+
+**Kryteria akceptacji:**
+- [ ] Nowa tabela lub kolumny w bazie danych przechowują: liczbę dostępnych kredytów AI (draft, obraz), zużyte kredyty, datę ostatniego resetu (Premium), typ limitu (lifetime dla Free, miesięczny dla Premium).
+- [ ] Endpoint `/ai/recipes/draft` i `/ai/recipes/image` weryfikują stan kredytów przed wykonaniem wywołania AI.
+- [ ] Przy braku kredytów zwracany jest status `402 Payment Required` z kodem błędu `AI_CREDITS_EXHAUSTED`.
+- [ ] Zużycie kredytu jest odejmowane wyłącznie po pomyślnym zakończeniu wywołania AI (liczy się udany import).
+- [ ] Worker normalizacji składników NIE zużywa puli kredytów UI (osobna pula wewnętrzna).
+- [ ] Dla użytkownika Premium: kredyty odnawiają się miesięcznie w dacie pierwszej płatności.
+- [ ] RLS oraz polityki Supabase chronią dane kredytów przed odczytem/modyfikacją przez innych użytkowników.
 
 </new_requirements>
 
 3. Lista zmian i nowych funkcjonalności w API
 <api_definition>
-
+@docs\results\new-features\ai-credits\PS-64-ai-credits-api-plan.md
 </api_definition>
 
 

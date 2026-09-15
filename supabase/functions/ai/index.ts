@@ -3,6 +3,7 @@
  * Main entry point for the /ai endpoint.
  *
  * Supported endpoints:
+ * - GET /functions/v1/ai/credits - Get the current user's AI credit balance
  * - POST /functions/v1/ai/recipes/draft - Generate recipe draft from text or image using AI
  * - POST /functions/v1/ai/recipes/image - Generate preview image of a recipe dish (premium feature)
  * - POST /functions/v1/ai/recipes/normalized-ingredients - Normalize ingredients for shopping lists
@@ -17,7 +18,7 @@ import { logger } from '../_shared/logger.ts';
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type, apikey, x-client-info',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 /**

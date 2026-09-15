@@ -557,6 +557,93 @@ export interface GlobalSearchResponseDto {
  */
 export type AppRole = 'user' | 'premium' | 'admin';
 
+// #region --- AI Credits ---
+
+/**
+ * Type of AI credit limit assigned to a user.
+ */
+export type AiCreditLimitType = 'lifetime' | 'monthly' | 'unlimited';
+
+/**
+ * Balance of a single AI credit type.
+ * Null values represent unlimited credits.
+ */
+export interface AiCreditBalanceDto {
+    total: number | null;
+    used: number | null;
+    remaining: number | null;
+}
+
+/**
+ * DTO for GET /ai/credits endpoint response.
+ */
+export interface AiCreditsResponseDto {
+    limit_type: AiCreditLimitType;
+    draft: AiCreditBalanceDto;
+    image: AiCreditBalanceDto;
+    next_reset_at: string | null;
+}
+
+/**
+ * Error DTO returned when an AI credit pool is exhausted.
+ */
+export interface AiCreditsExhaustedErrorDto {
+    error: 'AI_CREDITS_EXHAUSTED';
+    message: string;
+    details: {
+        credit_type: 'draft' | 'image';
+        credits_used: number;
+        credits_total: number;
+        limit_type: AiCreditLimitType;
+        next_reset_at?: string | null;
+        upgrade_url: string;
+    };
+}
+
+/**
+ * Command model for PATCH /admin/users/{userId}/ai-credits.
+ */
+export interface UpdateAdminUserAiCreditsCommand {
+    draft_credits_total?: number;
+    draft_credits_used?: number;
+    image_credits_total?: number;
+    image_credits_used?: number;
+    limit_type?: 'lifetime' | 'monthly';
+    next_reset_at?: string | null;
+}
+
+/**
+ * DTO for PATCH /admin/users/{userId}/ai-credits endpoint response.
+ */
+export interface UpdateAdminUserAiCreditsResponseDto {
+    user_id: string;
+    draft: AiCreditBalanceDto;
+    image: AiCreditBalanceDto;
+    limit_type: AiCreditLimitType;
+    next_reset_at: string | null;
+    updated_at: string;
+}
+
+/**
+ * DTO for POST /internal/ai-credits/monthly-reset endpoint response.
+ */
+export interface AiCreditsMonthlyResetResponseDto {
+    reset_count: number;
+    processed_at: string;
+}
+
+/**
+ * Compact AI credit balance included in the /me response.
+ */
+export interface MeAiCreditsDto {
+    draft_remaining: number | null;
+    image_remaining: number | null;
+    limit_type: AiCreditLimitType;
+    next_reset_at: string | null;
+}
+
+// #endregion
+
 /**
  * DTO for /me endpoint response.
  * Contains minimal user identity data for App Shell bootstrap.
@@ -565,6 +652,7 @@ export interface MeDto {
     id: string;
     username: string;
     app_role: AppRole;
+    ai_credits: MeAiCreditsDto | null;
 }
 
 /**

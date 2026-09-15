@@ -7,28 +7,25 @@ Oto dokumenty o projekcie, które musisz przeanalizować:
 </project_summary>
 
 <functionality_analysis>
-
-
-
+@docs\results\new-features\premium-users\analiza-funkcjonalnosci-premium-users.md
 </functionality_analysis>
 
 
 <user_story>
 
-### PS-63: Strona cennika (/pricing) z ofertą Premium
+### PS-64: Model danych i egzekwowanie limitów kredytów AI
 
 **Opis:**
-Jako odwiedzający aplikację (gość lub użytkownik Free), chcę zobaczyć przejrzystą stronę `/pricing` z porównaniem planów Free i Premium, aby podjąć świadomą decyzję o subskrypcji.
+Jako system, chcę przechowywać i egzekwować limity kredytów AI per użytkownik, aby kontrolować koszty infrastruktury i umożliwić model freemium (1–3 udane importy lifetime dla Free, miesięczna pula dla Premium).
 
 **Kryteria akceptacji:**
-- [ ] Strona `/pricing` jest publicznie dostępna (bez logowania).
-- [ ] Tabela porównawcza zawiera plany Free i Premium (miesięczny i roczny).
-- [ ] Plan roczny jest wyróżniony jako domyślny/rekomendowany, z przeliczeniem na koszt miesięczny.
-- [ ] Wymienione są korzyści Premium: import URL/zdjęcie, planer, zaawansowane zakupy, brak reklam, pula AI, konto rodzinne.
-- [ ] Widoczne są ramy cenowe (orientacyjne PLN B2C) oraz informacja o 7-dniowym trialu.
-- [ ] CTA „Wybierz Premium" przekierowuje zalogowanego użytkownika do checkoutu, a niezalogowanego — do rejestracji.
-- [ ] Strona zawiera link do regulaminu subskrypcji.
-- [ ] Strona jest responsywna (desktop-first, mobile-friendly).
+- [ ] Nowa tabela lub kolumny w bazie danych przechowują: liczbę dostępnych kredytów AI (draft, obraz), zużyte kredyty, datę ostatniego resetu (Premium), typ limitu (lifetime dla Free, miesięczny dla Premium).
+- [ ] Endpoint `/ai/recipes/draft` i `/ai/recipes/image` weryfikują stan kredytów przed wykonaniem wywołania AI.
+- [ ] Przy braku kredytów zwracany jest status `402 Payment Required` z kodem błędu `AI_CREDITS_EXHAUSTED`.
+- [ ] Zużycie kredytu jest odejmowane wyłącznie po pomyślnym zakończeniu wywołania AI (liczy się udany import).
+- [ ] Worker normalizacji składników NIE zużywa puli kredytów UI (osobna pula wewnętrzna).
+- [ ] Dla użytkownika Premium: kredyty odnawiają się miesięcznie w dacie pierwszej płatności.
+- [ ] RLS oraz polityki Supabase chronią dane kredytów przed odczytem/modyfikacją przez innych użytkowników.
 
 
 </user_story>

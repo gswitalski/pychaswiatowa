@@ -34,6 +34,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_rate_limits: {
+        Row: {
+          count: number
+          created_at: string
+          key: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          key: string
+          updated_at?: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          key?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -167,18 +194,27 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          marketing_consent: boolean
+          marketing_consent_text_version: string | null
+          marketing_consent_updated_at: string | null
           updated_at: string
           username: string | null
         }
         Insert: {
           created_at?: string
           id: string
+          marketing_consent?: boolean
+          marketing_consent_text_version?: string | null
+          marketing_consent_updated_at?: string | null
           updated_at?: string
           username?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          marketing_consent?: boolean
+          marketing_consent_text_version?: string | null
+          marketing_consent_updated_at?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -388,6 +424,8 @@ export type Database = {
           is_owned: boolean
           kind: string
           name: string | null
+          recipe_id: number | null
+          recipe_name: string | null
           text: string | null
           unit: string | null
           updated_at: string
@@ -400,6 +438,8 @@ export type Database = {
           is_owned?: boolean
           kind: string
           name?: string | null
+          recipe_id?: number | null
+          recipe_name?: string | null
           text?: string | null
           unit?: string | null
           updated_at?: string
@@ -412,6 +452,8 @@ export type Database = {
           is_owned?: boolean
           kind?: string
           name?: string | null
+          recipe_id?: number | null
+          recipe_name?: string | null
           text?: string | null
           unit?: string | null
           updated_at?: string
@@ -485,6 +527,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_ai_credits: {
+        Row: {
+          created_at: string
+          credits_activated_at: string
+          draft_credits_total: number
+          draft_credits_used: number
+          id: string
+          image_credits_total: number
+          image_credits_used: number
+          limit_type: Database["public"]["Enums"]["ai_credit_limit_type"]
+          next_reset_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_activated_at?: string
+          draft_credits_total?: number
+          draft_credits_used?: number
+          id?: string
+          image_credits_total?: number
+          image_credits_used?: number
+          limit_type?: Database["public"]["Enums"]["ai_credit_limit_type"]
+          next_reset_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_activated_at?: string
+          draft_credits_total?: number
+          draft_credits_used?: number
+          id?: string
+          image_credits_total?: number
+          image_credits_used?: number
+          limit_type?: Database["public"]["Enums"]["ai_credit_limit_type"]
+          next_reset_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       recipe_details: {
@@ -535,6 +619,40 @@ export type Database = {
         Args: { p_recipe_id: number }
         Returns: Json
       }
+      admin_get_users_page: {
+        Args: {
+          p_page_number?: number
+          p_page_size?: number
+          p_sort_by?: string
+          p_sort_dir?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_sign_in_at: string
+          login: string
+          recipes_count: number
+          role: string
+          total_items: number
+          username: string
+        }[]
+      }
+      admin_update_user_role: {
+        Args: {
+          p_actor_user_id: string
+          p_new_role: string
+          p_target_user_id: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_sign_in_at: string
+          login: string
+          recipes_count: number
+          role: string
+          username: string
+        }[]
+      }
       ai_rate_limit_hit: {
         Args: {
           p_key: string
@@ -549,15 +667,52 @@ export type Database = {
           window_start: string
         }[]
       }
-      clear_plan_and_update_shopping_list: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
       claim_normalized_ingredients_jobs: {
         Args: { p_limit?: number }
         Returns: Json
       }
+      clear_plan_and_update_shopping_list: { Args: never; Returns: Json }
       create_recipe_with_tags:
+        | {
+            Args: {
+              p_category_id: number
+              p_description: string
+              p_ingredients_raw: string
+              p_name: string
+              p_steps_raw: string
+              p_tag_names: string[]
+              p_user_id: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_category_id: number
+              p_description: string
+              p_ingredients_raw: string
+              p_name: string
+              p_steps_raw: string
+              p_tag_names: string[]
+              p_user_id: string
+              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_category_id: number
+              p_description: string
+              p_ingredients_raw: string
+              p_is_termorobot?: boolean
+              p_name: string
+              p_servings?: number
+              p_steps_raw: string
+              p_tag_names: string[]
+              p_user_id: string
+              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
+            }
+            Returns: number
+          }
         | {
             Args: {
               p_category_id: number
@@ -613,46 +768,6 @@ export type Database = {
               p_total_time_minutes?: number
               p_user_id: string
               p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_description: string
-              p_ingredients_raw: string
-              p_is_termorobot?: boolean
-              p_name: string
-              p_servings?: number
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_description: string
-              p_ingredients_raw: string
-              p_name: string
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_description: string
-              p_ingredients_raw: string
-              p_name: string
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_user_id: string
             }
             Returns: number
           }
@@ -725,11 +840,65 @@ export type Database = {
       }
       jsonb_to_text: { Args: { input_jsonb: Json }; Returns: string }
       parse_text_to_jsonb: { Args: { input_text: string }; Returns: Json }
+      refund_ai_credit: {
+        Args: { p_credit_type: string; p_user_id: string }
+        Returns: boolean
+      }
       remove_recipe_from_plan_and_update_shopping_list: {
         Args: { p_recipe_id: number }
         Returns: Json
       }
+      reserve_ai_credit: {
+        Args: {
+          p_credit_type: string
+          p_free_draft_credits?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      resolve_signup_marketing_consent: {
+        Args: { p_raw_user_meta_data: Json }
+        Returns: {
+          marketing_consent: boolean
+          marketing_consent_text_version: string
+          marketing_consent_updated_at: string
+        }[]
+      }
+      supported_marketing_consent_text_versions: {
+        Args: never
+        Returns: string[]
+      }
       update_recipe_with_tags:
+        | {
+            Args: {
+              p_category_id?: number
+              p_description?: string
+              p_ingredients_raw?: string
+              p_name?: string
+              p_recipe_id: number
+              p_steps_raw?: string
+              p_tag_names?: string[]
+              p_update_tags?: boolean
+              p_user_id: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_category_id?: number
+              p_description?: string
+              p_image_path?: string
+              p_ingredients_raw?: string
+              p_name?: string
+              p_recipe_id: number
+              p_steps_raw?: string
+              p_tag_names?: string[]
+              p_update_tags?: boolean
+              p_user_id: string
+              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
+            }
+            Returns: number
+          }
         | {
             Args: {
               p_category_id?: number
@@ -772,27 +941,86 @@ export type Database = {
             Args: {
               p_category_id?: number
               p_description?: string
+              p_image_path?: string
               p_ingredients_raw?: string
+              p_is_termorobot?: boolean
               p_name?: string
+              p_prep_time_minutes?: number
               p_recipe_id: number
+              p_servings?: number
               p_steps_raw?: string
               p_tag_names?: string[]
+              p_total_time_minutes?: number
+              p_update_category?: boolean
+              p_update_is_termorobot?: boolean
+              p_update_prep_time?: boolean
+              p_update_servings?: boolean
               p_update_tags?: boolean
+              p_update_total_time?: boolean
               p_user_id: string
+              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
             }
             Returns: number
           }
         | {
             Args: {
               p_category_id?: number
+              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
               p_description?: string
+              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
+              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
               p_image_path?: string
               p_ingredients_raw?: string
+              p_is_termorobot?: boolean
               p_name?: string
+              p_prep_time_minutes?: number
               p_recipe_id: number
+              p_servings?: number
               p_steps_raw?: string
               p_tag_names?: string[]
+              p_total_time_minutes?: number
+              p_update_category?: boolean
+              p_update_cuisine?: boolean
+              p_update_diet_type?: boolean
+              p_update_difficulty?: boolean
+              p_update_is_termorobot?: boolean
+              p_update_prep_time?: boolean
+              p_update_servings?: boolean
               p_update_tags?: boolean
+              p_update_total_time?: boolean
+              p_user_id: string
+              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_category_id?: number
+              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
+              p_description?: string
+              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
+              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
+              p_image_path?: string
+              p_ingredients_raw?: string
+              p_is_grill?: boolean
+              p_is_termorobot?: boolean
+              p_name?: string
+              p_prep_time_minutes?: number
+              p_recipe_id: number
+              p_servings?: number
+              p_steps_raw?: string
+              p_tag_names?: string[]
+              p_total_time_minutes?: number
+              p_update_category?: boolean
+              p_update_cuisine?: boolean
+              p_update_diet_type?: boolean
+              p_update_difficulty?: boolean
+              p_update_is_grill?: boolean
+              p_update_is_termorobot?: boolean
+              p_update_prep_time?: boolean
+              p_update_servings?: boolean
+              p_update_tags?: boolean
+              p_update_total_time?: boolean
               p_user_id: string
               p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
             }
@@ -833,97 +1061,9 @@ export type Database = {
             }
             Returns: number
           }
-        | {
-            Args: {
-              p_category_id?: number
-              p_description?: string
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_prep_time_minutes?: number
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_total_time_minutes?: number
-              p_update_category?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_prep_time?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_update_total_time?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description?: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_prep_time_minutes?: number
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_total_time_minutes?: number
-              p_update_category?: boolean
-              p_update_cuisine?: boolean
-              p_update_diet_type?: boolean
-              p_update_difficulty?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_prep_time?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_update_total_time?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description?: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_grill?: boolean
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_prep_time_minutes?: number
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_total_time_minutes?: number
-              p_update_category?: boolean
-              p_update_cuisine?: boolean
-              p_update_diet_type?: boolean
-              p_update_difficulty?: boolean
-              p_update_is_grill?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_prep_time?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_update_total_time?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
     }
     Enums: {
+      ai_credit_limit_type: "lifetime" | "monthly"
       recipe_cuisine:
         | "POLISH"
         | "ASIAN"
@@ -1083,6 +1223,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      ai_credit_limit_type: ["lifetime", "monthly"],
       recipe_cuisine: [
         "POLISH",
         "ASIAN",
