@@ -25,14 +25,8 @@ interface GetAiCreditsParams {
     appRole: AppRole;
 }
 
-const AI_CREDITS_SELECT_COLUMNS = [
-    'draft_credits_total',
-    'draft_credits_used',
-    'image_credits_total',
-    'image_credits_used',
-    'limit_type',
-    'next_reset_at',
-].join(', ');
+const AI_CREDITS_SELECT_COLUMNS =
+    'draft_credits_total, draft_credits_used, image_credits_total, image_credits_used, limit_type, next_reset_at';
 
 function createUnlimitedResponse(): AiCreditsResponseDto {
     const unlimitedBalance: AiCreditBalanceDto = {

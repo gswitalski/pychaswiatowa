@@ -21,7 +21,7 @@ function createSuccessResponse<T>(data: T, status = 200): Response {
 
 /**
  * Handles GET /me request.
- * Returns the authenticated user's minimal profile data (id, username, app_role).
+ * Returns the authenticated user's profile and current AI credit summary.
  *
  * @param req - The incoming HTTP request
  * @returns Response with MeDto on success, or error response

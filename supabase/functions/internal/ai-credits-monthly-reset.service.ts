@@ -1,6 +1,7 @@
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { getSupabaseServiceClient } from '../_shared/supabase-client.ts';
+import type { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 
 export interface AiCreditsMonthlyResetResponseDto {
     reset_count: number;
@@ -10,8 +11,10 @@ export interface AiCreditsMonthlyResetResponseDto {
 /**
  * Resets every due monthly AI credit balance in one database operation.
  */
-export async function runMonthlyAiCreditsReset(): Promise<AiCreditsMonthlyResetResponseDto> {
-    const supabaseAdmin = getSupabaseServiceClient();
+export async function runMonthlyAiCreditsReset(
+    params: { supabaseAdmin?: TypedSupabaseClient } = {},
+): Promise<AiCreditsMonthlyResetResponseDto> {
+    const supabaseAdmin = params.supabaseAdmin ?? getSupabaseServiceClient();
     const { data, error } = await supabaseAdmin.rpc('run_ai_credits_monthly_reset');
 
     if (error) {
@@ -33,6 +36,9 @@ export async function runMonthlyAiCreditsReset(): Promise<AiCreditsMonthlyResetR
         processed_at: new Date().toISOString(),
     };
 
-    logger.info('Monthly AI credits reset completed', result);
+    logger.info('Monthly AI credits reset completed', {
+        resetCount: result.reset_count,
+        processedAt: result.processed_at,
+    });
     return result;
 }

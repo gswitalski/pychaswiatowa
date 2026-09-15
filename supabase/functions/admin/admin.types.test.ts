@@ -4,6 +4,7 @@ import {
     validateAdminUsersQuery,
     validateAdminUserRoleParams,
     AdminUserRoleBodySchema,
+    AdminUserAiCreditsBodySchema,
 } from './admin.types.ts';
 
 function createSearchParams(raw: string): URLSearchParams {
@@ -90,5 +91,33 @@ Deno.test('AdminUserRoleBodySchema: akceptuje dozwolone role', () => {
 
 Deno.test('AdminUserRoleBodySchema: odrzuca nieprawidlowa role', () => {
     const result = AdminUserRoleBodySchema.safeParse({ app_role: 'superadmin' });
+    assertEquals(result.success, false);
+});
+
+Deno.test('AdminUserAiCreditsBodySchema: akceptuje poprawną korektę', () => {
+    const result = AdminUserAiCreditsBodySchema.safeParse({
+        draft_credits_total: 10,
+        draft_credits_used: 2,
+        limit_type: 'monthly',
+        next_reset_at: '2026-10-15T00:00:00.000Z',
+    });
+
+    assertEquals(result.success, true);
+});
+
+Deno.test('AdminUserAiCreditsBodySchema: odrzuca used większe niż total', () => {
+    const result = AdminUserAiCreditsBodySchema.safeParse({
+        draft_credits_total: 1,
+        draft_credits_used: 2,
+    });
+
+    assertEquals(result.success, false);
+});
+
+Deno.test('AdminUserAiCreditsBodySchema: wymaga daty resetu dla monthly', () => {
+    const result = AdminUserAiCreditsBodySchema.safeParse({
+        limit_type: 'monthly',
+    });
+
     assertEquals(result.success, false);
 });
