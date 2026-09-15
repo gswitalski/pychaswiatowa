@@ -864,6 +864,7 @@ export type Database = {
           marketing_consent_updated_at: string
         }[]
       }
+      run_ai_credits_monthly_reset: { Args: never; Returns: number }
       supported_marketing_consent_text_versions: {
         Args: never
         Returns: string[]

@@ -1,6 +1,7 @@
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { processNormalizedIngredientsJobs } from './normalized-ingredients-worker.service.ts';
+import { handlePostMonthlyAiCreditsReset } from './ai-credits-monthly-reset.handlers.ts';
 
 // #region --- Configuration ---
 
@@ -179,6 +180,31 @@ export async function internalRouter(req: Request): Promise<Response> {
     const path = url.pathname;
 
     logger.info('Routing internal request', { path, method: req.method });
+
+    // Match POST /internal/ai-credits/monthly-reset
+    const monthlyAiCreditsResetMatch = path.match(
+        /^\/internal\/ai-credits\/monthly-reset\/?$/
+    );
+
+    if (monthlyAiCreditsResetMatch) {
+        if (req.method === 'POST') {
+            return await handlePostMonthlyAiCreditsReset(req);
+        }
+
+        return new Response(
+            JSON.stringify({
+                code: 'METHOD_NOT_ALLOWED',
+                message: `Method ${req.method} not allowed`,
+            }),
+            {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Allow': 'POST',
+                },
+            },
+        );
+    }
 
     // Match POST /internal/workers/normalized-ingredients/run
     const normalizedIngredientsWorkerMatch = path.match(

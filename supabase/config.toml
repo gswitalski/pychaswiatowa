@@ -341,6 +341,10 @@ verify_jwt = false
 [functions.public]
 verify_jwt = false
 
+# Internal endpoints perform dedicated secret verification in their handlers.
+[functions.internal]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54337

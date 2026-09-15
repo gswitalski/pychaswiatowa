@@ -5,11 +5,20 @@
  */
 
 import { z } from 'npm:zod@3.22.4';
-import { getAuthenticatedContext, getSupabaseClientWithAuth } from '../_shared/supabase-client.ts';
+import {
+    createServiceRoleClient,
+    getAuthenticatedContext,
+    getSupabaseClientWithAuth,
+} from '../_shared/supabase-client.ts';
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
 import { checkAiImageRateLimitWithStorage } from '../_shared/rate-limit.ts';
+import {
+    checkAndDeductCredits,
+    deductCreditAfterSuccess,
+    refundCreditAfterFailure,
+} from '../_shared/ai-credits.ts';
 import { generateRecipeDraft, generateRecipeImage, generateNormalizedIngredients } from './ai.service.ts';
 import { handleGetAiCredits } from './ai-credits.handlers.ts';
 import {
@@ -238,19 +247,11 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
             userId: user.id,
         });
 
-        // Step 2: Premium gating - verify app_role
+        // Step 2: Read the application role used by credit enforcement
         const token = extractAuthToken(req);
         const jwtPayload = extractAndValidateAppRole(token);
 
-        if (jwtPayload.app_role === 'user') {
-            logger.warn('Non-premium user attempted to access recipe draft generation', {
-                userId: user.id,
-                appRole: jwtPayload.app_role,
-            });
-            return createForbiddenPremiumResponse();
-        }
-
-        logger.info('Premium access verified', {
+        logger.info('AI recipe draft access verified', {
             userId: user.id,
             appRole: jwtPayload.app_role,
         });
@@ -323,20 +324,45 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
             });
         }
 
-        // Call service to generate recipe draft
-        const result = await generateRecipeDraft({
+        const supabaseAdmin = createServiceRoleClient();
+        await checkAndDeductCredits({
+            supabaseAdmin,
             userId: user.id,
-            source: requestData.source,
-            text: inputText,
-            imageBytes,
-            imageMimeType,
-            language: requestData.language,
+            creditType: 'draft',
+            appRole: jwtPayload.app_role,
         });
+
+        let result: Awaited<ReturnType<typeof generateRecipeDraft>>;
+        try {
+            result = await generateRecipeDraft({
+                userId: user.id,
+                source: requestData.source,
+                text: inputText,
+                imageBytes,
+                imageMimeType,
+                language: requestData.language,
+            });
+        } catch (error) {
+            await refundCreditAfterFailure({
+                supabaseAdmin,
+                userId: user.id,
+                creditType: 'draft',
+                appRole: jwtPayload.app_role,
+            });
+            throw error;
+        }
 
         const duration = Date.now() - startTime;
 
         // Handle service result
         if (!result.success) {
+            await refundCreditAfterFailure({
+                supabaseAdmin,
+                userId: user.id,
+                creditType: 'draft',
+                appRole: jwtPayload.app_role,
+            });
+
             logger.warn('Recipe draft generation failed - not a valid single recipe', {
                 userId: user.id,
                 reasons: result.reasons,
@@ -347,6 +373,12 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 reasons: result.reasons,
             });
         }
+
+        deductCreditAfterSuccess({
+            userId: user.id,
+            creditType: 'draft',
+            appRole: jwtPayload.app_role,
+        });
 
         logger.info('Recipe draft generated successfully', {
             userId: user.id,
@@ -666,20 +698,46 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
             }
         }
 
-        // Step 9: Call service to generate recipe image
-        const result = await generateRecipeImage({
+        const supabaseAdmin = createServiceRoleClient();
+        await checkAndDeductCredits({
+            supabaseAdmin,
             userId: user.id,
-            recipe: requestData.recipe,
-            language: requestData.language,
-            promptHint: requestData.prompt_hint,
-            resolvedMode,
-            referenceImage: referenceImageData,
+            creditType: 'image',
+            appRole: jwtPayload.app_role,
         });
+
+        // Step 9: Call service to generate recipe image
+        let result: Awaited<ReturnType<typeof generateRecipeImage>>;
+        try {
+            result = await generateRecipeImage({
+                userId: user.id,
+                recipe: requestData.recipe,
+                language: requestData.language,
+                promptHint: requestData.prompt_hint,
+                resolvedMode,
+                referenceImage: referenceImageData,
+            });
+        } catch (error) {
+            await refundCreditAfterFailure({
+                supabaseAdmin,
+                userId: user.id,
+                creditType: 'image',
+                appRole: jwtPayload.app_role,
+            });
+            throw error;
+        }
 
         const duration = Date.now() - startTime;
 
         // Step 10: Handle service result
         if (!result.success) {
+            await refundCreditAfterFailure({
+                supabaseAdmin,
+                userId: user.id,
+                creditType: 'image',
+                appRole: jwtPayload.app_role,
+            });
+
             logger.warn('Recipe image generation failed - insufficient information', {
                 userId: user.id,
                 recipeId,
@@ -696,6 +754,12 @@ async function handlePostAiRecipesImage(req: Request): Promise<Response> {
         if (warnings.length > 0) {
             result.data.meta.warnings = [...warnings, ...result.data.meta.warnings];
         }
+
+        deductCreditAfterSuccess({
+            userId: user.id,
+            creditType: 'image',
+            appRole: jwtPayload.app_role,
+        });
 
         logger.info('Recipe image generated successfully', {
             userId: user.id,
