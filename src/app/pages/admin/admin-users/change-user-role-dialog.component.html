@@ -46,28 +46,44 @@
         } @else {
             <pych-admin-user-ai-credits-form
                 [userId]="editedUserId"
-                [initialCredits]="aiCredits()"
-                (saved)="onCreditsSaved($event)"
-                (userNotFound)="onCreditsUserNotFound()" />
+                [initialCredits]="aiCredits()" />
         }
     </div>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-    <button mat-button type="button" [disabled]="isSubmitting" (click)="onCancel()">
-        Anuluj
-    </button>
-    <button
-        mat-raised-button
-        color="primary"
-        type="button"
-        class="change-user-role-dialog__save"
-        [disabled]="isSaveDisabled"
-        (click)="onSubmit()">
-        @if (isSubmitting) {
-            <mat-spinner diameter="20" />
-        } @else {
-            Zapisz zmianę
+<mat-dialog-actions class="change-user-role-dialog__actions">
+    <div class="change-user-role-dialog__actions-left">
+        @if (
+            !creditsLoading() &&
+            !creditsLoadError() &&
+            aiCredits()?.limit_type !== 'unlimited'
+        ) {
+            <button
+                mat-stroked-button
+                type="button"
+                [disabled]="isSubmitting"
+                (click)="onResetCredits()">
+                Resetuj kredyty
+            </button>
         }
-    </button>
+    </div>
+
+    <div class="change-user-role-dialog__actions-right">
+        <button mat-button type="button" [disabled]="isSubmitting" (click)="onCancel()">
+            Anuluj
+        </button>
+        <button
+            mat-raised-button
+            color="primary"
+            type="button"
+            class="change-user-role-dialog__save"
+            [disabled]="isSaveDisabled"
+            (click)="onSubmit()">
+            @if (isSubmitting) {
+                <mat-spinner diameter="20" />
+            } @else {
+                Zapisz zmiany
+            }
+        </button>
+    </div>
 </mat-dialog-actions>

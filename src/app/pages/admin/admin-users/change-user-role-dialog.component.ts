@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    inject,
+    signal,
+    ViewChild,
+} from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -11,7 +17,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { finalize, Observable, take } from 'rxjs';
+import { catchError, finalize, forkJoin, map, Observable, of, take } from 'rxjs';
 import {
     AppRole,
     UpdateAdminUserAiCreditsResponseDto,
@@ -60,6 +66,9 @@ const ROLE_OPTIONS: readonly { value: AppRole; label: string }[] = [
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChangeUserRoleDialogComponent {
+    @ViewChild(AdminUserAiCreditsFormComponent)
+    private creditsForm?: AdminUserAiCreditsFormComponent;
+
     private readonly dialogRef = inject(MatDialogRef<ChangeUserRoleDialogComponent>);
     private readonly data = inject<ChangeUserRoleDialogData>(MAT_DIALOG_DATA);
     private readonly router = inject(Router);
@@ -69,6 +78,7 @@ export class ChangeUserRoleDialogComponent {
     readonly roleOptions = ROLE_OPTIONS;
     readonly currentRoleLabel: string;
     readonly editedUserId = this.data.user.id;
+    private savedRole = this.data.user.role;
     isSubmitting = false;
     submitError: string | null = null;
     readonly aiCredits = signal<UpdateAdminUserAiCreditsResponseDto | null>(null);
@@ -101,7 +111,11 @@ export class ChangeUserRoleDialogComponent {
             return true;
         }
 
-        return this.form.controls.appRole.value === this.data.user.role;
+        const roleChanged = this.form.controls.appRole.value !== this.savedRole;
+        const creditsChanged = this.creditsForm?.form.dirty ?? false;
+        const creditsInvalid = creditsChanged && (this.creditsForm?.form.invalid ?? false);
+
+        return (!roleChanged && !creditsChanged) || creditsInvalid;
     }
 
     onCancel(): void {
@@ -118,35 +132,88 @@ export class ChangeUserRoleDialogComponent {
         }
 
         const appRole = this.form.controls.appRole.value;
+        const roleChanged = appRole !== this.savedRole;
+        const creditsChanged = this.creditsForm?.form.dirty ?? false;
+
+        if (creditsChanged && !this.creditsForm?.validate()) {
+            return;
+        }
+
         this.submitError = null;
         this.isSubmitting = true;
         this.form.disable({ emitEvent: false });
+        this.creditsForm?.setSubmitting(true);
 
-        this.data
-            .updateUserRole(this.data.user.id, appRole)
+        const roleUpdate$ = roleChanged
+            ? this.data.updateUserRole(this.data.user.id, appRole).pipe(
+                  map((response) => ({ response, error: null })),
+                  catchError((error: Error & { status?: number }) =>
+                      of({ response: null, error })
+                  )
+              )
+            : of({ response: null, error: null });
+
+        const creditsUpdate$ = creditsChanged
+            ? this.adminApi
+                  .updateUserAiCredits(
+                      this.data.user.id,
+                      this.creditsForm!.createCommand()
+                  )
+                  .pipe(
+                      map((response) => ({ response, error: null })),
+                      catchError((error: Error & { status?: number }) =>
+                          of({ response: null, error })
+                      )
+                  )
+            : of({ response: null, error: null });
+
+        forkJoin({ role: roleUpdate$, credits: creditsUpdate$ })
             .pipe(
                 take(1),
                 finalize(() => {
                     this.isSubmitting = false;
+                    this.form.enable({ emitEvent: false });
+                    this.creditsForm?.setSubmitting(false);
                 })
             )
             .subscribe({
-                next: (response) => {
-                    this.dialogRef.close(response);
-                },
-                error: (error: Error & { status?: number }) => {
-                    this.form.enable({ emitEvent: false });
-                    this.handleSubmitError(error);
+                next: ({ role, credits }) => {
+                    if (role.response) {
+                        this.savedRole = appRole;
+                    }
+
+                    if (credits.response) {
+                        this.aiCredits.set(credits.response);
+                        this.creditsForm?.applySavedCredits(credits.response);
+                    }
+
+                    if (role.error) {
+                        this.handleSubmitError(role.error);
+                    }
+
+                    if (credits.error) {
+                        this.handleCreditsSubmitError(credits.error);
+                    }
+
+                    if (role.error || credits.error) {
+                        return;
+                    }
+
+                    this.dialogRef.close(role.response ?? undefined);
                 },
             });
     }
 
-    retryCreditsLoad(): void {
-        this.loadCredits();
+    onResetCredits(): void {
+        if (this.isSubmitting) {
+            return;
+        }
+
+        this.creditsForm?.resetCredits();
     }
 
-    onCreditsSaved(credits: UpdateAdminUserAiCreditsResponseDto): void {
-        this.aiCredits.set(credits);
+    retryCreditsLoad(): void {
+        this.loadCredits();
     }
 
     onCreditsUserNotFound(): void {
@@ -220,5 +287,33 @@ export class ChangeUserRoleDialogComponent {
 
         this.submitError =
             error.message || 'Nie udało się zapisać zmiany roli. Spróbuj ponownie później.';
+    }
+
+    private handleCreditsSubmitError(error: Error & { status?: number }): void {
+        if (error.status === 400) {
+            this.creditsForm?.setApiError(
+                error.message || 'Sprawdź poprawność wprowadzonych danych.'
+            );
+            return;
+        }
+
+        if (error.status === 403) {
+            this.snackBar.open('Brak uprawnień do edycji kredytów.', 'Zamknij', {
+                duration: 5000,
+            });
+            return;
+        }
+
+        if (error.status === 404) {
+            this.snackBar.open('Użytkownik nie istnieje.', 'Zamknij', {
+                duration: 5000,
+            });
+            this.onCreditsUserNotFound();
+            return;
+        }
+
+        this.creditsForm?.setApiError(
+            error.message || 'Nie udało się zapisać kredytów. Spróbuj ponownie.'
+        );
     }
 }

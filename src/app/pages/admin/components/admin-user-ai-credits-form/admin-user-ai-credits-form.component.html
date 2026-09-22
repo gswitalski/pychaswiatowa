@@ -6,7 +6,7 @@
     } @else if (isUnlimited()) {
         <p class="info-message">Administrator ma nielimitowany dostęp do funkcji AI.</p>
     } @else {
-        <form [formGroup]="form" (ngSubmit)="save()">
+        <form [formGroup]="form">
             <mat-form-field appearance="outline">
                 <mat-label>Typ limitu</mat-label>
                 <mat-select formControlName="limitType">
@@ -68,27 +68,6 @@
             @if (apiError()) {
                 <p class="error-message" role="alert">{{ apiError() }}</p>
             }
-
-            <div class="form-actions">
-                <button
-                    mat-stroked-button
-                    type="button"
-                    [disabled]="isSaving()"
-                    (click)="resetCredits()">
-                    Resetuj kredyty
-                </button>
-                <button
-                    mat-flat-button
-                    color="primary"
-                    type="submit"
-                    [disabled]="isSaving()">
-                    @if (isSaving()) {
-                        <mat-spinner diameter="20" />
-                    } @else {
-                        Zapisz
-                    }
-                </button>
-            </div>
         </form>
     }
 </section>

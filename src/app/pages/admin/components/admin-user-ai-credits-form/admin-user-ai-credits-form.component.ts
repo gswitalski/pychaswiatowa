@@ -2,9 +2,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     effect,
-    inject,
     input,
-    output,
     signal,
 } from '@angular/core';
 import {
@@ -15,15 +13,10 @@ import {
     ValidationErrors,
     Validators,
 } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { finalize, take } from 'rxjs';
 
-import { AdminApiService } from '../../../../core/services/admin-api.service';
 import {
     UpdateAdminUserAiCreditsCommand,
     UpdateAdminUserAiCreditsResponseDto,
@@ -84,10 +77,8 @@ function creditsValidator(control: AbstractControl): ValidationErrors | null {
     standalone: true,
     imports: [
         ReactiveFormsModule,
-        MatButtonModule,
         MatFormFieldModule,
         MatInputModule,
-        MatProgressSpinnerModule,
         MatSelectModule,
     ],
     templateUrl: './admin-user-ai-credits-form.component.html',
@@ -98,17 +89,10 @@ export class AdminUserAiCreditsFormComponent {
     readonly userId = input.required<string>();
     readonly initialCredits = input<UpdateAdminUserAiCreditsResponseDto | null>(null);
 
-    readonly saved = output<UpdateAdminUserAiCreditsResponseDto>();
-    readonly userNotFound = output<void>();
-
-    private readonly adminApi = inject(AdminApiService);
-    private readonly snackBar = inject(MatSnackBar);
-
-    protected readonly isSaving = signal(false);
     protected readonly apiError = signal<string | null>(null);
     protected readonly isUnlimited = signal(false);
 
-    protected readonly form = new FormGroup<AdminUserAiCreditsFormModel>(
+    readonly form = new FormGroup<AdminUserAiCreditsFormModel>(
         {
             limitType: new FormControl<EditableLimitType>('lifetime', {
                 nonNullable: true,
@@ -141,30 +125,27 @@ export class AdminUserAiCreditsFormComponent {
             this.isUnlimited.set(false);
             this.applyCredits(credits);
             this.form.enable({ emitEvent: false });
+            this.form.markAsPristine();
         });
     }
 
-    protected save(): void {
-        if (this.isSaving() || this.form.disabled) {
-            return;
-        }
-
+    validate(): boolean {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
-            return;
+            return false;
         }
 
         const userId = this.userId().trim();
         if (!userId) {
             this.apiError.set('Brak identyfikatora użytkownika.');
-            return;
+            return false;
         }
 
-        this.persist(userId, this.createCommand());
+        return true;
     }
 
-    protected resetCredits(): void {
-        if (this.isSaving() || this.form.disabled) {
+    resetCredits(): void {
+        if (this.form.disabled) {
             return;
         }
 
@@ -172,43 +153,10 @@ export class AdminUserAiCreditsFormComponent {
             draftUsed: 0,
             imageUsed: 0,
         });
-        this.save();
+        this.form.markAsDirty();
     }
 
-    private persist(
-        userId: string,
-        command: UpdateAdminUserAiCreditsCommand
-    ): void {
-        this.isSaving.set(true);
-        this.apiError.set(null);
-        this.form.disable({ emitEvent: false });
-
-        this.adminApi
-            .updateUserAiCredits(userId, command)
-            .pipe(
-                take(1),
-                finalize(() => {
-                    this.isSaving.set(false);
-                    if (!this.isUnlimited()) {
-                        this.form.enable({ emitEvent: false });
-                    }
-                })
-            )
-            .subscribe({
-                next: (response) => {
-                    this.applyCredits(response);
-                    this.saved.emit(response);
-                    this.snackBar.open('Kredyty AI zostały zapisane.', 'Zamknij', {
-                        duration: 3000,
-                    });
-                },
-                error: (error: Error & { status?: number }) => {
-                    this.handleApiError(error);
-                },
-            });
-    }
-
-    private createCommand(): UpdateAdminUserAiCreditsCommand {
+    createCommand(): UpdateAdminUserAiCreditsCommand {
         const value = this.form.getRawValue();
 
         return {
@@ -222,6 +170,27 @@ export class AdminUserAiCreditsFormComponent {
                     ? new Date(`${value.nextResetAt}T00:00:00`).toISOString()
                     : null,
         };
+    }
+
+    setSubmitting(isSubmitting: boolean): void {
+        if (isSubmitting) {
+            this.form.disable({ emitEvent: false });
+            return;
+        }
+
+        if (!this.isUnlimited()) {
+            this.form.enable({ emitEvent: false });
+        }
+    }
+
+    applySavedCredits(credits: UpdateAdminUserAiCreditsResponseDto): void {
+        this.applyCredits(credits);
+        this.form.markAsPristine();
+        this.apiError.set(null);
+    }
+
+    setApiError(message: string): void {
+        this.apiError.set(message);
     }
 
     private applyCredits(credits: UpdateAdminUserAiCreditsResponseDto): void {
@@ -245,32 +214,6 @@ export class AdminUserAiCreditsFormComponent {
         this.form.updateValueAndValidity({ emitEvent: false });
     }
 
-    private handleApiError(error: Error & { status?: number }): void {
-        if (error.status === 400) {
-            this.apiError.set(error.message || 'Sprawdź poprawność wprowadzonych danych.');
-            return;
-        }
-
-        if (error.status === 403) {
-            this.snackBar.open('Brak uprawnień do edycji kredytów.', 'Zamknij', {
-                duration: 5000,
-            });
-            return;
-        }
-
-        if (error.status === 404) {
-            this.snackBar.open('Użytkownik nie istnieje.', 'Zamknij', {
-                duration: 5000,
-            });
-            this.userNotFound.emit();
-            return;
-        }
-
-        this.apiError.set(
-            error.message || 'Nie udało się zapisać kredytów. Spróbuj ponownie.'
-        );
-    }
-
     private createCreditControl(): FormControl<number> {
         return new FormControl(0, {
             nonNullable: true,
@@ -282,5 +225,4 @@ export class AdminUserAiCreditsFormComponent {
             ],
         });
     }
-
 }

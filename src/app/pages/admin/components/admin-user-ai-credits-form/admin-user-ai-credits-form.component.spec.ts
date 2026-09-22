@@ -6,18 +6,12 @@ import {
     platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { of } from 'rxjs';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { AdminUserAiCreditsFormComponent } from './admin-user-ai-credits-form.component';
-import { AdminApiService } from '../../../../core/services/admin-api.service';
 import { UpdateAdminUserAiCreditsResponseDto } from '../../../../../../shared/contracts/types';
 
 describe('AdminUserAiCreditsFormComponent', () => {
-    const updateUserAiCredits = vi.fn();
-    const snackBarOpen = vi.fn();
-
     const initialCredits: UpdateAdminUserAiCreditsResponseDto = {
         user_id: '5fb3646f-8980-4afb-aeb1-8a4e5fa58212',
         draft: { total: 10, used: 2, remaining: 8 },
@@ -36,22 +30,8 @@ describe('AdminUserAiCreditsFormComponent', () => {
     });
 
     beforeEach(() => {
-        updateUserAiCredits.mockReset();
-        snackBarOpen.mockReset();
-        updateUserAiCredits.mockReturnValue(of(initialCredits));
-
         TestBed.configureTestingModule({
             imports: [AdminUserAiCreditsFormComponent, NoopAnimationsModule],
-            providers: [
-                {
-                    provide: AdminApiService,
-                    useValue: { updateUserAiCredits },
-                },
-                {
-                    provide: MatSnackBar,
-                    useValue: { open: snackBarOpen },
-                },
-            ],
         });
     });
 
@@ -87,22 +67,14 @@ describe('AdminUserAiCreditsFormComponent', () => {
         expect(form.invalid).toBe(true);
     });
 
-    it('resetuje wykorzystanie i zapisuje pełny stan', () => {
+    it('przygotowuje wyzerowane wykorzystanie do wspólnego zapisu', () => {
         const fixture = createComponent();
-        const resetButton = fixture.nativeElement.querySelector(
-            'button[type="button"]'
-        ) as HTMLButtonElement;
+        const component = fixture.componentInstance;
 
-        resetButton.click();
+        component.resetCredits();
 
-        expect(updateUserAiCredits).toHaveBeenCalledWith(
-            initialCredits.user_id,
-            expect.objectContaining({
-                draft_credits_used: 0,
-                image_credits_used: 0,
-                limit_type: 'monthly',
-            })
-        );
-        expect(snackBarOpen).toHaveBeenCalled();
+        expect(component.form.controls.draftUsed.value).toBe(0);
+        expect(component.form.controls.imageUsed.value).toBe(0);
+        expect(component.form.dirty).toBe(true);
     });
 });

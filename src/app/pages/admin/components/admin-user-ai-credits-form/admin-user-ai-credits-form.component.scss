@@ -27,27 +27,8 @@
     color: var(--mat-sys-error);
 }
 
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-
-    mat-spinner {
-        display: inline-block;
-    }
-}
-
 @media (max-width: 600px) {
     .credits-grid {
         grid-template-columns: 1fr;
-    }
-
-    .form-actions {
-        align-items: stretch;
-        flex-direction: column-reverse;
-
-        button {
-            width: 100%;
-        }
     }
 }
