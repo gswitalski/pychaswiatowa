@@ -195,7 +195,7 @@ begin
 end $$;
 
 -- ============================================================================
--- SEEDING COLLECTIONS FOR test2@pychaswiatowa.pl
+-- SEEDING COLLECTIONS FOR premium@pychaswiatowa.pl
 -- ============================================================================
 
 do $$

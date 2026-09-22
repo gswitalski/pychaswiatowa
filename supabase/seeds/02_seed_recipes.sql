@@ -1877,7 +1877,7 @@ begin
 end $$;
 
 -- ============================================================================
--- SEEDING RECIPES FOR test2@pychaswiatowa.pl
+-- SEEDING RECIPES FOR premium@pychaswiatowa.pl
 -- ============================================================================
 
 do $$
@@ -2353,7 +2353,7 @@ begin
         );
     end if;
 
-    raise notice 'Recipes for test2@pychaswiatowa.pl created successfully';
+    raise notice 'Recipes for premium@pychaswiatowa.pl created successfully';
 end $$;
 
 

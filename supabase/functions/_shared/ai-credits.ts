@@ -82,6 +82,40 @@ export function getFreeDraftCredits(): number {
     return parsedValue;
 }
 
+export function getPremiumDraftCredits(): number {
+    const configuredValue = Deno.env.get('AI_DRAFT_CREDITS_PREMIUM');
+    if (!configuredValue) {
+        return 20;
+    }
+
+    const parsedValue = Number(configuredValue);
+    if (!Number.isInteger(parsedValue) || parsedValue < 0 || parsedValue > 32767) {
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'AI_DRAFT_CREDITS_PREMIUM must be an integer between 0 and 32767',
+        );
+    }
+
+    return parsedValue;
+}
+
+export function getPremiumImageCredits(): number {
+    const configuredValue = Deno.env.get('AI_IMAGE_CREDITS_PREMIUM');
+    if (!configuredValue) {
+        return 5;
+    }
+
+    const parsedValue = Number(configuredValue);
+    if (!Number.isInteger(parsedValue) || parsedValue < 0 || parsedValue > 32767) {
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'AI_IMAGE_CREDITS_PREMIUM must be an integer between 0 and 32767',
+        );
+    }
+
+    return parsedValue;
+}
+
 function parseReservationResult(data: Json): CreditReservationRpcResult {
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
         throw new ApplicationError(

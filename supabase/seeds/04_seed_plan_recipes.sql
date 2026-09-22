@@ -2,7 +2,7 @@
 -- description: populates the plan_recipes table with sample recipes for test user's plan
 -- tables affected: plan_recipes
 -- dependencies: plan_recipes table, recipes table, auth.users table
--- note: seeds plan for user test@pychaswiatowa.pl (c553b8d1-3dbb-488f-b610-97eb6f95d357)
+-- note: seeds plan for user simple@pychaswiatowa.pl (c553b8d1-3dbb-488f-b610-97eb6f95d357)
 --       adds a diverse set of ~7-10 recipes to demonstrate the "My Plan" feature
 --       includes mix of PUBLIC, SHARED, and PRIVATE recipes from various categories
 

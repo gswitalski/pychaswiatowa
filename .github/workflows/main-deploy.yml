@@ -58,7 +58,12 @@ jobs:
           supabase secrets set \
             APP_PUBLIC_URL=${{ secrets.APP_PUBLIC_URL }} \
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+            AI_DRAFT_CREDITS_FREE=${{ secrets.AI_DRAFT_CREDITS_FREE }} \
+            AI_DRAFT_CREDITS_PREMIUM=${{ secrets.AI_DRAFT_CREDITS_PREMIUM }} \
+            AI_IMAGE_CREDITS_PREMIUM=${{ secrets.AI_IMAGE_CREDITS_PREMIUM }} \
+            AI_CREDITS_WARN_THRESHOLD_PERCENT=${{ secrets.AI_CREDITS_WARN_THRESHOLD_PERCENT }} \
+            AI_CREDITS_CRON_SECRET=${{ secrets.AI_CREDITS_CRON_SECRET }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 

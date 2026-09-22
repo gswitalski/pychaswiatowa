@@ -18,7 +18,7 @@ Seeds are executed in alphabetical/numerical order during `supabase db reset`:
 
 **Purpose**: Seeds the "My Plan" feature with sample recipes for the test user.
 
-**User**: test@pychaswiatowa.pl (ID: `c553b8d1-3dbb-488f-b610-97eb6f95d357`)
+**User**: simple@pychaswiatowa.pl (ID: `c553b8d1-3dbb-488f-b610-97eb6f95d357`)
 
 **Recipes Added**: ~7-10 recipes including:
 - **Bigos** (PUBLIC, Danie główne)
@@ -88,21 +88,31 @@ ORDER BY pr.added_at;
 
 ## Test User Credentials
 
-### test@pychaswiatowa.pl
-- **Email**: test@pychaswiatowa.pl
+Wszystkie konta używają hasła: `12345678`.
+
+### simple@pychaswiatowa.pl
+- **Email**: simple@pychaswiatowa.pl
 - **User ID**: c553b8d1-3dbb-488f-b610-97eb6f95d357
-- **Username**: Grzegorz
+- **Rola**: user
+- **Username**: Simple User
 - **Recipes**: ~50+ recipes (various visibility levels)
 - **Collections**: ~4 collections
 - **Plan**: ~7-10 recipes (after seed)
 
-### test2@pychaswiatowa.pl
-- **Email**: test2@pychaswiatowa.pl
+### premium@pychaswiatowa.pl
+- **Email**: premium@pychaswiatowa.pl
 - **User ID**: 6e2596af-e62a-4be6-93fc-680f8b83dc06
-- **Username**: Test2
+- **Rola**: premium
+- **Username**: Premium User
 - **Recipes**: ~10 recipes
 - **Collections**: None
 - **Plan**: Empty (not seeded)
+
+### admin@pychaswiatowa.pl
+- **Email**: admin@pychaswiatowa.pl
+- **User ID**: bda00f70-6f98-4a57-9da5-2f824ab9d302
+- **Rola**: admin
+- **Username**: Admin
 
 ## Adding New Seeds
 
