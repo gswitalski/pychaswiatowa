@@ -17,6 +17,8 @@ import {
 } from './components/profile-settings-form/profile-settings-form.component';
 import { MARKETING_CONSENT_TEXT_VERSION } from '../../../../shared/contracts/marketing-consent';
 import { ChangePasswordDialogComponent } from './components/change-password-dialog/change-password-dialog.component';
+import { AiCreditsSettingsSectionComponent } from './components/ai-credits-settings-section/ai-credits-settings-section.component';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
     selector: 'pych-profile-settings-page',
@@ -28,6 +30,7 @@ import { ChangePasswordDialogComponent } from './components/change-password-dial
         MatDialogModule,
         MatSnackBarModule,
         ProfileSettingsFormComponent,
+        AiCreditsSettingsSectionComponent,
     ],
     providers: [ProfileSettingsFacade],
     templateUrl: './profile-settings-page.component.html',
@@ -38,6 +41,7 @@ export class ProfileSettingsPageComponent implements OnInit {
     private readonly facade = inject(ProfileSettingsFacade);
     private readonly dialog = inject(MatDialog);
     private readonly snackBar = inject(MatSnackBar);
+    private readonly authService = inject(AuthService);
 
     readonly profile = this.facade.profile;
     readonly isInitialLoading = this.facade.isInitialLoading;
@@ -46,6 +50,7 @@ export class ProfileSettingsPageComponent implements OnInit {
     readonly saveError = this.facade.saveError;
     readonly lastSuccessMessage = this.facade.lastSuccessMessage;
     readonly canRenderForm = this.facade.canRenderForm;
+    readonly appRole = this.authService.appRole;
     readonly loadingOverlayVisible = computed(
         () => this.isInitialLoading() && this.profile() !== null
     );

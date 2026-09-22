@@ -1,6 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     ElementRef,
     HostListener,
     inject,
@@ -17,8 +18,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { AiCreditsIndicatorComponent } from '../../../shared/components/ai-credits-indicator/ai-credits-indicator.component';
+import {
+    AiCreditsExhaustedDialogComponent,
+    AiCreditsExhaustedDialogData,
+} from '../../../shared/components/ai-credits-exhausted-dialog/ai-credits-exhausted-dialog.component';
+import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.model';
+import { AiCreditsService } from '../../../core/services/ai-credits.service';
 import { AiRecipeDraftService, AiDraftValidationError } from '../services/ai-recipe-draft.service';
 import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
 import {
@@ -56,7 +66,9 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
         MatFormFieldModule,
         MatInputModule,
         MatProgressSpinnerModule,
+        MatTooltipModule,
         PageHeaderComponent,
+        AiCreditsIndicatorComponent,
     ],
     templateUrl: './recipe-new-assist-page.component.html',
     styleUrl: './recipe-new-assist-page.component.scss',
@@ -66,6 +78,8 @@ export class RecipeNewAssistPageComponent {
     private readonly router = inject(Router);
     private readonly aiDraftService = inject(AiRecipeDraftService);
     private readonly draftStateService = inject(RecipeDraftStateService);
+    private readonly creditsService = inject(AiCreditsService);
+    private readonly dialog = inject(MatDialog);
 
     @ViewChild('imagePasteArea') imagePasteArea!: ElementRef<HTMLDivElement>;
 
@@ -89,6 +103,26 @@ export class RecipeNewAssistPageComponent {
 
     /** Unprocessable entity reasons (422 response) */
     readonly unprocessableReasons = signal<string[]>([]);
+
+    readonly hasAiInput = computed(
+        () =>
+            (this.source() === 'text' && this.text().trim().length > 0) ||
+            (this.source() === 'image' && this.imageFile() !== null)
+    );
+
+    readonly isCreditsExhausted = computed(() =>
+        this.creditsService.isExhausted('draft')
+    );
+
+    readonly isNextDisabled = computed(
+        () => this.isLoading() || (this.hasAiInput() && this.isCreditsExhausted())
+    );
+
+    readonly nextButtonTooltip = computed(() =>
+        this.hasAiInput() && this.isCreditsExhausted()
+            ? 'Brak kredytów AI — przejdź na Premium'
+            : ''
+    );
 
     /**
      * Handle source toggle change.
@@ -233,6 +267,7 @@ export class RecipeNewAssistPageComponent {
 
             const request = await this.buildRequest();
             const response = await this.aiDraftService.generateDraft(request);
+            this.creditsService.refreshCredits();
 
             // Save draft and navigate to form
             this.draftStateService.setDraft(response.draft, response.meta);
@@ -292,7 +327,24 @@ export class RecipeNewAssistPageComponent {
      * Handle API errors
      */
     private handleError(error: unknown): void {
-        if (error instanceof AiDraftValidationError) {
+        if (error instanceof AiCreditsExhaustedApiError) {
+            const details = error.response.details;
+            const dialogData: AiCreditsExhaustedDialogData = {
+                creditType: details.credit_type,
+                limitType: details.limit_type === 'monthly' ? 'monthly' : 'lifetime',
+                nextResetAt: details.next_reset_at
+                    ? new Date(details.next_reset_at)
+                    : null,
+            };
+
+            this.dialog.open(AiCreditsExhaustedDialogComponent, {
+                data: dialogData,
+                width: '480px',
+                maxWidth: 'calc(100vw - 32px)',
+                panelClass: 'mobile-fullscreen-dialog',
+            });
+            this.creditsService.refreshCredits();
+        } else if (error instanceof AiDraftValidationError) {
             // 422 - content is not a valid recipe
             this.errorMessage.set(error.message);
             this.unprocessableReasons.set(error.reasons);
@@ -308,6 +360,10 @@ export class RecipeNewAssistPageComponent {
      */
     onBack(): void {
         this.router.navigate(['/recipes/new/start']);
+    }
+
+    onUpgrade(): void {
+        void this.router.navigate(['/pricing']);
     }
 
     /**

@@ -65,6 +65,12 @@
             display: inline-flex;
         }
 
+        .ai-image-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .ai-image-button {
             color: var(--mat-sys-primary);
 

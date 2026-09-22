@@ -149,8 +149,9 @@ export class AdminUsersPageComponent implements OnInit {
     onEditRole(row: AdminUsersTableRowVm): void {
         this.dialog
             .open(ChangeUserRoleDialogComponent, {
-                width: '440px',
+                width: '720px',
                 maxWidth: '95vw',
+                panelClass: 'mobile-fullscreen-dialog',
                 data: {
                     user: row,
                     updateUserRole: (userId: string, appRole: AppRole) =>

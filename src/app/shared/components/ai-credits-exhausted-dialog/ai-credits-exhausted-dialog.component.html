@@ -1,0 +1,34 @@
+<h2 mat-dialog-title id="ai-credits-dialog-title">
+    <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+    <span>Wyczerpano kredyty AI</span>
+</h2>
+
+<mat-dialog-content>
+    @if (data.limitType === 'lifetime') {
+        <p>
+            Wykorzystano wszystkie bezpłatne kredyty AI. Przejdź na Premium,
+            aby co miesiąc otrzymywać nową pulę kredytów.
+        </p>
+    } @else if (data.nextResetAt) {
+        <p>
+            Miesięczna pula kredytów AI została wykorzystana.
+            Nowe kredyty będą dostępne {{ data.nextResetAt | date: 'd MMMM y' }}.
+        </p>
+    } @else {
+        <p>
+            Miesięczna pula kredytów AI została wykorzystana.
+            Kredyty odnowią się w następnym okresie rozliczeniowym.
+        </p>
+    }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">Wróć</button>
+
+    @if (data.limitType === 'lifetime') {
+        <button mat-flat-button type="button" color="primary" (click)="goToPricing()">
+            Przejdź na Premium
+            <mat-icon matButtonIcon iconPositionEnd aria-hidden="true">arrow_forward</mat-icon>
+        </button>
+    }
+</mat-dialog-actions>

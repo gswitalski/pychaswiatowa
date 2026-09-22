@@ -41,3 +41,23 @@
     align-items: center;
     justify-content: center;
 }
+
+.change-user-role-dialog__credits {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.change-user-role-dialog__credits-loading,
+.change-user-role-dialog__credits-error {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.change-user-role-dialog__credits-error {
+    align-items: flex-start;
+    flex-direction: column;
+    color: var(--mat-sys-error);
+}

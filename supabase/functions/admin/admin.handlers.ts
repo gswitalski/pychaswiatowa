@@ -6,7 +6,10 @@
 import { handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { requireAdminContext } from './admin-auth.ts';
-import { handlePatchAdminUserAiCredits } from './admin-ai-credits.handlers.ts';
+import {
+    handleGetAdminUserAiCredits,
+    handlePatchAdminUserAiCredits,
+} from './admin-ai-credits.handlers.ts';
 import {
     getAdminSummary,
     getAdminHealth,
@@ -150,10 +153,13 @@ export async function adminRouter(req: Request): Promise<Response> {
 
     const userAiCreditsMatch = subPath.match(/^\/users\/([^/]+)\/ai-credits$/);
     if (userAiCreditsMatch) {
+        if (method === 'GET') {
+            return handleGetAdminUserAiCredits(req, userAiCreditsMatch[1]);
+        }
         if (method === 'PATCH') {
             return handlePatchAdminUserAiCredits(req, userAiCreditsMatch[1]);
         }
-        return createMethodNotAllowedResponse(method, 'PATCH, OPTIONS');
+        return createMethodNotAllowedResponse(method, 'GET, PATCH, OPTIONS');
     }
 
     const userRoleMatch = subPath.match(/^\/users\/([^/]+)\/role$/);

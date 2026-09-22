@@ -33,6 +33,10 @@
         }
     </mat-card>
 
+    @if (appRole() !== 'admin') {
+        <pych-ai-credits-settings-section />
+    }
+
     <mat-card appearance="outlined" class="settings-card">
         <h2 class="section-title">Bezpieczeństwo</h2>
         <p class="section-info">Zmień hasło bez opuszczania strony ustawień.</p>

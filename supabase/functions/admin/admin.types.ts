@@ -58,18 +58,18 @@ export interface UpdateAdminUserAiCreditsCommand {
 }
 
 export interface AiCreditBalanceDto {
-    total: number;
-    used: number;
-    remaining: number;
+    total: number | null;
+    used: number | null;
+    remaining: number | null;
 }
 
 export interface UpdateAdminUserAiCreditsResponseDto {
     user_id: string;
     draft: AiCreditBalanceDto;
     image: AiCreditBalanceDto;
-    limit_type: 'lifetime' | 'monthly';
+    limit_type: 'lifetime' | 'monthly' | 'unlimited';
     next_reset_at: string | null;
-    updated_at: string;
+    updated_at: string | null;
 }
 
 const APP_ROLES = ['user', 'premium', 'admin'] as const;

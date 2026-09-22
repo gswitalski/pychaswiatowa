@@ -1,0 +1,53 @@
+.credits-form-section {
+    display: grid;
+    gap: 16px;
+
+    h3,
+    p {
+        margin: 0;
+    }
+
+    form {
+        display: grid;
+        gap: 16px;
+    }
+}
+
+.credits-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.info-message {
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.error-message {
+    color: var(--mat-sys-error);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    mat-spinner {
+        display: inline-block;
+    }
+}
+
+@media (max-width: 600px) {
+    .credits-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+
+        button {
+            width: 100%;
+        }
+    }
+}

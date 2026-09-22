@@ -28,6 +28,36 @@
     }
 }
 
+.input-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+}
+
+.credits-banner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+
+    > mat-icon {
+        flex: 0 0 auto;
+    }
+
+    > div {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
 .source-toggle-container {
     display: flex;
     justify-content: center;
@@ -233,6 +263,12 @@
 
     .image-preview {
         max-height: 300px;
+    }
+
+    .input-card-header,
+    .credits-banner {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
 

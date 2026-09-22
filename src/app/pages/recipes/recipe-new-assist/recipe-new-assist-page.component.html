@@ -6,27 +6,47 @@
         [disabled]="isLoading()">
         Wróć
     </button>
-    <button
-        mat-flat-button
-        color="primary"
-        type="button"
-        [disabled]="isLoading()"
-        (click)="onNext()">
-        @if (isLoading()) {
-        <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-        <span class="next-button-content">
-            Dalej
-            <mat-icon matButtonIcon>arrow_forward</mat-icon>
-        </span>
-        }
-    </button>
+    <span [matTooltip]="nextButtonTooltip()">
+        <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="isNextDisabled()"
+            (click)="onNext()">
+            @if (isLoading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+            } @else {
+            <span class="next-button-content">
+                Dalej
+                <mat-icon matButtonIcon>arrow_forward</mat-icon>
+            </span>
+            }
+        </button>
+    </span>
 </pych-page-header>
 
 <div class="recipe-new-assist-page" [class.loading]="isLoading()">
+    @if (isCreditsExhausted()) {
+        <mat-card class="credits-banner">
+            <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+            <div>
+                <strong>Wykorzystano wszystkie kredyty AI</strong>
+                <span>Przejdź na Premium, aby odnawiać pulę kredytów co miesiąc.</span>
+            </div>
+            <button mat-flat-button type="button" color="primary" (click)="onUpgrade()">
+                Przejdź na Premium
+            </button>
+        </mat-card>
+    }
+
     <mat-card class="input-card">
         <mat-card-header>
-            <mat-card-title>Wybierz źródło przepisu</mat-card-title>
+            <div class="input-card-header">
+                <mat-card-title>Wybierz źródło przepisu</mat-card-title>
+                @if (!isCreditsExhausted()) {
+                    <pych-ai-credits-indicator type="draft" />
+                }
+            </div>
             <mat-card-subtitle>
                 Wklej tekst przepisu lub zdjęcie, a AI pomoże Ci zaimportować dane
             </mat-card-subtitle>

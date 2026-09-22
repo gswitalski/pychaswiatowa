@@ -1,0 +1,61 @@
+@if (appRole() !== 'admin') {
+    <mat-card appearance="outlined" class="credits-card">
+        <h2>Kredyty AI</h2>
+
+        @if (viewModel().hasError) {
+            <div class="error-state" role="alert">
+                <mat-icon aria-hidden="true">error_outline</mat-icon>
+                <span>Nie udało się załadować stanu kredytów. Odśwież stronę.</span>
+            </div>
+        } @else {
+            <div class="credit-item">
+                <div class="credit-heading">
+                    <span>Asysta AI (draft przepisu)</span>
+                    @if (viewModel().draftExhausted && credits()?.limitType === 'lifetime') {
+                        <span class="exhausted-label">Limit dożywotni wyczerpany</span>
+                    }
+                </div>
+                <mat-progress-bar
+                    [mode]="viewModel().isLoading ? 'indeterminate' : 'determinate'"
+                    [value]="viewModel().draftProgressValue"
+                    [color]="viewModel().draftColor" />
+                @if (!viewModel().isLoading) {
+                    <p>
+                        {{ viewModel().draftLabel }}
+                        @if (viewModel().nextResetFormatted) {
+                            · Reset: {{ viewModel().nextResetFormatted }}
+                        }
+                    </p>
+                }
+            </div>
+
+            <div class="credit-item">
+                <div class="credit-heading">
+                    <span>Generowanie zdjęć przepisów</span>
+                    @if (viewModel().imageExhausted && credits()?.limitType === 'lifetime') {
+                        <span class="exhausted-label">Limit dożywotni wyczerpany</span>
+                    }
+                </div>
+                <mat-progress-bar
+                    [mode]="viewModel().isLoading ? 'indeterminate' : 'determinate'"
+                    [value]="viewModel().imageProgressValue"
+                    [color]="viewModel().imageColor" />
+                @if (!viewModel().isLoading) {
+                    <p>
+                        {{ viewModel().imageLabel }}
+                        @if (viewModel().nextResetFormatted) {
+                            · Reset: {{ viewModel().nextResetFormatted }}
+                        }
+                    </p>
+                }
+            </div>
+
+            @if (viewModel().showUpgradeCta && !viewModel().isLoading) {
+                <a mat-flat-button color="primary" routerLink="/pricing">
+                    Przejdź na Premium
+                    <mat-icon iconPositionEnd aria-hidden="true">arrow_forward</mat-icon>
+                </a>
+            }
+        }
+    </mat-card>
+}

@@ -1,0 +1,43 @@
+:host {
+    display: inline-flex;
+    min-height: 24px;
+}
+
+.indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-large);
+
+    mat-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+    }
+}
+
+.loading {
+    min-width: 24px;
+    justify-content: center;
+}
+
+.warning {
+    color: var(--mat-sys-tertiary);
+}
+
+.exhausted {
+    color: var(--mat-sys-error);
+    cursor: pointer;
+    border-radius: 6px;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.reset-date {
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 400;
+}

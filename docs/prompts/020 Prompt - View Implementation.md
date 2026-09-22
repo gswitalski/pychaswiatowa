@@ -4,7 +4,7 @@ Najpierw przejrzyj plan implementacji:
 
 <implementation_plan>
 
-
+@docs\results\impl-plans\views\ai-credits-view-implementation-plan.md
 
 </implementation_plan>
 

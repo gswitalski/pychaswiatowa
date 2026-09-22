@@ -264,7 +264,7 @@ export type RecipeContent = RecipeContentItem[];
  */
 export type RecipeDetailDto = Omit<
     RecipeDetail,
-    'ingredients' | 'steps' | 'tags' | 'collections'
+    'ingredients' | 'steps' | 'tips' | 'tags' | 'collections'
 > & {
     /** Structured ingredients list. */
     ingredients: RecipeContent;
@@ -621,7 +621,7 @@ export interface UpdateAdminUserAiCreditsResponseDto {
     image: AiCreditBalanceDto;
     limit_type: AiCreditLimitType;
     next_reset_at: string | null;
-    updated_at: string;
+    updated_at: string | null;
 }
 
 /**

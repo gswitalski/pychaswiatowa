@@ -1,0 +1,41 @@
+@switch (variant()) {
+    @case ('loading') {
+        <span class="indicator loading" aria-label="Ładowanie stanu kredytów AI">
+            <mat-spinner diameter="18" />
+        </span>
+    }
+    @case ('normal') {
+        <span class="indicator normal">
+            <mat-icon aria-hidden="true">{{ icon() }}</mat-icon>
+            <span>{{ label() }}</span>
+            @if (showResetDate() && state()?.limitType === 'monthly' && state()?.nextResetAt) {
+                <span class="reset-date">
+                    · reset {{ state()!.nextResetAt | date: 'd MMM' }}
+                </span>
+            }
+        </span>
+    }
+    @case ('warning') {
+        <span class="indicator warning" [matTooltip]="tooltip()">
+            <mat-icon aria-hidden="true">{{ icon() }}</mat-icon>
+            <span>{{ label() }}</span>
+            @if (showResetDate() && state()?.limitType === 'monthly' && state()?.nextResetAt) {
+                <span class="reset-date">
+                    · reset {{ state()!.nextResetAt | date: 'd MMM' }}
+                </span>
+            }
+        </span>
+    }
+    @case ('exhausted') {
+        <span
+            class="indicator exhausted"
+            role="button"
+            tabindex="0"
+            [matTooltip]="tooltip()"
+            (click)="openExhaustedDialog()"
+            (keydown)="handleKeydown($event)">
+            <mat-icon aria-hidden="true">{{ icon() }}</mat-icon>
+            <span>{{ label() }}</span>
+        </span>
+    }
+}

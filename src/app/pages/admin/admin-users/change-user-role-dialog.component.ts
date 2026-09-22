@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -14,9 +14,12 @@ import { Router } from '@angular/router';
 import { finalize, Observable, take } from 'rxjs';
 import {
     AppRole,
+    UpdateAdminUserAiCreditsResponseDto,
     UpdateAdminUserRoleResponseDto,
 } from '../../../../../shared/contracts/types';
 import { AdminUsersTableRowVm } from './admin-users.models';
+import { AdminApiService } from '../../../core/services/admin-api.service';
+import { AdminUserAiCreditsFormComponent } from '../components/admin-user-ai-credits-form/admin-user-ai-credits-form.component';
 
 export interface ChangeUserRoleDialogData {
     user: AdminUsersTableRowVm;
@@ -50,6 +53,7 @@ const ROLE_OPTIONS: readonly { value: AppRole; label: string }[] = [
         MatSelectModule,
         MatButtonModule,
         MatProgressSpinnerModule,
+        AdminUserAiCreditsFormComponent,
     ],
     templateUrl: './change-user-role-dialog.component.html',
     styleUrl: './change-user-role-dialog.component.scss',
@@ -60,11 +64,16 @@ export class ChangeUserRoleDialogComponent {
     private readonly data = inject<ChangeUserRoleDialogData>(MAT_DIALOG_DATA);
     private readonly router = inject(Router);
     private readonly snackBar = inject(MatSnackBar);
+    private readonly adminApi = inject(AdminApiService);
 
     readonly roleOptions = ROLE_OPTIONS;
     readonly currentRoleLabel: string;
+    readonly editedUserId = this.data.user.id;
     isSubmitting = false;
     submitError: string | null = null;
+    readonly aiCredits = signal<UpdateAdminUserAiCreditsResponseDto | null>(null);
+    readonly creditsLoading = signal(true);
+    readonly creditsLoadError = signal<string | null>(null);
 
     readonly form = new FormGroup<ChangeUserRoleFormModel>({
         appRole: new FormControl(this.data.user.role, {
@@ -75,6 +84,7 @@ export class ChangeUserRoleDialogComponent {
 
     constructor() {
         this.currentRoleLabel = this.data.user.roleLabel;
+        this.loadCredits();
     }
 
     get userContextLabel(): string {
@@ -129,6 +139,42 @@ export class ChangeUserRoleDialogComponent {
                     this.handleSubmitError(error);
                 },
             });
+    }
+
+    retryCreditsLoad(): void {
+        this.loadCredits();
+    }
+
+    onCreditsSaved(credits: UpdateAdminUserAiCreditsResponseDto): void {
+        this.aiCredits.set(credits);
+    }
+
+    onCreditsUserNotFound(): void {
+        this.dialogRef.close('USER_NOT_FOUND' satisfies ChangeUserRoleDialogCloseResult);
+    }
+
+    private loadCredits(): void {
+        this.creditsLoading.set(true);
+        this.creditsLoadError.set(null);
+
+        this.adminApi.getUserAiCredits(this.data.user.id).pipe(take(1)).subscribe({
+            next: (credits) => {
+                this.aiCredits.set(credits);
+                this.creditsLoading.set(false);
+            },
+            error: (error: Error & { status?: number }) => {
+                this.creditsLoading.set(false);
+
+                if (error.status === 404) {
+                    this.onCreditsUserNotFound();
+                    return;
+                }
+
+                this.creditsLoadError.set(
+                    error.message || 'Nie udało się pobrać kredytów AI.'
+                );
+            },
+        });
     }
 
     private handleSubmitError(error: Error & { status?: number }): void {

@@ -2,10 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { environment } from '../../../../environments/environment';
 import {
+    AiCreditsExhaustedErrorDto,
     AiRecipeImageRequestDto,
     AiRecipeImageResponseDto,
     AiRecipeImageUnprocessableEntityDto,
 } from '../../../../../shared/contracts/types';
+import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.model';
 
 /**
  * Custom error for AI image validation failures (422 response)
@@ -66,6 +68,7 @@ export class AiRecipeImageService {
      * @throws AiImageValidationError for 422 responses (cannot generate sensible image)
      * @throws AiImageRateLimitError for 429 responses (rate limit exceeded)
      * @throws AiImagePremiumRequiredError for 403 responses (premium required)
+     * @throws AiCreditsExhaustedApiError for 402 responses (credit pool exhausted)
      * @throws Error for other failures
      */
     async generateImage(
@@ -117,7 +120,8 @@ export class AiRecipeImageService {
             if (
                 error instanceof AiImageValidationError ||
                 error instanceof AiImageRateLimitError ||
-                error instanceof AiImagePremiumRequiredError
+                error instanceof AiImagePremiumRequiredError ||
+                error instanceof AiCreditsExhaustedApiError
             ) {
                 throw error;
             }
@@ -141,6 +145,23 @@ export class AiRecipeImageService {
         switch (status) {
             case 401:
                 throw new Error('Brak autoryzacji. Zaloguj się ponownie.');
+
+            case 402: {
+                const exhaustedData: AiCreditsExhaustedErrorDto =
+                    await response.json().catch(() => ({
+                        error: 'AI_CREDITS_EXHAUSTED',
+                        message: 'Wyczerpano pulę kredytów AI na generowanie zdjęć.',
+                        details: {
+                            credit_type: 'image',
+                            credits_used: 0,
+                            credits_total: 0,
+                            limit_type: 'monthly',
+                            next_reset_at: null,
+                            upgrade_url: '/pricing',
+                        },
+                    }));
+                throw new AiCreditsExhaustedApiError(exhaustedData);
+            }
 
             case 403:
                 throw new AiImagePremiumRequiredError();

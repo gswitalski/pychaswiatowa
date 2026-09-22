@@ -1,0 +1,94 @@
+<section class="credits-form-section" aria-labelledby="admin-ai-credits-title">
+    <h3 id="admin-ai-credits-title">Kredyty AI</h3>
+
+    @if (!initialCredits()) {
+        <p class="info-message">Brak danych kredytów użytkownika.</p>
+    } @else if (isUnlimited()) {
+        <p class="info-message">Administrator ma nielimitowany dostęp do funkcji AI.</p>
+    } @else {
+        <form [formGroup]="form" (ngSubmit)="save()">
+            <mat-form-field appearance="outline">
+                <mat-label>Typ limitu</mat-label>
+                <mat-select formControlName="limitType">
+                    <mat-option value="lifetime">Dożywotni</mat-option>
+                    <mat-option value="monthly">Miesięczny</mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <div class="credits-grid">
+                <mat-form-field appearance="outline">
+                    <mat-label>Draft — limit</mat-label>
+                    <input matInput type="number" formControlName="draftTotal" />
+                    @if (form.controls.draftTotal.invalid) {
+                        <mat-error>Wartość musi być liczbą całkowitą od 0 do 9999</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Draft — wykorzystano</mat-label>
+                    <input matInput type="number" formControlName="draftUsed" />
+                    @if (form.hasError('draftUsedExceedsTotal')) {
+                        <mat-error>Nie może przekroczyć limitu całkowitego</mat-error>
+                    } @else if (form.controls.draftUsed.invalid) {
+                        <mat-error>Wartość musi być liczbą całkowitą od 0 do 9999</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Zdjęcia — limit</mat-label>
+                    <input matInput type="number" formControlName="imageTotal" />
+                    @if (form.controls.imageTotal.invalid) {
+                        <mat-error>Wartość musi być liczbą całkowitą od 0 do 9999</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Zdjęcia — wykorzystano</mat-label>
+                    <input matInput type="number" formControlName="imageUsed" />
+                    @if (form.hasError('imageUsedExceedsTotal')) {
+                        <mat-error>Nie może przekroczyć limitu całkowitego</mat-error>
+                    } @else if (form.controls.imageUsed.invalid) {
+                        <mat-error>Wartość musi być liczbą całkowitą od 0 do 9999</mat-error>
+                    }
+                </mat-form-field>
+            </div>
+
+            @if (form.controls.limitType.value === 'monthly') {
+                <mat-form-field appearance="outline">
+                    <mat-label>Data następnego resetu</mat-label>
+                    <input matInput type="date" formControlName="nextResetAt" />
+                    @if (form.hasError('nextResetRequired')) {
+                        <mat-error>Data resetu jest wymagana dla limitu miesięcznego</mat-error>
+                    } @else if (form.hasError('nextResetNotFuture')) {
+                        <mat-error>Data resetu musi być datą w przyszłości</mat-error>
+                    }
+                </mat-form-field>
+            }
+
+            @if (apiError()) {
+                <p class="error-message" role="alert">{{ apiError() }}</p>
+            }
+
+            <div class="form-actions">
+                <button
+                    mat-stroked-button
+                    type="button"
+                    [disabled]="isSaving()"
+                    (click)="resetCredits()">
+                    Resetuj kredyty
+                </button>
+                <button
+                    mat-flat-button
+                    color="primary"
+                    type="submit"
+                    [disabled]="isSaving()">
+                    @if (isSaving()) {
+                        <mat-spinner diameter="20" />
+                    } @else {
+                        Zapisz
+                    }
+                </button>
+            </div>
+        </form>
+    }
+</section>

@@ -60,23 +60,29 @@
                 <div class="form-section-header">
                     <mat-card-title>Zdjęcie</mat-card-title>
                     @if (isAiImageButtonVisible()) {
-                        <span
-                            class="ai-image-tooltip-wrapper"
-                            [matTooltip]="aiImageTooltip()">
-                            <button
-                                mat-icon-button
-                                type="button"
-                                class="ai-image-button"
-                                [disabled]="isAiImageButtonDisabled()"
-                                (click)="onGenerateAiImage()"
-                                aria-label="Wygeneruj zdjęcie za pomocą AI">
-                                @if (aiGenerating()) {
-                                    <mat-spinner diameter="20"></mat-spinner>
-                                } @else {
-                                    <mat-icon>auto_awesome</mat-icon>
-                                }
-                            </button>
-                        </span>
+                        <div class="ai-image-actions">
+                            <pych-ai-credits-indicator
+                                type="image"
+                                [compact]="true"
+                                [showResetDate]="false" />
+                            <span
+                                class="ai-image-tooltip-wrapper"
+                                [matTooltip]="aiImageTooltip()">
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    class="ai-image-button"
+                                    [disabled]="isAiImageButtonDisabled()"
+                                    (click)="onGenerateAiImage()"
+                                    aria-label="Wygeneruj zdjęcie za pomocą AI">
+                                    @if (aiGenerating()) {
+                                        <mat-spinner diameter="20"></mat-spinner>
+                                    } @else {
+                                        <mat-icon>auto_awesome</mat-icon>
+                                    }
+                                </button>
+                            </span>
+                        </div>
                     }
                 </div>
             </mat-card-header>

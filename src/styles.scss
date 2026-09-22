@@ -68,3 +68,15 @@ a {
     outline: 2px solid var(--mat-sys-primary);
     outline-offset: 2px;
 }
+
+@media (max-width: 599px) {
+    .cdk-overlay-pane.mobile-fullscreen-dialog {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100dvh;
+
+        .mat-mdc-dialog-surface {
+            border-radius: 0;
+        }
+    }
+}

@@ -28,6 +28,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { AiCreditsIndicatorComponent } from '../../../shared/components/ai-credits-indicator/ai-credits-indicator.component';
+import {
+    AiCreditsExhaustedDialogComponent,
+    AiCreditsExhaustedDialogData,
+} from '../../../shared/components/ai-credits-exhausted-dialog/ai-credits-exhausted-dialog.component';
 import { RecipeBasicInfoFormComponent } from './components/recipe-basic-info-form/recipe-basic-info-form.component';
 import { RecipeImageUploadComponent, RecipeImageEvent } from './components/recipe-image-upload/recipe-image-upload.component';
 import { RecipeCategorizationFormComponent } from './components/recipe-categorization-form/recipe-categorization-form.component';
@@ -40,6 +45,8 @@ import {
 
 import { CategoriesService } from '../../../core/services/categories.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { AiCreditsService } from '../../../core/services/ai-credits.service';
+import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.model';
 import { RecipesService } from '../services/recipes.service';
 import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
 import { SlugService } from '../../../shared/services/slug.service';
@@ -106,6 +113,7 @@ export function mapLinesToAiRecipeImageContentItems(lines: string[]): AiRecipeIm
         MatIconModule,
         MatTooltipModule,
         PageHeaderComponent,
+        AiCreditsIndicatorComponent,
         RecipeBasicInfoFormComponent,
         RecipeImageUploadComponent,
         RecipeCategorizationFormComponent,
@@ -128,6 +136,7 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly recipesService = inject(RecipesService);
     private readonly draftStateService = inject(RecipeDraftStateService);
     private readonly aiRecipeImageService = inject(AiRecipeImageService);
+    private readonly creditsService = inject(AiCreditsService);
     private readonly slugService = inject(SlugService);
 
     /** Reference to RecipeImageUploadComponent for applying AI-generated images */
@@ -202,9 +211,13 @@ export class RecipeFormPageComponent implements OnInit {
         return role === 'user';
     });
 
+    readonly isImageCreditsExhausted = computed(() =>
+        this.creditsService.isExhausted('image')
+    );
+
     /** Computed: is AI image button disabled */
     readonly isAiImageButtonDisabled = computed(() => {
-        if (this.isAiPremiumFeatureLocked()) {
+        if (this.isImageCreditsExhausted()) {
             return true;
         }
 
@@ -219,8 +232,8 @@ export class RecipeFormPageComponent implements OnInit {
 
     /** Computed: tooltip for AI image button */
     readonly aiImageTooltip = computed(() => {
-        if (this.isAiPremiumFeatureLocked()) {
-            return 'Funkcja Premium';
+        if (this.isImageCreditsExhausted()) {
+            return 'Brak kredytów AI — przejdź na Premium';
         }
 
         return this.hasAiReferenceImage()
@@ -757,7 +770,7 @@ export class RecipeFormPageComponent implements OnInit {
      * Supports regeneration loop - user can request new image without closing dialog.
      */
     async onGenerateAiImage(): Promise<void> {
-        if (this.isAiPremiumFeatureLocked() || this.aiGenerating()) {
+        if (this.isImageCreditsExhausted() || this.aiGenerating()) {
             return;
         }
 
@@ -919,17 +932,49 @@ export class RecipeFormPageComponent implements OnInit {
             const response = await this.aiRecipeImageService.generateImage(request);
             const dataUrl = `data:${response.image.mime_type};base64,${response.image.data_base64}`;
 
+            this.creditsService.refreshCredits();
             dialogRef.componentInstance.setSuccess(dataUrl, response.meta.mode);
             onSuccess({
                 dataBase64: response.image.data_base64,
                 mimeType: response.image.mime_type,
             });
         } catch (error) {
+            if (error instanceof AiCreditsExhaustedApiError) {
+                this.handleExhaustedImageCredits(error, dialogRef);
+                return;
+            }
+
             const { message, reasons } = this.mapAiImageError(error);
             dialogRef.componentInstance.setError(message, reasons);
         } finally {
             this.aiGenerating.set(false);
         }
+    }
+
+    private handleExhaustedImageCredits(
+        error: AiCreditsExhaustedApiError,
+        imageDialogRef: MatDialogRef<
+            AiRecipeImagePreviewDialogComponent,
+            AiRecipeImageDialogResult
+        >
+    ): void {
+        const details = error.response.details;
+        const dialogData: AiCreditsExhaustedDialogData = {
+            creditType: details.credit_type,
+            limitType: details.limit_type === 'monthly' ? 'monthly' : 'lifetime',
+            nextResetAt: details.next_reset_at
+                ? new Date(details.next_reset_at)
+                : null,
+        };
+
+        imageDialogRef.close({ action: 'cancelled' });
+        this.dialog.open(AiCreditsExhaustedDialogComponent, {
+            data: dialogData,
+            width: '480px',
+            maxWidth: 'calc(100vw - 32px)',
+            panelClass: 'mobile-fullscreen-dialog',
+        });
+        this.creditsService.refreshCredits();
     }
 
     /**

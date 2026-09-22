@@ -1,0 +1,39 @@
+:host {
+    display: block;
+}
+
+h2[mat-dialog-title] {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--mat-sys-on-surface);
+
+    mat-icon {
+        color: var(--mat-sys-error);
+    }
+}
+
+mat-dialog-content {
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.5;
+
+    p {
+        margin: 0;
+    }
+}
+
+mat-dialog-actions {
+    gap: 8px;
+    padding: 16px 24px 24px;
+}
+
+@media (max-width: 599px) {
+    mat-dialog-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+
+        button {
+            width: 100%;
+        }
+    }
+}

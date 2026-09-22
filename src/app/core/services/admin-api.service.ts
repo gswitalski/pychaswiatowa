@@ -6,6 +6,8 @@ import {
     AppRole,
     GetAdminUsersQueryDto,
     GetAdminUsersResponseDto,
+    UpdateAdminUserAiCreditsCommand,
+    UpdateAdminUserAiCreditsResponseDto,
     UpdateAdminUserRoleResponseDto,
 } from '../../../../shared/contracts/types';
 
@@ -106,6 +108,64 @@ export class AdminApiService {
 
                 if (!response.data) {
                     throw new Error('Nie udało się zaktualizować roli użytkownika');
+                }
+
+                return response.data;
+            })
+        );
+    }
+
+    updateUserAiCredits(
+        userId: string,
+        command: UpdateAdminUserAiCreditsCommand
+    ): Observable<UpdateAdminUserAiCreditsResponseDto> {
+        return from(
+            this.supabase.functions.invoke<UpdateAdminUserAiCreditsResponseDto>(
+                `admin/users/${userId}/ai-credits`,
+                {
+                    method: 'PATCH',
+                    body: command,
+                }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    const error = new Error(
+                        response.error.message || 'Błąd aktualizacji kredytów AI'
+                    ) as Error & { status?: number };
+                    error.status = this.extractStatusFromError(response.error) ?? 500;
+                    throw error;
+                }
+
+                if (!response.data) {
+                    throw new Error('Nie udało się zaktualizować kredytów AI');
+                }
+
+                return response.data;
+            })
+        );
+    }
+
+    getUserAiCredits(
+        userId: string
+    ): Observable<UpdateAdminUserAiCreditsResponseDto> {
+        return from(
+            this.supabase.functions.invoke<UpdateAdminUserAiCreditsResponseDto>(
+                `admin/users/${userId}/ai-credits`,
+                { method: 'GET' }
+            )
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    const error = new Error(
+                        response.error.message || 'Błąd pobierania kredytów AI'
+                    ) as Error & { status?: number };
+                    error.status = this.extractStatusFromError(response.error) ?? 500;
+                    throw error;
+                }
+
+                if (!response.data) {
+                    throw new Error('Nie udało się pobrać kredytów AI');
                 }
 
                 return response.data;

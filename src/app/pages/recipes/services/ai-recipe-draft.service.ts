@@ -2,10 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { environment } from '../../../../environments/environment';
 import {
+    AiCreditsExhaustedErrorDto,
     AiRecipeDraftRequestDto,
     AiRecipeDraftResponseDto,
     AiRecipeDraftUnprocessableEntityDto,
 } from '../../../../../shared/contracts/types';
+import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.model';
 
 /**
  * Custom error for AI draft validation failures (422 response)
@@ -63,6 +65,7 @@ export class AiRecipeDraftService {
      * @throws AiDraftValidationError for 422 responses (not a valid single recipe)
      * @throws AiDraftRateLimitError for 429 responses (rate limit exceeded)
      * @throws AiDraftPayloadTooLargeError for 413 responses (image too large)
+     * @throws AiCreditsExhaustedApiError for 402 responses (credit pool exhausted)
      * @throws Error for other failures
      */
     async generateDraft(
@@ -101,7 +104,8 @@ export class AiRecipeDraftService {
             if (
                 error instanceof AiDraftValidationError ||
                 error instanceof AiDraftRateLimitError ||
-                error instanceof AiDraftPayloadTooLargeError
+                error instanceof AiDraftPayloadTooLargeError ||
+                error instanceof AiCreditsExhaustedApiError
             ) {
                 throw error;
             }
@@ -126,6 +130,23 @@ export class AiRecipeDraftService {
             case 401:
             case 403:
                 throw new Error('Brak autoryzacji. Zaloguj się ponownie.');
+
+            case 402: {
+                const exhaustedData: AiCreditsExhaustedErrorDto =
+                    await response.json().catch(() => ({
+                        error: 'AI_CREDITS_EXHAUSTED',
+                        message: 'Wyczerpano pulę kredytów AI.',
+                        details: {
+                            credit_type: 'draft',
+                            credits_used: 0,
+                            credits_total: 0,
+                            limit_type: 'lifetime',
+                            next_reset_at: null,
+                            upgrade_url: '/pricing',
+                        },
+                    }));
+                throw new AiCreditsExhaustedApiError(exhaustedData);
+            }
 
             case 413:
                 throw new AiDraftPayloadTooLargeError();

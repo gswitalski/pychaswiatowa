@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Zmień rolę użytkownika</h2>
+<h2 mat-dialog-title>Edytuj użytkownika</h2>
 
 <mat-dialog-content>
     <div class="change-user-role-dialog__context">
@@ -29,6 +29,28 @@
             <p class="change-user-role-dialog__error" role="alert">{{ submitError }}</p>
         }
     </form>
+
+    <div class="change-user-role-dialog__credits">
+        @if (creditsLoading()) {
+            <div class="change-user-role-dialog__credits-loading">
+                <mat-spinner diameter="24" />
+                <span>Ładowanie kredytów AI...</span>
+            </div>
+        } @else if (creditsLoadError()) {
+            <div class="change-user-role-dialog__credits-error" role="alert">
+                <span>{{ creditsLoadError() }}</span>
+                <button mat-stroked-button type="button" (click)="retryCreditsLoad()">
+                    Spróbuj ponownie
+                </button>
+            </div>
+        } @else {
+            <pych-admin-user-ai-credits-form
+                [userId]="editedUserId"
+                [initialCredits]="aiCredits()"
+                (saved)="onCreditsSaved($event)"
+                (userNotFound)="onCreditsUserNotFound()" />
+        }
+    </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

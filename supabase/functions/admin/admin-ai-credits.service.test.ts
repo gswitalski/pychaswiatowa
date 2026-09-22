@@ -2,21 +2,46 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals
 import { assertRejects } from 'https://deno.land/std@0.224.0/assert/assert_rejects.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import type { TypedSupabaseClient } from '../_shared/supabase-client.ts';
-import { updateUserAiCredits } from './admin-ai-credits.service.ts';
+import {
+    getUserAiCredits,
+    updateUserAiCredits,
+} from './admin-ai-credits.service.ts';
 
 const TARGET_USER_ID = '5fb3646f-8980-4afb-aeb1-8a4e5fa58212';
 
 function createAdminCreditsClient(params: {
     userExists?: boolean;
     updateError?: { code: string; message: string } | null;
+    appRole?: 'user' | 'premium' | 'admin';
+    creditsData?: Record<string, unknown> | null;
+    creditsError?: { code: string; message: string } | null;
 }): TypedSupabaseClient {
     const userExists = params.userExists ?? true;
+    const creditsData = params.creditsData === undefined
+        ? {
+            user_id: TARGET_USER_ID,
+            draft_credits_total: 10,
+            draft_credits_used: 2,
+            image_credits_total: 4,
+            image_credits_used: 1,
+            limit_type: 'monthly',
+            next_reset_at: '2026-10-15T00:00:00.000Z',
+            updated_at: '2026-09-15T00:00:00.000Z',
+        }
+        : params.creditsData;
 
     return {
         auth: {
             admin: {
                 getUserById: () => Promise.resolve({
-                    data: { user: userExists ? { id: TARGET_USER_ID } : null },
+                    data: {
+                        user: userExists
+                            ? {
+                                id: TARGET_USER_ID,
+                                app_metadata: { app_role: params.appRole ?? 'user' },
+                            }
+                            : null,
+                    },
                     error: userExists
                         ? null
                         : { status: 404, message: 'User not found' },
@@ -24,19 +49,18 @@ function createAdminCreditsClient(params: {
             },
         },
         from: () => ({
+            select: () => ({
+                eq: () => ({
+                    maybeSingle: () => Promise.resolve({
+                        data: creditsData,
+                        error: params.creditsError ?? null,
+                    }),
+                }),
+            }),
             upsert: () => ({
                 select: () => ({
                     single: () => Promise.resolve({
-                        data: {
-                            user_id: TARGET_USER_ID,
-                            draft_credits_total: 10,
-                            draft_credits_used: 2,
-                            image_credits_total: 4,
-                            image_credits_used: 1,
-                            limit_type: 'monthly',
-                            next_reset_at: '2026-10-15T00:00:00.000Z',
-                            updated_at: '2026-09-15T00:00:00.000Z',
-                        },
+                        data: creditsData,
                         error: params.updateError ?? null,
                     }),
                 }),
@@ -44,6 +68,27 @@ function createAdminCreditsClient(params: {
         }),
     } as unknown as TypedSupabaseClient;
 }
+
+Deno.test('getUserAiCredits: zwraca bieżące saldo użytkownika', async () => {
+    const result = await getUserAiCredits({
+        targetUserId: TARGET_USER_ID,
+        supabaseAdmin: createAdminCreditsClient({}),
+    });
+
+    assertEquals(result.draft.remaining, 8);
+    assertEquals(result.image.remaining, 3);
+    assertEquals(result.limit_type, 'monthly');
+});
+
+Deno.test('getUserAiCredits: admin ma nielimitowane kredyty', async () => {
+    const result = await getUserAiCredits({
+        targetUserId: TARGET_USER_ID,
+        supabaseAdmin: createAdminCreditsClient({ appRole: 'admin' }),
+    });
+
+    assertEquals(result.limit_type, 'unlimited');
+    assertEquals(result.draft.remaining, null);
+});
 
 Deno.test('updateUserAiCredits: mapuje zaktualizowane saldo', async () => {
     const result = await updateUserAiCredits({

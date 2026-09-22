@@ -1,7 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { AuthResponse, AuthError } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
-import { SignUpRequestDto, AppRole } from '../../../../shared/contracts/types';
+import { AiCreditsService } from './ai-credits.service';
+import {
+    SignUpRequestDto,
+    AppRole,
+    MeDto,
+} from '../../../../shared/contracts/types';
 import { extractAppRoleFromJwt } from '../utils/jwt.utils';
 
 /** Cooldown w sekundach dla ponownego wysłania linku weryfikacyjnego */
@@ -32,6 +37,7 @@ interface SupabaseSignUpMetadata {
 })
 export class AuthService {
     private readonly supabase = inject(SupabaseService);
+    private readonly aiCreditsService = inject(AiCreditsService);
 
     /** Signal indicating if user is authenticated */
     readonly isAuthenticated = signal<boolean>(false);
@@ -194,11 +200,17 @@ export class AuthService {
 
         // Read initial session
         const { data: { session } } = await this.supabase.auth.getSession();
-        this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
+        await this.updateAuthState(
+            session?.access_token ?? null,
+            session?.user?.id ?? null
+        );
 
         // Subscribe to auth state changes (login, logout, token refresh)
         this.supabase.auth.onAuthStateChange((_event, session) => {
-            this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
+            void this.updateAuthState(
+                session?.access_token ?? null,
+                session?.user?.id ?? null
+            );
         });
     }
 
@@ -206,14 +218,20 @@ export class AuthService {
      * Update auth signals based on session state.
      * Extracts app_role from JWT access token.
      */
-    private updateAuthState(accessToken: string | null, userId: string | null): void {
+    private async updateAuthState(
+        accessToken: string | null,
+        userId: string | null
+    ): Promise<void> {
         if (!accessToken || !userId) {
             // User is not authenticated
             this.isAuthenticated.set(false);
             this.userId.set(null);
             this.appRole.set('user'); // Safe fallback
+            this.aiCreditsService.bootstrapFromMeResponse(null);
             return;
         }
+
+        const userChanged = this.userId() !== userId;
 
         // User is authenticated - extract role from JWT
         const roleResult = extractAppRoleFromJwt(accessToken);
@@ -222,11 +240,45 @@ export class AuthService {
         this.userId.set(userId);
         this.appRole.set(roleResult.appRole);
 
+        if (userChanged) {
+            this.aiCreditsService.bootstrapFromMeResponse(null);
+        }
+
         // Log diagnostics if fallback was used
         if (roleResult.isFallback) {
             console.warn(
                 `[AuthService] app_role fallback applied: ${roleResult.reason}`,
                 { rawAppRole: roleResult.rawAppRole, fallbackRole: roleResult.appRole }
+            );
+        }
+
+        await this.bootstrapAiCredits(userId);
+    }
+
+    private async bootstrapAiCredits(expectedUserId: string): Promise<void> {
+        try {
+            const response = await this.supabase.functions.invoke<MeDto>('me', {
+                method: 'GET',
+            });
+
+            if (this.userId() !== expectedUserId) {
+                return;
+            }
+
+            if (response.error) {
+                throw response.error;
+            }
+
+            if (!response.data) {
+                throw new Error('Nie otrzymano danych użytkownika.');
+            }
+
+            this.aiCreditsService.bootstrapFromMeResponse(response.data.ai_credits);
+            this.aiCreditsService.refreshCredits();
+        } catch (error) {
+            console.error(
+                '[AuthService] Nie udało się zainicjalizować kredytów AI:',
+                error
             );
         }
     }
