@@ -3,24 +3,32 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 19 sierpnia 2026 — na podstawie kodu, commitów, `docs/results/`, `docs/Jira.xml` oraz historiijek Premium (`docs/historyjki-premium.md`).
+> **Aktualizacja:** 23 września 2026 — m.in. zakończenie wdrożenia Google OAuth (plany API i widoków), widoku strony cennika (`/pricing`, stub `/checkout`, `/legal/subscription`; bez nowej warstwy API) oraz kredytów AI PS-64 (plany API i widoków), kod, `docs/results/`, `docs/Jira.xml`, historyjki Premium (`docs/historyjki-premium.md`).
 
 ---
 
-## 0. Stan realizacji (sierpień 2026)
+## 0. Stan realizacji (wrzesień 2026)
 
 MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting, backend: Supabase Cloud). Eksport Jira (59 zgłoszeń): **48 Gotowe**, **7 Do zrobienia**, **1 W toku**, **3 nie będzie realizowane**.
 
+**Google OAuth (logowanie / rejestracja):** implementacja warstwy API (`GET /profile/username-available`, rozszerzenie flow profilu) oraz widoków (przycisk Google, callback, `/auth/complete-profile`, guardy) — **zakończona** zgodnie z planami implementacji.
+
+**Strona cennika:** implementacja widoków (`/pricing`, stub `/checkout`, `/legal/subscription`, linki w nawigacji, stopce i na landingu) — **zakończona**. Etap nie miał planu API: cennik jest statyczny (konfiguracja frontendu), bez nowych endpointów. Płatności nie są podłączone.
+
+**Kredyty AI (PS-64):** implementacja warstwy API i widoków — **zakończona**. Osobne pule `draft` i `image`: Free — limit dożywotni (domyślnie 3 drafty, 0 zdjęć), Premium — limit miesięczny (domyślnie 20 / 5, zmienne środowiskowe), admin — bez limitu. Reset miesięczny cronem (codziennie 02:00 UTC) oraz przy wywołaniu, gdy termin minął. Kredyt jest rezerwowany przed wywołaniem modelu i zwracany, gdy wywołanie się nie uda. Zmiana roli w panelu admina ustawia pulę zgodną z nową rolą. Sprzedaż pakietów kredytów i bramka płatności nie są podłączone. Endpoint `POST /ai/recipes/draft` przyjmuje rolę `user` i rozlicza kredyty; trasa UI `/recipes/new/assist` oraz kafelek na `/recipes/new/start` nadal wymagają `premium`/`admin` (plan API zdejmował bramkę roli, plan widoków jej nie zmieniał).
+
 ### Dostarczone poza pierwotnym szkicem summary
 
-- Logowanie / rejestracja przez **Google OAuth** (Supabase Auth) + ekran `/auth/complete-profile` przy braku `username`
+- **Google OAuth** (Supabase Auth, PKCE): wspólny przycisk na `/login` i `/register`, callback z rozgałęzieniem e-mail vs OAuth, ekran `/auth/complete-profile` (walidacja async username, `PUT /profile`), guardy `oauthCompleteProfileGuard` / `usernameCompleteMatchGuard` + `ProfileCompletionService`; obsługa błędów OAuth na `/login?error=…`
 - Zgoda marketingowa przy rejestracji i w ustawieniach profilu
 - Ustawienia konta: username, zgoda marketingowa, zmiana hasła, e-mail tylko do odczytu
 - Panel admina: dashboard (stub), **lista użytkowników** (`/admin/users`), **zmiana roli** (`user` / `premium` / `admin`)
-- Feature gating: asysta AI przy tworzeniu przepisu oraz generowanie zdjęcia AI — role `premium` i `admin`; import Markdown bez LLM pozostaje dla wszystkich zalogowanych
+- Feature gating: generowanie zdjęcia AI — role `premium` i `admin` oraz pula kredytów `image`; import Markdown bez LLM pozostaje dla wszystkich zalogowanych. Asysta AI w UI nadal tylko `premium`/`admin`; API draftu rozlicza kredyty także dla roli `user`
+- **Kredyty AI:** wskaźnik puli na asyście i przy generowaniu zdjęcia, dialog przy błędzie `402`, sekcja w `/settings` (ukryta dla admina), korekta puli w dialogu użytkownika w panelu admina
 - Strony prawne z treścią Markdown (`/legal/terms`, `/legal/privacy`); link „Wydawca” w stopce wyłączony
 - Clickio Consent Manager + Google Analytics
 - Logo / favicon, Bottom Bar, drzewo kolekcji, lista zakupów, normalizacja składników, zdjęcie AI także przed zapisem przepisu
+- **Strona cennika** (`/pricing`, publiczna): karty Free i Premium, okres miesięczny/roczny (domyślnie roczny, oszczędność ~17%), tabela porównawcza, FAQ, trial 7 dni na karcie Premium. CTA zależy od sesji i roli. Stub `/checkout` („Płatności wkrótce”). Regulamin subskrypcji `/legal/subscription`. Link „Cennik” dla gościa (nagłówek publiczny) i roli `user` (topbar). Blok promo Premium na landingu dla gościa i `user`
 
 ### Backlog produktowy (Jira — Do zrobienia)
 
@@ -34,7 +42,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | PS-38 | Gemini przy generowaniu zdjęcia **bez** referencji |
 | PS-59 | Drag & drop obrazka do asysty AI |
 
-**W toku:** PS-62 Plan biznesowy (freemium / Premium — analiza w `docs/analizaf0funkcjonalnosci-premium-v02.md`, historyjki `PREM-*` w `docs/historyjki-premium.md`). Subskrypcja, kredyty AI i checkout **nie są zaimplementowane**.
+**W toku:** PS-62 Plan biznesowy (freemium / Premium — analiza w `docs/analizaf0funkcjonalnosci-premium-v02.md`, historyjki `PREM-*` w `docs/historyjki-premium.md`). Widok cennika, stub checkout i pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płatności **nie są zaimplementowane**.
 
 **Nie będzie realizowane (Jira):** PS-17 (filtr wyszukiwarki o rodzaj/termorobot — osobny ticket), PS-20 (przebudowa wyszukiwarek), PS-26 (stary ticket listy zakupów; funkcja jest jako PS-42).
 
@@ -54,11 +62,13 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - Organizacja: kategorie (predefiniowane), tagi (własne), kolekcje (nazwane zbiory)
 - "Mój plan" — trwała lista do 50 przepisów, powiązana z listą zakupów
 - Lista zakupów — pozycje z przepisów (znormalizowane składniki) + ręczne wpisy
-- Import przepisu z Markdown oraz asystowane dodawanie z AI (tekst/obraz → formularz; **premium/admin**)
-- Generowanie zdjęć AI (**premium/admin**) — model `gpt-image-1.5`; tryb z referencją (Gemini); możliwe przed pierwszym zapisem przepisu
+- Import przepisu z Markdown (bez LLM, wszyscy zalogowani) oraz asystowane dodawanie z AI (tekst/obraz → formularz). API draftu rozlicza kredyty `draft` (także rola `user`); ekran asysty w UI nadal tylko `premium`/`admin`
+- Generowanie zdjęć AI (**premium/admin**, pula kredytów `image`) — model `gpt-image-1.5`; tryb z referencją (Gemini); możliwe przed pierwszym zapisem przepisu
 - Publiczny portal: landing z wyszukiwaniem, katalog `/explore`, kanoniczne URL ze slugiem
+- Publiczny cennik `/pricing` (Free vs Premium, ceny statyczne) i zapowiedź płatności na `/checkout`; sprzedaż subskrypcji jeszcze nie działa
+- Kredyty AI per użytkownik: Free dożywotnie, Premium miesięcznie, admin bez limitu; podgląd w ustawieniach i korekta w panelu admina
 - Asynchroniczna normalizacja składników (worker cron + retry)
-- Zgodność: regulamin i polityka prywatności, zgoda marketingowa, menedżer zgód cookies
+- Zgodność: regulamin, polityka prywatności i regulamin subskrypcji, zgoda marketingowa, menedżer zgód cookies
 
 ### Granice (poza zakresem / zaplanowane później)
 
@@ -66,7 +76,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - Zarządzanie spiżarnią
 - Funkcje społecznościowe (znajomi, komentarze, oceny)
 - Zaawansowane wartości odżywcze, historia zmian, notatki użytkownika przy cudzym przepisie
-- Subskrypcja, płatności, pule kredytów AI, strona `/pricing`
+- Subskrypcja i płatności (strona `/pricing` oraz stub `/checkout` są; brak endpointu planów i bramki płatności). Pule kredytów AI są wdrożone; dokupienie pakietu nie jest
 - Tworzenie/usuwanie kont z panelu admina, audyt zmian ról, masowa zmiana ról
 - Inni dostawcy OAuth (poza Google)
 
@@ -106,8 +116,9 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-030 | Przycisk "Więcej" (load more) | Domyślnie 12 elementów, doładowywanie kolejnych 12. |
 | US-031 | Przepisy kolekcji bez paginacji | Jednorazowe ładowanie (limit techniczny 500). |
 | US-032 | Ikonka widoczności na liście | Ikona Prywatny/Współdzielony/Publiczny z tooltipem, tylko dla autora. |
-| US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz. Trasa `/recipes/new/assist` — `premium`/`admin`. |
-| US-037 | Generowanie zdjęcia AI | Przycisk AI w edycji/kreatorze, podgląd, akceptacja, `gpt-image-1.5`, 1024x1024 webp. `premium`/`admin`. Możliwe przed zapisem przepisu. |
+| US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz. Rozliczenie kredytów `draft` (`402` przy wyczerpaniu). Trasa UI `/recipes/new/assist` — `premium`/`admin`; endpoint przyjmuje też rolę `user`. |
+| US-037 | Generowanie zdjęcia AI | Przycisk AI w edycji/kreatorze, podgląd, akceptacja, `gpt-image-1.5`, 1024x1024 webp. `premium`/`admin` plus pula kredytów `image`. Możliwe przed zapisem przepisu. |
+| PS-64 | Kredyty AI | Osobne pule draft i zdjęcie. Free: limit dożywotni; Premium: miesięczny (reset cron); admin: bez limitu. Wskaźnik, dialog wyczerpania, sekcja w `/settings`, korekta w panelu admina. |
 | US-038 | Dodanie do "Mojego planu" | Przycisk na szczegółach, limit 50, stany: dodaj/spinner/zobacz listę. |
 | US-039 | Przeglądanie "Mojego planu" | Drawer z prawej, lista z miniaturami, usuwanie, czyszczenie, FAB. |
 | US-040 | Czasy przygotowania/całkowity | Opcjonalne 0-999 min, walidacja całkowity >= przygotowania. |
@@ -132,13 +143,13 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-OAUTH-001 | Logowanie/rejestracja Google | Przycisk na `/login` i `/register`, OAuth przez Supabase, konto od razu aktywne. |
 | US-OAUTH-002 | Powrót przez Google | Istniejący `username` → `/dashboard`. |
 | US-OAUTH-003 | Scalanie tożsamości | Ten sam e-mail Google i email+hasło → jedno konto (link identity). |
-| US-OAUTH-004 | Uzupełnienie profilu | `/auth/complete-profile` gdy brak `username`; guard blokuje prywatne trasy. |
+| US-OAUTH-004 | Uzupełnienie profilu | `/auth/complete-profile` gdy brak `username`; `usernameCompleteMatchGuard` na trasach prywatnych; `oauthCompleteProfileGuard` na samym ekranie uzupełnienia. |
 | US-ADM-001 | Admin: dostęp z nawigacji | Tylko `admin`: pozycja „Admin” w Topbarze (desktop) i w menu użytkownika (mobile/tablet). |
 | US-ADM-002 | Admin: blokada dostępu | Wejście na `/admin/*` bez roli `admin` → `/forbidden`. |
 | US-ADM-003 | Admin: lista użytkowników | `/admin/users`: paginacja, sortowanie, dane kont (PS-54). |
-| US-ADM-004 | Admin: zmiana roli | Dialog „Edytuj rolę”; zakaz zmiany własnej roli i obniżenia ostatniego admina. JWT docelowego użytkownika odświeża się po ponownym logowaniu. |
+| US-ADM-004 | Admin: zmiana roli | Dialog „Edytuj rolę”; zakaz zmiany własnej roli i obniżenia ostatniego admina. JWT docelowego użytkownika odświeża się po ponownym logowaniu. Zmiana na `user`/`premium` ustawia pulę kredytów AI; w tym samym dialogu jest korekta puli. |
 
-Historyjki monetyzacji `PREM-001` … (entitlements, kredyty, `/pricing`, checkout) są w `docs/historyjki-premium.md` i **nie zastępują** powyższych story MVP.
+Historyjki monetyzacji `PREM-001` … (entitlements, checkout płatności) są w `docs/historyjki-premium.md` i **nie zastępują** powyższych story MVP. Publiczny widok `/pricing`, stub `/checkout` oraz kredyty AI (PS-64) są już w aplikacji. Sprzedaż subskrypcji i pakietów kredytów nie jest.
 
 ---
 
@@ -252,6 +263,11 @@ Bez zmian koncepcyjnych względem MVP: tagi i kolekcje per `user_id`, nazwy unik
 | `plan_recipes` | `user_id`, `recipe_id`, `added_at` | „Mój plan” (max 50 po stronie API) |
 | `shopping_list_items` | `user_id`, `kind`, `name`, `unit`, `amount`, `text`, `is_owned` | Wiersze listy zakupów (`RECIPE` / `MANUAL`) |
 | `shopping_list_recipe_contributions` | `user_id`, `recipe_id`, `name`, `unit`, `amount` | Wkład składników z planu |
+| `user_ai_credits` | `user_id` UNIQUE, pule `draft_*` / `image_*`, `limit_type`, `next_reset_at` | Saldo kredytów AI (1:1 z użytkownikiem) |
+
+#### `user_ai_credits`
+
+Jedna pula na draft przepisu i jedna na zdjęcie. `limit_type`: `lifetime` (Free) albo `monthly` (Premium). Wartość `unlimited` występuje tylko w odpowiedziach API dla admina — nie ma jej w enumie bazy. Wiersz powstaje leniwie przy pierwszym wywołaniu AI, z domyślną pulą Free. Zapis wyłącznie przez service role; użytkownik może odczytać własne saldo (RLS). Indeks częściowy po `next_reset_at` dla resetu miesięcznego.
 
 Widok `recipe_details` agreguje przepis + autora + kolekcje na potrzeby API.
 
@@ -259,6 +275,7 @@ Widok `recipe_details` agreguje przepis + autora + kolekcje na potrzeby API.
 
 ```
 auth.users 1:1 profiles
+auth.users 1:1 user_ai_credits
 auth.users 1:N recipes, tags, collections, plan_recipes, shopping_list_items, jobs
 categories 1:N recipes
 recipes N:M tags (via recipe_tags)
@@ -292,6 +309,7 @@ recipes N:M users w planie (via plan_recipes)
 - Kolekcje: możliwość powiązania publicznego przepisu niebędącego własnością użytkownika
 - Tabele łączące: własność kolekcji / tagu po stronie użytkownika operującego
 - Operacje admina na rolach: RPC z kontekstem service role, nie przez RLS na `auth.users`
+- `user_ai_credits`: SELECT własnego wiersza; INSERT/UPDATE/DELETE tylko service role
 
 ---
 
@@ -307,9 +325,9 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 |---|---|---|
 | `POST` | `/auth/signup` | Rejestracja (email, hasło, username, zgoda marketingowa). Link weryfikacyjny. Domyślna rola: `user`. |
 | `POST` | `/auth/login` | Logowanie (email, hasło). JWT z `app_role`. |
-| SDK | `signInWithOAuth({ provider: 'google' })` | Google OAuth; `redirectTo` = `{origin}/auth/callback`. |
+| SDK | `signInWithOAuth({ provider: 'google' })` | Google OAuth (PKCE); `redirectTo` = `{origin}/auth/callback`; `access_type=offline`, `prompt=select_account`. |
 | `POST` | `/auth/resend` | Ponowna wysyłka linku weryfikacyjnego. Rate limit 429. |
-| `GET` | `/auth/callback` | (Frontend) Wymiana `code` na sesję: weryfikacja e-mail **lub** powrót z Google. |
+| `GET` | `/auth/callback` | (Frontend) `type=email` → weryfikacja e-mail; OAuth → `exchangeCodeForSession`, potem `GET /profile` → `/dashboard` lub `/auth/complete-profile`; błędy → `/login?error=…`. |
 
 ### Przepisy publiczne
 
@@ -341,15 +359,17 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 
 | Metoda | URL | Opis |
 |---|---|---|
-| `POST` | `/ai/recipes/draft` | Draft z tekstu lub obrazu. Nie zapisuje. Rate limit. Feature gating zgodne z rolą (asysta UI: premium). |
+| `GET` | `/ai/credits` | Pełne saldo zalogowanego użytkownika (`draft`, `image`, `limit_type`, `next_reset_at`). Admin: `unlimited` bez odczytu puli. |
+| `POST` | `/ai/recipes/draft` | Draft z tekstu lub obrazu. Nie zapisuje. Rate limit. Role `user`/`premium`/`admin`. Przed wywołaniem rezerwacja kredytu `draft`; `402` `AI_CREDITS_EXHAUSTED` przy pustej puli; zwrot przy błędzie modelu. |
 | `POST` | `/ai/recipes/normalized-ingredients` | Normalizacja (worker, nie UI). |
-| `POST` | `/ai/recipes/image` | Zdjęcie AI. Wymaga `premium`/`admin`. Tryb `recipe_only` / `with_reference`. Base64 webp 1024x1024. Działa też przed zapisem (kreator). |
+| `POST` | `/ai/recipes/image` | Zdjęcie AI. Wymaga `premium`/`admin` oraz kredytu `image`. Tryb `recipe_only` / `with_reference`. Base64 webp 1024x1024. Działa też przed zapisem (kreator). `402` przy wyczerpaniu puli. |
 
 ### Worker wewnętrzny
 
 | Metoda | URL | Opis |
 |---|---|---|
 | `POST` | `/internal/workers/normalized-ingredients/run` | Cron ~1 min. Joby `PENDING`/`RETRY`. Max 5 prób, backoff. Nie dla klienta. |
+| `POST` | `/internal/ai-credits/monthly-reset` | Reset pul Premium (`limit_type = monthly`, termin minął). Sekret cron / service role. Ten sam reset realizuje też funkcja SQL w pg_cron (02:00 UTC). |
 
 ### Kategorie, Tagi
 
@@ -398,10 +418,10 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | `GET` | `/search/global` | Omnibox: przepisy i kolekcje (min 2 znaki). |
 | `GET` | `/dashboard/summary` | Podsumowanie dashboardu. |
 | `GET` | `/profile` | Ustawienia profilu (username, zgoda marketingowa, e-mail). |
-| `PUT` | `/profile` | Aktualizacja username + zgody marketingowej. |
-| `GET` | `/profile/username-available` | Publiczne sprawdzenie unikalności username (OAuth complete-profile). |
+| `PUT` | `/profile` | Aktualizacja username + zgody marketingowej (pełny payload; m.in. zapis username po OAuth). |
+| `GET` | `/profile/username-available` | Sprawdzenie unikalności `username` (3–50 znaków, bez spacji); używane przy `/auth/complete-profile`. |
 | `POST` | `/profile/change-password` | Zmiana hasła (weryfikacja obecnego; service role). |
-| `GET` | `/me` | Sesja: id, username, `app_role`. Bootstrap App Shell. |
+| `GET` | `/me` | Sesja: id, username, `app_role`, skrót `ai_credits` (pozostałe draft/image, typ limitu, data resetu). Bootstrap App Shell. |
 
 ### Admin (tylko `admin`)
 
@@ -410,7 +430,8 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | `GET` | `/admin/summary` | Stub metryk dashboardu. 401/403 bez admina. |
 | `GET` | `/admin/health` | Health check endpointu admin. |
 | `GET` | `/admin/users` | Lista użytkowników: paginacja, sortowanie (`login`, daty itd.). |
-| `PATCH` | `/admin/users/{userId}/role` | Zmiana `app_role`. `409` przy samomodyfikacji lub ostatnim adminie. |
+| `PATCH` | `/admin/users/{userId}/role` | Zmiana `app_role`. `409` przy samomodyfikacji lub ostatnim adminie. Po zmianie na `user` lub `premium` pula kredytów jest ustawiana na wartości tej roli (admin bez zapisu puli). |
+| `PATCH` | `/admin/users/{userId}/ai-credits` | Ręczna korekta puli (total/used, `lifetime`/`monthly`, data resetu). Tylko `admin`. `400` przy `used` > `total`. |
 
 ### Utilities
 
@@ -422,24 +443,27 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 
 ## 6. Widoki UI (streszczenie High-Level UI Plan)
 
-Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-first, Bottom Bar na mobile/tablet (<960px). Prywatne trasy: AuthGuard + `usernameCompleteMatchGuard` (brak username → `/auth/complete-profile`). `/admin/*`: dodatkowo `adminRoleMatchGuard`.
+Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-first, Bottom Bar na mobile/tablet (<960px). Trasy zalogowane: `authenticatedMatchGuard`; prywatne wymagające pełnego profilu — dodatkowo `usernameCompleteMatchGuard` (brak `username` → `/auth/complete-profile`, cache w `ProfileCompletionService`). `/auth/complete-profile`: `oauthCompleteProfileGuard`. `/admin/*`: dodatkowo `adminRoleMatchGuard`. Stan kredytów AI: skrót z `GET /me` przy bootstrapie sesji, pełne saldo z `GET /ai/credits`.
 
 ### Widoki publiczne
 
 | Widok | Ścieżka | Opis |
 |---|---|---|
-| Landing Page | `/` | Wyszukiwarka publicznych przepisów, sekcje, CTA logowanie/rejestracja. Zalogowany: nawigacja konta, bez CTA logowania. Logo widoczne także dla gościa. |
+| Landing Page | `/` | Wyszukiwarka publicznych przepisów, sekcje, CTA logowanie/rejestracja. Zalogowany: nawigacja konta, bez CTA logowania. Logo widoczne także dla gościa. Dla gościa i roli `user`: blok promo Premium z linkiem do cennika. |
 | Katalog Explore | `/explore` | Publiczne przepisy, search (min 3 zn.), load more 12. Badge "Twój przepis". |
 | Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania. Zalogowany nie-autor: kolekcja/plan. Autor: pełne akcje. |
-| Logowanie | `/login` | Email+hasło + **Zaloguj się przez Google**. |
-| Rejestracja | `/register` | Username, email, hasło, zgoda marketingowa + Google. |
+| Logowanie | `/login` | Email+hasło + **Zaloguj się przez Google** (`OauthGoogleButtonComponent`); komunikaty po błędach OAuth z `?error=`. |
+| Rejestracja | `/register` | Username, email, hasło, zgoda marketingowa + **Zarejestruj się przez Google** (ten sam flow OAuth). |
 | Wysłano link | `/register/verify-sent` | Komunikat + ponowna wysyłka (cooldown 60s). |
 | Auth callback | `/auth/callback` | Sesja po e-mailu lub OAuth. |
-| Uzupełnienie profilu | `/auth/complete-profile` | Tylko po OAuth bez `username`. |
+| Uzupełnienie profilu | `/auth/complete-profile` | Po OAuth bez `username`: pole username, sprawdzenie `GET /profile/username-available`, zapis `PUT /profile` (zgoda marketingowa domyślnie `false`, edycja później w `/settings`). |
 | E-mail potwierdzony | `/email-confirmed` | Sukces + link do logowania. |
 | Link nieważny | `/email-confirmation-invalid` | Nowy link. |
+| Cennik | `/pricing` | Publiczne porównanie Free i Premium. Przełącznik miesięcznie/rocznie, karty planów, tabela (na wąskim ekranie akordeon), FAQ. Ceny ze stałej konfiguracji, bez API. Gość: „Zacznij za darmo” → `/register`, „Wybierz Premium” → `/register?next=/checkout`. Rola `user`: Free jako „Twój aktualny plan” (nieaktywne), Premium → `/checkout`. Rola `premium`: na karcie Premium „Twój aktualny plan”. Rola `admin`: bez CTA zakupu. |
+| Płatności (stub) | `/checkout` | „Płatności wkrótce” i powrót do `/pricing`. Bez wywołań API. |
 | Regulamin | `/legal/terms` | Markdown z `docs/legal-documents` (sync do assets). |
 | Polityka prywatności | `/legal/privacy` | Markdown. |
+| Regulamin subskrypcji | `/legal/subscription` | Markdown (placeholder treści). |
 | Wydawca | `/legal/publisher` | Trasa istnieje; link w stopce obecnie wyłączony. |
 
 ### Widoki prywatne (auth required)
@@ -451,14 +475,14 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Admin - Użytkownicy | `/admin/users` | Tabela, paginacja, sortowanie, dialog zmiany roli. |
 | Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Własne + publiczne z kolekcji. Filtry, load more 12. |
 | Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. |
-| Kreator - wybór trybu | `/recipes/new/start` | Pusty formularz (wszyscy) lub AI (premium/admin; badge). |
-| Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. |
-| Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (paste/drop/file/AI). Sticky Zapisz. |
+| Kreator - wybór trybu | `/recipes/new/start` | Pusty formularz (wszyscy) lub AI (premium/admin; badge). Kafelek AI nadal zablokowany dla roli `user`. |
+| Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. Wskaźnik kredytów `draft`, baner i blokada przycisku przy wyczerpaniu, dialog przy `402`. |
+| Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (paste/drop/file/AI). Sticky Zapisz. Przy zdjęciu AI: kompaktowy wskaźnik kredytów `image` i blokada przycisku przy wyczerpaniu. |
 | Import Markdown | `/recipes/import` | Live preview → edycja. |
 | Lista kolekcji | `/collections` | CRUD kolekcji. |
 | Szczegóły kolekcji | `/collections/:id` | Wszystkie przepisy (limit 500). |
 | Zakupy | `/shopping` | Grupy z planu + ręczne. |
-| Ustawienia | `/settings` | Username, zgoda marketingowa, hasło; e-mail RO. |
+| Ustawienia | `/settings` | Username, zgoda marketingowa, hasło; e-mail RO. Sekcja „Kredyty AI” (paski postępu) dla `user` i `premium`; ukryta dla `admin`. CTA do `/pricing` dla roli `user`. |
 | Brak dostępu | `/forbidden` | 403 (role / premium). |
 
 ### Komponenty globalne / overlay
@@ -468,10 +492,13 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Drawer "Mój plan" | Panel z prawej: miniatura+nazwa+kosz, wyczyść. |
 | FAB "Mój plan" | Prawy dolny róg, gdy plan ≥1. |
 | Bottom Bar | <960px: Odkrywaj, Moja Pycha, Zakupy. |
-| Footer | Copyright + Regulamin + Polityka prywatności. |
+| Footer | Copyright + Cennik + Regulamin subskrypcji + Regulamin + Polityka prywatności. |
 | Sidebar (drzewo kolekcji) | 3 poziomy, lazy-load. |
 | Modal "Dodaj do kolekcji" | Multi-select, szukanie, nowa kolekcja, atomowy zapis. |
-| Dialog zmiany roli | Admin: wybór `user`/`premium`/`admin`. |
+| Dialog zmiany roli | Admin: wybór `user`/`premium`/`admin` oraz formularz korekty kredytów AI (zapis `PATCH`, reset zużycia). |
+| Wskaźnik kredytów AI | Licznik puli `draft` lub `image` (stan normalny / ostrzeżenie / wyczerpanie). Ukryty dla admina. |
+| Dialog wyczerpania kredytów | Po `402` lub kliknięciu wyczerpanego wskaźnika. Free: CTA do `/pricing`. Premium: informacja o dacie resetu. |
+| Przycisk Google OAuth | Współdzielony `OauthGoogleButtonComponent` (login/rejestracja). |
 
 ---
 
@@ -492,11 +519,13 @@ Piramida testów: solidna baza jednostkowych, uzupełniona integracjami i E2E.
 ### Kluczowe scenariusze E2E / manualne
 
 1. Rejestracja → potwierdzenie e-mail → logowanie (w tym zgoda marketingowa)
-2. Google OAuth: nowe konto → complete-profile; istniejące konto → dashboard; scalanie e-mail
+2. Google OAuth: nowe konto → complete-profile; istniejące konto → dashboard; scalanie e-mail; anulowanie/błąd → `/login?error=…`
 3. Cykl życia przepisu: tworzenie → lista → szczegóły → edycja → usuwanie
 4. Kolekcje, plan, lista zakupów
 5. Admin: lista użytkowników, zmiana roli, odmowa dostępu dla `user`
-6. Feature gating: `user` nie wchodzi na `/recipes/new/assist` ani nie generuje zdjęcia AI
+6. Feature gating: `user` nie wchodzi na `/recipes/new/assist` ani nie generuje zdjęcia AI; API draftu rozlicza kredyty także dla roli `user`
+7. Kredyty AI: wskaźnik i sekcja ustawień; wyczerpanie puli → dialog i `402`; admin bez limitu; korekta puli w panelu admina
+8. Cennik: `/pricing` dla gościa i zalogowanego (CTA według roli); `/checkout` pokazuje „Płatności wkrótce”
 
 Przewodniki: `docs/testing/`.
 
@@ -520,7 +549,8 @@ Przewodniki: `docs/testing/`.
 | Ryzyko | Mitygacja |
 |---|---|
 | Integracja Supabase / OAuth / RLS | Mocki + E2E na dev; procedury RLS w `docs/deployment/` |
-| Koszt i nadużycia API AI | Rate limit, gating premium; przyszłe kredyty (`PREM-002`) |
+| Koszt i nadużycia API AI | Rate limit, gating zdjęcia AI (premium), pule kredytów (rezerwacja + zwrot, `402`). Zakup dodatkowych pakietów nie istnieje |
+| Ceny cennika na sztywno we froncie | Przed startem sprzedaży zastąpić konfigurację statyczną endpointem planów |
 | Regresja ról (ostatni admin, JWT) | Walidacja backendu + testy PATCH roli |
 | Dług technologiczny | Coverage, review, analiza statyczna |
 | Błędy regresji | Zestaw testów w CI/CD |

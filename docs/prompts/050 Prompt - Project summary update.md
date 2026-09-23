@@ -8,15 +8,15 @@ Etap opisany w planach implementacji API oraz widoków został już zrealizowany
 
 Dane wejściowe
 <project_summary>
-{project-summary}
+@docs\results\project-summary.md
 </project_summary>
 
 <api_implementation_plan>
-{api-impl-plan}
+@docs\results\impl-plans\endpoints\ps64-ai-credits-api-implementation-plan.md
 </api_implementation_plan>
 
 <view_implementation_plan>
-{view-implementation-plan}
+@docs\results\impl-plans\views\ai-credits-view-implementation-plan.md
 </view_implementation_plan>
 Zadanie
 

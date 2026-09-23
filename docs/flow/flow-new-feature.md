@@ -2,24 +2,30 @@
 
 Aby zaplanować, zaimplementować i wdrożyć nową funkcjonalność, wybierz jedną z dwóch ścieżek:
 
-- **Funkcjonalność złożona** (oparta na więcej niż jednej historyjce użytkownika): wykonaj [analizę funkcjonalności](#analiza-funkcjonalności), a następnie [generowanie historyjek użytkownika](#user-stories).
-- **Funkcjonalność prosta** (jedna historyjka użytkownika): wykonaj [generowanie pojedynczej historyjki użytkownika](#pojedyncza-historyjka-użytkownika) i przejdź do [planu implementacji](#plan-implementacji).
+- **Funkcjonalność złożona - epic** (oparta na więcej niż jednej historyjce użytkownika): wykonaj [analizę funkcjonalności](#analiza-funkcjonalności), a następnie [generowanie historyjek użytkownika](#user-stories).
+- **Funkcjonalność prosta - user story** (jedna historyjka użytkownika): wykonaj [generowanie pojedynczej historyjki użytkownika](#pojedyncza-historyjka-użytkownika) i przejdź do [planu implementacji](#plan-implementacji).
 
-## Pojedyncza historyjka użytkownika
+# Zbiór historyjek - Epic
 
-- Wykonaj prompt `046 Prompt - New feature - user story`.
-- Zrewiduj treść historyjki i w razie potrzeby ją popraw.
-- Przejdź do punktu [Plan implementacji](#plan-implementacji).
-
-## Analiza funkcjonalności
+## Analiza
 
 - Wykonaj prompt `043 Prompt - New features analysis`.
 - Zrewiduj dokument za pomocą prompta `044 Prompt - New features analysis review` i **innego modelu**.
 - W razie potrzeby skoryguj dokument, kontynuując konwersację z modelem.
 
-## User stories
+## Generowanie user stories
 
 - Wygeneruj historyjki użytkownika za pomocą prompta `045 Prompt - New features - user stories`.
+ - dla każdej historyjki przejdz do punku **Plan implementacji** i kontynuuj
+
+# Pojedyncze User Story
+
+## Generownie pojedynczej historyjki
+
+- Wykonaj prompt `046 Prompt - New feature - user story`.
+- Zrewiduj treść historyjki i w razie potrzeby ją popraw.
+- Przejdź do punktu [Plan implementacji](#plan-implementacji).
+
 
 ## Plan implementacji
 
