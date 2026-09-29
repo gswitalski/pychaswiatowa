@@ -38,7 +38,7 @@ export const PRICING_CONFIG = {
     },
     limits: {
         free: {
-            planItems: 7,
+            planItems: 3,
             aiImportsLifetime: 3,
         },
         premium: {
@@ -136,7 +136,7 @@ export const PRICING_FEATURE_CATEGORIES: readonly PricingFeatureCategory[] = [
         features: [
             {
                 name: 'Mój plan (limit pozycji)',
-                free: '7 pozycji',
+                free: '3 pozycje',
                 premium: '50 pozycji',
                 freeAvailability: 'text',
                 premiumAvailability: 'text',

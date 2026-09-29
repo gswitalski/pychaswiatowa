@@ -1,0 +1,24 @@
+:host {
+    display: block;
+}
+
+[mat-dialog-title] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-icon {
+        color: var(--mat-sys-primary);
+        flex-shrink: 0;
+    }
+}
+
+mat-dialog-content {
+    p {
+        margin-bottom: 8px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}

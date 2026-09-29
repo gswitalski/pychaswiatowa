@@ -14,6 +14,14 @@
         border-bottom: 1px solid var(--mat-sys-outline-variant);
         background-color: var(--mat-sys-surface-container);
         flex-shrink: 0;
+        gap: 8px;
+    }
+
+    &__header-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
     }
 
     &__title {
@@ -23,10 +31,22 @@
         color: var(--mat-sys-on-surface);
     }
 
+    &__limit-counter {
+        font-size: 0.75rem;
+        color: var(--mat-sys-on-surface-variant);
+        line-height: 1.2;
+
+        &--warn {
+            color: var(--mat-sys-error);
+            font-weight: 500;
+        }
+    }
+
     &__header-actions {
         display: flex;
         align-items: center;
         gap: 4px;
+        flex-shrink: 0;
     }
 
     &__content {

@@ -1,13 +1,19 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { EventEmitter } from '@angular/core';
-import { Observable, from, map, catchError, throwError, tap, finalize } from 'rxjs';
+import { Observable, from, switchMap, filter, map, catchError, throwError, tap, finalize } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { SupabaseService } from './supabase.service';
 import {
     AddRecipeToPlanCommand,
     GetPlanResponseDto,
     PlanListItemDto,
     ApiError,
+    PlanLimitExceededFreeErrorDto,
 } from '../../../../shared/contracts/types';
+import {
+    PlanLimitExceededDialogComponent,
+    PlanLimitExceededDialogData,
+} from '../../shared/components/plan-limit-exceeded-dialog/plan-limit-exceeded-dialog.component';
 
 /**
  * Stan danych planu (lista + meta + loading).
@@ -72,6 +78,7 @@ export interface PlanChangeEvent {
 })
 export class MyPlanService {
     private readonly supabase = inject(SupabaseService);
+    private readonly dialog = inject(MatDialog);
 
     /**
      * Stan otwarcia drawer'a "Mój plan" (globalny)
@@ -298,19 +305,46 @@ export class MyPlanService {
                 body: command,
             })
         ).pipe(
-            map((response) => {
-                if (response.error) {
-                    throw this.mapError(response.error, response.error.status);
+            // Asynchronicznie analizujemy błąd by wykryć PLAN_LIMIT_EXCEEDED_FREE
+            // zanim mapError() utraci oryginalne body odpowiedzi.
+            switchMap(async (response): Promise<boolean> => {
+                if (!response.error) {
+                    return true; // sukces
                 }
-                // Sukces - brak wartości zwrotnej
-                return;
+
+                const status = this.getStatusFromFunctionError(response.error);
+
+                if (status === 422) {
+                    try {
+                        const body = await this.getBodyFromFunctionError(response.error) as Partial<PlanLimitExceededFreeErrorDto>;
+                        if (body?.error === 'PLAN_LIMIT_EXCEEDED_FREE' && body?.details) {
+                            this.dialog.open(PlanLimitExceededDialogComponent, {
+                                data: {
+                                    freeLimit: body.details.free_limit,
+                                    premiumLimit: body.details.premium_limit,
+                                    upgradeUrl: body.details.upgrade_url,
+                                } satisfies PlanLimitExceededDialogData,
+                                maxWidth: '480px',
+                                minWidth: '320px',
+                            });
+                            return false; // dialog przejął UX — nie emituj sukcesu ani błędu
+                        }
+                    } catch {
+                        // Parsowanie body się nie powiodło — obsłuż jak ogólny błąd 422
+                    }
+                }
+
+                throw this.mapError(response.error, status);
             }),
+            // Pomiń emisję gdy dialog przejął obsługę (false) — Observable zakończy się bez next()
+            filter((success): success is true => success === true),
             tap(() => {
                 // Po sukcesie odśwież plan i emituj zdarzenie
                 this.refreshPlan();
                 this.lastChangedAt.set(Date.now());
                 this.planChanges.emit({ type: 'added', recipeId: command.recipe_id });
             }),
+            map(() => undefined as void),
             catchError((err) => this.handleError(err))
         );
     }
@@ -496,6 +530,26 @@ export class MyPlanService {
 
         const maybeError = value as Partial<ApiError>;
         return typeof maybeError.message === 'string' && typeof maybeError.status === 'number';
+    }
+
+    /**
+     * Wyciąga kod statusu HTTP z błędu Supabase FunctionsHttpError.
+     * FunctionsHttpError przechowuje oryginalny Response w polu `context`.
+     */
+    private getStatusFromFunctionError(error: unknown): number {
+        if (!error || typeof error !== 'object') return 500;
+        const e = error as { context?: { status?: number }; status?: number };
+        return e.context?.status ?? e.status ?? 500;
+    }
+
+    /**
+     * Asynchronicznie pobiera body odpowiedzi błędu z FunctionsHttpError.
+     * Potrzebne do wykrycia PLAN_LIMIT_EXCEEDED_FREE zanim mapError() utraci body.
+     */
+    private async getBodyFromFunctionError(error: unknown): Promise<unknown> {
+        if (!error || typeof error !== 'object') return null;
+        const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
+        return context?.json?.() ?? null;
     }
 }
 

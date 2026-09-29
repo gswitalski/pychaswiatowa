@@ -5,7 +5,19 @@
 >
     <!-- Header -->
     <div class="my-plan-drawer__header">
-        <h2 class="my-plan-drawer__title" id="my-plan-drawer-title">Mój plan</h2>
+        <div class="my-plan-drawer__header-title">
+            <h2 class="my-plan-drawer__title" id="my-plan-drawer-title">Mój plan</h2>
+            @if (planLimit() !== null) {
+                <span
+                    class="my-plan-drawer__limit-counter"
+                    [class.my-plan-drawer__limit-counter--warn]="isPlanAtLimit()"
+                    [attr.aria-label]="'Liczba pozycji w planie: ' + planTotal() + ' z ' + planLimit()"
+                    aria-live="polite"
+                >
+                    {{ planTotal() }}&nbsp;/&nbsp;{{ planLimit() }} pozycji
+                </span>
+            }
+        </div>
         <div class="my-plan-drawer__header-actions">
             @if (hasItems() && !isClearing()) {
                 <button

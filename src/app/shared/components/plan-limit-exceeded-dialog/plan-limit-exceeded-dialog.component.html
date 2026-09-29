@@ -1,0 +1,23 @@
+<h2 mat-dialog-title id="plan-limit-dialog-title">
+    <mat-icon aria-hidden="true">playlist_add_check</mat-icon>
+    <span>Osiągnięto limit planu</span>
+</h2>
+
+<mat-dialog-content>
+    <p id="plan-limit-dialog-description">
+        Twój plan Free pozwala na przechowywanie do
+        <strong>{{ data.freeLimit }} pozycji</strong> w Moim planie.
+    </p>
+    <p>
+        Konto Premium umożliwia przechowywanie do
+        <strong>{{ data.premiumLimit }} pozycji</strong>.
+    </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">Zamknij</button>
+    <button mat-flat-button type="button" color="primary" (click)="goToPremium()">
+        Przejdź na Premium
+        <mat-icon matButtonIcon iconPositionEnd aria-hidden="true">arrow_forward</mat-icon>
+    </button>
+</mat-dialog-actions>

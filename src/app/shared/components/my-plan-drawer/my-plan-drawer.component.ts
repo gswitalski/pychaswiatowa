@@ -1,6 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     inject,
     DestroyRef,
 } from '@angular/core';
@@ -15,10 +16,12 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MyPlanService } from '../../../core/services/my-plan.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { SlugService } from '../../services/slug.service';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../confirm-dialog/confirm-dialog.component';
 import { PlanListItemDto, ApiError } from '../../../../../shared/contracts/types';
+import { PRICING_CONFIG } from '../../../pages/pricing/pricing.config';
 
 /**
  * Drawer "Mój plan" - globalny panel wysuwany z prawej strony.
@@ -49,6 +52,7 @@ import { PlanListItemDto, ApiError } from '../../../../../shared/contracts/types
 })
 export class MyPlanDrawerComponent {
     private readonly myPlanService = inject(MyPlanService);
+    private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
     private readonly snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
@@ -61,6 +65,25 @@ export class MyPlanDrawerComponent {
 
     /** Całkowita liczba elementów */
     readonly planTotal = this.myPlanService.planTotal;
+
+    /**
+     * Limit pozycji planu dla aktualnej roli.
+     * Zwraca liczbę dla roli `user` (Free), `null` dla `premium` i `admin` (brak limitu do wyświetlenia).
+     */
+    readonly planLimit = computed<number | null>(() => {
+        return this.authService.appRole() === 'user'
+            ? PRICING_CONFIG.limits.free.planItems
+            : null;
+    });
+
+    /**
+     * Czy licznik limitu jest w stanie ostrzeżenia (plan pełny).
+     * Używane do zmiany koloru licznika na `warn`.
+     */
+    readonly isPlanAtLimit = computed(() => {
+        const limit = this.planLimit();
+        return limit !== null && this.planTotal() >= limit;
+    });
 
     /** Czy ładowanie początkowe */
     readonly isLoading = this.myPlanService.isLoading;
