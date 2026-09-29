@@ -3,9 +3,62 @@
  */
 
 import { logger } from '../_shared/logger.ts';
-import { ApplicationError } from '../_shared/errors.ts';
+import {
+    ApplicationError,
+    PlanLimitExceededFreeError,
+} from '../_shared/errors.ts';
+import type { AppRole } from '../_shared/auth.ts';
 import { TypedSupabaseClient, createServiceRoleClient } from '../_shared/supabase-client.ts';
-import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan.types.ts';
+import { PLAN_LIMIT_FREE } from './plan.types.ts';
+import type {
+    RecipeAccessInfo,
+    GetPlanResponseDto,
+    PlanRecipeRow,
+} from './plan.types.ts';
+
+/**
+ * Checks whether a Free user has reached their plan item limit.
+ *
+ * Grandfathering is preserved: existing over-limit items are not removed.
+ *
+ * @param userId - The ID of the authenticated user
+ * @throws PlanLimitExceededFreeError when the configured limit is reached
+ * @throws ApplicationError when the plan item count cannot be retrieved
+ */
+export async function checkFreePlanLimit(
+    userId: string,
+    supabase: TypedSupabaseClient = createServiceRoleClient()
+): Promise<void> {
+    const { count, error } = await supabase
+        .from('plan_recipes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+    if (error) {
+        logger.error(
+            `[checkFreePlanLimit] Failed to count plan items for user ${userId}`,
+            error
+        );
+        throw new ApplicationError(
+            'INTERNAL_ERROR',
+            'Failed to check plan limit'
+        );
+    }
+
+    const currentCount = count ?? 0;
+
+    logger.info(
+        `[checkFreePlanLimit] User ${userId}: ${currentCount}/${PLAN_LIMIT_FREE} items`
+    );
+
+    if (currentCount >= PLAN_LIMIT_FREE) {
+        logger.warn(
+            `[checkFreePlanLimit] Free user ${userId} reached plan limit ` +
+            `(${currentCount}/${PLAN_LIMIT_FREE})`
+        );
+        throw new PlanLimitExceededFreeError(PLAN_LIMIT_FREE);
+    }
+}
 
 /**
  * Adds a recipe to user's plan and updates shopping list.
@@ -24,6 +77,8 @@ import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan
  * @param client - The authenticated Supabase client (user context)
  * @param userId - The ID of the authenticated user
  * @param recipeId - The ID of the recipe to add
+ * @param appRole - The trusted application role from JWT app_metadata
+ * @param serviceRoleClient - Optional service-role client used by tests
  * @throws ApplicationError
  * - FORBIDDEN: User doesn't have access to recipe
  * - NOT_FOUND: Recipe doesn't exist or is deleted
@@ -33,8 +88,13 @@ import type { RecipeAccessInfo, GetPlanResponseDto, PlanRecipeRow } from './plan
 export async function addRecipeToPlan(
     client: TypedSupabaseClient,
     userId: string,
-    recipeId: number
+    recipeId: number,
+    appRole: AppRole,
+    serviceRoleClient?: TypedSupabaseClient
 ): Promise<void> {
+    if (appRole === 'user') {
+        await checkFreePlanLimit(userId, serviceRoleClient);
+    }
 
     // Call RPC function that atomically:
     // 1. Verifies recipe access (owner or PUBLIC)

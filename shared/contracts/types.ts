@@ -799,6 +799,22 @@ export interface ApiError {
 // #region --- Plan (My Plan) ---
 
 /**
+ * Error DTO returned when a Free user exceeds their plan item limit.
+ */
+export interface PlanLimitExceededFreeErrorDto {
+    error: 'PLAN_LIMIT_EXCEEDED_FREE';
+    message: string;
+    details: {
+        /** Current Free plan limit configured by the backend. */
+        free_limit: number;
+        /** Premium plan limit. */
+        premium_limit: 50;
+        /** URL of the plan upgrade page. */
+        upgrade_url: '/pricing';
+    };
+}
+
+/**
  * Command model for adding a recipe to user's plan.
  */
 export type AddRecipeToPlanCommand = {

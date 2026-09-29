@@ -10,6 +10,7 @@ export type ErrorCode =
     | 'FORBIDDEN'
     | 'CONFLICT'
     | 'AI_CREDITS_EXHAUSTED'
+    | 'PLAN_LIMIT_EXCEEDED_FREE'
     | 'PAYLOAD_TOO_LARGE'
     | 'UNPROCESSABLE_ENTITY'
     | 'TOO_MANY_REQUESTS'
@@ -42,6 +43,7 @@ export class ApplicationError extends Error {
             FORBIDDEN: 403,
             CONFLICT: 409,
             AI_CREDITS_EXHAUSTED: 402,
+            PLAN_LIMIT_EXCEEDED_FREE: 422,
             PAYLOAD_TOO_LARGE: 413,
             UNPROCESSABLE_ENTITY: 422,
             TOO_MANY_REQUESTS: 429,
@@ -58,6 +60,37 @@ export class ApplicationError extends Error {
         return {
             code: this.code,
             message: this.message,
+        };
+    }
+}
+
+/**
+ * Error returned when a Free user reaches the plan item limit.
+ */
+export class PlanLimitExceededFreeError extends ApplicationError {
+    public readonly details: {
+        free_limit: number;
+        premium_limit: 50;
+        upgrade_url: '/pricing';
+    };
+
+    constructor(freeLimit: number) {
+        super(
+            'PLAN_LIMIT_EXCEEDED_FREE',
+            'Osiągnięto limit pozycji w Moim planie dla konta Free.'
+        );
+        this.details = {
+            free_limit: freeLimit,
+            premium_limit: 50,
+            upgrade_url: '/pricing',
+        };
+    }
+
+    override toJSON(): Record<string, unknown> {
+        return {
+            error: this.code,
+            message: this.message,
+            details: this.details,
         };
     }
 }

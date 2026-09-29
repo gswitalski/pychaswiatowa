@@ -4,6 +4,25 @@
 
 import { z } from 'npm:zod@3.22.4';
 
+/**
+ * Maximum number of plan items for Free users (app_role = 'user').
+ * Read from PLAN_LIMIT_FREE; defaults to 3 when unset or invalid.
+ */
+export function parsePlanLimitFree(raw: string | undefined): number {
+    const parsed = Number.parseInt(raw ?? '', 10);
+
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+}
+
+export const PLAN_LIMIT_FREE = parsePlanLimitFree(
+    Deno.env.get('PLAN_LIMIT_FREE')
+);
+
+/**
+ * Maximum number of plan items for Premium and Admin users.
+ */
+export const PLAN_LIMIT_PREMIUM = 50 as const;
+
 // #region --- Zod Schemas ---
 
 /**
