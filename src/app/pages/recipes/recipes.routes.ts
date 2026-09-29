@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { recipeIdSlugMatcher, recipeIdOnlyMatcher } from '../../core/routing/recipe-url.matchers';
-import { premiumRoleMatchGuard } from '../../core/guards/premium-role-match.guard';
 
 export const recipesRoutes: Routes = [
     {
@@ -31,7 +30,6 @@ export const recipesRoutes: Routes = [
             },
             {
                 path: 'assist',
-                canMatch: [premiumRoleMatchGuard],
                 loadComponent: () =>
                     import('./recipe-new-assist/recipe-new-assist-page.component').then(
                         (m) => m.RecipeNewAssistPageComponent
