@@ -4,7 +4,7 @@
  */
 
 import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
-import { handleError } from '../_shared/errors.ts';
+import { ApplicationError, handleError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { extractAuthToken, extractAndValidateAppRole } from '../_shared/auth.ts';
 import { getMeProfile, type MeDto } from './me.service.ts';
@@ -46,7 +46,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
                 jwtSub: jwtPayload.sub,
                 authenticatedUserId: user.id,
             });
-            throw new Error('User ID mismatch');
+            throw new ApplicationError('UNAUTHORIZED', 'Invalid authentication context');
         }
 
         // Fetch profile from service layer

@@ -12,23 +12,27 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 
 <new_requirements>
 
-### PS-65: Egzekwowanie limitów planu dla użytkownika Free
+### PS-66: Checkout i płatności (subskrypcja Premium)
 
 **Opis:**
-Jako użytkownik Free, chcę wiedzieć, jaki limit pozycji w „Moim planie" mam do dyspozycji, aby rozumieć, kiedy potrzebuję konta Premium.
+Jako zalogowany użytkownik Free, chcę zakupić subskrypcję Premium przez bezpieczny checkout, aby uzyskać dostęp do zaawansowanych funkcji aplikacji.
 
 **Kryteria akceptacji:**
-- [ ] Użytkownicy Free mają limit planu wynoszący 7–14 pozycji (konfigurowalne przez zmienną środowiskową).
-- [ ] Endpoint `POST /plan/recipes` zwraca `422` z kodem `PLAN_LIMIT_EXCEEDED_FREE` gdy Free user przekroczy swój limit.
-- [ ] Odpowiedź zawiera informację o dostępnym limicie Premium (50 pozycji) i link do `/pricing`.
-- [ ] Użytkownicy Premium zachowują dotychczasowy limit 50 pozycji.
-- [ ] Różnica limitów jest widoczna na stronie `/pricing`.
+- [ ] Strona checkoutu jest dostępna pod `/checkout` lub jako modal (auth required).
+- [ ] Obsługiwane są metody płatności: BLIK oraz karta (PayU lub odpowiednik).
+- [ ] Domyślnie wybrany jest plan roczny (z możliwością przełączenia na miesięczny).
+- [ ] Po pomyślnej płatności webhook dostawcy płatności aktualizuje `app_role` na `premium` w `auth.users.raw_app_meta_data` oraz zapisuje dane subskrypcji (data startu, data następnej płatności, ID transakcji).
+- [ ] Użytkownik otrzymuje potwierdzenie zakupu na e-mail.
+- [ ] Faktura/paragon jest generowany i dostępny dla użytkownika.
+- [ ] W przypadku błędu płatności użytkownik widzi czytelny komunikat i może ponowić próbę.
+- [ ] Checkout nie jest dostępny dla gości (redirect do rejestracji/logowania).
+- [ ] Obsługiwany jest scenariusz zakupu, gdy użytkownik ma aktywny trial.
 
 </new_requirements>
 
 3. Lista zmian i nowych funkcjonalności w API
 <api_definition>
-@docs\results\new-features\user-stories\PS-65\PS-65-free-plan-limit-api-plan.md
+@docs\results\new-features\user-stories\PS-66\PS-66-checkout-payments-api-plan.md
 </api_definition>
 
 
@@ -123,4 +127,4 @@ Końcowym wynikiem powinien być dobrze zorganizowany plan wdrożenia wszystkich
 
 Końcowe wyniki powinny składać się wyłącznie z planu wdrożenia w formacie markdown i nie powinny powielać ani powtarzać żadnej pracy wykonanej w sekcji analizy.
 
-Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/{endpoint-name}-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.
+Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/{story-number}-{story-name}-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.

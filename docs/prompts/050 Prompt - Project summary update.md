@@ -12,11 +12,11 @@ Dane wejściowe
 </project_summary>
 
 <api_implementation_plan>
-@docs\results\impl-plans\endpoints\ps64-ai-credits-api-implementation-plan.md
+@docs\results\impl-plans\views\ps65-free-plan-limit-view-implementation-plan.md
 </api_implementation_plan>
 
 <view_implementation_plan>
-@docs\results\impl-plans\views\ai-credits-view-implementation-plan.md
+@docs\results\impl-plans\views\ps65-free-plan-limit-view-implementation-plan.md
 </view_implementation_plan>
 Zadanie
 

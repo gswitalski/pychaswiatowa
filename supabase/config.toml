@@ -345,6 +345,10 @@ verify_jwt = false
 [functions.internal]
 verify_jwt = false
 
+# Stripe authenticates requests with the Stripe-Signature header.
+[functions.payments-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54337

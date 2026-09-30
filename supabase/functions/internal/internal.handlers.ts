@@ -1,7 +1,9 @@
 import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
+import { verifyInternalSecret } from '../_shared/internal-auth.ts';
 import { processNormalizedIngredientsJobs } from './normalized-ingredients-worker.service.ts';
 import { handlePostMonthlyAiCreditsReset } from './ai-credits-monthly-reset.handlers.ts';
+import { handlePostBillingExpiry } from './billing-expire-subscriptions.handlers.ts';
 
 // #region --- Configuration ---
 
@@ -25,52 +27,6 @@ function getWorkerBatchSize(): number {
     }
 
     return parsed;
-}
-
-// #endregion
-
-// #region --- Authentication ---
-
-/**
- * Verifies internal worker secret from request header.
- *
- * @param req - The incoming HTTP request
- * @throws ApplicationError with UNAUTHORIZED if secret is missing or invalid
- */
-function verifyInternalSecret(req: Request): void {
-    const expectedSecret = Deno.env.get('INTERNAL_WORKER_SECRET');
-
-    if (!expectedSecret) {
-        logger.error('INTERNAL_WORKER_SECRET not configured in environment');
-        throw new ApplicationError(
-            'INTERNAL_ERROR',
-            'Internal worker authentication not configured'
-        );
-    }
-
-    // Method 1: Custom header (for manual testing)
-    const customHeader = req.headers.get('x-internal-worker-secret');
-    if (customHeader === expectedSecret) {
-        return;
-    }
-
-    // Method 2: Authorization header (for pg_net/cron - pg_net filters custom headers)
-    const authHeader = req.headers.get('authorization');
-    if (authHeader) {
-        const token = authHeader.replace(/^Bearer\s+/i, '');
-        if (token === expectedSecret) {
-            return;
-        }
-    }
-
-    logger.warn('Invalid or missing internal worker secret', {
-        hasCustomHeader: !!customHeader,
-        hasAuthHeader: !!authHeader,
-    });
-    throw new ApplicationError(
-        'UNAUTHORIZED',
-        'Authentication required'
-    );
 }
 
 // #endregion
@@ -189,6 +145,30 @@ export async function internalRouter(req: Request): Promise<Response> {
     if (monthlyAiCreditsResetMatch) {
         if (req.method === 'POST') {
             return await handlePostMonthlyAiCreditsReset(req);
+        }
+
+        return new Response(
+            JSON.stringify({
+                code: 'METHOD_NOT_ALLOWED',
+                message: `Method ${req.method} not allowed`,
+            }),
+            {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Allow': 'POST',
+                },
+            },
+        );
+    }
+
+    const billingExpiryMatch = path.match(
+        /^\/internal\/billing\/expire-subscriptions\/?$/
+    );
+
+    if (billingExpiryMatch) {
+        if (req.method === 'POST') {
+            return await handlePostBillingExpiry(req);
         }
 
         return new Response(

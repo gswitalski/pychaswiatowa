@@ -365,7 +365,10 @@ export async function processNormalizedIngredientsJobs(
             );
         }
 
-        const claimedJobs: ClaimedJob[] = claimedJobsData || [];
+        if (claimedJobsData !== null && !Array.isArray(claimedJobsData)) {
+            throw new ApplicationError('INTERNAL_ERROR', 'Invalid claimed jobs response');
+        }
+        const claimedJobs = (claimedJobsData ?? []) as unknown as ClaimedJob[];
 
         if (claimedJobs.length === 0) {
             logger.info('No jobs available for processing');
@@ -415,7 +418,7 @@ export async function processNormalizedIngredientsJobs(
             }
         }
 
-        logger.info('Worker run completed', summary);
+        logger.info('Worker run completed', { ...summary });
         return summary;
 
     } catch (error) {

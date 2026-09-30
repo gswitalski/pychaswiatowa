@@ -61,6 +61,27 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_customers: {
+        Row: {
+          created_at: string
+          provider: string
+          provider_customer_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          provider?: string
+          provider_customer_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          provider?: string
+          provider_customer_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -103,6 +124,39 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      payment_webhook_events: {
+        Row: {
+          attempts: number
+          error_message: string | null
+          event_id: string
+          livemode: boolean
+          processed_at: string | null
+          received_at: string
+          status: string
+          type: string
+        }
+        Insert: {
+          attempts?: number
+          error_message?: string | null
+          event_id: string
+          livemode: boolean
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          type: string
+        }
+        Update: {
+          attempts?: number
+          error_message?: string | null
+          event_id?: string
+          livemode?: boolean
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          type?: string
         }
         Relationships: []
       }
@@ -527,6 +581,131 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_payments: {
+        Row: {
+          amount_gross: number
+          confirmation_email_sent_at: string | null
+          created_at: string
+          currency: string
+          document_number: string | null
+          document_pdf_url: string | null
+          document_url: string | null
+          id: number
+          paid_at: string | null
+          payment_method_type: string
+          plan_id: string
+          provider_invoice_id: string | null
+          provider_payment_intent_id: string | null
+          provider_session_id: string
+          status: string
+          subscription_id: string | null
+          terms_accepted_at: string | null
+          terms_version: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_gross: number
+          confirmation_email_sent_at?: string | null
+          created_at?: string
+          currency?: string
+          document_number?: string | null
+          document_pdf_url?: string | null
+          document_url?: string | null
+          id?: never
+          paid_at?: string | null
+          payment_method_type: string
+          plan_id: string
+          provider_invoice_id?: string | null
+          provider_payment_intent_id?: string | null
+          provider_session_id: string
+          status: string
+          subscription_id?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_gross?: number
+          confirmation_email_sent_at?: string | null
+          created_at?: string
+          currency?: string
+          document_number?: string | null
+          document_pdf_url?: string | null
+          document_url?: string | null
+          id?: never
+          paid_at?: string | null
+          payment_method_type?: string
+          plan_id?: string
+          provider_invoice_id?: string | null
+          provider_payment_intent_id?: string | null
+          provider_session_id?: string
+          status?: string
+          subscription_id?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          auto_renew: boolean
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          payment_method_type: string
+          plan_id: string
+          provider_subscription_id: string | null
+          started_at: string
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_renew: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end: string
+          current_period_start: string
+          id?: string
+          payment_method_type: string
+          plan_id: string
+          provider_subscription_id?: string | null
+          started_at: string
+          status: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_renew?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          payment_method_type?: string
+          plan_id?: string
+          provider_subscription_id?: string | null
+          started_at?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_ai_credits: {
         Row: {
           created_at: string
@@ -666,6 +845,53 @@ export type Database = {
           retry_after_seconds: number
           window_start: string
         }[]
+      }
+      billing_activate_premium: {
+        Args: {
+          p_auto_renew: boolean
+          p_payment: Json
+          p_payment_method: string
+          p_period_end: string
+          p_period_start: string
+          p_plan_id: string
+          p_provider_subscription_id: string | null
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      billing_attach_invoice_document: {
+        Args: {
+          p_number: string | null
+          p_pdf_url: string | null
+          p_provider_invoice_id: string
+          p_url: string | null
+        }
+        Returns: number
+      }
+      billing_claim_webhook_event: {
+        Args: {
+          p_event_id: string
+          p_livemode: boolean
+          p_type: string
+        }
+        Returns: string
+      }
+      billing_expire_subscriptions: {
+        Args: { p_grace_days?: number }
+        Returns: { user_id: string }[]
+      }
+      billing_record_failed_payment: {
+        Args: { p_payment: Json; p_user_id: string }
+        Returns: boolean
+      }
+      billing_renew_subscription: {
+        Args: {
+          p_payment: Json
+          p_period_end: string
+          p_period_start: string
+          p_provider_subscription_id: string
+        }
+        Returns: Json
       }
       claim_normalized_ingredients_jobs: {
         Args: { p_limit?: number }

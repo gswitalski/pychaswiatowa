@@ -26,8 +26,9 @@
     "npm:angular-eslint@21.1.0": "21.1.0_@angular+cli@21.1.4_eslint@9.39.2_typescript@5.9.3_typescript-eslint@8.47.0_@typescript-eslint+utils@8.47.0_@angular-eslint+template-parser@21.1.0_@typescript-eslint+types@8.47.0",
     "npm:eslint@^9.39.1": "9.39.2",
     "npm:jsdom@^27.1.0": "27.4.0",
-    "npm:ngx-markdown@^21.1.0": "21.3.0_@angular+common@21.1.4_@angular+core@21.1.4_@angular+platform-browser@21.1.4_marked@18.0.13_rxjs@7.8.2_zone.js@0.15.1",
+    "npm:ngx-markdown@^21.1.0": "21.3.0_@angular+common@21.1.4_@angular+core@21.1.4_@angular+platform-browser@21.1.4_marked@18.0.13_rxjs@7.8.2_zone.js@0.15.1_@angular+compiler@21.1.4_@angular+animations@21.1.4__@angular+core@21.1.4__@angular+compiler@21.1.4__rxjs@7.8.2__zone.js@0.15.1",
     "npm:rxjs@7.8": "7.8.2",
+    "npm:stripe@22.6.2": "22.6.2",
     "npm:tslib@^2.3.0": "2.8.1",
     "npm:typescript-eslint@8.47.0": "8.47.0_eslint@9.39.2_typescript@5.9.3_@typescript-eslint+parser@8.47.0",
     "npm:typescript@~5.9.2": "5.9.3",
@@ -175,7 +176,7 @@
       "dependencies": [
         "@analogjs/vite-plugin-angular",
         "@angular-devkit/architect",
-        "vitest"
+        "vitest@4.0.18_@vitest+ui@4.0.18_jsdom@27.4.0_vite@7.3.0"
       ]
     },
     "@angular-devkit/architect@0.2101.4": {
@@ -319,7 +320,7 @@
         "typescript",
         "undici",
         "vite",
-        "vitest",
+        "vitest@4.0.18_@vitest+ui@4.0.18_jsdom@27.4.0_vite@7.3.0_sass@1.97.1",
         "watchpack"
       ],
       "optionalDependencies": [
@@ -328,7 +329,7 @@
       "optionalPeers": [
         "@angular/core",
         "@angular/platform-browser",
-        "vitest"
+        "vitest@4.0.18_@vitest+ui@4.0.18_jsdom@27.4.0_vite@7.3.0_sass@1.97.1"
       ]
     },
     "@angular/cdk@21.1.4_@angular+common@21.1.4_@angular+core@21.1.4_@angular+platform-browser@21.1.4_rxjs@7.8.2_@angular+compiler@21.1.4_zone.js@0.15.1_@angular+animations@21.1.4": {
@@ -1443,8 +1444,7 @@
         "@parcel/watcher-win32-arm64",
         "@parcel/watcher-win32-ia32",
         "@parcel/watcher-win32-x64"
-      ],
-      "scripts": true
+      ]
     },
     "@playwright/test@1.58.2": {
       "integrity": "sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA==",
@@ -1976,6 +1976,18 @@
         "vite"
       ]
     },
+    "@vitest/mocker@4.0.18_vite@7.3.0_sass@1.97.1": {
+      "integrity": "sha512-HhVd0MDnzzsgevnOWCBj5Otnzobjy5wLBe4EdeeFGv8luMsGcYqDuFRMcttKWZA5vVO8RFjexVovXvAM4JoJDQ==",
+      "dependencies": [
+        "@vitest/spy",
+        "estree-walker",
+        "magic-string",
+        "vite"
+      ],
+      "optionalPeers": [
+        "vite"
+      ]
+    },
     "@vitest/pretty-format@4.0.18": {
       "integrity": "sha512-P24GK3GulZWC5tz87ux0m8OADrQIUVDPIjjj65vBXYG17ZeU3qD7r+MNZ1RNv4l8CGU2vtTRqixrOi9fYk/yKw==",
       "dependencies": [
@@ -2010,7 +2022,20 @@
         "sirv",
         "tinyglobby",
         "tinyrainbow",
-        "vitest"
+        "vitest@4.0.18_@vitest+ui@4.0.18_jsdom@27.4.0_vite@7.3.0"
+      ]
+    },
+    "@vitest/ui@4.0.18_vitest@4.0.18_jsdom@27.4.0_sass@1.97.1": {
+      "integrity": "sha512-CGJ25bc8fRi8Lod/3GHSvXRKi7nBo3kxh0ApW4yCjmrWmRmlT53B5E08XRSZRliygG0aVNxLrBEqPYdz/KcCtQ==",
+      "dependencies": [
+        "@vitest/utils",
+        "fflate",
+        "flatted",
+        "pathe",
+        "sirv",
+        "tinyglobby",
+        "tinyrainbow",
+        "vitest@4.0.18_@vitest+ui@4.0.18_jsdom@27.4.0_vite@7.3.0_sass@1.97.1"
       ]
     },
     "@vitest/utils@4.0.18": {
@@ -2571,7 +2596,6 @@
         "@esbuild/win32-ia32",
         "@esbuild/win32-x64"
       ],
-      "scripts": true,
       "bin": true
     },
     "escalade@3.2.0": {
@@ -2833,13 +2857,11 @@
     },
     "fsevents@2.3.2": {
       "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
-      "os": ["darwin"],
-      "scripts": true
+      "os": ["darwin"]
     },
     "fsevents@2.3.3": {
       "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
-      "os": ["darwin"],
-      "scripts": true
+      "os": ["darwin"]
     },
     "function-bind@1.1.2": {
       "integrity": "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA=="
@@ -3204,7 +3226,6 @@
         "@lmdb/lmdb-win32-arm64",
         "@lmdb/lmdb-win32-x64"
       ],
-      "scripts": true,
       "bin": true
     },
     "locate-path@6.0.0": {
@@ -3400,7 +3421,6 @@
         "@msgpackr-extract/msgpackr-extract-linux-x64",
         "@msgpackr-extract/msgpackr-extract-win32-x64"
       ],
-      "scripts": true,
       "bin": true
     },
     "msgpackr@1.11.8": {
@@ -3423,6 +3443,18 @@
       "integrity": "sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg=="
     },
     "ngx-markdown@21.3.0_@angular+common@21.1.4_@angular+core@21.1.4_@angular+platform-browser@21.1.4_marked@18.0.13_rxjs@7.8.2_zone.js@0.15.1": {
+      "integrity": "sha512-HYh31RnDqu9YnMffi5CiHUqzVrucIbURJjx4/YWpuQoQkuR8Otz0CN8M0Bx6rfxDVZ7j3LmNqqlJ/YxvMKizXg==",
+      "dependencies": [
+        "@angular/common",
+        "@angular/core",
+        "@angular/platform-browser",
+        "marked",
+        "rxjs",
+        "tslib",
+        "zone.js"
+      ]
+    },
+    "ngx-markdown@21.3.0_@angular+common@21.1.4_@angular+core@21.1.4_@angular+platform-browser@21.1.4_marked@18.0.13_rxjs@7.8.2_zone.js@0.15.1_@angular+compiler@21.1.4_@angular+animations@21.1.4__@angular+core@21.1.4__@angular+compiler@21.1.4__rxjs@7.8.2__zone.js@0.15.1": {
       "integrity": "sha512-HYh31RnDqu9YnMffi5CiHUqzVrucIbURJjx4/YWpuQoQkuR8Otz0CN8M0Bx6rfxDVZ7j3LmNqqlJ/YxvMKizXg==",
       "dependencies": [
         "@angular/common",
@@ -4154,6 +4186,9 @@
     "strip-json-comments@3.1.1": {
       "integrity": "sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig=="
     },
+    "stripe@22.6.2": {
+      "integrity": "sha512-PwRE2scocvXqDKPiskMa5vRJEAEkq46W69XyUYmAwrNSLr675lQnfqLwnsndAWizwgihOWw/irLmoFRo3ez7ew=="
+    },
     "supports-color@7.2.0": {
       "integrity": "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==",
       "dependencies": [
@@ -4352,12 +4387,12 @@
       "integrity": "sha512-hOQuK7h0FGKgBAas7v0mSAsnvrIgAvWmRFjmzpJ7SwFHH3g1k2u37JtYwOwmEKhK6ZO3v9ggDBBm0La1LCK4uQ==",
       "dependencies": [
         "@vitest/expect",
-        "@vitest/mocker",
+        "@vitest/mocker@4.0.18_vite@7.3.0",
         "@vitest/pretty-format",
         "@vitest/runner",
         "@vitest/snapshot",
         "@vitest/spy",
-        "@vitest/ui",
+        "@vitest/ui@4.0.18_vitest@4.0.18_jsdom@27.4.0",
         "@vitest/utils",
         "es-module-lexer",
         "expect-type",
@@ -4375,7 +4410,39 @@
         "why-is-node-running"
       ],
       "optionalPeers": [
-        "@vitest/ui",
+        "@vitest/ui@4.0.18_vitest@4.0.18_jsdom@27.4.0",
+        "jsdom"
+      ],
+      "bin": true
+    },
+    "vitest@4.0.18_@vitest+ui@4.0.18_jsdom@27.4.0_vite@7.3.0_sass@1.97.1": {
+      "integrity": "sha512-hOQuK7h0FGKgBAas7v0mSAsnvrIgAvWmRFjmzpJ7SwFHH3g1k2u37JtYwOwmEKhK6ZO3v9ggDBBm0La1LCK4uQ==",
+      "dependencies": [
+        "@vitest/expect",
+        "@vitest/mocker@4.0.18_vite@7.3.0_sass@1.97.1",
+        "@vitest/pretty-format",
+        "@vitest/runner",
+        "@vitest/snapshot",
+        "@vitest/spy",
+        "@vitest/ui@4.0.18_vitest@4.0.18_jsdom@27.4.0_sass@1.97.1",
+        "@vitest/utils",
+        "es-module-lexer",
+        "expect-type",
+        "jsdom",
+        "magic-string",
+        "obug",
+        "pathe",
+        "picomatch@4.0.3",
+        "std-env",
+        "tinybench",
+        "tinyexec",
+        "tinyglobby",
+        "tinyrainbow",
+        "vite",
+        "why-is-node-running"
+      ],
+      "optionalPeers": [
+        "@vitest/ui@4.0.18_vitest@4.0.18_jsdom@27.4.0_sass@1.97.1",
         "jsdom"
       ],
       "bin": true
@@ -4524,6 +4591,7 @@
     "https://deno.land/std@0.224.0/assert/assert_equals.ts": "3bbca947d85b9d374a108687b1a8ba3785a7850436b5a8930d81f34a32cb8c74",
     "https://deno.land/std@0.224.0/assert/assert_is_error.ts": "f856b3bc978a7aa6a601f3fec6603491ab6255118afa6baa84b04426dd3cc491",
     "https://deno.land/std@0.224.0/assert/assert_rejects.ts": "4bee1d6d565a5b623146a14668da8f9eb1f026a4f338bbf92b37e43e0aa53c31",
+    "https://deno.land/std@0.224.0/assert/assert_string_includes.ts": "496b9ecad84deab72c8718735373feb6cdaa071eb91a98206f6f3cb4285e71b8",
     "https://deno.land/std@0.224.0/assert/assertion_error.ts": "ba8752bd27ebc51f723702fac2f54d3e94447598f54264a6653d6413738a8917",
     "https://deno.land/std@0.224.0/assert/equal.ts": "bddf07bb5fc718e10bb72d5dc2c36c1ce5a8bdd3b647069b6319e07af181ac47",
     "https://deno.land/std@0.224.0/fmt/colors.ts": "508563c0659dd7198ba4bbf87e97f654af3c34eb56ba790260f252ad8012e1c5",

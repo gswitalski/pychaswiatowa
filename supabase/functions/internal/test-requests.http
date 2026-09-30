@@ -76,3 +76,14 @@ x-internal-worker-secret: {{internal_secret}}
 #    SELECT id, recipe_id, status, attempts, next_run_at, last_error
 #    FROM normalized_ingredients_jobs
 #    ORDER BY next_run_at ASC;
+
+### ====================
+### Billing: Expire subscriptions
+### Expected: 200 OK with {expired_count, credits_synced, credits_failed, processed_at}
+### ====================
+
+POST {{base_url}}/internal/billing/expire-subscriptions
+Content-Type: application/json
+x-internal-worker-secret: {{internal_secret}}
+
+{}

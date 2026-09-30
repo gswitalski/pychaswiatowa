@@ -17,6 +17,9 @@ export interface MeAiCreditsDto {
     next_reset_at: string | null;
 }
 
+export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired';
+export type SubscriptionPlanId = 'premium_monthly' | 'premium_yearly';
+
 /**
  * Me DTO type for API responses.
  * Matches the MeDto defined in shared/contracts/types.ts
@@ -26,12 +29,19 @@ export interface MeDto {
     username: string;
     app_role: AppRole;
     ai_credits: MeAiCreditsDto | null;
+    subscription_status: SubscriptionStatus | null;
+    subscription_plan_id: SubscriptionPlanId | null;
+    current_period_end: string | null;
+    auto_renew: boolean | null;
+    trial_ends_at: string | null;
 }
 
 /** Columns to select for minimal profile queries. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
 const AI_CREDITS_SELECT_COLUMNS =
     'draft_credits_total, draft_credits_used, image_credits_total, image_credits_used, limit_type, next_reset_at';
+const SUBSCRIPTION_SELECT_COLUMNS =
+    'status, plan_id, current_period_end, auto_renew, trial_ends_at';
 
 function createAdminAiCredits(): MeAiCreditsDto {
     return {
@@ -84,10 +94,19 @@ export async function getMeProfile(
             .eq('user_id', userId)
             .maybeSingle();
 
+    const subscriptionPromise = appRole === 'admin'
+        ? Promise.resolve({ data: null, error: null })
+        : client
+            .from('subscriptions')
+            .select(SUBSCRIPTION_SELECT_COLUMNS)
+            .eq('user_id', userId)
+            .maybeSingle();
+
     const [
         { data: profileData, error: profileError },
         { data: creditsData, error: creditsError },
-    ] = await Promise.all([profilePromise, creditsPromise]);
+        { data: subscriptionData, error: subscriptionError },
+    ] = await Promise.all([profilePromise, creditsPromise, subscriptionPromise]);
 
     if (profileError) {
         // Handle case where no profile was found (PGRST116 = "Row not found")
@@ -115,6 +134,15 @@ export async function getMeProfile(
             errorMessage: creditsError.message,
         });
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch AI credits');
+    }
+
+    if (subscriptionError) {
+        logger.error('Database error while fetching subscription for /me', {
+            userId,
+            errorCode: subscriptionError.code,
+            errorMessage: subscriptionError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch subscription');
     }
 
     // Additional check for empty data (defensive programming)
@@ -153,5 +181,14 @@ export async function getMeProfile(
         username: profileData.username ?? '',
         app_role: appRole,
         ai_credits: aiCredits,
+        subscription_status: subscriptionData
+            ? subscriptionData.status as SubscriptionStatus
+            : null,
+        subscription_plan_id: subscriptionData
+            ? subscriptionData.plan_id as SubscriptionPlanId
+            : null,
+        current_period_end: subscriptionData?.current_period_end ?? null,
+        auto_renew: subscriptionData?.auto_renew ?? null,
+        trial_ends_at: subscriptionData?.trial_ends_at ?? null,
     };
 }

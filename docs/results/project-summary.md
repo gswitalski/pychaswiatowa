@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 23 września 2026 — m.in. zakończenie wdrożenia Google OAuth (plany API i widoków), widoku strony cennika (`/pricing`, stub `/checkout`, `/legal/subscription`; bez nowej warstwy API) oraz kredytów AI PS-64 (plany API i widoków), kod, `docs/results/`, `docs/Jira.xml`, historyjki Premium (`docs/historyjki-premium.md`).
+> **Aktualizacja:** 30 września 2026 — m.in. zakończenie wdrożenia Google OAuth (plany API i widoków), widoku strony cennika (`/pricing`, stub `/checkout`, `/legal/subscription`; bez nowej warstwy API), kredytów AI PS-64 (plany API i widoków) oraz limitu planu dla konta Free PS-65 (plany API i widoków), kod, `docs/results/`, `docs/Jira.xml`, historyjki Premium (`docs/historyjki-premium.md`).
 
 ---
 
@@ -17,6 +17,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 
 **Kredyty AI (PS-64):** implementacja warstwy API i widoków — **zakończona**. Osobne pule `draft` i `image`: Free — limit dożywotni (domyślnie 3 drafty, 0 zdjęć), Premium — limit miesięczny (domyślnie 20 / 5, zmienne środowiskowe), admin — bez limitu. Reset miesięczny cronem (codziennie 02:00 UTC) oraz przy wywołaniu, gdy termin minął. Kredyt jest rezerwowany przed wywołaniem modelu i zwracany, gdy wywołanie się nie uda. Zmiana roli w panelu admina ustawia pulę zgodną z nową rolą. Sprzedaż pakietów kredytów i bramka płatności nie są podłączone. Endpoint `POST /ai/recipes/draft` przyjmuje rolę `user` i rozlicza kredyty; trasa UI `/recipes/new/assist` oraz kafelek na `/recipes/new/start` nadal wymagają `premium`/`admin` (plan API zdejmował bramkę roli, plan widoków jej nie zmieniał).
 
+**Limit „Mojego planu" dla Free (PS-65):** implementacja warstwy API i widoków — **zakończona**. `POST /plan/recipes` dla roli `user` odrzuca dodanie po osiągnięciu limitu (domyślnie 3 pozycje, zmienna środowiskowa `PLAN_LIMIT_FREE`) kodem `422 PLAN_LIMIT_EXCEEDED_FREE` z linkiem do `/pricing`. Premium i admin zachowują limit 50. Rola jest brana z JWT (`app_metadata.app_role`), nigdy z body. Istniejące pozycje ponad limit nie są usuwane (grandfathering) — blokowane są tylko nowe dodania. W UI: dialog po `422` zamiast snackbara, licznik „X / 3 pozycji” w nagłówku drawera (tylko `user`), a cennik pokazuje limit Free 3 zamiast wcześniejszych 7.
+
 ### Dostarczone poza pierwotnym szkicem summary
 
 - **Google OAuth** (Supabase Auth, PKCE): wspólny przycisk na `/login` i `/register`, callback z rozgałęzieniem e-mail vs OAuth, ekran `/auth/complete-profile` (walidacja async username, `PUT /profile`), guardy `oauthCompleteProfileGuard` / `usernameCompleteMatchGuard` + `ProfileCompletionService`; obsługa błędów OAuth na `/login?error=…`
@@ -28,6 +30,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - Strony prawne z treścią Markdown (`/legal/terms`, `/legal/privacy`); link „Wydawca” w stopce wyłączony
 - Clickio Consent Manager + Google Analytics
 - Logo / favicon, Bottom Bar, drzewo kolekcji, lista zakupów, normalizacja składników, zdjęcie AI także przed zapisem przepisu
+- **Limit planu Free (PS-65):** egzekwowanie na API (`PLAN_LIMIT_FREE`, domyślnie 3), dialog `PlanLimitExceededDialogComponent` z CTA do `/pricing`, licznik pozycji w drawerze „Mój plan”
 - **Strona cennika** (`/pricing`, publiczna): karty Free i Premium, okres miesięczny/roczny (domyślnie roczny, oszczędność ~17%), tabela porównawcza, FAQ, trial 7 dni na karcie Premium. CTA zależy od sesji i roli. Stub `/checkout` („Płatności wkrótce”). Regulamin subskrypcji `/legal/subscription`. Link „Cennik” dla gościa (nagłówek publiczny) i roli `user` (topbar). Blok promo Premium na landingu dla gościa i `user`
 
 ### Backlog produktowy (Jira — Do zrobienia)
@@ -60,7 +63,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - Pełny CRUD przepisów z formularzem: nazwa, opis, porcje, czasy, flagi (Termorobot/Grill), klasyfikacja (dieta/kuchnia/trudność), składniki, kroki, wskazówki, zdjęcie
 - Trzy poziomy widoczności przepisu: Prywatny, Współdzielony, Publiczny
 - Organizacja: kategorie (predefiniowane), tagi (własne), kolekcje (nazwane zbiory)
-- "Mój plan" — trwała lista do 50 przepisów, powiązana z listą zakupów
+- "Mój plan" — trwała lista do 50 przepisów (Free: do 3, PS-65), powiązana z listą zakupów
 - Lista zakupów — pozycje z przepisów (znormalizowane składniki) + ręczne wpisy
 - Import przepisu z Markdown (bez LLM, wszyscy zalogowani) oraz asystowane dodawanie z AI (tekst/obraz → formularz). API draftu rozlicza kredyty `draft` (także rola `user`); ekran asysty w UI nadal tylko `premium`/`admin`
 - Generowanie zdjęć AI (**premium/admin**, pula kredytów `image`) — model `gpt-image-1.5`; tryb z referencją (Gemini); możliwe przed pierwszym zapisem przepisu
@@ -119,7 +122,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz. Rozliczenie kredytów `draft` (`402` przy wyczerpaniu). Trasa UI `/recipes/new/assist` — `premium`/`admin`; endpoint przyjmuje też rolę `user`. |
 | US-037 | Generowanie zdjęcia AI | Przycisk AI w edycji/kreatorze, podgląd, akceptacja, `gpt-image-1.5`, 1024x1024 webp. `premium`/`admin` plus pula kredytów `image`. Możliwe przed zapisem przepisu. |
 | PS-64 | Kredyty AI | Osobne pule draft i zdjęcie. Free: limit dożywotni; Premium: miesięczny (reset cron); admin: bez limitu. Wskaźnik, dialog wyczerpania, sekcja w `/settings`, korekta w panelu admina. |
-| US-038 | Dodanie do "Mojego planu" | Przycisk na szczegółach, limit 50, stany: dodaj/spinner/zobacz listę. |
+| US-038 | Dodanie do "Mojego planu" | Przycisk na szczegółach, limit 50 (Free: 3 — PS-65, dialog z CTA do `/pricing`), stany: dodaj/spinner/zobacz listę. |
+| PS-65 | Limit planu dla Free | Rola `user`: max 3 pozycje (`PLAN_LIMIT_FREE`), `422 PLAN_LIMIT_EXCEEDED_FREE`, dialog, licznik w drawerze. Premium/admin: 50. Bez usuwania nadmiarowych pozycji. |
 | US-039 | Przeglądanie "Mojego planu" | Drawer z prawej, lista z miniaturami, usuwanie, czyszczenie, FAB. |
 | US-040 | Czasy przygotowania/całkowity | Opcjonalne 0-999 min, walidacja całkowity >= przygotowania. |
 | US-041 | Kanoniczny URL ze slugiem | `/recipes/:id-:slug`, transliteracja polskich znaków, normalizacja. |
@@ -260,7 +264,7 @@ Bez zmian koncepcyjnych względem MVP: tagi i kolekcje per `user_id`, nazwy unik
 | `recipe_collections` | `recipe_id`, `collection_id` | Przepisy ↔ Kolekcje (N:M); RLS pozwala dodać publiczny cudzy przepis |
 | `recipe_normalized_ingredients` | `recipe_id`, `items` jsonb, `updated_at` | Wynik normalizacji AI |
 | `normalized_ingredients_jobs` | `recipe_id`, `user_id`, `status`, `attempts`, `next_run_at`, `last_error` | Kolejka workera |
-| `plan_recipes` | `user_id`, `recipe_id`, `added_at` | „Mój plan” (max 50 po stronie API) |
+| `plan_recipes` | `user_id`, `recipe_id`, `added_at` | „Mój plan” (max 50 w RPC; Free max 3 sprawdzane w API, bez zmian schematu) |
 | `shopping_list_items` | `user_id`, `kind`, `name`, `unit`, `amount`, `text`, `is_owned` | Wiersze listy zakupów (`RECIPE` / `MANUAL`) |
 | `shopping_list_recipe_contributions` | `user_id`, `recipe_id`, `name`, `unit`, `amount` | Wkład składników z planu |
 | `user_ai_credits` | `user_id` UNIQUE, pule `draft_*` / `image_*`, `limit_type`, `next_reset_at` | Saldo kredytów AI (1:1 z użytkownikiem) |
@@ -396,7 +400,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | Metoda | URL | Opis |
 |---|---|---|
 | `GET` | `/plan` | Lista (max 50, `added_at.desc`). |
-| `POST` | `/plan/recipes` | Dodanie + wiersze zakupów. `422` przy limicie 50. |
+| `POST` | `/plan/recipes` | Dodanie + wiersze zakupów. `422` przy limicie 50 (`premium`/`admin`). Dla roli `user`: `422` `PLAN_LIMIT_EXCEEDED_FREE` (`details`: `free_limit`, `premium_limit`, `upgrade_url`) po osiągnięciu `PLAN_LIMIT_FREE` (domyślnie 3). |
 | `DELETE` | `/plan/recipes/{recipeId}` | Usunięcie + korekta zakupów. |
 | `DELETE` | `/plan` | Wyczyszczenie planu. |
 
@@ -489,7 +493,8 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 
 | Komponent | Opis |
 |---|---|
-| Drawer "Mój plan" | Panel z prawej: miniatura+nazwa+kosz, wyczyść. |
+| Drawer "Mój plan" | Panel z prawej: miniatura+nazwa+kosz, wyczyść. Dla roli `user`: licznik „X / 3 pozycji” w nagłówku (kolor ostrzegawczy po osiągnięciu limitu). |
+| Dialog limitu planu | Po `422 PLAN_LIMIT_EXCEEDED_FREE` (zamiast snackbara): informacja o limitach Free/Premium, „Zamknij” i „Przejdź na Premium →” (`/pricing`). |
 | FAB "Mój plan" | Prawy dolny róg, gdy plan ≥1. |
 | Bottom Bar | <960px: Odkrywaj, Moja Pycha, Zakupy. |
 | Footer | Copyright + Cennik + Regulamin subskrypcji + Regulamin + Polityka prywatności. |
@@ -526,6 +531,7 @@ Piramida testów: solidna baza jednostkowych, uzupełniona integracjami i E2E.
 6. Feature gating: `user` nie wchodzi na `/recipes/new/assist` ani nie generuje zdjęcia AI; API draftu rozlicza kredyty także dla roli `user`
 7. Kredyty AI: wskaźnik i sekcja ustawień; wyczerpanie puli → dialog i `402`; admin bez limitu; korekta puli w panelu admina
 8. Cennik: `/pricing` dla gościa i zalogowanego (CTA według roli); `/checkout` pokazuje „Płatności wkrótce”
+9. Limit planu Free: `user` dodaje 3 przepisy, czwarte → dialog z CTA (bez snackbara); licznik w drawerze; `premium`/`admin` bez blokady do 50; istniejący plan ponad limit nie jest czyszczony
 
 Przewodniki: `docs/testing/`.
 
@@ -550,6 +556,7 @@ Przewodniki: `docs/testing/`.
 |---|---|
 | Integracja Supabase / OAuth / RLS | Mocki + E2E na dev; procedury RLS w `docs/deployment/` |
 | Koszt i nadużycia API AI | Rate limit, gating zdjęcia AI (premium), pule kredytów (rezerwacja + zwrot, `402`). Zakup dodatkowych pakietów nie istnieje |
+| Limit planu Free sprawdzany przed RPC (COUNT, bez blokady) | Przy równoczesnych żądaniach możliwe przekroczenie o 1 pozycję; akceptowane przy limicie 3. Limit 50 chroniony transakcyjnie w RPC |
 | Ceny cennika na sztywno we froncie | Przed startem sprzedaży zastąpić konfigurację statyczną endpointem planów |
 | Regresja ról (ostatni admin, JWT) | Walidacja backendu + testy PATCH roli |
 | Dług technologiczny | Coverage, review, analiza statyczna |

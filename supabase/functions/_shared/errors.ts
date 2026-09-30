@@ -8,12 +8,17 @@ export type ErrorCode =
     | 'NOT_FOUND'
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
+    | 'FORBIDDEN_ROLE'
     | 'CONFLICT'
+    | 'SUBSCRIPTION_ALREADY_ACTIVE'
     | 'AI_CREDITS_EXHAUSTED'
     | 'PLAN_LIMIT_EXCEEDED_FREE'
     | 'PAYLOAD_TOO_LARGE'
     | 'UNPROCESSABLE_ENTITY'
     | 'TOO_MANY_REQUESTS'
+    | 'RATE_LIMITED'
+    | 'PAYMENT_PROVIDER_ERROR'
+    | 'INVALID_SIGNATURE'
     | 'METHOD_NOT_ALLOWED'
     | 'INTERNAL_ERROR';
 
@@ -41,12 +46,17 @@ export class ApplicationError extends Error {
             NOT_FOUND: 404,
             UNAUTHORIZED: 401,
             FORBIDDEN: 403,
+            FORBIDDEN_ROLE: 403,
             CONFLICT: 409,
+            SUBSCRIPTION_ALREADY_ACTIVE: 409,
             AI_CREDITS_EXHAUSTED: 402,
             PLAN_LIMIT_EXCEEDED_FREE: 422,
             PAYLOAD_TOO_LARGE: 413,
             UNPROCESSABLE_ENTITY: 422,
             TOO_MANY_REQUESTS: 429,
+            RATE_LIMITED: 429,
+            PAYMENT_PROVIDER_ERROR: 502,
+            INVALID_SIGNATURE: 400,
             METHOD_NOT_ALLOWED: 405,
             INTERNAL_ERROR: 500,
         };
@@ -61,6 +71,19 @@ export class ApplicationError extends Error {
             code: this.code,
             message: this.message,
         };
+    }
+}
+
+/**
+ * Rate limit error carrying the Retry-After hint in seconds.
+ */
+export class RateLimitedError extends ApplicationError {
+    public readonly retryAfterSeconds: number;
+
+    constructor(retryAfterSeconds: number) {
+        super('RATE_LIMITED', 'Zbyt wiele prób. Spróbuj ponownie za chwilę.');
+        this.name = 'RateLimitedError';
+        this.retryAfterSeconds = Math.max(0, Math.ceil(retryAfterSeconds));
     }
 }
 
@@ -99,9 +122,14 @@ export class PlanLimitExceededFreeError extends ApplicationError {
  * Creates an HTTP Response object from an ApplicationError.
  */
 export function createErrorResponse(error: ApplicationError): Response {
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    if (error instanceof RateLimitedError) {
+        headers.set('Retry-After', String(error.retryAfterSeconds));
+    }
+
     return new Response(JSON.stringify(error.toJSON()), {
         status: error.statusCode,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
     });
 }
 

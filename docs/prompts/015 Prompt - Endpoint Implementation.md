@@ -4,7 +4,7 @@ Najpierw dokładnie przejrzyj dostarczony plan wdrożenia:
 
 <implementation_plan>
 
-@docs\results\impl-plans\endpoints\ps65-free-plan-limit-api-implementation-plan.md
+@docs\results\impl-plans\endpoints\ps66-checkout-payments-api-implementation-plan.md
 
 </implementation_plan>
 

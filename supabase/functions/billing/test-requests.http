@@ -1,0 +1,14 @@
+@baseUrl = http://127.0.0.1:54331/functions/v1
+@accessToken = REPLACE_WITH_USER_ACCESS_TOKEN
+
+### Payment history with default limit
+GET {{baseUrl}}/billing/payments
+Authorization: Bearer {{accessToken}}
+
+### Payment history with custom limit
+GET {{baseUrl}}/billing/payments?limit=10
+Authorization: Bearer {{accessToken}}
+
+### Invalid limit
+GET {{baseUrl}}/billing/payments?limit=51
+Authorization: Bearer {{accessToken}}

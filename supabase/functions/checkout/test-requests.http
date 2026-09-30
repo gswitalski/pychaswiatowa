@@ -1,0 +1,38 @@
+@baseUrl = http://127.0.0.1:54331/functions/v1
+@accessToken = REPLACE_WITH_USER_ACCESS_TOKEN
+
+### Create yearly card checkout session
+POST {{baseUrl}}/checkout/sessions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "plan_id": "premium_yearly",
+    "payment_method": "card",
+    "accepted_terms": true,
+    "accepted_digital_content_waiver": true
+}
+
+### Create monthly BLIK checkout session
+POST {{baseUrl}}/checkout/sessions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "plan_id": "premium_monthly",
+    "payment_method": "blik",
+    "accepted_terms": true,
+    "accepted_digital_content_waiver": true
+}
+
+### Validation error - missing consent
+POST {{baseUrl}}/checkout/sessions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "plan_id": "premium_yearly",
+    "payment_method": "card",
+    "accepted_terms": false,
+    "accepted_digital_content_waiver": true
+}

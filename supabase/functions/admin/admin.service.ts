@@ -7,11 +7,7 @@ import { logger } from '../_shared/logger.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { createServiceRoleClient } from '../_shared/supabase-client.ts';
 import type { AppRole } from '../_shared/auth.ts';
-import {
-    getFreeDraftCredits,
-    getPremiumDraftCredits,
-    getPremiumImageCredits,
-} from '../_shared/ai-credits.ts';
+import { syncAiCreditsForRole } from '../_shared/ai-credits-sync.ts';
 import {
     ADMIN_USERS_SORT_FIELDS,
     type AdminUsersSortBy,
@@ -253,7 +249,7 @@ export async function getAdminUsers(
     { query }: { query: GetAdminUsersQueryDto }
 ): Promise<GetAdminUsersResponseDto> {
     const normalizedQuery = normalizeAdminUsersQuery(query);
-    logger.info('[admin] Fetching admin users list', normalizedQuery);
+    logger.info('[admin] Fetching admin users list', { ...normalizedQuery });
 
     const rows = await getAdminUsersPageFromRpc(normalizedQuery);
     const data = rows.map(mapAdminUsersRowToDto);
@@ -275,64 +271,6 @@ export async function getAdminUsers(
             sort_dir: normalizedQuery.sort_dir,
         },
     };
-}
-
-/**
- * Syncs user_ai_credits to match the new app_role after a role change.
- * - premium → 20 draft / 5 image, monthly, reset in 1 month
- * - user    → 3 draft / 0 image, lifetime, no reset
- * - admin   → skipped (admins bypass credit checks entirely)
- */
-async function syncAiCreditsForRoleChange(
-    targetUserId: string,
-    newRole: AppRole,
-): Promise<void> {
-    if (newRole === 'admin') {
-        return;
-    }
-
-    const supabaseAdmin = createServiceRoleClient();
-
-    const upsertPayload = newRole === 'premium'
-        ? {
-            user_id: targetUserId,
-            draft_credits_total: getPremiumDraftCredits(),
-            draft_credits_used: 0,
-            image_credits_total: getPremiumImageCredits(),
-            image_credits_used: 0,
-            limit_type: 'monthly' as const,
-            next_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            credits_activated_at: new Date().toISOString(),
-        }
-        : {
-            user_id: targetUserId,
-            draft_credits_total: getFreeDraftCredits(),
-            draft_credits_used: 0,
-            image_credits_total: 0,
-            image_credits_used: 0,
-            limit_type: 'lifetime' as const,
-            next_reset_at: null,
-            credits_activated_at: new Date().toISOString(),
-        };
-
-    const { error } = await supabaseAdmin
-        .from('user_ai_credits')
-        .upsert(upsertPayload, { onConflict: 'user_id' });
-
-    if (error) {
-        logger.error('[admin] Failed to sync AI credits after role change', {
-            targetUserId,
-            newRole,
-            errorCode: error.code,
-            errorMessage: error.message,
-        });
-        throw new ApplicationError(
-            'INTERNAL_ERROR',
-            'Rola użytkownika została zmieniona, ale synchronizacja kredytów AI nie powiodła się.',
-        );
-    }
-
-    logger.info('[admin] AI credits synced after role change', { targetUserId, newRole });
 }
 
 /**
@@ -365,7 +303,10 @@ export async function updateUserRole(params: {
         throw new ApplicationError('INTERNAL_ERROR', 'Nie udalo sie zaktualizowac roli uzytkownika.');
     }
 
-    await syncAiCreditsForRoleChange(targetUserId, appRole);
+    await syncAiCreditsForRole({
+        userId: targetUserId,
+        newRole: appRole,
+    });
 
     return {
         user: mapAdminUpdateUserRoleRowToDto(rows[0]),

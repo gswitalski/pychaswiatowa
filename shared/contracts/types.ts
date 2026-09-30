@@ -653,6 +653,11 @@ export interface MeDto {
     username: string;
     app_role: AppRole;
     ai_credits: MeAiCreditsDto | null;
+    subscription_status: SubscriptionStatus | null;
+    subscription_plan_id: SubscriptionPlanId | null;
+    current_period_end: string | null;
+    auto_renew: boolean | null;
+    trial_ends_at: string | null;
 }
 
 /**
@@ -792,6 +797,49 @@ export interface SignUpRequestDto {
 export interface ApiError {
     message: string;
     status: number;
+}
+
+// #endregion
+
+// #region --- Billing ---
+
+export type SubscriptionPlanId = 'premium_monthly' | 'premium_yearly';
+export type SubscriptionPaymentMethod = 'card' | 'blik';
+export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired';
+export type SubscriptionPaymentStatus = 'paid' | 'failed';
+
+/** Command model for POST /checkout/sessions. */
+export interface CreateCheckoutSessionCommand {
+    plan_id: SubscriptionPlanId;
+    payment_method: SubscriptionPaymentMethod;
+    accepted_terms: true;
+    accepted_digital_content_waiver: true;
+}
+
+/** Response DTO for POST /checkout/sessions (201). */
+export interface CheckoutSessionResponseDto {
+    checkout_url: string;
+    session_id: string;
+    expires_at: string;
+}
+
+/** Single payment row for GET /billing/payments. Amounts are expressed in grosze. */
+export interface BillingPaymentDto {
+    id: number;
+    plan_id: SubscriptionPlanId;
+    payment_method_type: SubscriptionPaymentMethod;
+    amount_gross: number;
+    currency: 'PLN';
+    status: SubscriptionPaymentStatus;
+    paid_at: string | null;
+    document_number: string | null;
+    document_url: string | null;
+    document_pdf_url: string | null;
+}
+
+/** Response DTO for GET /billing/payments (200). */
+export interface GetBillingPaymentsResponseDto {
+    data: BillingPaymentDto[];
 }
 
 // #endregion
