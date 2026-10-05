@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    OnInit,
-    computed,
-    inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -19,6 +13,7 @@ import { MARKETING_CONSENT_TEXT_VERSION } from '../../../../shared/contracts/mar
 import { ChangePasswordDialogComponent } from './components/change-password-dialog/change-password-dialog.component';
 import { AiCreditsSettingsSectionComponent } from './components/ai-credits-settings-section/ai-credits-settings-section.component';
 import { AuthService } from '../../core/services/auth.service';
+import { PaymentHistoryComponent } from './components/payment-history/payment-history.component';
 
 @Component({
     selector: 'pych-profile-settings-page',
@@ -31,6 +26,7 @@ import { AuthService } from '../../core/services/auth.service';
         MatSnackBarModule,
         ProfileSettingsFormComponent,
         AiCreditsSettingsSectionComponent,
+        PaymentHistoryComponent,
     ],
     providers: [ProfileSettingsFacade],
     templateUrl: './profile-settings-page.component.html',
@@ -52,7 +48,7 @@ export class ProfileSettingsPageComponent implements OnInit {
     readonly canRenderForm = this.facade.canRenderForm;
     readonly appRole = this.authService.appRole;
     readonly loadingOverlayVisible = computed(
-        () => this.isInitialLoading() && this.profile() !== null
+        () => this.isInitialLoading() && this.profile() !== null,
     );
 
     ngOnInit(): void {

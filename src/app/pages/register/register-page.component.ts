@@ -4,6 +4,7 @@ import { RegisterFormComponent } from './components/register-form/register-form.
 import { AuthService } from '../../core/services/auth.service';
 import { ApiError } from '../../../../shared/contracts/types';
 import { MARKETING_CONSENT_TEXT_VERSION } from '../../../../shared/contracts/marketing-consent';
+import { PostAuthRedirectService } from '../../core/services/post-auth-redirect.service';
 
 interface RegisterState {
     isLoading: boolean;
@@ -23,9 +24,11 @@ export class RegisterPageComponent {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
+    private readonly postAuthRedirect = inject(PostAuthRedirectService);
 
     /** Prefill email z queryParam (np. gdy użytkownik wraca z "Zmień e-mail") */
     readonly prefillEmail = this.route.snapshot.queryParamMap.get('email') ?? '';
+    private readonly requestedNext = this.route.snapshot.queryParamMap.get('next');
 
     state = signal<RegisterState>({
         isLoading: false,
@@ -57,8 +60,9 @@ export class RegisterPageComponent {
                             : null,
                     },
                 },
-                callbackUrl
+                callbackUrl,
             );
+            this.postAuthRedirect.save(this.requestedNext);
 
             // Wyloguj użytkownika - Supabase tworzy sesję po signUp, ale użytkownik
             // nie powinien być zalogowany przed potwierdzeniem e-maila
@@ -84,12 +88,10 @@ export class RegisterPageComponent {
         }));
 
         try {
+            this.postAuthRedirect.save(this.requestedNext);
             await this.authService.signInWithGoogle();
         } catch (error) {
-            console.error(
-                '[RegisterPageComponent] Google OAuth initialization failed:',
-                error
-            );
+            console.error('[RegisterPageComponent] Google OAuth initialization failed:', error);
             this.state.update((s) => ({
                 ...s,
                 error: {
@@ -119,11 +121,9 @@ export class RegisterPageComponent {
 
     private translateErrorMessage(message: string): string {
         const errorMessages: Record<string, string> = {
-            'User already registered':
-                'Użytkownik o tym adresie e-mail już istnieje.',
+            'User already registered': 'Użytkownik o tym adresie e-mail już istnieje.',
             'Invalid email': 'Niepoprawny adres e-mail.',
-            'Password should be at least 6 characters':
-                'Hasło musi mieć co najmniej 6 znaków.',
+            'Password should be at least 6 characters': 'Hasło musi mieć co najmniej 6 znaków.',
         };
 
         return errorMessages[message] ?? message;

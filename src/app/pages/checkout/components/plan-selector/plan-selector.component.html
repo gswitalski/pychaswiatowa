@@ -1,0 +1,48 @@
+<section class="selector-section" aria-labelledby="plan-selector-title">
+    <h2 id="plan-selector-title">1. Wybierz plan</h2>
+
+    <mat-radio-group
+        class="plan-options"
+        aria-labelledby="plan-selector-title"
+        [value]="selectedPlanId()"
+        [disabled]="disabled()"
+        (change)="selectPlan($event)"
+    >
+        @for (option of options; track option.id) {
+            <div class="plan-card" [class.plan-card--selected]="selectedPlanId() === option.id">
+                <mat-radio-button class="plan-card__radio" [value]="option.id">
+                    <span class="plan-card__content">
+                        <span class="plan-card__header">
+                            <strong>{{ option.label }}</strong>
+
+                            @if (option.savingsPercent !== null) {
+                                <mat-chip-set aria-label="Oszczędność planu rocznego">
+                                    <mat-chip> Oszczędzasz ~{{ option.savingsPercent }}% </mat-chip>
+                                </mat-chip-set>
+                            }
+                        </span>
+
+                        <span class="plan-card__price">
+                            {{
+                                option.priceGross / 100
+                                    | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl'
+                            }}
+                            <small>{{ option.priceSuffix }}</small>
+                        </span>
+
+                        @if (option.monthlyEquivalent !== null) {
+                            <small class="plan-card__equivalent">
+                                ok.
+                                {{
+                                    option.monthlyEquivalent / 100
+                                        | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl'
+                                }}
+                                / mies.
+                            </small>
+                        }
+                    </span>
+                </mat-radio-button>
+            </div>
+        }
+    </mat-radio-group>
+</section>

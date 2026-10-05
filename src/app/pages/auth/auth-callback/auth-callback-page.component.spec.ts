@@ -10,6 +10,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import type { ProfileSettingsDto } from '../../../../../shared/contracts/types';
 import { AuthService } from '../../../core/services/auth.service';
+import { PostAuthRedirectService } from '../../../core/services/post-auth-redirect.service';
 import { ProfileSettingsApiService } from '../../../core/services/profile-settings-api.service';
 import { AuthCallbackPageComponent } from './auth-callback-page.component';
 
@@ -20,7 +21,10 @@ interface CallbackComponentAccess {
 describe('AuthCallbackPageComponent', () => {
     let component: AuthCallbackPageComponent;
     let queryParams: Record<string, string> = {};
-    let router: { navigate: ReturnType<typeof vi.fn> };
+    let router: {
+        navigate: ReturnType<typeof vi.fn>;
+        navigateByUrl: ReturnType<typeof vi.fn>;
+    };
     let authService: {
         exchangeCodeForSession: ReturnType<typeof vi.fn>;
         getSession: ReturnType<typeof vi.fn>;
@@ -28,6 +32,9 @@ describe('AuthCallbackPageComponent', () => {
     };
     let profileSettingsApi: {
         getProfileSettings: ReturnType<typeof vi.fn>;
+    };
+    let postAuthRedirect: {
+        consume: ReturnType<typeof vi.fn>;
     };
 
     const profileWithoutUsername: ProfileSettingsDto = {
@@ -41,21 +48,19 @@ describe('AuthCallbackPageComponent', () => {
 
     beforeAll(() => {
         TestBed.resetTestEnvironment();
-        TestBed.initTestEnvironment(
-            BrowserDynamicTestingModule,
-            platformBrowserDynamicTesting()
-        );
+        TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
     });
 
     beforeEach(async () => {
         queryParams = {};
-        router = { navigate: vi.fn() };
+        router = { navigate: vi.fn(), navigateByUrl: vi.fn() };
         authService = {
             exchangeCodeForSession: vi.fn(),
             getSession: vi.fn(),
             signOut: vi.fn(),
         };
         profileSettingsApi = { getProfileSettings: vi.fn() };
+        postAuthRedirect = { consume: vi.fn().mockReturnValue(null) };
 
         await TestBed.configureTestingModule({
             imports: [AuthCallbackPageComponent],
@@ -65,8 +70,7 @@ describe('AuthCallbackPageComponent', () => {
                     useValue: {
                         snapshot: {
                             queryParamMap: {
-                                get: (name: string) =>
-                                    convertToParamMap(queryParams).get(name),
+                                get: (name: string) => convertToParamMap(queryParams).get(name),
                             },
                         },
                     },
@@ -76,6 +80,10 @@ describe('AuthCallbackPageComponent', () => {
                 {
                     provide: ProfileSettingsApiService,
                     useValue: profileSettingsApi,
+                },
+                {
+                    provide: PostAuthRedirectService,
+                    useValue: postAuthRedirect,
                 },
             ],
         }).compileComponents();
@@ -97,12 +105,25 @@ describe('AuthCallbackPageComponent', () => {
         queryParams = { code: 'oauth-code' };
         authService.exchangeCodeForSession.mockResolvedValue({ success: true });
         profileSettingsApi.getProfileSettings.mockReturnValue(
-            of({ ...profileWithoutUsername, username: 'test-user' })
+            of({ ...profileWithoutUsername, username: 'test-user' }),
         );
 
         await (component as unknown as CallbackComponentAccess).processCallback();
 
-        expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+        expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    });
+
+    it('powinien przekierować użytkownika OAuth na zapisany checkout', async () => {
+        queryParams = { code: 'oauth-code' };
+        authService.exchangeCodeForSession.mockResolvedValue({ success: true });
+        profileSettingsApi.getProfileSettings.mockReturnValue(
+            of({ ...profileWithoutUsername, username: 'test-user' }),
+        );
+        postAuthRedirect.consume.mockReturnValue('/checkout?plan=premium_yearly');
+
+        await (component as unknown as CallbackComponentAccess).processCallback();
+
+        expect(router.navigateByUrl).toHaveBeenCalledWith('/checkout?plan=premium_yearly');
     });
 
     it('powinien obsłużyć odmowę dostępu Google', async () => {
@@ -119,7 +140,7 @@ describe('AuthCallbackPageComponent', () => {
         queryParams = { code: 'oauth-code' };
         authService.exchangeCodeForSession.mockResolvedValue({ success: true });
         profileSettingsApi.getProfileSettings.mockReturnValue(
-            throwError(() => new Error('Profile unavailable'))
+            throwError(() => new Error('Profile unavailable')),
         );
 
         await (component as unknown as CallbackComponentAccess).processCallback();

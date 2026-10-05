@@ -1,13 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { AuthResponse, AuthError } from '@supabase/supabase-js';
+import { firstValueFrom } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { AiCreditsService } from './ai-credits.service';
-import {
-    SignUpRequestDto,
-    AppRole,
-    MeDto,
-} from '../../../../shared/contracts/types';
+import { SignUpRequestDto, AppRole } from '../../../../shared/contracts/types';
 import { extractAppRoleFromJwt } from '../utils/jwt.utils';
+import { MeApiService } from './me-api.service';
+import { SubscriptionStateService } from './subscription-state.service';
 
 /** Cooldown w sekundach dla ponownego wysłania linku weryfikacyjnego */
 export const RESEND_COOLDOWN_SECONDS = 60;
@@ -38,6 +37,8 @@ interface SupabaseSignUpMetadata {
 export class AuthService {
     private readonly supabase = inject(SupabaseService);
     private readonly aiCreditsService = inject(AiCreditsService);
+    private readonly meApi = inject(MeApiService);
+    private readonly subscriptionState = inject(SubscriptionStateService);
 
     /** Signal indicating if user is authenticated */
     readonly isAuthenticated = signal<boolean>(false);
@@ -51,10 +52,7 @@ export class AuthService {
     /** Flag to prevent multiple initializations */
     private initialized = false;
 
-    async signUp(
-        credentials: SignUpRequestDto,
-        redirectTo?: string
-    ): Promise<AuthResponse> {
+    async signUp(credentials: SignUpRequestDto, redirectTo?: string): Promise<AuthResponse> {
         const metadata = this.mapSignUpRequestToSupabaseMetadata(credentials);
 
         const { data, error } = await this.supabase.auth.signUp({
@@ -74,13 +72,12 @@ export class AuthService {
     }
 
     private mapSignUpRequestToSupabaseMetadata(
-        credentials: SignUpRequestDto
+        credentials: SignUpRequestDto,
     ): SupabaseSignUpMetadata {
         return {
             username: credentials.username,
             marketing_consent_accepted: credentials.marketing_consent.accepted,
-            marketing_consent_text_version:
-                credentials.marketing_consent.text_version,
+            marketing_consent_text_version: credentials.marketing_consent.text_version,
         };
     }
 
@@ -127,13 +124,21 @@ export class AuthService {
         return this.supabase.auth.getSession();
     }
 
+    async refreshSession(): Promise<void> {
+        const { error } = await this.supabase.auth.refreshSession();
+
+        if (error) {
+            throw error;
+        }
+    }
+
     /**
      * Ponownie wysyła e-mail weryfikacyjny do podanego adresu.
      * Używa type: 'signup' dla flow rejestracji.
      */
     async resendVerificationEmail(
         email: string,
-        redirectTo: string
+        redirectTo: string,
     ): Promise<ResendVerificationResult> {
         try {
             const { error } = await this.supabase.auth.resend({
@@ -164,9 +169,7 @@ export class AuthService {
      * Próbuje pobrać sesję z URL po kliknięciu w link weryfikacyjny.
      * Supabase automatycznie przetwarza parametry z URL.
      */
-    async exchangeCodeForSession(
-        code: string
-    ): Promise<{ success: boolean; error?: string }> {
+    async exchangeCodeForSession(code: string): Promise<{ success: boolean; error?: string }> {
         try {
             const { error } = await this.supabase.auth.exchangeCodeForSession(code);
 
@@ -199,18 +202,14 @@ export class AuthService {
         this.initialized = true;
 
         // Read initial session
-        const { data: { session } } = await this.supabase.auth.getSession();
-        await this.updateAuthState(
-            session?.access_token ?? null,
-            session?.user?.id ?? null
-        );
+        const {
+            data: { session },
+        } = await this.supabase.auth.getSession();
+        await this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
 
         // Subscribe to auth state changes (login, logout, token refresh)
         this.supabase.auth.onAuthStateChange((_event, session) => {
-            void this.updateAuthState(
-                session?.access_token ?? null,
-                session?.user?.id ?? null
-            );
+            void this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
         });
     }
 
@@ -220,7 +219,7 @@ export class AuthService {
      */
     private async updateAuthState(
         accessToken: string | null,
-        userId: string | null
+        userId: string | null,
     ): Promise<void> {
         if (!accessToken || !userId) {
             // User is not authenticated
@@ -228,6 +227,7 @@ export class AuthService {
             this.userId.set(null);
             this.appRole.set('user'); // Safe fallback
             this.aiCreditsService.bootstrapFromMeResponse(null);
+            this.subscriptionState.reset();
             return;
         }
 
@@ -242,14 +242,15 @@ export class AuthService {
 
         if (userChanged) {
             this.aiCreditsService.bootstrapFromMeResponse(null);
+            this.subscriptionState.reset();
         }
 
         // Log diagnostics if fallback was used
         if (roleResult.isFallback) {
-            console.warn(
-                `[AuthService] app_role fallback applied: ${roleResult.reason}`,
-                { rawAppRole: roleResult.rawAppRole, fallbackRole: roleResult.appRole }
-            );
+            console.warn(`[AuthService] app_role fallback applied: ${roleResult.reason}`, {
+                rawAppRole: roleResult.rawAppRole,
+                fallbackRole: roleResult.appRole,
+            });
         }
 
         await this.bootstrapAiCredits(userId);
@@ -257,29 +258,17 @@ export class AuthService {
 
     private async bootstrapAiCredits(expectedUserId: string): Promise<void> {
         try {
-            const response = await this.supabase.functions.invoke<MeDto>('me', {
-                method: 'GET',
-            });
+            const me = await firstValueFrom(this.meApi.getMe());
 
             if (this.userId() !== expectedUserId) {
                 return;
             }
 
-            if (response.error) {
-                throw response.error;
-            }
-
-            if (!response.data) {
-                throw new Error('Nie otrzymano danych użytkownika.');
-            }
-
-            this.aiCreditsService.bootstrapFromMeResponse(response.data.ai_credits);
+            this.subscriptionState.applyMe(me);
+            this.aiCreditsService.bootstrapFromMeResponse(me.ai_credits);
             this.aiCreditsService.refreshCredits();
         } catch (error) {
-            console.error(
-                '[AuthService] Nie udało się zainicjalizować kredytów AI:',
-                error
-            );
+            console.error('[AuthService] Nie udało się zainicjalizować danych użytkownika:', error);
         }
     }
 
@@ -292,8 +281,7 @@ export class AuthService {
         const errorMessages: Record<string, string> = {
             'For security purposes, you can only request this once every 60 seconds':
                 'Możesz wysłać kolejny e-mail za 60 sekund.',
-            'Email rate limit exceeded':
-                'Zbyt wiele prób. Spróbuj ponownie później.',
+            'Email rate limit exceeded': 'Zbyt wiele prób. Spróbuj ponownie później.',
         };
 
         return errorMessages[error.message] ?? error.message;

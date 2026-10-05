@@ -1,25 +1,12 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    EventEmitter,
-    Input,
-    Output,
-} from '@angular/core';
-import {
-    FormControl,
-    FormGroup,
-    ReactiveFormsModule,
-    Validators,
-} from '@angular/forms';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import {
-    SignInRequestDto,
-} from '../../../../../../shared/contracts/types';
+import { SignInRequestDto } from '../../../../../../shared/contracts/types';
 import { OauthGoogleButtonComponent } from '../../../../shared/components/oauth-google-button/oauth-google-button.component';
 
 interface LoginFormViewModel {
@@ -52,6 +39,7 @@ export class LoginFormComponent {
     @Input() isResending = false;
     @Input() isGoogleLoading = false;
     @Input() oauthErrorMessage: string | null = null;
+    @Input() registerNext: string | null = null;
 
     @Output() login = new EventEmitter<SignInRequestDto>();
     @Output() resendVerification = new EventEmitter<string>();
@@ -71,9 +59,7 @@ export class LoginFormComponent {
     /** Czy przycisk resend jest wyłączony */
     get isResendDisabled(): boolean {
         return (
-            this.isResending ||
-            this.resendCooldownSeconds > 0 ||
-            !this.form.controls.email.valid
+            this.isResending || this.resendCooldownSeconds > 0 || !this.form.controls.email.valid
         );
     }
 
@@ -118,4 +104,3 @@ export class LoginFormComponent {
         return '';
     }
 }
-

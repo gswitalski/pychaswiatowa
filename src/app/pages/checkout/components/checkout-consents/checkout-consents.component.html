@@ -1,0 +1,35 @@
+<section class="consents" aria-labelledby="checkout-consents-title">
+    <h2 id="checkout-consents-title">3. Wymagane zgody</h2>
+
+    <mat-checkbox
+        [checked]="acceptedTerms()"
+        [disabled]="disabled()"
+        [class.consent--invalid]="highlightMissing() && !acceptedTerms()"
+        (change)="updateTerms($event)"
+    >
+        Akceptuję
+        <a
+            href="/legal/subscription"
+            target="_blank"
+            rel="noopener"
+            (click)="$event.stopPropagation()"
+        >
+            Regulamin subskrypcji
+        </a>
+    </mat-checkbox>
+
+    <mat-checkbox
+        [checked]="acceptedDigitalWaiver()"
+        [disabled]="disabled()"
+        [class.consent--invalid]="highlightMissing() && !acceptedDigitalWaiver()"
+        (change)="updateDigitalWaiver($event)"
+    >
+        Chcę korzystać z Premium od razu i wiem, że tracę prawo do odstąpienia od umowy w 14 dni.
+    </mat-checkbox>
+
+    <div class="consents__message" aria-live="polite">
+        @if (highlightMissing() && (!acceptedTerms() || !acceptedDigitalWaiver())) {
+            Zaznacz obie wymagane zgody.
+        }
+    </div>
+</section>

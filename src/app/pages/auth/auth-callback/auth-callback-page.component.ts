@@ -1,15 +1,10 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    inject,
-    OnInit,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
+import { PostAuthRedirectService } from '../../../core/services/post-auth-redirect.service';
 import { ProfileSettingsApiService } from '../../../core/services/profile-settings-api.service';
 
 interface AuthCallbackState {
@@ -30,6 +25,7 @@ export class AuthCallbackPageComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly authService = inject(AuthService);
     private readonly profileSettingsApi = inject(ProfileSettingsApiService);
+    private readonly postAuthRedirect = inject(PostAuthRedirectService);
 
     state = signal<AuthCallbackState>({
         isLoading: true,
@@ -132,13 +128,14 @@ export class AuthCallbackPageComponent implements OnInit {
 
     private async handleOAuthSuccess(): Promise<void> {
         try {
-            const profile = await firstValueFrom(
-                this.profileSettingsApi.getProfileSettings()
-            );
-            const target = profile.username.trim()
-                ? '/dashboard'
-                : '/auth/complete-profile';
-            this.router.navigate([target]);
+            const profile = await firstValueFrom(this.profileSettingsApi.getProfileSettings());
+            if (!profile.username.trim()) {
+                this.router.navigate(['/auth/complete-profile']);
+                return;
+            }
+
+            const target = this.postAuthRedirect.consume() ?? '/dashboard';
+            this.router.navigateByUrl(target);
         } catch {
             this.redirectToOAuthError('profile_error');
         }
@@ -149,11 +146,8 @@ export class AuthCallbackPageComponent implements OnInit {
     }
 
     private redirectToOAuthError(
-        error: 'access_denied' | 'oauth_error' | 'timeout' | 'profile_error'
+        error: 'access_denied' | 'oauth_error' | 'timeout' | 'profile_error',
     ): void {
         this.router.navigate(['/login'], { queryParams: { error } });
     }
 }
-
-
-

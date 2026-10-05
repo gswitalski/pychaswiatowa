@@ -8,6 +8,7 @@ import { MARKETING_CONSENT_TEXT_VERSION } from '../../../../../shared/contracts/
 import type { ApiError } from '../../../../../shared/contracts/types';
 import { Router } from '@angular/router';
 import { ProfileCompletionService } from '../../../core/services/profile-completion.service';
+import { PostAuthRedirectService } from '../../../core/services/post-auth-redirect.service';
 import { ProfileSettingsApiService } from '../../../core/services/profile-settings-api.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { CompleteProfileFormComponent } from './components/complete-profile-form/complete-profile-form.component';
@@ -39,6 +40,7 @@ export class CompleteProfilePageComponent implements OnInit {
     private readonly profileCompletion = inject(ProfileCompletionService);
     private readonly router = inject(Router);
     private readonly snackBar = inject(MatSnackBar);
+    private readonly postAuthRedirect = inject(PostAuthRedirectService);
 
     public readonly state = signal<CompleteProfileState>({
         isLoadingSession: true,
@@ -69,10 +71,10 @@ export class CompleteProfilePageComponent implements OnInit {
                     username: normalizedUsername,
                     marketing_consent: false,
                     marketing_consent_text_version: MARKETING_CONSENT_TEXT_VERSION,
-                })
+                }),
             );
             this.profileCompletion.markComplete();
-            await this.router.navigate(['/dashboard']);
+            await this.router.navigateByUrl(this.postAuthRedirect.consume() ?? '/dashboard');
         } catch (error) {
             const apiError = error as Partial<ApiError>;
             if (apiError.status === 401) {
@@ -88,7 +90,7 @@ export class CompleteProfilePageComponent implements OnInit {
                 serverError:
                     apiError.status === 409
                         ? 'Ta nazwa użytkownika jest już zajęta.'
-                        : apiError.message ?? 'Wystąpił błąd. Spróbuj ponownie.',
+                        : (apiError.message ?? 'Wystąpił błąd. Spróbuj ponownie.'),
             }));
         } finally {
             this.state.update((state) => ({ ...state, isSaving: false }));

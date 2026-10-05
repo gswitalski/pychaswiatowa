@@ -9,7 +9,11 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
 import { AuthResponse, User, Session } from '@supabase/supabase-js';
-import { SignUpRequestDto } from '../../../../shared/contracts/types';
+import { MeDto, SignUpRequestDto } from '../../../../shared/contracts/types';
+import { AiCreditsService } from './ai-credits.service';
+import { MeApiService } from './me-api.service';
+import { SubscriptionStateService } from './subscription-state.service';
+import { of } from 'rxjs';
 
 interface MockSupabaseService {
     auth: {
@@ -18,20 +22,30 @@ interface MockSupabaseService {
         signInWithOAuth: ReturnType<typeof vi.fn>;
         signOut: ReturnType<typeof vi.fn>;
         getSession: ReturnType<typeof vi.fn>;
+        refreshSession: ReturnType<typeof vi.fn>;
+        onAuthStateChange: ReturnType<typeof vi.fn>;
     };
 }
 
 describe('AuthService', () => {
     let service: AuthService;
     let mockSupabaseService: MockSupabaseService;
+    let mockAiCreditsService: {
+        bootstrapFromMeResponse: ReturnType<typeof vi.fn>;
+        refreshCredits: ReturnType<typeof vi.fn>;
+    };
+    let mockMeApiService: {
+        getMe: ReturnType<typeof vi.fn>;
+    };
+    let mockSubscriptionStateService: {
+        applyMe: ReturnType<typeof vi.fn>;
+        reset: ReturnType<typeof vi.fn>;
+    };
 
     // Inicjalizacja środowiska testowego Angular
     beforeAll(() => {
         TestBed.resetTestEnvironment();
-        TestBed.initTestEnvironment(
-            BrowserDynamicTestingModule,
-            platformBrowserDynamicTesting()
-        );
+        TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
     });
 
     beforeEach(async () => {
@@ -43,7 +57,20 @@ describe('AuthService', () => {
                 signInWithOAuth: vi.fn(),
                 signOut: vi.fn(),
                 getSession: vi.fn(),
+                refreshSession: vi.fn(),
+                onAuthStateChange: vi.fn(),
             },
+        };
+        mockAiCreditsService = {
+            bootstrapFromMeResponse: vi.fn(),
+            refreshCredits: vi.fn(),
+        };
+        mockMeApiService = {
+            getMe: vi.fn(),
+        };
+        mockSubscriptionStateService = {
+            applyMe: vi.fn(),
+            reset: vi.fn(),
         };
 
         // Konfiguracja TestBed
@@ -51,6 +78,12 @@ describe('AuthService', () => {
             providers: [
                 AuthService,
                 { provide: SupabaseService, useValue: mockSupabaseService },
+                { provide: AiCreditsService, useValue: mockAiCreditsService },
+                { provide: MeApiService, useValue: mockMeApiService },
+                {
+                    provide: SubscriptionStateService,
+                    useValue: mockSubscriptionStateService,
+                },
             ],
         }).compileComponents();
 
@@ -92,10 +125,8 @@ describe('AuthService', () => {
                 options: {
                     data: {
                         username: credentials.username,
-                        marketing_consent_accepted:
-                            credentials.marketing_consent.accepted,
-                        marketing_consent_text_version:
-                            credentials.marketing_consent.text_version,
+                        marketing_consent_accepted: credentials.marketing_consent.accepted,
+                        marketing_consent_text_version: credentials.marketing_consent.text_version,
                     },
                     emailRedirectTo: undefined,
                 },
@@ -243,5 +274,74 @@ describe('AuthService', () => {
             expect(mockSupabaseService.auth.getSession).toHaveBeenCalledTimes(1);
         });
     });
-});
 
+    describe('refreshSession()', () => {
+        it('powinien odświeżyć sesję', async () => {
+            mockSupabaseService.auth.refreshSession.mockResolvedValue({
+                data: { user: null, session: null },
+                error: null,
+            });
+
+            await service.refreshSession();
+
+            expect(mockSupabaseService.auth.refreshSession).toHaveBeenCalledTimes(1);
+        });
+
+        it('powinien rzucić błąd odświeżenia sesji', async () => {
+            const error = { message: 'Refresh token expired' };
+            mockSupabaseService.auth.refreshSession.mockResolvedValue({
+                data: { user: null, session: null },
+                error,
+            });
+
+            await expect(service.refreshSession()).rejects.toEqual(error);
+        });
+    });
+
+    describe('initAuthState()', () => {
+        it('powinien zasilić kredyty i stan subskrypcji odpowiedzią GET /me', async () => {
+            const me: MeDto = {
+                id: 'user-1',
+                username: 'test-user',
+                app_role: 'premium',
+                ai_credits: {
+                    draft_remaining: 10,
+                    image_remaining: 5,
+                    limit_type: 'monthly',
+                    next_reset_at: '2026-10-01T00:00:00Z',
+                },
+                subscription_status: 'active',
+                subscription_plan_id: 'premium_yearly',
+                current_period_end: '2027-09-30T00:00:00Z',
+                auto_renew: true,
+                trial_ends_at: null,
+            };
+            const payload = btoa(JSON.stringify({ app_role: 'premium' }));
+            const session = {
+                access_token: `header.${payload}.signature`,
+                user: { id: 'user-1' },
+            } as Session;
+
+            mockSupabaseService.auth.getSession.mockResolvedValue({
+                data: { session },
+                error: null,
+            });
+            mockSupabaseService.auth.onAuthStateChange.mockReturnValue({
+                data: { subscription: { unsubscribe: vi.fn() } },
+            });
+            mockMeApiService.getMe.mockReturnValue(of(me));
+
+            await service.initAuthState();
+
+            expect(service.isAuthenticated()).toBe(true);
+            expect(service.userId()).toBe('user-1');
+            expect(service.appRole()).toBe('premium');
+            expect(mockSubscriptionStateService.reset).toHaveBeenCalledTimes(1);
+            expect(mockSubscriptionStateService.applyMe).toHaveBeenCalledWith(me);
+            expect(mockAiCreditsService.bootstrapFromMeResponse).toHaveBeenLastCalledWith(
+                me.ai_credits,
+            );
+            expect(mockAiCreditsService.refreshCredits).toHaveBeenCalledTimes(1);
+        });
+    });
+});

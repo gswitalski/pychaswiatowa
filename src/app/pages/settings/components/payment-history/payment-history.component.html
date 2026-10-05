@@ -1,0 +1,165 @@
+@if (isVisible()) {
+    <mat-card appearance="outlined" class="payments-card">
+        <div class="payments-card__header">
+            <h2>Płatności</h2>
+
+            @if (subscriptionStatus(); as status) {
+                <mat-chip>{{ statusLabel(status) }}</mat-chip>
+            }
+        </div>
+
+        @if (subscriptionStatus()) {
+            <div class="subscription-summary">
+                <strong>{{ planLabel(subscriptionPlanId()) }}</strong>
+                @if (currentPeriodEnd()) {
+                    <span>
+                        {{ autoRenew() ? 'Następna płatność:' : 'Aktywne do:' }}
+                        {{ currentPeriodEnd() | date: 'd MMMM y' : undefined : 'pl' }}
+                    </span>
+                }
+            </div>
+        }
+
+        @if (loadState() === 'error') {
+            <div class="payments-error" role="alert">
+                <mat-icon aria-hidden="true">error_outline</mat-icon>
+                <span>Nie udało się pobrać historii płatności.</span>
+                <button mat-stroked-button type="button" (click)="retry()">Spróbuj ponownie</button>
+            </div>
+        }
+
+        @if (loadState() === 'loading' && payments().length === 0) {
+            <div class="payments-skeleton" role="status" aria-label="Ładowanie płatności">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        } @else {
+            <div class="payments-data" [class.payments-data--loading]="loadState() === 'loading'">
+                @if (payments().length === 0) {
+                    @if (loadState() !== 'error') {
+                        <p class="payments-empty">Brak płatności.</p>
+                    }
+                } @else {
+                    <div class="payments-desktop">
+                        <table mat-table [dataSource]="payments()">
+                            <ng-container matColumnDef="paidAt">
+                                <th mat-header-cell *matHeaderCellDef>Data</th>
+                                <td mat-cell *matCellDef="let payment">
+                                    {{
+                                        payment.paidAt ? (payment.paidAt | date: 'dd.MM.yyyy') : '—'
+                                    }}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="plan">
+                                <th mat-header-cell *matHeaderCellDef>Plan</th>
+                                <td mat-cell *matCellDef="let payment">
+                                    {{ payment.planLabel }}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="amount">
+                                <th mat-header-cell *matHeaderCellDef>Kwota brutto</th>
+                                <td mat-cell *matCellDef="let payment">
+                                    {{
+                                        payment.amountGross / 100
+                                            | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl'
+                                    }}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="method">
+                                <th mat-header-cell *matHeaderCellDef>Metoda</th>
+                                <td mat-cell *matCellDef="let payment">
+                                    {{ payment.methodLabel }}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="status">
+                                <th mat-header-cell *matHeaderCellDef>Status</th>
+                                <td mat-cell *matCellDef="let payment">
+                                    <span
+                                        class="payment-status"
+                                        [class.payment-status--failed]="
+                                            payment.statusKind === 'failed'
+                                        "
+                                    >
+                                        {{ payment.statusLabel }}
+                                    </span>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="invoice">
+                                <th mat-header-cell *matHeaderCellDef>Faktura</th>
+                                <td mat-cell *matCellDef="let payment">
+                                    @if (payment.documentUrl) {
+                                        <a
+                                            mat-button
+                                            [href]="payment.documentUrl"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            Faktura
+                                        </a>
+                                    } @else {
+                                        —
+                                    }
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+                        </table>
+                    </div>
+
+                    <div class="payments-mobile">
+                        @for (payment of payments(); track payment.id) {
+                            <article class="payment-card">
+                                <div>
+                                    <strong>{{ payment.planLabel }}</strong>
+                                    <span>
+                                        {{
+                                            payment.paidAt
+                                                ? (payment.paidAt | date: 'dd.MM.yyyy')
+                                                : '—'
+                                        }}
+                                    </span>
+                                </div>
+                                <dl>
+                                    <div>
+                                        <dt>Kwota brutto</dt>
+                                        <dd>
+                                            {{
+                                                payment.amountGross / 100
+                                                    | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl'
+                                            }}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt>Metoda</dt>
+                                        <dd>{{ payment.methodLabel }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Status</dt>
+                                        <dd>{{ payment.statusLabel }}</dd>
+                                    </div>
+                                </dl>
+                                @if (payment.documentUrl) {
+                                    <a
+                                        mat-stroked-button
+                                        [href]="payment.documentUrl"
+                                        target="_blank"
+                                        rel="noopener"
+                                    >
+                                        Faktura
+                                    </a>
+                                }
+                            </article>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </mat-card>
+}

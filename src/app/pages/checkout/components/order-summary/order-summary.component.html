@@ -1,0 +1,54 @@
+<mat-card class="order-summary">
+    <mat-card-header>
+        <mat-card-title>Podsumowanie</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <div class="order-summary__row">
+            <span>{{ summary().planLabel }}</span>
+            <strong>
+                {{ summary().amountGross / 100 | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl' }}
+            </strong>
+        </div>
+
+        <p class="order-summary__vat">Cena zawiera VAT</p>
+
+        <div class="order-summary__period">
+            @if (summary().dateKind === 'nextPayment') {
+                <span>Następna płatność:</span>
+            } @else {
+                <span>Premium aktywne do:</span>
+            }
+            <strong>{{ summary().periodEnd | date: 'd MMMM y' : undefined : 'pl' }}</strong>
+        </div>
+
+        @if (!summary().autoRenew) {
+            <p class="order-summary__renewal">Bez automatycznego odnowienia.</p>
+        }
+
+        <div class="order-summary__security">
+            <mat-icon aria-hidden="true">lock</mat-icon>
+            <span>Bezpieczna płatność przez Stripe</span>
+        </div>
+    </mat-card-content>
+
+    <mat-card-actions class="order-summary__actions">
+        <button
+            mat-flat-button
+            type="button"
+            [disabled]="!canSubmit() || submitting()"
+            [attr.aria-busy]="submitting()"
+            (click)="requestPayment()"
+        >
+            @if (submitting()) {
+                <mat-spinner diameter="20" />
+                <span>Przekierowanie do płatności…</span>
+            } @else {
+                <span>
+                    Zapłać
+                    {{ summary().amountGross / 100 | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl' }}
+                </span>
+            }
+        </button>
+    </mat-card-actions>
+</mat-card>

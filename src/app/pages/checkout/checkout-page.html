@@ -1,16 +1,92 @@
 <main class="checkout-page">
-    <mat-card>
-        <mat-card-content>
-            <mat-icon class="checkout-page__icon" aria-hidden="true">schedule</mat-icon>
-            <h1>Płatności wkrótce</h1>
-            <p>
-                Pracujemy nad integracją płatności. Gdy będzie gotowa, w tym miejscu bezpiecznie
-                wybierzesz subskrypcję Premium.
-            </p>
-            <a mat-flat-button routerLink="/pricing">
-                <mat-icon>arrow_back</mat-icon>
-                Wróć do cennika
-            </a>
-        </mat-card-content>
-    </mat-card>
+    <header class="checkout-page__header">
+        <h1 tabindex="-1">Kup Premium</h1>
+        <p>Wybierz plan i bezpiecznie dokończ płatność w Stripe.</p>
+    </header>
+
+    @if (isTrialing()) {
+        <mat-card class="checkout-page__trial-banner">
+            <mat-card-content>
+                <mat-icon aria-hidden="true">info</mat-icon>
+                <span>
+                    Zakup zakończy obecny okres próbny i rozpocznie opłaconą subskrypcję Premium.
+                </span>
+            </mat-card-content>
+        </mat-card>
+    }
+
+    @if (error(); as checkoutError) {
+        <div class="checkout-page__error" role="alert">
+            <div>
+                <strong>Nie udało się rozpocząć płatności.</strong>
+                <span>{{ checkoutError.message }}</span>
+            </div>
+            <button
+                mat-stroked-button
+                type="button"
+                [disabled]="retryCountdown() > 0"
+                (click)="retry()"
+            >
+                @if (retryCountdown() > 0) {
+                    Spróbuj ponownie za {{ retryCountdown() }} s
+                } @else {
+                    Spróbuj ponownie
+                }
+            </button>
+        </div>
+    }
+
+    @if (showSkeleton()) {
+        <div
+            class="checkout-page__skeleton"
+            role="status"
+            aria-live="polite"
+            aria-label="Ładowanie formularza płatności"
+        >
+            <mat-spinner diameter="36" />
+            <span>Ładowanie formularza płatności…</span>
+        </div>
+    } @else {
+        <div class="checkout-page__layout">
+            <div class="checkout-page__form">
+                <mat-card>
+                    <mat-card-content>
+                        <pych-plan-selector
+                            [(selectedPlanId)]="planId"
+                            [disabled]="formDisabled()"
+                        />
+                    </mat-card-content>
+                </mat-card>
+
+                <mat-card>
+                    <mat-card-content>
+                        <pych-payment-method-selector
+                            [(selectedMethod)]="paymentMethod"
+                            [disabled]="formDisabled()"
+                        />
+                    </mat-card-content>
+                </mat-card>
+
+                <mat-card>
+                    <mat-card-content>
+                        <pych-checkout-consents
+                            [(acceptedTerms)]="acceptedTerms"
+                            [(acceptedDigitalWaiver)]="acceptedDigitalWaiver"
+                            [highlightMissing]="highlightMissingConsents()"
+                            [disabled]="formDisabled()"
+                        />
+                    </mat-card-content>
+                </mat-card>
+            </div>
+
+            <aside class="checkout-page__summary" aria-label="Podsumowanie zamówienia">
+                <pych-order-summary
+                    [summary]="summary()"
+                    [canSubmit]="canSubmit()"
+                    [submitting]="submitting()"
+                    (pay)="submit()"
+                />
+            </aside>
+        </div>
+    }
 </main>

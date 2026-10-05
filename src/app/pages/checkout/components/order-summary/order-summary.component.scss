@@ -1,0 +1,88 @@
+.order-summary {
+    mat-card-content {
+        display: flex;
+        padding-top: 20px;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    &__row,
+    &__period {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    &__row {
+        align-items: baseline;
+        font: var(--mat-sys-title-medium);
+
+        strong {
+            color: var(--mat-sys-primary);
+            font: var(--mat-sys-headline-small);
+            white-space: nowrap;
+        }
+    }
+
+    &__vat,
+    &__renewal {
+        margin: -10px 0 0;
+        color: var(--mat-sys-on-surface-variant);
+        font: var(--mat-sys-body-small);
+    }
+
+    &__period {
+        padding-top: 16px;
+        border-top: 1px solid var(--mat-sys-outline-variant);
+        color: var(--mat-sys-on-surface-variant);
+
+        strong {
+            color: var(--mat-sys-on-surface);
+            text-align: right;
+        }
+    }
+
+    &__security {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mat-sys-on-surface-variant);
+        font: var(--mat-sys-body-small);
+        gap: 6px;
+
+        mat-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+        }
+    }
+
+    &__actions {
+        padding: 8px 16px 16px;
+
+        button {
+            width: 100%;
+            min-height: 48px;
+
+            mat-spinner {
+                display: inline-block;
+                margin-right: 8px;
+                vertical-align: middle;
+            }
+        }
+    }
+}
+
+@media (max-width: 959px) {
+    .order-summary__actions {
+        position: fixed;
+        right: 0;
+        bottom: calc(var(--pych-bottom-bar-height, 64px) + env(safe-area-inset-bottom, 0px));
+        left: 0;
+        z-index: 900;
+        padding: 12px 16px;
+        border-top: 1px solid var(--mat-sys-outline-variant);
+        background: var(--mat-sys-surface-container);
+        box-shadow: var(--mat-sys-level2);
+    }
+}

@@ -71,15 +71,21 @@
             </mat-card-content>
             <mat-card-actions>
                 @if (showPremiumCta()) {
-                    @if (isAuthenticated() && appRole() === 'premium') {
+                    @if (isAuthenticated() && appRole() === 'premium' && !isTrialing()) {
                         <button mat-flat-button disabled>Twój aktualny plan</button>
                     } @else if (isAuthenticated()) {
-                        <a mat-flat-button routerLink="/checkout">Wybierz Premium</a>
+                        <a
+                            mat-flat-button
+                            routerLink="/checkout"
+                            [queryParams]="{ plan: selectedPlanId() }"
+                        >
+                            {{ appRole() === 'premium' ? 'Kup Premium' : 'Wybierz Premium' }}
+                        </a>
                     } @else {
                         <a
                             mat-flat-button
                             routerLink="/register"
-                            [queryParams]="{ next: '/checkout' }"
+                            [queryParams]="{ next: guestCheckoutNext() }"
                         >
                             Wybierz Premium
                         </a>
@@ -239,7 +245,7 @@
     </section>
 
     <section class="pricing-footer-links" aria-label="Informacje prawne">
-        <p>Ceny orientacyjne, netto PLN B2C. Zmiana cen możliwa przed startem sprzedaży.</p>
+        <p>Ceny brutto (zawierają VAT).</p>
         <nav aria-label="Dokumenty dotyczące oferty">
             <a routerLink="/legal/subscription">Regulamin subskrypcji</a>
             <span aria-hidden="true">·</span>

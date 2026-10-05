@@ -1,0 +1,28 @@
+<section class="selector-section" aria-labelledby="payment-method-title">
+    <h2 id="payment-method-title">2. Metoda płatności</h2>
+
+    <mat-radio-group
+        class="payment-options"
+        aria-labelledby="payment-method-title"
+        [value]="selectedMethod()"
+        [disabled]="disabled()"
+        (change)="selectMethod($event)"
+    >
+        @for (option of options; track option.id) {
+            <div
+                class="payment-card"
+                [class.payment-card--selected]="selectedMethod() === option.id"
+            >
+                <mat-radio-button class="payment-card__radio" [value]="option.id">
+                    <span class="payment-card__content">
+                        <span class="payment-card__label">
+                            <mat-icon aria-hidden="true">{{ option.icon }}</mat-icon>
+                            {{ option.label }}
+                        </span>
+                        <small>{{ option.description }}</small>
+                    </span>
+                </mat-radio-button>
+            </div>
+        }
+    </mat-radio-group>
+</section>

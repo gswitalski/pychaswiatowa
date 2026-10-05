@@ -1,0 +1,23 @@
+<main class="checkout-cancel-page">
+    <mat-card class="checkout-cancel-card">
+        <mat-card-content>
+            <mat-icon class="checkout-cancel-card__icon" aria-hidden="true"> warning </mat-icon>
+            <h1 tabindex="-1">Płatność nie została zakończona</h1>
+            <p>
+                Nic nie zostało pobrane z Twojego konta. Możesz wrócić do checkoutu i spróbować
+                ponownie albo wybrać inny plan.
+            </p>
+
+            <div class="checkout-cancel-card__actions">
+                <button mat-flat-button type="button" (click)="retryCheckout()">
+                    Spróbuj ponownie
+                </button>
+                <a mat-stroked-button routerLink="/pricing"> Wróć do cennika </a>
+            </div>
+
+            <a class="checkout-cancel-card__support" [href]="'mailto:' + supportEmail">
+                Masz problem z płatnością? Napisz do nas
+            </a>
+        </mat-card-content>
+    </mat-card>
+</main>

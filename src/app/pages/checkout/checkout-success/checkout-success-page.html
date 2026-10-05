@@ -1,0 +1,100 @@
+<main class="checkout-result-page">
+    <mat-card class="checkout-result-card">
+        <mat-card-content>
+            @switch (state()) {
+                @case ('confirming') {
+                    <div class="checkout-result-card__state" role="status" aria-live="polite">
+                        <mat-spinner diameter="48" />
+                        <h1 #stateHeading tabindex="-1">Potwierdzamy płatność…</h1>
+                        <p>Czekamy na potwierdzenie operatora płatności. Nie zamykaj tej strony.</p>
+                    </div>
+                }
+
+                @case ('confirmed') {
+                    @if (viewModel(); as details) {
+                        <div class="checkout-result-card__state">
+                            <mat-icon class="checkout-result-card__success-icon" aria-hidden="true">
+                                check_circle
+                            </mat-icon>
+                            <h1 #stateHeading tabindex="-1">Witaj w Premium!</h1>
+                            <p>
+                                Płatność została potwierdzona. Potwierdzenie otrzymasz również
+                                e-mailem.
+                            </p>
+
+                            <dl class="checkout-result-card__details">
+                                <div>
+                                    <dt>Plan</dt>
+                                    <dd>{{ planLabel(details.planId) }}</dd>
+                                </div>
+
+                                @if (details.currentPeriodEnd) {
+                                    <div>
+                                        <dt>
+                                            {{
+                                                details.autoRenew
+                                                    ? 'Następna płatność'
+                                                    : 'Premium aktywne do'
+                                            }}
+                                        </dt>
+                                        <dd>
+                                            {{
+                                                details.currentPeriodEnd
+                                                    | date: 'd MMMM y' : undefined : 'pl'
+                                            }}
+                                        </dd>
+                                    </div>
+                                }
+                            </dl>
+
+                            @if (details.autoRenew === false) {
+                                <p class="checkout-result-card__note">
+                                    Konto nie odnawia się automatycznie.
+                                </p>
+                            }
+
+                            <div class="checkout-result-card__actions">
+                                @if (details.invoiceUrl) {
+                                    <a
+                                        mat-stroked-button
+                                        [href]="details.invoiceUrl"
+                                        target="_blank"
+                                        rel="noopener"
+                                    >
+                                        <mat-icon aria-hidden="true">receipt_long</mat-icon>
+                                        Pobierz fakturę
+                                    </a>
+                                }
+                                <a mat-flat-button routerLink="/dashboard">
+                                    Przejdź do aplikacji
+                                </a>
+                                <a mat-stroked-button routerLink="/recipes/new/start">
+                                    Utwórz przepis z AI
+                                </a>
+                            </div>
+                        </div>
+                    }
+                }
+
+                @case ('pending') {
+                    <div class="checkout-result-card__state" role="status" aria-live="polite">
+                        <mat-icon class="checkout-result-card__pending-icon" aria-hidden="true">
+                            schedule
+                        </mat-icon>
+                        <h1 #stateHeading tabindex="-1">Płatność jest przetwarzana</h1>
+                        <p>
+                            Potwierdzenie trwa dłużej niż zwykle. Nie ponawiaj płatności — sprawdź
+                            jej stan za chwilę.
+                        </p>
+                        <div class="checkout-result-card__actions">
+                            <button mat-flat-button type="button" (click)="checkAgain()">
+                                Sprawdź ponownie
+                            </button>
+                            <a mat-stroked-button routerLink="/dashboard"> Przejdź do aplikacji </a>
+                        </div>
+                    </div>
+                }
+            }
+        </mat-card-content>
+    </mat-card>
+</main>

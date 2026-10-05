@@ -13,18 +13,22 @@ Najpierw przejrzyj następujące informacje:
 <new_requirements>
 
 
-### PS-65: Egzekwowanie limitów planu dla użytkownika Free
+
+### PS-66: Checkout i płatności (subskrypcja Premium)
 
 **Opis:**
-Jako użytkownik Free, chcę wiedzieć, jaki limit pozycji w „Moim planie" mam do dyspozycji, aby rozumieć, kiedy potrzebuję konta Premium.
+Jako zalogowany użytkownik Free, chcę zakupić subskrypcję Premium przez bezpieczny checkout, aby uzyskać dostęp do zaawansowanych funkcji aplikacji.
 
 **Kryteria akceptacji:**
-- [ ] Użytkownicy Free mają limit planu wynoszący 7–14 pozycji (konfigurowalne przez zmienną środowiskową).
-- [ ] Endpoint `POST /plan/recipes` zwraca `422` z kodem `PLAN_LIMIT_EXCEEDED_FREE` gdy Free user przekroczy swój limit.
-- [ ] Odpowiedź zawiera informację o dostępnym limicie Premium (50 pozycji) i link do `/pricing`.
-- [ ] Użytkownicy Premium zachowują dotychczasowy limit 50 pozycji.
-- [ ] Różnica limitów jest widoczna na stronie `/pricing`.
-
+- [ ] Strona checkoutu jest dostępna pod `/checkout` lub jako modal (auth required).
+- [ ] Obsługiwane są metody płatności: BLIK oraz karta (PayU lub odpowiednik).
+- [ ] Domyślnie wybrany jest plan roczny (z możliwością przełączenia na miesięczny).
+- [ ] Po pomyślnej płatności webhook dostawcy płatności aktualizuje `app_role` na `premium` w `auth.users.raw_app_meta_data` oraz zapisuje dane subskrypcji (data startu, data następnej płatności, ID transakcji).
+- [ ] Użytkownik otrzymuje potwierdzenie zakupu na e-mail.
+- [ ] Faktura/paragon jest generowany i dostępny dla użytkownika.
+- [ ] W przypadku błędu płatności użytkownik widzi czytelny komunikat i może ponowić próbę.
+- [ ] Checkout nie jest dostępny dla gości (redirect do rejestracji/logowania).
+- [ ] Obsługiwany jest scenariusz zakupu, gdy użytkownik ma aktywny trial.
 
 
 </new_requirements>
@@ -33,16 +37,13 @@ Jako użytkownik Free, chcę wiedzieć, jaki limit pozycji w „Moim planie" mam
 
 3. Widok do implementacji / zmiany w widokach
 <ui_plan>
-
-
-@docs\results\new-features\user-stories\PS-65\PS-65-free-plan-limit-ui-plan.md
-
+@docs\results\new-features\user-stories\PS-66\PS-66-checkout-payments-ui-plan.md
 </ui_plan>
 
 5. Endpoint Description:
 <endpoint_description>
 
-@docs\results\new-features\user-stories\PS-65\PS-65-free-plan-limit-api-plan.md
+@docs\results\new-features\user-stories\PS-66\PS-66-checkout-payments-api-plan.md
 
 </endpoint_description>
 

@@ -1,18 +1,11 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    DestroyRef,
-    inject,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { LoginFormComponent } from './components/login-form/login-form.component';
-import {
-    AuthService,
-    RESEND_COOLDOWN_SECONDS,
-} from '../../core/services/auth.service';
+import { AuthService, RESEND_COOLDOWN_SECONDS } from '../../core/services/auth.service';
 import { SignInRequestDto } from '../../../../shared/contracts/types';
+import { PostAuthRedirectService } from '../../core/services/post-auth-redirect.service';
+import { sanitizeNextUrl } from '../../core/utils/post-auth-redirect.util';
 
 interface LoginState {
     isLoading: boolean;
@@ -39,8 +32,11 @@ export class LoginPageComponent {
     private readonly route = inject(ActivatedRoute);
     private readonly snackBar = inject(MatSnackBar);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly postAuthRedirect = inject(PostAuthRedirectService);
 
     private cooldownIntervalId: ReturnType<typeof setInterval> | null = null;
+
+    readonly nextUrl = sanitizeNextUrl(this.route.snapshot.queryParamMap.get('next'));
 
     state = signal<LoginState>({
         isLoading: false,
@@ -55,7 +51,7 @@ export class LoginPageComponent {
 
     constructor() {
         const oauthErrorMessage = this.getOauthErrorMessage(
-            this.route.snapshot.queryParamMap.get('error')
+            this.route.snapshot.queryParamMap.get('error'),
         );
         this.state.update((s) => ({ ...s, oauthErrorMessage }));
 
@@ -76,11 +72,14 @@ export class LoginPageComponent {
         try {
             await this.authService.signIn(credentials.email, credentials.password);
 
-            // Get redirect URL from query params and validate it
             const returnUrl =
                 this.route.snapshot.queryParamMap.get('returnUrl') ??
                 this.route.snapshot.queryParamMap.get('redirectTo');
-            const safeRedirectUrl = this.validateRedirectUrl(returnUrl);
+            const safeRedirectUrl =
+                this.nextUrl ??
+                this.validateRedirectUrl(returnUrl) ??
+                this.postAuthRedirect.consume() ??
+                '/dashboard';
 
             this.router.navigateByUrl(safeRedirectUrl);
         } catch (error) {
@@ -100,17 +99,12 @@ export class LoginPageComponent {
 
         try {
             const callbackUrl = `${window.location.origin}/auth/callback`;
-            const result = await this.authService.resendVerificationEmail(
-                email,
-                callbackUrl
-            );
+            const result = await this.authService.resendVerificationEmail(email, callbackUrl);
 
             if (result.success) {
-                this.snackBar.open(
-                    'Wysłaliśmy nowy link aktywacyjny na Twój adres e-mail.',
-                    'OK',
-                    { duration: 5000 }
-                );
+                this.snackBar.open('Wysłaliśmy nowy link aktywacyjny na Twój adres e-mail.', 'OK', {
+                    duration: 5000,
+                });
                 this.startCooldown();
             } else {
                 this.state.update((s) => ({
@@ -136,6 +130,7 @@ export class LoginPageComponent {
         }));
 
         try {
+            this.postAuthRedirect.save(this.nextUrl);
             await this.authService.signInWithGoogle();
         } catch (error) {
             console.error('[LoginPageComponent] Google OAuth initialization failed:', error);
@@ -173,8 +168,7 @@ export class LoginPageComponent {
     private translateErrorMessage(message: string): string {
         const errorMessages: Record<string, string> = {
             'Invalid login credentials': 'Nieprawidłowy e-mail lub hasło.',
-            'Email not confirmed':
-                'Potwierdź adres e-mail, aby się zalogować.',
+            'Email not confirmed': 'Potwierdź adres e-mail, aby się zalogować.',
             'Invalid email or password': 'Nieprawidłowy e-mail lub hasło.',
         };
 
@@ -187,8 +181,7 @@ export class LoginPageComponent {
             oauth_error:
                 'Wystąpił błąd podczas logowania przez Google. Spróbuj ponownie. ' + errorCode,
             timeout: 'Przekroczono czas oczekiwania. Spróbuj ponownie.',
-            profile_error:
-                'Wystąpił błąd podczas ładowania profilu. Zaloguj się ponownie.',
+            profile_error: 'Wystąpił błąd podczas ładowania profilu. Zaloguj się ponownie.',
         };
 
         if (!errorCode || !(errorCode in errorMessages)) {
@@ -198,21 +191,20 @@ export class LoginPageComponent {
         return errorMessages[errorCode];
     }
 
-    private validateRedirectUrl(url: string | null): string {
-        const defaultUrl = '/dashboard';
-
+    private validateRedirectUrl(url: string | null): string | null {
         if (!url) {
-            return defaultUrl;
+            return null;
         }
 
         const isValidRelativePath =
             url.startsWith('/') &&
             !url.startsWith('//') &&
-            !url.includes('://');
+            !url.includes('://') &&
+            !url.includes('\\');
 
         if (!isValidRelativePath) {
-            console.warn('Invalid redirect URL detected, using default:', url);
-            return defaultUrl;
+            console.warn('Invalid redirect URL detected:', url);
+            return null;
         }
 
         return url;
@@ -245,4 +237,3 @@ export class LoginPageComponent {
         }
     }
 }
-

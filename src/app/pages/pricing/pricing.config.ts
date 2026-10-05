@@ -1,3 +1,5 @@
+import type { SubscriptionPlanId } from '../../../../shared/contracts/types';
+
 export type BillingPeriod = 'monthly' | 'yearly';
 export type PlanAvailability = 'available' | 'unavailable' | 'text';
 
@@ -15,7 +17,6 @@ export interface PricingFeatureCategory {
     readonly features: readonly PricingFeature[];
 }
 
-// TODO: Po wdrożeniu checkout zastąpić wywołaniem GET /pricing/plans.
 export const PRICING_CONFIG = {
     trial: {
         days: 7,
@@ -46,6 +47,24 @@ export const PRICING_CONFIG = {
         },
     },
 } as const;
+
+export const PLAN_ID_BY_PERIOD: Readonly<Record<BillingPeriod, SubscriptionPlanId>> = {
+    monthly: 'premium_monthly',
+    yearly: 'premium_yearly',
+};
+
+export const PERIOD_BY_PLAN_ID: Readonly<Record<SubscriptionPlanId, BillingPeriod>> = {
+    premium_monthly: 'monthly',
+    premium_yearly: 'yearly',
+};
+
+export function getPremiumPlanPrice(planId: SubscriptionPlanId): number {
+    const period = PERIOD_BY_PLAN_ID[planId];
+
+    return period === 'monthly'
+        ? PRICING_CONFIG.plans.premium.priceMonthly
+        : PRICING_CONFIG.plans.premium.priceYearly;
+}
 
 export const PLAN_BENEFITS = {
     free: [
@@ -210,7 +229,7 @@ export const PRICING_FAQ = [
     },
     {
         question: 'Jakie metody płatności są dostępne?',
-        answer: 'BLIK, karta płatnicza oraz przelewy. Szczegóły podamy po wdrożeniu checkout.',
+        answer: 'Kartą płatniczą lub BLIK-iem. Kartą — subskrypcja odnawia się automatycznie; BLIK-iem płacisz jednorazowo za wybrany okres.',
     },
     {
         question: 'Czy mogę zmienić plan z miesięcznego na roczny?',

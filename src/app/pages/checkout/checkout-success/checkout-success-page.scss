@@ -1,0 +1,107 @@
+.checkout-result-page {
+    display: grid;
+    min-height: min(680px, 75vh);
+    padding: 48px 24px;
+    place-items: center;
+}
+
+.checkout-result-card {
+    width: min(100%, 560px);
+
+    mat-card-content {
+        padding: 40px;
+    }
+
+    &__state {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        flex-direction: column;
+
+        h1 {
+            margin: 20px 0 8px;
+            font: var(--mat-sys-headline-medium);
+        }
+
+        p {
+            margin: 0;
+            color: var(--mat-sys-on-surface-variant);
+            font: var(--mat-sys-body-large);
+        }
+    }
+
+    &__success-icon,
+    &__pending-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 64px;
+    }
+
+    &__success-icon {
+        color: var(--mat-sys-primary);
+    }
+
+    &__pending-icon {
+        color: var(--mat-sys-tertiary);
+    }
+
+    &__details {
+        width: 100%;
+        margin: 28px 0 0;
+
+        div {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--mat-sys-outline-variant);
+            text-align: left;
+            gap: 20px;
+        }
+
+        dt {
+            color: var(--mat-sys-on-surface-variant);
+        }
+
+        dd {
+            margin: 0;
+            font-weight: 500;
+            text-align: right;
+        }
+    }
+
+    &__note {
+        margin-top: 12px !important;
+        font: var(--mat-sys-body-medium) !important;
+    }
+
+    &__actions {
+        display: flex;
+        width: 100%;
+        margin-top: 28px;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 599px) {
+    .checkout-result-page {
+        min-height: auto;
+        padding: 24px 16px;
+    }
+
+    .checkout-result-card {
+        mat-card-content {
+            padding: 32px 20px;
+        }
+
+        &__actions {
+            flex-direction: column;
+
+            a,
+            button {
+                width: 100%;
+            }
+        }
+    }
+}

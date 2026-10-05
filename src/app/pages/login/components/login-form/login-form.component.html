@@ -37,12 +37,7 @@
         <form [formGroup]="form" (ngSubmit)="submitForm()">
             <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Email</mat-label>
-                <input
-                    matInput
-                    type="email"
-                    formControlName="email"
-                    placeholder="twoj@email.com"
-                />
+                <input matInput type="email" formControlName="email" placeholder="twoj@email.com" />
                 @if (form.controls.email.invalid && form.controls.email.touched) {
                     <mat-error>{{ getEmailErrorMessage() }}</mat-error>
                 }
@@ -92,8 +87,14 @@
     <mat-card-actions align="end">
         <span class="register-link">
             Nie masz konta?
-            <a routerLink="/register" mat-button color="primary">Zarejestruj się</a>
+            <a
+                routerLink="/register"
+                [queryParams]="registerNext ? { next: registerNext } : null"
+                mat-button
+                color="primary"
+            >
+                Zarejestruj się
+            </a>
         </span>
     </mat-card-actions>
 </mat-card>
-

@@ -6,10 +6,31 @@ import { adminRoleMatchGuard } from './core/guards/admin-role-match.guard';
 import { guestOnlyMatchGuard } from './core/guards/guest-only-match.guard';
 import { oauthCompleteProfileGuard } from './core/guards/oauth-complete-profile.guard';
 import { usernameCompleteMatchGuard } from './core/guards/username-complete-match.guard';
+import { checkoutAccessGuard } from './core/guards/checkout-access.guard';
+import { sanitizeNextUrl } from './core/utils/post-auth-redirect.util';
 import {
     exploreRecipeIdSlugMatcher,
     exploreRecipeIdOnlyMatcher,
 } from './core/routing/recipe-url.matchers';
+
+function checkoutLoginRedirect(queryParams: Record<string, unknown>): string {
+    const checkoutQuery = new URLSearchParams();
+    const plan = queryParams['plan'];
+    const method = queryParams['method'];
+
+    if (typeof plan === 'string') {
+        checkoutQuery.set('plan', plan);
+    }
+    if (typeof method === 'string') {
+        checkoutQuery.set('method', method);
+    }
+
+    const query = checkoutQuery.toString();
+    const requestedNext = query ? `/checkout?${query}` : '/checkout';
+    const safeNext = sanitizeNextUrl(requestedNext) ?? '/checkout';
+
+    return `/login?next=${encodeURIComponent(safeNext)}`;
+}
 
 export const routes: Routes = [
     // Grupa tras dla zalogowanych użytkowników - publiczne widoki w MainLayout (App Shell)
@@ -38,9 +59,24 @@ export const routes: Routes = [
                     import('./pages/pricing/pricing-page').then((m) => m.PricingPageComponent),
             },
             {
+                path: 'checkout/success',
+                loadComponent: () =>
+                    import('./pages/checkout/checkout-success/checkout-success-page').then(
+                        (m) => m.CheckoutSuccessPageComponent,
+                    ),
+            },
+            {
+                path: 'checkout/cancel',
+                loadComponent: () =>
+                    import('./pages/checkout/checkout-cancel/checkout-cancel-page').then(
+                        (m) => m.CheckoutCancelPageComponent,
+                    ),
+            },
+            {
                 path: 'checkout',
                 loadComponent: () =>
                     import('./pages/checkout/checkout-page').then((m) => m.CheckoutPageComponent),
+                canActivate: [checkoutAccessGuard],
             },
             {
                 path: 'legal/subscription',
@@ -250,8 +286,18 @@ export const routes: Routes = [
             },
             {
                 path: 'checkout',
-                loadComponent: () =>
-                    import('./pages/checkout/checkout-page').then((m) => m.CheckoutPageComponent),
+                redirectTo: (route) => checkoutLoginRedirect(route.queryParams),
+                pathMatch: 'full',
+            },
+            {
+                path: 'checkout/success',
+                redirectTo: () => '/login?next=%2Fcheckout',
+                pathMatch: 'full',
+            },
+            {
+                path: 'checkout/cancel',
+                redirectTo: () => '/login?next=%2Fcheckout',
+                pathMatch: 'full',
             },
             {
                 path: 'legal/subscription',
