@@ -7,6 +7,9 @@
  */
 
 import { z } from 'npm:zod@3.22.4';
+import type { AiRecipeDraftMetadata } from './ai-draft-metadata.ts';
+
+export { AiRecipeDraftMetadataSchema } from './ai-draft-metadata.ts';
 
 // #region --- Constants ---
 
@@ -129,9 +132,9 @@ export const AiRecipeDraftRequestSchema = z.discriminatedUnion('source', [
 ]);
 
 /**
- * Schema for validating LLM output (draft).
+ * Schema for the strictly validated recipe draft content.
  */
-export const AiRecipeDraftOutputSchema = z.object({
+export const AiRecipeDraftContentSchema = z.object({
     name: z.string().min(1, 'Recipe name is required'),
     description: z.string().nullish().default(null),
     ingredients_raw: z.string().min(1, 'Ingredients are required'),
@@ -139,6 +142,23 @@ export const AiRecipeDraftOutputSchema = z.object({
     tips_raw: z.string().optional(),
     category_name: z.string().nullish().default(null),
     tags: z.array(z.string()).default([]),
+});
+
+/**
+ * Schema for the LLM draft output.
+ *
+ * Metadata remains untrusted at this boundary and is normalized separately,
+ * so an invalid individual metadata field cannot reject the entire draft.
+ */
+export const AiRecipeDraftOutputSchema = AiRecipeDraftContentSchema.extend({
+    servings: z.unknown().optional(),
+    prep_time_minutes: z.unknown().optional(),
+    total_time_minutes: z.unknown().optional(),
+    diet_type: z.unknown().optional(),
+    cuisine: z.unknown().optional(),
+    difficulty: z.unknown().optional(),
+    is_termorobot: z.unknown().optional(),
+    is_grill: z.unknown().optional(),
 });
 
 /**
@@ -178,8 +198,11 @@ export type AiTextSourceRequest = z.infer<typeof TextSourceSchema>;
 /** Type for image source request */
 export type AiImageSourceRequest = z.infer<typeof ImageSourceSchema>;
 
-/** Type for recipe draft (LLM output) */
-export type AiRecipeDraftDto = z.infer<typeof AiRecipeDraftOutputSchema>;
+/** Strictly validated content fields returned for a recipe draft */
+export type AiRecipeDraftContentDto = z.infer<typeof AiRecipeDraftContentSchema>;
+
+/** Complete recipe draft returned by the API after metadata normalization */
+export type AiRecipeDraftDto = AiRecipeDraftContentDto & AiRecipeDraftMetadata;
 
 /** Type for response meta information */
 export type AiRecipeDraftMeta = z.infer<typeof AiRecipeDraftMetaSchema>;

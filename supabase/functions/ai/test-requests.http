@@ -75,11 +75,50 @@ Content-Type: application/json
     "language": "en"
 }
 
+### Test 7: Recipe with explicit metadata, Thermomix and grill
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "text": "Grillowane szaszłyki z Thermomixa, 4 porcje. Przygotowanie: 20 minut, łącznie: 50 minut. Kuchnia polska, poziom łatwy.\n\nSkładniki:\n500 g piersi z kurczaka\n2 papryki\n1 cebula\n\nWykonanie:\nPokroić składniki w Thermomixie 5 s/obr. 5.\nNadziać składniki na szpikulce.\nGrillować na ruszcie ogrodowym przez 15 minut.",
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
+### Test 8: Recipe without explicit metadata (model inference)
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "text",
+    "text": "Pierogi ruskie\n\nSkładniki:\n500 g mąki\n250 ml wody\n500 g ziemniaków\n250 g twarogu\n1 cebula\n\nWykonanie:\nZagnieść ciasto.\nUgotować ziemniaki i połączyć z twarogiem oraz cebulą.\nUformować i ugotować pierogi.",
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
+### Test 9: Image source - replace data_base64 with a real recipe screenshot
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "image",
+    "image": {
+        "mime_type": "image/png",
+        "data_base64": "REPLACE_WITH_REAL_BASE64"
+    },
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
 ### ============================================
 ### AI Normalized Ingredients - Test Requests
 ### ============================================
 
-### Test 7: Valid normalized ingredients request
+### Test 10: Valid normalized ingredients request
 POST {{baseUrl}}/recipes/normalized-ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -102,7 +141,7 @@ Content-Type: application/json
     "allowed_units": ["g", "ml", "szt.", "ząbek", "łyżeczka", "łyżka", "szczypta", "pęczek"]
 }
 
-### Test 8: Ambiguous ingredients (only "do smaku")
+### Test 11: Ambiguous ingredients (only "do smaku")
 POST {{baseUrl}}/recipes/normalized-ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -119,7 +158,7 @@ Content-Type: application/json
     "allowed_units": ["g", "ml", "szt.", "łyżeczka", "łyżka", "szczypta"]
 }
 
-### Test 9: Only headers (should return 400)
+### Test 12: Only headers (should return 400)
 POST {{baseUrl}}/recipes/normalized-ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -135,7 +174,7 @@ Content-Type: application/json
     "allowed_units": ["g", "ml", "szt."]
 }
 
-### Test 10: Invalid allowed_units (not from supported list - should return validation error)
+### Test 13: Invalid allowed_units (not from supported list - should return validation error)
 POST {{baseUrl}}/recipes/normalized-ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -150,7 +189,7 @@ Content-Type: application/json
     "allowed_units": ["kg", "litr", "filiżanka"]
 }
 
-### Test 11: Missing token (should return 401)
+### Test 14: Missing token (should return 401)
 POST {{baseUrl}}/recipes/normalized-ingredients
 Content-Type: application/json
 
@@ -164,7 +203,7 @@ Content-Type: application/json
     "allowed_units": ["g", "ml"]
 }
 
-### Test 12: Recipe ID not owned (should return 404)
+### Test 15: Recipe ID not owned (should return 404)
 POST {{baseUrl}}/recipes/normalized-ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -179,7 +218,7 @@ Content-Type: application/json
     "allowed_units": ["g", "ml"]
 }
 
-### Test 13: Missing required field (should return 400)
+### Test 16: Missing required field (should return 400)
 POST {{baseUrl}}/recipes/normalized-ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -190,7 +229,7 @@ Content-Type: application/json
     "allowed_units": ["g", "ml"]
 }
 
-### Test 14: Complex ingredients with conversions
+### Test 17: Complex ingredients with conversions
 POST {{baseUrl}}/recipes/normalized-ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json

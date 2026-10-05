@@ -1,10 +1,10 @@
-# Testing Guide: AI Recipe Draft with Tips
+# Testing Guide: AI Recipe Draft
 
 ## Endpoint
 `POST /functions/v1/ai/recipes/draft`
 
 ## Change Summary
-Added optional `tips_raw` field to recipe draft response. The AI model will extract cooking tips, storage advice, serving suggestions, and variations if they are present in the source text.
+The draft supports optional `tips_raw` and always returns eight normalized recipe metadata fields: `servings`, `prep_time_minutes`, `total_time_minutes`, `diet_type`, `cuisine`, `difficulty`, `is_termorobot`, and `is_grill`.
 
 ## Testing Locally
 
@@ -104,6 +104,40 @@ Import the test requests from `test-requests.http` file in this directory.
 }
 ```
 
+### 4. Metadata test cases
+
+Use tests 7–9 from `test-requests.http`.
+
+#### Explicit metadata
+
+Verify that values stated in source text take precedence over inference. The response must contain all eight fields, for example:
+
+```json
+{
+    "servings": 4,
+    "prep_time_minutes": 20,
+    "total_time_minutes": 50,
+    "diet_type": "MEAT",
+    "cuisine": "POLISH",
+    "difficulty": "EASY",
+    "is_termorobot": true,
+    "is_grill": true
+}
+```
+
+#### Metadata inferred from text or image
+
+- Recipe text without explicit metadata should still return all fields.
+- For an image without readable text, verify that `meta.confidence` is lower than for a clear recipe screenshot.
+- `cuisine` must be a supported enum or `null`.
+- Numeric values must stay within their API ranges.
+
+#### Backend normalization
+
+- Missing fields become `null` or `false` and produce one incomplete-metadata warning.
+- Invalid individual values produce fixed messages in `meta.warnings`, but the endpoint still returns `200`.
+- If `total_time_minutes < prep_time_minutes`, total time is raised to preparation time and a correction warning is returned.
+
 ## Validation Checklist
 
 - [ ] Test 1: Recipe WITH tips returns `tips_raw` field
@@ -111,7 +145,14 @@ Import the test requests from `test-requests.http` file in this directory.
 - [ ] Test 3: Structured tips preserve section headers (# prefix)
 - [ ] Test 4: Empty tips are normalized to undefined (not empty string)
 - [ ] Test 5: Tips in English work correctly with `language: "en"`
+- [ ] Test 7: Explicit servings, times, cuisine, difficulty and flags are preserved
+- [ ] Test 8: Missing source metadata is inferred and all eight fields are returned
+- [ ] Test 9: Image import returns all eight fields
+- [ ] `total_time_minutes >= prep_time_minutes` when both values are present
+- [ ] Enum values belong to their allowlists; `cuisine` may be `null`
+- [ ] Metadata warnings do not change a successful response from `200`
 - [ ] Logs show `hasTips: true/false` indicator
+- [ ] Logs show `warningsCount`, `hasServings`, and `hasTimes`
 - [ ] No TypeScript errors
 - [ ] No runtime errors
 - [ ] Performance: response time < 10s for typical recipes
@@ -125,7 +166,10 @@ Recipe draft generated successfully {
     userId: "...",
     recipeName: "Naleśniki z serem",
     tagsCount: 3,
-    hasTips: true,  // <-- NEW FIELD
+    hasTips: true,
+    warningsCount: 0,
+    hasServings: true,
+    hasTimes: true,
     confidence: 0.95,
     duration: 5234
 }

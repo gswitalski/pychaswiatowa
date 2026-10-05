@@ -385,6 +385,11 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
             recipeName: result.data.draft.name,
             tagsCount: result.data.draft.tags.length,
             hasTips: !!result.data.draft.tips_raw,
+            warningsCount: result.data.meta.warnings.length,
+            hasServings: result.data.draft.servings !== null,
+            hasTimes:
+                result.data.draft.prep_time_minutes !== null ||
+                result.data.draft.total_time_minutes !== null,
             confidence: result.data.meta.confidence,
             duration,
         });

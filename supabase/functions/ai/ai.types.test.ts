@@ -1,5 +1,8 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
-import { AiRecipeImageRequestSchema } from './ai.types.ts';
+import {
+    AiRecipeDraftLlmResponseSchema,
+    AiRecipeImageRequestSchema,
+} from './ai.types.ts';
 
 function createValidImageRequest(overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
@@ -77,5 +80,70 @@ Deno.test('AiRecipeImageRequestSchema: prompt_hint powyżej limitu zwraca błąd
             (error) => error.path.includes('prompt_hint'),
         );
         assertEquals(hasPromptHintError, true);
+    }
+});
+
+function createValidDraft(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+        name: 'Sernik klasyczny',
+        description: null,
+        ingredients_raw: '500 g twarogu',
+        steps_raw: 'Wymieszać składniki',
+        category_name: 'Deser',
+        tags: ['sernik'],
+        ...overrides,
+    };
+}
+
+Deno.test('AiRecipeDraftLlmResponseSchema: akceptuje dowolne surowe wartości metadanych', () => {
+    const result = AiRecipeDraftLlmResponseSchema.safeParse({
+        is_valid_recipe: true,
+        draft: createValidDraft({
+            servings: 150,
+            prep_time_minutes: '90',
+            total_time_minutes: null,
+            diet_type: 'UNKNOWN',
+            cuisine: { unexpected: true },
+            difficulty: false,
+            is_termorobot: 1,
+            is_grill: 'tak',
+        }),
+        meta: {
+            confidence: 0.8,
+            warnings: [],
+        },
+    });
+
+    assertEquals(result.success, true);
+});
+
+Deno.test('AiRecipeDraftLlmResponseSchema: akceptuje draft bez metadanych', () => {
+    const result = AiRecipeDraftLlmResponseSchema.safeParse({
+        is_valid_recipe: true,
+        draft: createValidDraft(),
+        meta: {
+            confidence: 0.8,
+            warnings: [],
+        },
+    });
+
+    assertEquals(result.success, true);
+});
+
+Deno.test('AiRecipeDraftLlmResponseSchema: nadal odrzuca brak wymaganej treści', () => {
+    for (const missingField of ['name', 'ingredients_raw', 'steps_raw']) {
+        const draft = createValidDraft();
+        delete draft[missingField];
+
+        const result = AiRecipeDraftLlmResponseSchema.safeParse({
+            is_valid_recipe: true,
+            draft,
+            meta: {
+                confidence: 0.8,
+                warnings: [],
+            },
+        });
+
+        assertEquals(result.success, false);
     }
 });

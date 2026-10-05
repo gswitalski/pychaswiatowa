@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 30 września 2026 — m.in. zakończenie wdrożenia Google OAuth (plany API i widoków), widoku strony cennika (`/pricing`, stub `/checkout`, `/legal/subscription`; bez nowej warstwy API), kredytów AI PS-64 (plany API i widoków) oraz limitu planu dla konta Free PS-65 (plany API i widoków), kod, `docs/results/`, `docs/Jira.xml`, historyjki Premium (`docs/historyjki-premium.md`).
+> **Aktualizacja:** 5 października 2026 — m.in. zakończenie wdrożenia Google OAuth (plany API i widoków), widoku strony cennika (`/pricing`, stub `/checkout`, `/legal/subscription`; bez nowej warstwy API), kredytów AI PS-64 (plany API i widoków), limitu planu dla konta Free PS-65 oraz metadanych draftu AI PS-91, kod, `docs/results/`, `docs/Jira.xml`, historyjki Premium (`docs/historyjki-premium.md`).
 
 ---
 
@@ -16,6 +16,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 **Strona cennika:** implementacja widoków (`/pricing`, stub `/checkout`, `/legal/subscription`, linki w nawigacji, stopce i na landingu) — **zakończona**. Etap nie miał planu API: cennik jest statyczny (konfiguracja frontendu), bez nowych endpointów. Płatności nie są podłączone.
 
 **Kredyty AI (PS-64):** implementacja warstwy API i widoków — **zakończona**. Osobne pule `draft` i `image`: Free — limit dożywotni (domyślnie 3 drafty, 0 zdjęć), Premium — limit miesięczny (domyślnie 20 / 5, zmienne środowiskowe), admin — bez limitu. Reset miesięczny cronem (codziennie 02:00 UTC) oraz przy wywołaniu, gdy termin minął. Kredyt jest rezerwowany przed wywołaniem modelu i zwracany, gdy wywołanie się nie uda. Zmiana roli w panelu admina ustawia pulę zgodną z nową rolą. Sprzedaż pakietów kredytów i bramka płatności nie są podłączone. Endpoint `POST /ai/recipes/draft` przyjmuje rolę `user` i rozlicza kredyty; trasa UI `/recipes/new/assist` oraz kafelek na `/recipes/new/start` nadal wymagają `premium`/`admin` (plan API zdejmował bramkę roli, plan widoków jej nie zmieniał).
+
+**Metadane draftu AI (PS-91):** warstwa API `POST /ai/recipes/draft` zwraca porcje, czasy, typ diety, kuchnię, trudność oraz flagi Termorobot/Grill. Model odczytuje wartości ze źródła lub je wnioskuje, a backend tolerancyjnie normalizuje zakresy i enumy. Błąd pojedynczego pola nie odrzuca draftu: odpowiedź pozostaje `200`, bezpieczne wartości to `null`/`false`, a korekty są raportowane w `meta.warnings`.
 
 **Limit „Mojego planu" dla Free (PS-65):** implementacja warstwy API i widoków — **zakończona**. `POST /plan/recipes` dla roli `user` odrzuca dodanie po osiągnięciu limitu (domyślnie 3 pozycje, zmienna środowiskowa `PLAN_LIMIT_FREE`) kodem `422 PLAN_LIMIT_EXCEEDED_FREE` z linkiem do `/pricing`. Premium i admin zachowują limit 50. Rola jest brana z JWT (`app_metadata.app_role`), nigdy z body. Istniejące pozycje ponad limit nie są usuwane (grandfathering) — blokowane są tylko nowe dodania. W UI: dialog po `422` zamiast snackbara, licznik „X / 3 pozycji” w nagłówku drawera (tylko `user`), a cennik pokazuje limit Free 3 zamiast wcześniejszych 7.
 
@@ -119,7 +121,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-030 | Przycisk "Więcej" (load more) | Domyślnie 12 elementów, doładowywanie kolejnych 12. |
 | US-031 | Przepisy kolekcji bez paginacji | Jednorazowe ładowanie (limit techniczny 500). |
 | US-032 | Ikonka widoczności na liście | Ikona Prywatny/Współdzielony/Publiczny z tooltipem, tylko dla autora. |
-| US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz. Rozliczenie kredytów `draft` (`402` przy wyczerpaniu). Trasa UI `/recipes/new/assist` — `premium`/`admin`; endpoint przyjmuje też rolę `user`. |
+| US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz wraz z porcjami, czasami, klasyfikacją i flagami. Metadane są normalizowane tolerancyjnie. Rozliczenie kredytów `draft` (`402` przy wyczerpaniu). Trasa UI `/recipes/new/assist` — `premium`/`admin`; endpoint przyjmuje też rolę `user`. |
 | US-037 | Generowanie zdjęcia AI | Przycisk AI w edycji/kreatorze, podgląd, akceptacja, `gpt-image-1.5`, 1024x1024 webp. `premium`/`admin` plus pula kredytów `image`. Możliwe przed zapisem przepisu. |
 | PS-64 | Kredyty AI | Osobne pule draft i zdjęcie. Free: limit dożywotni; Premium: miesięczny (reset cron); admin: bez limitu. Wskaźnik, dialog wyczerpania, sekcja w `/settings`, korekta w panelu admina. |
 | US-038 | Dodanie do "Mojego planu" | Przycisk na szczegółach, limit 50 (Free: 3 — PS-65, dialog z CTA do `/pricing`), stany: dodaj/spinner/zobacz listę. |
@@ -364,7 +366,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | Metoda | URL | Opis |
 |---|---|---|
 | `GET` | `/ai/credits` | Pełne saldo zalogowanego użytkownika (`draft`, `image`, `limit_type`, `next_reset_at`). Admin: `unlimited` bez odczytu puli. |
-| `POST` | `/ai/recipes/draft` | Draft z tekstu lub obrazu. Nie zapisuje. Rate limit. Role `user`/`premium`/`admin`. Przed wywołaniem rezerwacja kredytu `draft`; `402` `AI_CREDITS_EXHAUSTED` przy pustej puli; zwrot przy błędzie modelu. |
+| `POST` | `/ai/recipes/draft` | Draft z tekstu lub obrazu z 8 polami metadanych: porcje, czasy, dieta, kuchnia, trudność, Termorobot i Grill. Nie zapisuje. Niepoprawne metadane są normalizowane do `null`/`false` z ostrzeżeniami bez odrzucania draftu. Rate limit. Role `user`/`premium`/`admin`. Przed wywołaniem rezerwacja kredytu `draft`; `402` `AI_CREDITS_EXHAUSTED` przy pustej puli; zwrot przy błędzie modelu. |
 | `POST` | `/ai/recipes/normalized-ingredients` | Normalizacja (worker, nie UI). |
 | `POST` | `/ai/recipes/image` | Zdjęcie AI. Wymaga `premium`/`admin` oraz kredytu `image`. Tryb `recipe_only` / `with_reference`. Base64 webp 1024x1024. Działa też przed zapisem (kreator). `402` przy wyczerpaniu puli. |
 

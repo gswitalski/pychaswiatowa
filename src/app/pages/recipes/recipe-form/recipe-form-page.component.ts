@@ -411,6 +411,14 @@ export class RecipeFormPageComponent implements OnInit {
         this.form.patchValue({
             name: draft.name || '',
             description: draft.description || '',
+            servings: draft.servings ?? null,
+            prepTimeMinutes: draft.prep_time_minutes ?? null,
+            totalTimeMinutes: draft.total_time_minutes ?? null,
+            dietType: draft.diet_type ?? null,
+            cuisine: draft.cuisine ?? null,
+            difficulty: draft.difficulty ?? null,
+            isTermorobot: draft.is_termorobot === true,
+            isGrill: draft.is_grill === true,
         });
 
         // Parse and populate ingredients (split by newline)

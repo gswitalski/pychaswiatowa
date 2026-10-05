@@ -1052,6 +1052,22 @@ export interface AiRecipeDraftDto {
     category_name: string | null;
     /** Suggested tags (deduplicated, max 20) */
     tags: string[];
+    /** Number of servings (1-99) or null if unknown */
+    servings: number | null;
+    /** Preparation time in minutes (0-999) or null */
+    prep_time_minutes: number | null;
+    /** Total time in minutes (0-999, >= prep_time_minutes) or null */
+    total_time_minutes: number | null;
+    /** Diet type or null */
+    diet_type: RecipeDietType | null;
+    /** Cuisine or null when no supported cuisine matches */
+    cuisine: RecipeCuisine | null;
+    /** Difficulty or null */
+    difficulty: RecipeDifficulty | null;
+    /** Whether the recipe uses a thermo-cooker (Thermomix etc.) */
+    is_termorobot: boolean;
+    /** Whether the recipe is for grill */
+    is_grill: boolean;
 }
 
 /**

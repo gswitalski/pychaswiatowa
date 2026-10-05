@@ -3,17 +3,13 @@ Twoim zadaniem jest zaimplementowanie widoku frontendu w oparciu o podany plan i
 Najpierw przejrzyj plan implementacji:
 
 <implementation_plan>
-
-@docs\results\impl-plans\views\ps66-checkout-payments-view-implementation-plan.md
-
+@docs\results\impl-plans\views\ps91-ai-draft-recipe-metadata-view-implementation-plan.md
 </implementation_plan>
 
 Teraz przejrzyj zasady implementacji:
 
 <implementation_rules>
-
 @.cursor\rules\fronend.mdc
-
 </implementation_rules>
 
 Przejrzyj zdefiniowane typy:

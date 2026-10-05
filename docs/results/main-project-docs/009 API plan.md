@@ -679,6 +679,9 @@ Public endpoints are available without authentication:
     - The endpoint enforces "single recipe" validation. If the input looks like multiple recipes or unrelated content, it returns a validation error and the UI stays on the input step.
     - The draft MAY include `tips_raw` (wskazówki) if the model can infer them from the input. If not available, the field may be omitted or returned as an empty string.
     - Category handling: the draft may include `category_name` which the client maps to the predefined categories list. If no match exists, the client should leave `category_id` empty and prompt the user to choose.
+    - The draft always contains normalized recipe metadata: `servings`, `prep_time_minutes`, `total_time_minutes`, `diet_type`, `cuisine`, `difficulty`, `is_termorobot`, and `is_grill`.
+    - Values explicitly present in the source take precedence over model inference. Invalid or missing individual metadata values do not fail the request: the backend returns safe `null`/`false` values and adds fixed messages to `meta.warnings`.
+    - Supported enums: `diet_type` = `MEAT | VEGETARIAN | VEGAN`, `difficulty` = `EASY | MEDIUM | HARD`; `cuisine` uses the recipe cuisine allowlist and may be `null`.
     - Rate limiting SHOULD be enforced per user to control costs (implementation detail of the Edge Function).
 -   **Request Payload**:
     ```json
@@ -713,7 +716,15 @@ Public endpoints are available without authentication:
             "steps_raw": "# Kroki\n1. Wymieszaj składniki.\n2. Upiecz.",
             "tips_raw": "# Wskazówki\n- Wszystkie składniki powinny mieć temperaturę pokojową.",
             "category_name": "Deser",
-            "tags": ["wypieki", "sernik"]
+            "tags": ["wypieki", "sernik"],
+            "servings": 8,
+            "prep_time_minutes": 25,
+            "total_time_minutes": 90,
+            "diet_type": "VEGETARIAN",
+            "cuisine": "POLISH",
+            "difficulty": "MEDIUM",
+            "is_termorobot": false,
+            "is_grill": false
           },
           "meta": {
             "confidence": 0.82,
@@ -724,6 +735,7 @@ Public endpoints are available without authentication:
 -   **Error Response**:
     -   **Code**: `400 Bad Request` (invalid payload, missing required fields for the chosen `source`)
     -   **Code**: `401 Unauthorized`
+    -   **Code**: `402 Payment Required` (`AI_CREDITS_EXHAUSTED`)
     -   **Code**: `413 Payload Too Large` (image too large)
     -   **Code**: `422 Unprocessable Entity` (input is not a single recipe)
         -   **Payload** (example):
@@ -734,6 +746,7 @@ Public endpoints are available without authentication:
             }
             ```
     -   **Code**: `429 Too Many Requests` (rate limit exceeded)
+    -   Metadata corrections and missing metadata are returned as `200 OK`; they never cause `422` or `500`. For example, `total_time_minutes < prep_time_minutes` is corrected to the preparation time and reported in `meta.warnings`.
 
 ---
 

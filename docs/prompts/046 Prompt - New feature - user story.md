@@ -3,20 +3,40 @@ Jesteś doświadczonym Business Analystem / Product Ownerem specjalizującym si�
 Dane wejściowe
 Podsumowanie projektu: 
 
-<project-summary>
-
-
-
-</project-summary>
+<project_summary>
+@docs/results/project-summary.md 
+</project_summary>
 
 
 Zawiera kontekst biznesowy, cel projektu, grupę docelową użytkowników oraz ogólną architekturę/technologie.
 Opis wymagań do nowej funkcjonalności: 
 
-{wymagania}
+<wymagania>
+
+podczs importu przepisu ze swobodnego tekstu lub z obrazka, zarówno prompt jak i system mają uodczytać i wypełnić nasepujące pole:
+
+ - liczba porcji
+ - czas przygotowania
+ - czas całkowity
+ - typ diety
+ - kuchnia
+ - stopień trudności
+ - termorobot
+ - grill
+
+
+ jesli te dane sa w tekśice to mają pochodzić z tekstu. jeśli nie ma tych danych to AI ma je samo wywnioskować (należy to uwzględnić w prompcie)
+
+</wymagania>
+
+<numer_historyjki>
+91
+</numer_historyjki>
 
 
 Zawiera opis funkcjonalności, którą należy zaimplementować.
+
+
 Zadanie krok po kroku
 
 Zanim wygenerujesz finalny dokument, przeanalizuj dane wejściowe w następujący sposób:
@@ -36,7 +56,7 @@ Wymagania dotyczące pliku wyjściowego
 Format: Markdown (.md)
 Język treści: polski
 Struktura dokumentu
-# PS-{numer}: {Tytuł historyjki}
+# PS-{numer_historyjki}: {Tytuł historyjki}
 
 ## Opis
 Jako [rola/persona], chcę [akcja/cel], aby [wartość biznesowa/korzyść].

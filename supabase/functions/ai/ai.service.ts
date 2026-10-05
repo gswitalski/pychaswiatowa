@@ -7,9 +7,14 @@
 import { ApplicationError } from "../_shared/errors.ts";
 import { logger } from "../_shared/logger.ts";
 import {
+    DRAFT_METADATA_KEYS,
+    getMetadataPromptSection,
+    normalizeDraftMetadata,
+} from "./ai-draft-metadata.ts";
+import {
     AiNormalizedIngredientsLlmResponseSchema,
     AiNormalizedIngredientsResponseDto,
-    AiRecipeDraftDto,
+    AiRecipeDraftContentDto,
     AiRecipeDraftErrorResponseSchema,
     AiRecipeDraftLlmResponseSchema,
     AiRecipeDraftResponseDto,
@@ -50,7 +55,7 @@ const API_TIMEOUT_MS = 30_000;
  * System prompt for recipe extraction.
  * Enforces single recipe validation and structured output.
  */
-function getSystemPrompt(language: string): string {
+export function getSystemPrompt(language: string): string {
     return `Jesteś asystentem AI specjalizującym się w ekstrakcji i strukturyzacji przepisów kulinarnych. Twoje zadanie to przeanalizowanie podanej treści, określenie czy zawiera dokładnie jeden przepis kulinarny, a następnie wyekstrahowanie i ustrukturyzowanie go w standardowym formacie JSON.
 
 Oto treść do przeanalizowania:
@@ -156,11 +161,13 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    - Wybierz JEDNĄ z: Śniadanie, Obiad, Kolacja, Deser, Przekąska, Napój, Zupa, Sałatka, Pieczywo
    - Jeśli nie pasuje do żadnej, użyj null
 
-6. TAGI (tags):
+7. TAGI (tags):
    - Generuj krótkie, opisowe tagi (np. "wegetariańskie", "szybkie", "włoskie")
    - Maksymalnie 10 tagów
    - Bez duplikatów
    - Tablica może być pusta []
+
+${getMetadataPromptSection()}
 
 OBSŁUGA NIECZYTELNYCH FORMATÓW:
 - Jeśli format źródłowy jest chaotyczny, samodzielnie zrekonstruuj logiczną strukturę
@@ -179,8 +186,9 @@ Przed wygenerowaniem finalnej odpowiedzi, użyj tagów <scratchpad> do przemyśl
 4. Jakie sekcje składników i kroków mogę wyodrębnić?
 5. Jaka kategoria najlepiej pasuje?
 6. Jakie tagi będą odpowiednie?
-7. Czy są jakieś ostrzeżenia lub problemy z jakością danych?
-8. Czy wszystkie czasowniki w steps_raw są w bezokoliczniku i w aspekcie dokonanym? Wypisz te, które poprawiłem.
+7. Jakie metadane są jawnie podane, a jakie muszę wywnioskować?
+8. Czy są jakieś ostrzeżenia lub problemy z jakością danych?
+9. Czy wszystkie czasowniki w steps_raw są w bezokoliczniku i w aspekcie dokonanym? Wypisz te, które poprawiłem.
 </scratchpad>
 
 FORMAT ODPOWIEDZI JSON:
@@ -197,7 +205,15 @@ json
     "steps_raw": "Krok 1\nKrok 2\n# Sekcja opcjonalna\nKrok 3",
     "tips_raw": "Wskazówka 1\nWskazówka 2\n# Sekcja opcjonalna\nWskazówka 3",
     "category_name": "Obiad",
-    "tags": ["tag1", "tag2", "tag3"]
+    "tags": ["tag1", "tag2", "tag3"],
+    "servings": 4,
+    "prep_time_minutes": 20,
+    "total_time_minutes": 60,
+    "diet_type": "VEGETARIAN",
+    "cuisine": "POLISH",
+    "difficulty": "MEDIUM",
+    "is_termorobot": false,
+    "is_grill": false
   },
   "meta": {
     "confidence": 0.95,
@@ -214,6 +230,14 @@ UWAGA O POLACH:
   - "steps_raw" - zawsze wymagane (string)
   - "category_name" - zawsze obecne (string lub null jeśli nie pasuje do żadnej kategorii)
   - "tags" - zawsze obecne (tablica stringów, może być pusta [])
+  - "servings" - zawsze obecne (liczba całkowita 1–99)
+  - "prep_time_minutes" - zawsze obecne (liczba całkowita 0–999)
+  - "total_time_minutes" - zawsze obecne (liczba całkowita 0–999, nie mniejsza niż prep_time_minutes)
+  - "diet_type" - zawsze obecne (jedna z dozwolonych wartości)
+  - "cuisine" - zawsze obecne (jedna z dozwolonych wartości lub null)
+  - "difficulty" - zawsze obecne (jedna z dozwolonych wartości)
+  - "is_termorobot" - zawsze obecne (boolean)
+  - "is_grill" - zawsze obecne (boolean)
 
 
 Dla NIEPOPRAWNEJ treści:
@@ -252,11 +276,12 @@ Zwróć odpowiedź w formacie JSON zgodnie z instrukcjami.`;
 /**
  * User prompt for image-based extraction.
  */
-function getImageExtractionPrompt(): string {
+export function getImageExtractionPrompt(): string {
     return `Przeanalizuj załączony obraz i wyekstrahuj z niego przepis kulinarny.
 
 Jeśli obraz zawiera tekst przepisu - wyekstrahuj go.
 Jeśli obraz przedstawia gotowe danie - opisz prawdopodobne składniki i kroki przygotowania.
+Jeśli obraz zawiera metadane (porcje, czas, trudność), odczytaj je; w pozostałych przypadkach wywnioskuj je z całego obrazu.
 
 Zwróć odpowiedź w formacie JSON zgodnie z instrukcjami.`;
 }
@@ -398,7 +423,7 @@ async function callOpenAI(
  * @param draft - Raw draft from LLM
  * @returns Normalized draft
  */
-function normalizeDraft(draft: AiRecipeDraftDto): AiRecipeDraftDto {
+function normalizeDraft(draft: AiRecipeDraftContentDto): AiRecipeDraftContentDto {
     // Normalize name
     let name = draft.name.trim();
     if (name.length > MAX_RECIPE_NAME_LENGTH) {
@@ -448,7 +473,7 @@ function normalizeDraft(draft: AiRecipeDraftDto): AiRecipeDraftDto {
  * @param draft - Draft to validate
  * @returns Array of validation errors (empty if valid)
  */
-function validateDraftContent(draft: AiRecipeDraftDto): string[] {
+function validateDraftContent(draft: AiRecipeDraftContentDto): string[] {
     const errors: string[] = [];
 
     if (!draft.name || draft.name.trim().length === 0) {
@@ -464,6 +489,73 @@ function validateDraftContent(draft: AiRecipeDraftDto): string[] {
     }
 
     return errors;
+}
+
+/**
+ * Reads metadata keys from the unparsed LLM response.
+ *
+ * Reading from the raw object preserves the distinction between a missing key
+ * and an explicitly returned null value.
+ */
+function extractRawMetadata(llmResponse: unknown): Record<string, unknown> {
+    const rawMetadata: Record<string, unknown> = {};
+
+    if (typeof llmResponse !== "object" || llmResponse === null) {
+        return rawMetadata;
+    }
+
+    const rawDraft = (llmResponse as Record<string, unknown>).draft;
+    if (typeof rawDraft !== "object" || rawDraft === null) {
+        return rawMetadata;
+    }
+
+    const draftRecord = rawDraft as Record<string, unknown>;
+    for (const key of DRAFT_METADATA_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(draftRecord, key)) {
+            rawMetadata[key] = draftRecord[key];
+        }
+    }
+
+    return rawMetadata;
+}
+
+/**
+ * Combines model and backend warnings in a stable order.
+ * Limits prevent untrusted model output from growing the API response without bound.
+ */
+function mergeDraftWarnings(
+    llmWarnings: string[],
+    metadataWarnings: string[],
+): string[] {
+    const MAX_WARNINGS = 20;
+    const MAX_WARNING_LENGTH = 300;
+    const uniqueWarnings = new Set<string>();
+
+    for (const warning of [...llmWarnings, ...metadataWarnings]) {
+        uniqueWarnings.add(warning.slice(0, MAX_WARNING_LENGTH));
+        if (uniqueWarnings.size >= MAX_WARNINGS) {
+            break;
+        }
+    }
+
+    return [...uniqueWarnings];
+}
+
+function getMetadataWarningFields(warnings: string[]): string[] {
+    const affectedFields = DRAFT_METADATA_KEYS.filter((key) =>
+        warnings.some((warning) => warning.includes(key))
+    );
+
+    if (
+        warnings.some((warning) =>
+            warning.startsWith("Skorygowano czas całkowity:")
+        ) &&
+        !affectedFields.includes("total_time_minutes")
+    ) {
+        affectedFields.push("total_time_minutes");
+    }
+
+    return affectedFields;
 }
 
 // #endregion
@@ -604,14 +696,34 @@ export async function generateRecipeDraft(
         };
     }
 
-    // Normalize draft
-    const normalizedDraft = normalizeDraft(successResponse.draft);
+    // Normalize content and untrusted metadata independently.
+    const normalizedContent = normalizeDraft(successResponse.draft);
+    const rawMetadata = extractRawMetadata(llmResponse);
+    const {
+        metadata,
+        warnings: metadataWarnings,
+    } = normalizeDraftMetadata(rawMetadata);
+    const warnings = mergeDraftWarnings(
+        successResponse.meta?.warnings ?? [],
+        metadataWarnings,
+    );
+
+    if (metadataWarnings.length > 0) {
+        logger.warn("Recipe draft metadata required normalization", {
+            userId,
+            warningsCount: metadataWarnings.length,
+            affectedFields: getMetadataWarningFields(metadataWarnings),
+        });
+    }
 
     const result: AiRecipeDraftResponseDto = {
-        draft: normalizedDraft,
+        draft: {
+            ...normalizedContent,
+            ...metadata,
+        },
         meta: {
             confidence: successResponse.meta?.confidence ?? 0.8,
-            warnings: successResponse.meta?.warnings ?? [],
+            warnings,
         },
     };
 

@@ -7,29 +7,12 @@ Oto dokumenty o projekcie, które musisz przeanalizować:
 </project_summary>
 
 <functionality_analysis>
-@docs\results\new-features\premium-users\analiza-funkcjonalnosci-premium-users.md
+
 </functionality_analysis>
 
 
 <user_story>
-
-
-### PS-66: Checkout i płatności (subskrypcja Premium)
-
-**Opis:**
-Jako zalogowany użytkownik Free, chcę zakupić subskrypcję Premium przez bezpieczny checkout, aby uzyskać dostęp do zaawansowanych funkcji aplikacji.
-
-**Kryteria akceptacji:**
-- [ ] Strona checkoutu jest dostępna pod `/checkout` lub jako modal (auth required).
-- [ ] Obsługiwane są metody płatności: BLIK oraz karta (PayU lub odpowiednik).
-- [ ] Domyślnie wybrany jest plan roczny (z możliwością przełączenia na miesięczny).
-- [ ] Po pomyślnej płatności webhook dostawcy płatności aktualizuje `app_role` na `premium` w `auth.users.raw_app_meta_data` oraz zapisuje dane subskrypcji (data startu, data następnej płatności, ID transakcji).
-- [ ] Użytkownik otrzymuje potwierdzenie zakupu na e-mail.
-- [ ] Faktura/paragon jest generowany i dostępny dla użytkownika.
-- [ ] W przypadku błędu płatności użytkownik widzi czytelny komunikat i może ponowić próbę.
-- [ ] Checkout nie jest dostępny dla gości (redirect do rejestracji/logowania).
-- [ ] Obsługiwany jest scenariusz zakupu, gdy użytkownik ma aktywny trial.
-
+@docs\results\new-features\user-stories\PS-91\PS-91-ai-draft-recipe-metadata-user-story.md
 </user_story>
 
 Twoim zadaniem jest:
