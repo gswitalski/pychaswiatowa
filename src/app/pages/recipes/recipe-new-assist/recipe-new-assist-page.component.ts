@@ -42,6 +42,10 @@ import {
     CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES,
     CLIPBOARD_IMAGE_MAX_BYTES,
 } from '../../../shared/services/clipboard-image.types';
+import {
+    ImageCompressionError,
+    ImageCompressionService,
+} from '../../../shared/services/image-compression.service';
 
 /** Source type for AI input */
 type AiInputSource = 'text' | 'image';
@@ -84,6 +88,7 @@ export class RecipeNewAssistPageComponent {
     private readonly creditsService = inject(AiCreditsService);
     private readonly dialog = inject(MatDialog);
     private readonly clipboardImageService = inject(ClipboardImageService);
+    private readonly imageCompression = inject(ImageCompressionService);
 
     readonly clipboardSupported = this.clipboardImageService.isClipboardReadSupported();
 
@@ -192,7 +197,7 @@ export class RecipeNewAssistPageComponent {
             const file = item.getAsFile();
 
             if (file) {
-                this.handleImageFile(file);
+                void this.handleImageFile(file);
             }
             return;
         }
@@ -218,7 +223,7 @@ export class RecipeNewAssistPageComponent {
 
         try {
             const file = await this.clipboardImageService.readImageFile();
-            this.handleImageFile(file);
+            await this.handleImageFile(file);
         } catch (err) {
             this.errorMessage.set(this.clipboardImageService.messageForError(err));
         }
@@ -227,23 +232,34 @@ export class RecipeNewAssistPageComponent {
     /**
      * Plik z aparatu (PS-93) — ta sama walidacja co wklejanie / schowek.
      */
-    onCameraFileSelected(file: File): void {
+    async onCameraFileSelected(file: File): Promise<void> {
         if (this.isLoading()) {
             return;
         }
 
-        this.handleImageFile(file);
+        await this.handleImageFile(file);
     }
 
     /**
      * Validate and set image file
      */
-    private handleImageFile(file: File): void {
+    private async handleImageFile(file: File): Promise<void> {
         this.clearError();
 
         // Validate MIME type
         if (!ALLOWED_IMAGE_TYPES.includes(file.type as AiRecipeDraftImageMimeType)) {
             this.errorMessage.set(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
+            return;
+        }
+
+        try {
+            file = await this.imageCompression.compressToMaxSize(file);
+        } catch (err) {
+            this.errorMessage.set(
+                err instanceof ImageCompressionError
+                    ? err.message
+                    : CLIPBOARD_IMAGE_UI_MESSAGES.compressionFailed,
+            );
             return;
         }
 

@@ -16,6 +16,16 @@ import { ClipboardImageService } from '../../../../../shared/services/clipboard-
 import { ClipboardImageError } from '../../../../../shared/services/clipboard-image.types';
 import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../../../shared/services/clipboard-image.messages';
 import { CameraCaptureButtonComponent } from '../../../../../shared/components/camera-capture-button/camera-capture-button.component';
+import { ImageCompressionService } from '../../../../../shared/services/image-compression.service';
+
+function imageCompressionProvider() {
+    return {
+        provide: ImageCompressionService,
+        useValue: {
+            compressToMaxSize: vi.fn(async (file: File) => file),
+        },
+    };
+}
 
 describe('RecipeImageUploadComponent (PS-92 schowek)', () => {
     let readImageFile: ReturnType<typeof vi.fn>;
@@ -76,6 +86,7 @@ describe('RecipeImageUploadComponent (PS-92 schowek)', () => {
                         })),
                     },
                 },
+                imageCompressionProvider(),
             ],
         });
     });
@@ -203,6 +214,7 @@ describe('RecipeImageUploadComponent (PS-93 aparat)', () => {
                         })),
                     },
                 },
+                imageCompressionProvider(),
             ],
         });
     });
@@ -219,24 +231,24 @@ describe('RecipeImageUploadComponent (PS-93 aparat)', () => {
         ) as HTMLButtonElement;
     }
 
-    it('onCameraFileSelected emituje pendingFileChanged w trybie tworzenia', () => {
+    it('onCameraFileSelected emituje pendingFileChanged w trybie tworzenia', async () => {
         const fixture = createFixture();
         const component = fixture.componentInstance;
         const file = new File(['jpg'], 'camera.jpg', { type: 'image/jpeg' });
         const emitSpy = vi.spyOn(component.imageEvent, 'emit');
 
-        component.onCameraFileSelected(file);
+        await component.onCameraFileSelected(file);
 
         expect(emitSpy).toHaveBeenCalledWith({ type: 'pendingFileChanged', file });
     });
 
-    it('onCameraFileSelected ignoruje plik podczas uploadu', () => {
+    it('onCameraFileSelected ignoruje plik podczas uploadu', async () => {
         const fixture = createFixture();
         const component = fixture.componentInstance;
         component.uiState.set('uploading');
         const emitSpy = vi.spyOn(component.imageEvent, 'emit');
 
-        component.onCameraFileSelected(
+        await component.onCameraFileSelected(
             new File(['jpg'], 'camera.jpg', { type: 'image/jpeg' }),
         );
 
@@ -251,7 +263,7 @@ describe('RecipeImageUploadComponent (PS-93 aparat)', () => {
         expect(getCameraButton(fixture).disabled).toBe(true);
     });
 
-    it('emituje pendingFileChanged po fileSelected z pych-camera-capture-button', () => {
+    it('emituje pendingFileChanged po fileSelected z pych-camera-capture-button', async () => {
         const fixture = createFixture();
         const component = fixture.componentInstance;
         const file = new File(['webp'], 'shot.webp', { type: 'image/webp' });
@@ -264,6 +276,7 @@ describe('RecipeImageUploadComponent (PS-93 aparat)', () => {
 
         cameraDe.componentInstance.fileSelected.emit(file);
         fixture.detectChanges();
+        await fixture.whenStable();
 
         expect(emitSpy).toHaveBeenCalledWith({ type: 'pendingFileChanged', file });
     });

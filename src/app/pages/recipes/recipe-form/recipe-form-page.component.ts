@@ -50,6 +50,7 @@ import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.mode
 import { RecipesService } from '../services/recipes.service';
 import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
 import { SlugService } from '../../../shared/services/slug.service';
+import { ImageCompressionService } from '../../../shared/services/image-compression.service';
 import {
     AiRecipeImageService,
     AiImageValidationError,
@@ -138,6 +139,7 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly aiRecipeImageService = inject(AiRecipeImageService);
     private readonly creditsService = inject(AiCreditsService);
     private readonly slugService = inject(SlugService);
+    private readonly imageCompression = inject(ImageCompressionService);
 
     /** Reference to RecipeImageUploadComponent for applying AI-generated images */
     @ViewChild(RecipeImageUploadComponent)
@@ -910,8 +912,10 @@ export class RecipeFormPageComponent implements OnInit {
         if (!this.isEditMode()) {
             const pendingFile = this.pendingImageFile();
             if (pendingFile) {
-                const dataBase64 = await this.readFileAsBase64(pendingFile);
-                const mimeType = this.toAiDraftImageMimeType(pendingFile.type);
+                const compressedFile =
+                    await this.imageCompression.compressToMaxSize(pendingFile);
+                const dataBase64 = await this.readFileAsBase64(compressedFile);
+                const mimeType = this.toAiDraftImageMimeType(compressedFile.type);
                 request.reference_image = {
                     source: 'base64',
                     mime_type: mimeType,

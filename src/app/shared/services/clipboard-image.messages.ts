@@ -8,6 +8,8 @@ export const CLIPBOARD_IMAGE_UI_MESSAGES = {
     permissionDenied:
         'Brak dostępu do schowka. Zezwól na dostęp w ustawieniach przeglądarki lub użyj Ctrl+V.',
     readFailed: 'Nie udało się odczytać schowka.',
+    compressionFailed:
+        'Nie udało się zmniejszyć zdjęcia. Spróbuj zrobić mniejsze zdjęcie lub wybierz inny plik.',
     clipboardUnsupportedTooltip:
         'Niedostępne w tej przeglądarce — użyj Ctrl+V, przeciągnij plik lub wybierz z dysku.',
 } as const;

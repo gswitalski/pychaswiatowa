@@ -18,6 +18,7 @@ import { AiCreditsService } from '../../../core/services/ai-credits.service';
 import { ClipboardImageService } from '../../../shared/services/clipboard-image.service';
 import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../shared/services/clipboard-image.messages';
 import { CameraCaptureButtonComponent } from '../../../shared/components/camera-capture-button/camera-capture-button.component';
+import { ImageCompressionService } from '../../../shared/services/image-compression.service';
 
 function assistPageProviders(readImageFile: ReturnType<typeof vi.fn>) {
     return [
@@ -51,6 +52,12 @@ function assistPageProviders(readImageFile: ReturnType<typeof vi.fn>) {
                 isClipboardReadSupported: vi.fn(() => true),
                 readImageFile,
                 messageForError: vi.fn(() => 'błąd schowka'),
+            },
+        },
+        {
+            provide: ImageCompressionService,
+            useValue: {
+                compressToMaxSize: vi.fn(async (file: File) => file),
             },
         },
     ];
@@ -137,22 +144,22 @@ describe('RecipeNewAssistPageComponent (PS-93 aparat)', () => {
         return fixture;
     }
 
-    it('ustawia imageFile po onCameraFileSelected (handleImageFile)', () => {
+    it('ustawia imageFile po onCameraFileSelected (handleImageFile)', async () => {
         const component = createComponent();
         component.onSourceChange('image');
         const file = new File(['img'], 'camera-shot.jpeg', { type: 'image/jpeg' });
 
-        component.onCameraFileSelected(file);
+        await component.onCameraFileSelected(file);
 
         expect(component.imageFile()).toBe(file);
     });
 
-    it('ignoruje plik z aparatu gdy isLoading()', () => {
+    it('ignoruje plik z aparatu gdy isLoading()', async () => {
         const component = createComponent();
         component.onSourceChange('image');
         component.isLoading.set(true);
 
-        component.onCameraFileSelected(
+        await component.onCameraFileSelected(
             new File(['img'], 'camera-shot.jpeg', { type: 'image/jpeg' }),
         );
 
@@ -183,6 +190,7 @@ describe('RecipeNewAssistPageComponent (PS-93 aparat)', () => {
 
         cameraDe.componentInstance.fileSelected.emit(file);
         fixture.detectChanges();
+        await fixture.whenStable();
 
         expect(component.imageFile()).toBe(file);
     });

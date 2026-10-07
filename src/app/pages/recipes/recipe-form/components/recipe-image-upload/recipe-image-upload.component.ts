@@ -25,6 +25,10 @@ import { ClipboardImageService } from '../../../../../shared/services/clipboard-
 import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../../../shared/services/clipboard-image.messages';
 import { CLIPBOARD_IMAGE_MAX_BYTES } from '../../../../../shared/services/clipboard-image.types';
 import { CameraCaptureButtonComponent } from '../../../../../shared/components/camera-capture-button/camera-capture-button.component';
+import {
+    ImageCompressionError,
+    ImageCompressionService,
+} from '../../../../../shared/services/image-compression.service';
 
 /**
  * UI state for the image upload component
@@ -69,6 +73,7 @@ export class RecipeImageUploadComponent implements OnInit {
     private readonly snackBar = inject(MatSnackBar);
     private readonly supabase = inject(SupabaseService);
     private readonly clipboardImageService = inject(ClipboardImageService);
+    private readonly imageCompression = inject(ImageCompressionService);
 
     /** Recipe ID - when null, component is in "pending" mode (create mode) */
     @Input() recipeId: number | null = null;
@@ -147,7 +152,7 @@ export class RecipeImageUploadComponent implements OnInit {
 
         try {
             const file = await this.clipboardImageService.readImageFile();
-            this.processFile(file);
+            await this.processFile(file);
         } catch (err) {
             this.error.set(this.clipboardImageService.messageForError(err));
         }
@@ -156,7 +161,7 @@ export class RecipeImageUploadComponent implements OnInit {
     /**
      * Handles file selection from input
      */
-    onFileSelected(event: Event): void {
+    async onFileSelected(event: Event): Promise<void> {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
 
@@ -164,20 +169,20 @@ export class RecipeImageUploadComponent implements OnInit {
             return;
         }
 
-        this.processFile(file);
+        await this.processFile(file);
         input.value = ''; // Reset input
     }
 
     /**
      * Plik z aparatu (PS-93) — ta sama ścieżka co wybór pliku / schowek.
      */
-    onCameraFileSelected(file: File): void {
+    async onCameraFileSelected(file: File): Promise<void> {
         if (this.disabled || this.isUploading) {
             return;
         }
 
         this.error.set(null);
-        this.processFile(file);
+        await this.processFile(file);
     }
 
     /**
@@ -249,7 +254,7 @@ export class RecipeImageUploadComponent implements OnInit {
             return;
         }
 
-        this.processFile(imageFile);
+        void this.processFile(imageFile);
     }
 
     /**
@@ -305,18 +310,29 @@ export class RecipeImageUploadComponent implements OnInit {
         }
 
         const file = files[0];
-        this.processFile(file);
+        void this.processFile(file);
     }
 
     /**
      * Processes and validates a file
      */
-    private processFile(file: File): void {
+    private async processFile(file: File): Promise<void> {
         this.error.set(null);
 
         // Validate file type
         if (!this.acceptedTypes.includes(file.type)) {
             this.error.set(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
+            return;
+        }
+
+        try {
+            file = await this.imageCompression.compressToMaxSize(file);
+        } catch (err) {
+            this.error.set(
+                err instanceof ImageCompressionError
+                    ? err.message
+                    : CLIPBOARD_IMAGE_UI_MESSAGES.compressionFailed,
+            );
             return;
         }
 
@@ -570,6 +586,6 @@ export class RecipeImageUploadComponent implements OnInit {
             return;
         }
 
-        this.processFile(file);
+        void this.processFile(file);
     }
 }
