@@ -15,9 +15,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RecipesService } from '../../../services/recipes.service';
 import { UploadRecipeImageResponseDto } from '../../../../../../../shared/contracts/types';
 import { SupabaseService } from '../../../../../core/services/supabase.service';
+import { ClipboardImageService } from '../../../../../shared/services/clipboard-image.service';
+import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../../../shared/services/clipboard-image.messages';
+import { CLIPBOARD_IMAGE_MAX_BYTES } from '../../../../../shared/services/clipboard-image.types';
 
 /**
  * UI state for the image upload component
@@ -50,6 +54,7 @@ export interface RecipeImageUndoSnapshot {
         MatIconModule,
         MatProgressSpinnerModule,
         MatSnackBarModule,
+        MatTooltipModule,
     ],
     templateUrl: './recipe-image-upload.component.html',
     styleUrl: './recipe-image-upload.component.scss',
@@ -59,6 +64,7 @@ export class RecipeImageUploadComponent implements OnInit {
     private readonly recipesService = inject(RecipesService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly supabase = inject(SupabaseService);
+    private readonly clipboardImageService = inject(ClipboardImageService);
 
     /** Recipe ID - when null, component is in "pending" mode (create mode) */
     @Input() recipeId: number | null = null;
@@ -88,7 +94,12 @@ export class RecipeImageUploadComponent implements OnInit {
     private undoSnapshot: RecipeImageUndoSnapshot | null = null;
 
     private readonly acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    private readonly maxSizeBytes = 10 * 1024 * 1024; // 10MB (zgodnie z PRD/API)
+    private readonly maxSizeBytes = CLIPBOARD_IMAGE_MAX_BYTES;
+
+    /** Clipboard API (`navigator.clipboard.read`) — ustawiane w ngOnInit */
+    clipboardSupported = false;
+
+    readonly clipboardUnsupportedTooltip = CLIPBOARD_IMAGE_UI_MESSAGES.clipboardUnsupportedTooltip;
 
     constructor() {
         // Update UI state based on conditions (but don't override uploading/dragover states)
@@ -111,8 +122,29 @@ export class RecipeImageUploadComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.clipboardSupported = this.clipboardImageService.isClipboardReadSupported();
         // Emit initial uploading state
         this.imageEvent.emit({ type: 'uploadingChanged', uploading: false });
+    }
+
+    /**
+     * Wkleja obraz ze schowka przez Clipboard API (PS-92).
+     */
+    async onPasteFromClipboardClick(event: MouseEvent): Promise<void> {
+        event.stopPropagation();
+
+        if (this.disabled || this.isUploading || !this.clipboardSupported) {
+            return;
+        }
+
+        this.error.set(null);
+
+        try {
+            const file = await this.clipboardImageService.readImageFile();
+            this.processFile(file);
+        } catch (err) {
+            this.error.set(this.clipboardImageService.messageForError(err));
+        }
     }
 
     /**
@@ -142,24 +174,36 @@ export class RecipeImageUploadComponent implements OnInit {
 
         const items = event.clipboardData?.items;
         if (!items) {
-            this.error.set('Schowek nie zawiera obrazu');
+            this.error.set(CLIPBOARD_IMAGE_UI_MESSAGES.noImage);
             return;
         }
 
-        // Find image in clipboard
         let imageFile: File | null = null;
+        let sawUnsupportedImage = false;
+
         for (const item of Array.from(items)) {
-            if (item.type.startsWith('image/')) {
-                const blob = item.getAsFile();
-                if (blob) {
-                    imageFile = blob;
-                    break;
-                }
+            if (!item.type.startsWith('image/')) {
+                continue;
+            }
+
+            if (!this.acceptedTypes.includes(item.type)) {
+                sawUnsupportedImage = true;
+                continue;
+            }
+
+            const blob = item.getAsFile();
+            if (blob) {
+                imageFile = blob;
+                break;
             }
         }
 
         if (!imageFile) {
-            this.error.set('Schowek nie zawiera obrazu');
+            this.error.set(
+                sawUnsupportedImage
+                    ? CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat
+                    : CLIPBOARD_IMAGE_UI_MESSAGES.noImage,
+            );
             return;
         }
 
@@ -230,13 +274,13 @@ export class RecipeImageUploadComponent implements OnInit {
 
         // Validate file type
         if (!this.acceptedTypes.includes(file.type)) {
-            this.error.set('Dozwolone formaty: JPG, PNG, WebP');
+            this.error.set(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
             return;
         }
 
         // Validate file size
         if (file.size > this.maxSizeBytes) {
-            this.error.set('Maksymalny rozmiar pliku to 10 MB');
+            this.error.set(CLIPBOARD_IMAGE_UI_MESSAGES.fileTooLarge);
             return;
         }
 
@@ -466,6 +510,11 @@ export class RecipeImageUploadComponent implements OnInit {
     /** Check if component is in dragover state */
     get isDragover(): boolean {
         return this.uiState() === 'dragover';
+    }
+
+    /** Przycisk schowka — disabled gdy brak API, upload lub formularz zablokowany */
+    get isClipboardPasteDisabled(): boolean {
+        return this.disabled || this.isUploading || !this.clipboardSupported;
     }
 
     /**

@@ -13,12 +13,18 @@ Aby zaplanować, zaimplementować i wdrożyć nową funkcjonalność, wybierz je
 - Zrewiduj dokument za pomocą prompta `044 Prompt - New features analysis review` i **innego modelu**.
 - W razie potrzeby skoryguj dokument, kontynuując konwersację z modelem.
 
+
+
 ## Generowanie user stories
 
 - Wygeneruj historyjki użytkownika za pomocą prompta `045 Prompt - New features - user stories`.
- - dla każdej historyjki przejdz do punku **Plan implementacji** i kontynuuj
+- dla każdej historyjki przejdz do punku **Plan implementacji** i kontynuuj
+
+
 
 # Pojedyncze User Story
+
+
 
 ## Generownie pojedynczej historyjki
 
@@ -27,10 +33,13 @@ Aby zaplanować, zaimplementować i wdrożyć nową funkcjonalność, wybierz je
 - Przejdź do punktu [Plan implementacji](#plan-implementacji).
 
 
+
 ## Plan implementacji
 
 - Rozpisz wymagania dotyczące API, widoków i planu wdrożenia za pomocą prompta `047 Prompt - User story plan`.
 - Wynikowe dokumenty wykorzystaj w kolejnych krokach.
+
+
 
 ## Implementacja API
 
@@ -38,12 +47,17 @@ Aby zaplanować, zaimplementować i wdrożyć nową funkcjonalność, wybierz je
 - Zrewiduj plan i w razie potrzeby go skoryguj.
 - Wykorzystaj prompt `015 Prompt - Endpoint Implementation` do zaimplementowania API.
 
+
+
 ## Implementacja widoków
 
 - Wykorzystaj prompt `049 Prompt - View Implementation plan` do stworzenia planu implementacji widoku.
 - Zrewiduj plan i w razie potrzeby go skoryguj.
 - Wdróż implementację za pomocą prompta `020 Prompt - View Implementation`.
 
+
+
 ## Aktualizacja project summary
 
 - Zaktualizuj `project-summary` za pomocą prompta `050 Prompt - Project summary update`.
+

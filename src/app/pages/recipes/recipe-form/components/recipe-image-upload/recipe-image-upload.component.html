@@ -71,6 +71,19 @@
                 <p class="drop-zone__hint drop-zone__hint--small">
                     JPG, PNG lub WebP (max. 10 MB)
                 </p>
+                <button
+                    mat-stroked-button
+                    type="button"
+                    class="clipboard-paste-btn"
+                    aria-label="Wklej zdjęcie ze schowka"
+                    [disabled]="isClipboardPasteDisabled"
+                    [matTooltip]="clipboardUnsupportedTooltip"
+                    [matTooltipDisabled]="clipboardSupported"
+                    (click)="onPasteFromClipboardClick($event)"
+                >
+                    <mat-icon>content_paste</mat-icon>
+                    Wklej ze schowka
+                </button>
             }
         </div>
     }
@@ -85,16 +98,31 @@
 
     <!-- Change image button (when in success state) -->
     @if (hasImage && !isUploading) {
-        <button
-            mat-stroked-button
-            type="button"
-            (click)="fileInput.click()"
-            class="change-image-btn"
-            [disabled]="disabled"
-        >
-            <mat-icon>image</mat-icon>
-            Zmień zdjęcie
-        </button>
+        <div class="image-actions">
+            <button
+                mat-stroked-button
+                type="button"
+                (click)="fileInput.click()"
+                class="change-image-btn"
+                [disabled]="disabled"
+            >
+                <mat-icon>image</mat-icon>
+                Zmień zdjęcie
+            </button>
+            <button
+                mat-stroked-button
+                type="button"
+                class="clipboard-paste-btn"
+                aria-label="Wklej zdjęcie ze schowka"
+                [disabled]="isClipboardPasteDisabled"
+                [matTooltip]="clipboardUnsupportedTooltip"
+                [matTooltipDisabled]="clipboardSupported"
+                (click)="onPasteFromClipboardClick($event)"
+            >
+                <mat-icon>content_paste</mat-icon>
+                Wklej ze schowka
+            </button>
+        </div>
         <input
             type="file"
             #fileInput

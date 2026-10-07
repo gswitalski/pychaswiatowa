@@ -9,19 +9,19 @@ Najpierw przejrzyj następujące informacje:
 
 2. Nowe wymagania do zaimplementowania:
 <new_requirements>
-@docs\results\new-features\user-stories\PS-91\PS-91-ai-draft-recipe-metadata-user-story.md
+@docs/results/new-features/user-stories/PS-92/PS-92-clipboard-paste-button-user-story.md
 </new_requirements>
 
 
 
 3. Widok do implementacji / zmiany w widokach
 <ui_plan>
-@docs\results\new-features\user-stories\PS-91\PS-91-ai-draft-recipe-metadata-ui-plan.md
+@docs/results/new-features/user-stories/PS-92/PS-92-clipboard-paste-button-ui-plan.md
 </ui_plan>
 
 5. Endpoint Description:
 <endpoint_description>
-@docs\results\new-features\user-stories\PS-91\PS-91-ai-draft-recipe-metadata-api-plan.md
+bez zmian
 </endpoint_description>
 
 
@@ -81,7 +81,7 @@ Po przeprowadzeniu analizy dostarcz plan wdrożenia w formacie Markdown z nastę
 
 Upewnij się, że Twój plan jest zgodny z PRD, historyjkami użytkownika i uwzględnia dostarczony stack technologiczny.
 
-Ostateczne wyniki powinny być w języku polskim i zapisane w pliku o nazwie docs/results/impl-plans/views/{view-name}-view-implementation-plan.md. Nie uwzględniaj żadnej analizy i planowania w końcowym wyniku.
+Ostateczne wyniki powinny być w języku polskim i zapisane w pliku o nazwie docs/results/impl-plans/views/{numer_historyjki}-{view-name}-view-implementation-plan.md. Nie uwzględniaj żadnej analizy i planowania w końcowym wyniku.
 
 Oto przykład tego, jak powinien wyglądać plik wyjściowy (treść jest do zastąpienia):
 
@@ -133,4 +133,4 @@ Oto przykład tego, jak powinien wyglądać plik wyjściowy (treść jest do zas
 3. [...]
 ```
 
-Rozpocznij analizę i planowanie już teraz. Twój ostateczny wynik powinien składać się wyłącznie z planu wdrożenia w języku polskim w formacie markdown, który zapiszesz w nowym pliku pliku docs/results/impl-plans/views/{feature-name}-view-implementation-plan.md i nie powinien powielać ani powtarzać żadnej pracy wykonanej w podziale implementacji.
+Rozpocznij analizę i planowanie już teraz. Twój ostateczny wynik powinien składać się wyłącznie z planu wdrożenia w języku polskim w formacie markdown, który zapiszesz w nowym pliku nie powinien powielać ani powtarzać żadnej pracy wykonanej w podziale implementacji.

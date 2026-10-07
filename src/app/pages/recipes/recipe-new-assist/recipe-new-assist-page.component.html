@@ -113,6 +113,18 @@
                         <p class="paste-formats">
                             Obsługiwane formaty: PNG, JPEG, WebP (max 10 MB)
                         </p>
+                        <button
+                            mat-stroked-button
+                            type="button"
+                            class="clipboard-paste-btn"
+                            aria-label="Wklej zdjęcie ze schowka"
+                            [disabled]="isClipboardPasteDisabled()"
+                            [matTooltip]="clipboardUnsupportedTooltip"
+                            [matTooltipDisabled]="clipboardSupported"
+                            (click)="onPasteFromClipboardClick($event)">
+                            <mat-icon>content_paste</mat-icon>
+                            Wklej ze schowka
+                        </button>
                     </div>
                 </div>
                 } @else {
@@ -129,6 +141,20 @@
                         [disabled]="isLoading()"
                         aria-label="Usuń obraz">
                         <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+                <div class="image-preview-actions">
+                    <button
+                        mat-stroked-button
+                        type="button"
+                        class="clipboard-paste-btn"
+                        aria-label="Wklej zdjęcie ze schowka"
+                        [disabled]="isClipboardPasteDisabled()"
+                        [matTooltip]="clipboardUnsupportedTooltip"
+                        [matTooltipDisabled]="clipboardSupported"
+                        (click)="onPasteFromClipboardClick($event)">
+                        <mat-icon>content_paste</mat-icon>
+                        Wklej ze schowka
                     </button>
                 </div>
                 }

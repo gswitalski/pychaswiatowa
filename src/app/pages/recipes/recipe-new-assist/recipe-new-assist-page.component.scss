@@ -157,9 +157,15 @@
 }
 
 .paste-formats {
-    margin: 0;
+    margin: 0 0 16px;
     font-size: 0.75rem;
     color: var(--mat-sys-on-surface-variant);
+}
+
+.clipboard-paste-btn {
+    mat-icon {
+        margin-right: 8px;
+    }
 }
 
 .image-preview-container {
@@ -179,6 +185,15 @@
     position: absolute;
     top: -12px;
     right: -12px;
+}
+
+.image-preview-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 16px;
+    width: 100%;
 }
 
 .error-container {

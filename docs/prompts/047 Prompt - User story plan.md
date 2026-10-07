@@ -12,7 +12,7 @@ Oto dokumenty o projekcie, które musisz przeanalizować:
 
 
 <user_story>
-@docs\results\new-features\user-stories\PS-91\PS-91-ai-draft-recipe-metadata-user-story.md
+@docs\results\new-features\user-stories\PS-92\PS-92-clipboard-paste-button-user-story.md
 </user_story>
 
 Twoim zadaniem jest:
@@ -37,7 +37,6 @@ Wymagania dotyczące odpowiedzi:
 - Dla requirements: dodaj konkretne funkcje i przynajmniej jedną szczegółową historyjkę użytkownika
 - Dla planu UI: opisz nowy widok/widoki z uwzględnieniem UX i interfejsu
 - Dla planu API: dodaj konkretne endpointy z metodami HTTP, parametrami i odpowiedziami
-- pliki wynikowe umieśc w foldzedze docs/results/new-features/{nazwa-ficzera-po-angielsku}
 
 
 Twoja końcowa odpowiedź powinna zawierać cztery wyraźnie oznaczone sekcje:

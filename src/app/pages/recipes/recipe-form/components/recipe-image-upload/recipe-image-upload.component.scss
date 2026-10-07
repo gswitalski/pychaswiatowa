@@ -167,11 +167,25 @@
     }
 }
 
-// Change image button
-.change-image-btn {
-    align-self: flex-start;
+.image-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
 
+// Change image / clipboard paste buttons
+.change-image-btn,
+.clipboard-paste-btn {
     mat-icon {
         margin-right: 8px;
+    }
+}
+
+.clipboard-paste-btn {
+    margin-top: 8px;
+
+    .image-actions & {
+        margin-top: 0;
     }
 }

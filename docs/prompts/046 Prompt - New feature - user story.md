@@ -13,24 +13,14 @@ Opis wymagań do nowej funkcjonalności:
 
 <wymagania>
 
-podczs importu przepisu ze swobodnego tekstu lub z obrazka, zarówno prompt jak i system mają uodczytać i wypełnić nasepujące pole:
+Jako użytkownik wprowadzjący przepis do systemu chę mieć możliwość łatwego wklejenia grafiki ze schowka za pomocą dedykowanego przycisku
 
- - liczba porcji
- - czas przygotowania
- - czas całkowity
- - typ diety
- - kuchnia
- - stopień trudności
- - termorobot
- - grill
-
-
- jesli te dane sa w tekśice to mają pochodzić z tekstu. jeśli nie ma tych danych to AI ma je samo wywnioskować (należy to uwzględnić w prompcie)
+Aktualnie muszę kliknąć bardoz bliso pola z obrazkiem aby ustawił sie na niego niewidoczny fokus a dopiero potem mogę wcisnąć cltr-v. Jest to bardzo niewygodne. Za pomocą przysku do wklejenia poprawi się ergonomia
 
 </wymagania>
 
 <numer_historyjki>
-91
+92
 </numer_historyjki>
 
 
@@ -51,7 +41,7 @@ scenariusze alternatywne,
 obsługę błędów/przypadków brzegowych.
 Weryfikacja spójności – upewnij się, że historyjka jest zgodna z kontekstem projektu (technologia, konwencje nazewnicze, istniejące funkcjonalności) i nie zawiera sprzeczności.
 Wymagania dotyczące pliku wyjściowego
-Ścieżka pliku: doc/{nazwa-ficzera-po-angielsku}-user-story.md
+Ścieżka pliku: docs/results/new-features/user-stories/PS-{numer_historyjki}/PS-{numer_historyjki}-{nazwa-ficzera-po-angielsku}-user-story.md
 {nazwa-ficzera-po-angielsku} powinna być zwięzłą, angielską nazwą funkcjonalności w formacie kebab-case (np. user-avatar-upload).
 Format: Markdown (.md)
 Język treści: polski

@@ -35,19 +35,20 @@ import {
     AiRecipeDraftRequestDto,
     AiRecipeDraftImageMimeType,
 } from '../../../../../shared/contracts/types';
+import { ClipboardImageService } from '../../../shared/services/clipboard-image.service';
+import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../shared/services/clipboard-image.messages';
+import {
+    CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES,
+    CLIPBOARD_IMAGE_MAX_BYTES,
+} from '../../../shared/services/clipboard-image.types';
 
 /** Source type for AI input */
 type AiInputSource = 'text' | 'image';
 
 /** Allowed MIME types for image paste */
 const ALLOWED_IMAGE_TYPES: AiRecipeDraftImageMimeType[] = [
-    'image/png',
-    'image/jpeg',
-    'image/webp',
+    ...CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES,
 ];
-
-/** Maximum image size in bytes (10 MB) */
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 /**
  * Recipe creation wizard - AI Assist page component.
@@ -80,6 +81,11 @@ export class RecipeNewAssistPageComponent {
     private readonly draftStateService = inject(RecipeDraftStateService);
     private readonly creditsService = inject(AiCreditsService);
     private readonly dialog = inject(MatDialog);
+    private readonly clipboardImageService = inject(ClipboardImageService);
+
+    readonly clipboardSupported = this.clipboardImageService.isClipboardReadSupported();
+
+    readonly clipboardUnsupportedTooltip = CLIPBOARD_IMAGE_UI_MESSAGES.clipboardUnsupportedTooltip;
 
     @ViewChild('imagePasteArea') imagePasteArea!: ElementRef<HTMLDivElement>;
 
@@ -124,6 +130,10 @@ export class RecipeNewAssistPageComponent {
             : ''
     );
 
+    readonly isClipboardPasteDisabled = computed(
+        () => this.isLoading() || !this.clipboardSupported,
+    );
+
     /**
      * Handle source toggle change.
      * Clears opposite input when switching modes.
@@ -164,21 +174,52 @@ export class RecipeNewAssistPageComponent {
             return;
         }
 
-        // Find image in clipboard
-        for (const item of Array.from(items)) {
-            if (item.type.startsWith('image/')) {
-                event.preventDefault();
-                const file = item.getAsFile();
+        let sawUnsupportedImage = false;
 
-                if (file) {
-                    this.handleImageFile(file);
-                }
-                return;
+        for (const item of Array.from(items)) {
+            if (!item.type.startsWith('image/')) {
+                continue;
             }
+
+            if (!ALLOWED_IMAGE_TYPES.includes(item.type as AiRecipeDraftImageMimeType)) {
+                sawUnsupportedImage = true;
+                continue;
+            }
+
+            event.preventDefault();
+            const file = item.getAsFile();
+
+            if (file) {
+                this.handleImageFile(file);
+            }
+            return;
         }
 
-        // No image found in clipboard
-        this.errorMessage.set('W schowku nie ma obrazu. Skopiuj zdjęcie przepisu i spróbuj ponownie.');
+        this.errorMessage.set(
+            sawUnsupportedImage
+                ? CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat
+                : CLIPBOARD_IMAGE_UI_MESSAGES.noImage,
+        );
+    }
+
+    /**
+     * Wkleja obraz ze schowka przez Clipboard API (PS-92).
+     */
+    async onPasteFromClipboardClick(event: MouseEvent): Promise<void> {
+        event.stopPropagation();
+
+        if (this.source() !== 'image' || this.isLoading() || !this.clipboardSupported) {
+            return;
+        }
+
+        this.clearError();
+
+        try {
+            const file = await this.clipboardImageService.readImageFile();
+            this.handleImageFile(file);
+        } catch (err) {
+            this.errorMessage.set(this.clipboardImageService.messageForError(err));
+        }
     }
 
     /**
@@ -189,17 +230,12 @@ export class RecipeNewAssistPageComponent {
 
         // Validate MIME type
         if (!ALLOWED_IMAGE_TYPES.includes(file.type as AiRecipeDraftImageMimeType)) {
-            this.errorMessage.set(
-                `Nieprawidłowy format obrazu. Obsługiwane formaty: PNG, JPEG, WebP.`
-            );
+            this.errorMessage.set(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
             return;
         }
 
-        // Validate file size
-        if (file.size > MAX_IMAGE_SIZE) {
-            this.errorMessage.set(
-                `Obraz jest zbyt duży. Maksymalny rozmiar to 10 MB.`
-            );
+        if (file.size > CLIPBOARD_IMAGE_MAX_BYTES) {
+            this.errorMessage.set(CLIPBOARD_IMAGE_UI_MESSAGES.fileTooLarge);
             return;
         }
 
