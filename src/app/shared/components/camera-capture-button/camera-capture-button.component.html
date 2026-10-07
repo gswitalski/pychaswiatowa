@@ -1,0 +1,20 @@
+<input
+    type="file"
+    #cameraInput
+    class="file-input visually-hidden"
+    accept="image/jpeg,image/png,image/webp"
+    capture="environment"
+    [disabled]="disabled()"
+    (change)="onInputChange($event)"
+/>
+<button
+    mat-stroked-button
+    type="button"
+    [class]="buttonClass() || undefined"
+    aria-label="Zrób zdjęcie aparatem urządzenia"
+    [disabled]="disabled()"
+    (click)="onButtonClick($event)"
+>
+    <mat-icon>photo_camera</mat-icon>
+    Zrób zdjęcie
+</button>

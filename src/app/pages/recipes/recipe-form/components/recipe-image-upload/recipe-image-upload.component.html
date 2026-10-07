@@ -71,19 +71,25 @@
                 <p class="drop-zone__hint drop-zone__hint--small">
                     JPG, PNG lub WebP (max. 10 MB)
                 </p>
-                <button
-                    mat-stroked-button
-                    type="button"
-                    class="clipboard-paste-btn"
-                    aria-label="Wklej zdjęcie ze schowka"
-                    [disabled]="isClipboardPasteDisabled"
-                    [matTooltip]="clipboardUnsupportedTooltip"
-                    [matTooltipDisabled]="clipboardSupported"
-                    (click)="onPasteFromClipboardClick($event)"
-                >
-                    <mat-icon>content_paste</mat-icon>
-                    Wklej ze schowka
-                </button>
+                <div class="upload-actions">
+                    <button
+                        mat-stroked-button
+                        type="button"
+                        class="clipboard-paste-btn"
+                        aria-label="Wklej zdjęcie ze schowka"
+                        [disabled]="isClipboardPasteDisabled"
+                        [matTooltip]="clipboardUnsupportedTooltip"
+                        [matTooltipDisabled]="clipboardSupported"
+                        (click)="onPasteFromClipboardClick($event)"
+                    >
+                        <mat-icon>content_paste</mat-icon>
+                        Wklej ze schowka
+                    </button>
+                    <pych-camera-capture-button
+                        [disabled]="disabled || isUploading"
+                        (fileSelected)="onCameraFileSelected($event)"
+                    />
+                </div>
             }
         </div>
     }
@@ -122,6 +128,10 @@
                 <mat-icon>content_paste</mat-icon>
                 Wklej ze schowka
             </button>
+            <pych-camera-capture-button
+                [disabled]="disabled || isUploading"
+                (fileSelected)="onCameraFileSelected($event)"
+            />
         </div>
         <input
             type="file"

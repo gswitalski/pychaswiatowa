@@ -12,7 +12,7 @@ Oto dokumenty o projekcie, które musisz przeanalizować:
 
 
 <user_story>
-@docs\results\new-features\user-stories\PS-92\PS-92-clipboard-paste-button-user-story.md
+@docs/results/new-features/user-stories/PS-93/PS-93-mobile-camera-capture-user-story.md
 </user_story>
 
 Twoim zadaniem jest:

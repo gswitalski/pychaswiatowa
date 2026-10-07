@@ -3,11 +3,11 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 5 października 2026 — m.in. zakończenie wdrożenia Google OAuth (plany API i widoków), widoku strony cennika (`/pricing`, stub `/checkout`, `/legal/subscription`; bez nowej warstwy API), kredytów AI PS-64 (plany API i widoków), limitu planu dla konta Free PS-65 oraz metadanych draftu AI PS-91, kod, `docs/results/`, `docs/Jira.xml`, historyjki Premium (`docs/historyjki-premium.md`).
+> **Aktualizacja:** 7 października 2026 — m.in. przycisk „Wklej ze schowka” PS-92 (plan widoków, bez zmian API), oraz wcześniej: Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65, metadane draftu AI PS-91 (`docs/results/`, `docs/Jira.xml`, historyjki Premium).
 
 ---
 
-## 0. Stan realizacji (wrzesień 2026)
+## 0. Stan realizacji (październik 2026)
 
 MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting, backend: Supabase Cloud). Eksport Jira (59 zgłoszeń): **48 Gotowe**, **7 Do zrobienia**, **1 W toku**, **3 nie będzie realizowane**.
 
@@ -20,6 +20,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 **Metadane draftu AI (PS-91):** warstwa API `POST /ai/recipes/draft` zwraca porcje, czasy, typ diety, kuchnię, trudność oraz flagi Termorobot/Grill. Model odczytuje wartości ze źródła lub je wnioskuje, a backend tolerancyjnie normalizuje zakresy i enumy. Błąd pojedynczego pola nie odrzuca draftu: odpowiedź pozostaje `200`, bezpieczne wartości to `null`/`false`, a korekty są raportowane w `meta.warnings`.
 
 **Limit „Mojego planu" dla Free (PS-65):** implementacja warstwy API i widoków — **zakończona**. `POST /plan/recipes` dla roli `user` odrzuca dodanie po osiągnięciu limitu (domyślnie 3 pozycje, zmienna środowiskowa `PLAN_LIMIT_FREE`) kodem `422 PLAN_LIMIT_EXCEEDED_FREE` z linkiem do `/pricing`. Premium i admin zachowują limit 50. Rola jest brana z JWT (`app_metadata.app_role`), nigdy z body. Istniejące pozycje ponad limit nie są usuwane (grandfathering) — blokowane są tylko nowe dodania. W UI: dialog po `422` zamiast snackbara, licznik „X / 3 pozycji” w nagłówku drawera (tylko `user`), a cennik pokazuje limit Free 3 zamiast wcześniejszych 7.
+
+**Przycisk „Wklej ze schowka” (PS-92):** implementacja widoków — **zakończona**; warstwa API **bez zmian** (upload jak przy paste/drop). Współdzielony `ClipboardImageService` (`navigator.clipboard.read()` w secure context) odczytuje PNG/JPG/WebP do 10 MB i przekazuje plik do istniejącej ścieżki sukcesu. Przycisk Material w strefie zdjęcia formularza (`RecipeImageUploadComponent`: `/recipes/new`, edycja) oraz w asyście AI w trybie obrazu (`RecipeNewAssistPageComponent`: `/recipes/new/assist`). Ctrl+V, drag & drop i wybór pliku bez zmian; przy braku Clipboard API przycisk jest nieaktywny z tooltipem. Błędy schowka — komunikaty inline (nie snackbar).
 
 ### Dostarczone poza pierwotnym szkicem summary
 
@@ -34,6 +36,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - Logo / favicon, Bottom Bar, drzewo kolekcji, lista zakupów, normalizacja składników, zdjęcie AI także przed zapisem przepisu
 - **Limit planu Free (PS-65):** egzekwowanie na API (`PLAN_LIMIT_FREE`, domyślnie 3), dialog `PlanLimitExceededDialogComponent` z CTA do `/pricing`, licznik pozycji w drawerze „Mój plan”
 - **Strona cennika** (`/pricing`, publiczna): karty Free i Premium, okres miesięczny/roczny (domyślnie roczny, oszczędność ~17%), tabela porównawcza, FAQ, trial 7 dni na karcie Premium. CTA zależy od sesji i roli. Stub `/checkout` („Płatności wkrótce”). Regulamin subskrypcji `/legal/subscription`. Link „Cennik” dla gościa (nagłówek publiczny) i roli `user` (topbar). Blok promo Premium na landingu dla gościa i `user`
+- **Wklej ze schowka (PS-92):** `ClipboardImageService` + przycisk „Wklej ze schowka” w uploadzie zdjęcia przepisu i w asyście AI (tryb obrazu); walidacja MIME/rozmiaru i mapowanie błędów schowka; testy jednostkowe serwisu i komponentów
 
 ### Backlog produktowy (Jira — Do zrobienia)
 
@@ -115,7 +118,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-021 | Dodanie publicznego przepisu do kolekcji | Akcja z widoku publicznego, modal wyboru kolekcji (także cudze `PUBLIC`). |
 | US-022 | Oznaczenie moich przepisów w katalogu | Badge "Twój przepis" na kartach w `/explore`. |
 | US-025 | Oznaczenie cudzych przepisów w kolekcjach | Chip "W moich kolekcjach", brak Edytuj/Usuń dla nie-autora. |
-| US-027 | Szybka zmiana zdjęcia (paste/drop) | Strefa zdjęcia: Ctrl+V, drag&drop, auto-upload, Undo. |
+| US-027 | Szybka zmiana zdjęcia (paste/drop) | Strefa zdjęcia: Ctrl+V, drag&drop, wybór pliku, auto-upload, Undo. PS-92: dedykowany przycisk „Wklej ze schowka” (Clipboard API). |
+| PS-92 | Wklej ze schowka (przycisk) | Odczyt obrazu przez `navigator.clipboard.read()` bez wymogu fokusu na strefie paste. Formularz przepisu i asysta AI (obraz). Te same formaty i limit 10 MB co upload; błędy inline. |
 | US-028 | Liczba porcji | Opcjonalne pole 1-99, wyświetlane pod tytułem z odmianą. |
 | US-029 | Flaga "Termorobot" | Toggle w formularzu, badge na kartach/listach. |
 | US-030 | Przycisk "Więcej" (load more) | Domyślnie 12 elementów, doładowywanie kolejnych 12. |
@@ -482,8 +486,8 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Własne + publiczne z kolekcji. Filtry, load more 12. |
 | Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. |
 | Kreator - wybór trybu | `/recipes/new/start` | Pusty formularz (wszyscy) lub AI (premium/admin; badge). Kafelek AI nadal zablokowany dla roli `user`. |
-| Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. Wskaźnik kredytów `draft`, baner i blokada przycisku przy wyczerpaniu, dialog przy `402`. |
-| Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (paste/drop/file/AI). Sticky Zapisz. Przy zdjęciu AI: kompaktowy wskaźnik kredytów `image` i blokada przycisku przy wyczerpaniu. |
+| Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. Wskaźnik kredytów `draft`, baner i blokada przycisku przy wyczerpaniu, dialog przy `402`. Tryb obrazu: „Wklej ze schowka” (PS-92) obok paste Ctrl+V i wyboru pliku. |
+| Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (`RecipeImageUploadComponent`: paste/drop/file, przycisk „Wklej ze schowka” PS-92, generowanie AI). Sticky Zapisz. Przy zdjęciu AI: kompaktowy wskaźnik kredytów `image` i blokada przycisku przy wyczerpaniu. |
 | Import Markdown | `/recipes/import` | Live preview → edycja. |
 | Lista kolekcji | `/collections` | CRUD kolekcji. |
 | Szczegóły kolekcji | `/collections/:id` | Wszystkie przepisy (limit 500). |
@@ -506,6 +510,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Wskaźnik kredytów AI | Licznik puli `draft` lub `image` (stan normalny / ostrzeżenie / wyczerpanie). Ukryty dla admina. |
 | Dialog wyczerpania kredytów | Po `402` lub kliknięciu wyczerpanego wskaźnika. Free: CTA do `/pricing`. Premium: informacja o dacie resetu. |
 | Przycisk Google OAuth | Współdzielony `OauthGoogleButtonComponent` (login/rejestracja). |
+| Schowek obrazu (PS-92) | `ClipboardImageService`: detekcja API, odczyt pliku, komunikaty błędów; konsumowane przez upload zdjęcia przepisu i asystę AI. |
 
 ---
 
@@ -534,6 +539,7 @@ Piramida testów: solidna baza jednostkowych, uzupełniona integracjami i E2E.
 7. Kredyty AI: wskaźnik i sekcja ustawień; wyczerpanie puli → dialog i `402`; admin bez limitu; korekta puli w panelu admina
 8. Cennik: `/pricing` dla gościa i zalogowanego (CTA według roli); `/checkout` pokazuje „Płatności wkrótce”
 9. Limit planu Free: `user` dodaje 3 przepisy, czwarte → dialog z CTA (bez snackbara); licznik w drawerze; `premium`/`admin` bez blokady do 50; istniejący plan ponad limit nie jest czyszczony
+10. Wklej ze schowka (PS-92): happy path PNG/JPG/WebP na formularzu i w asyście (obraz); pusty schowek / zły format / >10 MB / odmowa uprawnień → komunikat inline; brak Clipboard API → przycisk disabled + tooltip; Ctrl+V i DnD nadal działają
 
 Przewodniki: `docs/testing/`.
 

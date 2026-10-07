@@ -12,11 +12,11 @@ Dane wejściowe
 </project_summary>
 
 <api_implementation_plan>
-@docs\results\impl-plans\views\ps65-free-plan-limit-view-implementation-plan.md
+nie dotyczy
 </api_implementation_plan>
 
 <view_implementation_plan>
-@docs\results\impl-plans\views\ps65-free-plan-limit-view-implementation-plan.md
+@docs\results\impl-plans\views\ps92-clipboard-paste-button-view-implementation-plan.md
 </view_implementation_plan>
 Zadanie
 

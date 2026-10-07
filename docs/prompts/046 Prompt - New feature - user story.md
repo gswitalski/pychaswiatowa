@@ -13,14 +13,16 @@ Opis wymagań do nowej funkcjonalności:
 
 <wymagania>
 
-Jako użytkownik wprowadzjący przepis do systemu chę mieć możliwość łatwego wklejenia grafiki ze schowka za pomocą dedykowanego przycisku
+Jako użytkownik wprowadzjący przepis do systemu za omoca urzadzenia mobilnego chę mieć możliwość łatwego zrobienia zdjęćia za pomoca aparatu urządzenia
 
-Aktualnie muszę kliknąć bardoz bliso pola z obrazkiem aby ustawił sie na niego niewidoczny fokus a dopiero potem mogę wcisnąć cltr-v. Jest to bardzo niewygodne. Za pomocą przysku do wklejenia poprawi się ergonomia
+aktualnie musze wkleić abrzek lub wybrać plik, . robiąc zdjecie mogę wprowadzić przepis bez wychodzenia z sytemu
+
+dotyczy dwóch miejc: wprowadzenie zdjecia przepisu do analizy przez ai oraz 
 
 </wymagania>
 
 <numer_historyjki>
-92
+93
 </numer_historyjki>
 
 

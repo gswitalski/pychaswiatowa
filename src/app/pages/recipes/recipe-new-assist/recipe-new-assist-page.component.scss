@@ -162,6 +162,14 @@
     color: var(--mat-sys-on-surface-variant);
 }
 
+.upload-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
 .clipboard-paste-btn {
     mat-icon {
         margin-right: 8px;
@@ -258,6 +266,22 @@
 }
 
 @media (max-width: 600px) {
+    .upload-actions,
+    .image-preview-actions {
+        flex-direction: column;
+        align-items: stretch;
+
+        > button,
+        ::ng-deep pych-camera-capture-button {
+            display: block;
+            width: 100%;
+
+            button {
+                width: 100%;
+            }
+        }
+    }
+
     .recipe-new-assist-page {
         padding: 16px;
     }

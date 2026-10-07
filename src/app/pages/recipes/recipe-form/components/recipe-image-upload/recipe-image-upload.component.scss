@@ -167,11 +167,37 @@
     }
 }
 
+.upload-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
 .image-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
+}
+
+@media (max-width: 600px) {
+    .upload-actions,
+    .image-actions {
+        flex-direction: column;
+        align-items: stretch;
+
+        > button,
+        ::ng-deep pych-camera-capture-button {
+            display: block;
+            width: 100%;
+
+            button {
+                width: 100%;
+            }
+        }
+    }
 }
 
 // Change image / clipboard paste buttons
@@ -183,8 +209,6 @@
 }
 
 .clipboard-paste-btn {
-    margin-top: 8px;
-
     .image-actions & {
         margin-top: 0;
     }

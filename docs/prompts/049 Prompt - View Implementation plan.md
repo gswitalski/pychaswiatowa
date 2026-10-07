@@ -9,14 +9,14 @@ Najpierw przejrzyj następujące informacje:
 
 2. Nowe wymagania do zaimplementowania:
 <new_requirements>
-@docs/results/new-features/user-stories/PS-92/PS-92-clipboard-paste-button-user-story.md
+@docs/results/new-features/user-stories/PS-93/PS-93-mobile-camera-capture-user-story.md
 </new_requirements>
 
 
 
 3. Widok do implementacji / zmiany w widokach
 <ui_plan>
-@docs/results/new-features/user-stories/PS-92/PS-92-clipboard-paste-button-ui-plan.md
+@docs/results/new-features/user-stories/PS-93/PS-93-mobile-camera-capture-ui-plan.md
 </ui_plan>
 
 5. Endpoint Description:

@@ -21,6 +21,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { CameraCaptureButtonComponent } from '../../../shared/components/camera-capture-button/camera-capture-button.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { AiCreditsIndicatorComponent } from '../../../shared/components/ai-credits-indicator/ai-credits-indicator.component';
 import {
@@ -70,6 +71,7 @@ const ALLOWED_IMAGE_TYPES: AiRecipeDraftImageMimeType[] = [
         MatTooltipModule,
         PageHeaderComponent,
         AiCreditsIndicatorComponent,
+        CameraCaptureButtonComponent,
     ],
     templateUrl: './recipe-new-assist-page.component.html',
     styleUrl: './recipe-new-assist-page.component.scss',
@@ -220,6 +222,17 @@ export class RecipeNewAssistPageComponent {
         } catch (err) {
             this.errorMessage.set(this.clipboardImageService.messageForError(err));
         }
+    }
+
+    /**
+     * Plik z aparatu (PS-93) — ta sama walidacja co wklejanie / schowek.
+     */
+    onCameraFileSelected(file: File): void {
+        if (this.isLoading()) {
+            return;
+        }
+
+        this.handleImageFile(file);
     }
 
     /**

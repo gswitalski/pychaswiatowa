@@ -22,6 +22,7 @@ import { SupabaseService } from '../../../../../core/services/supabase.service';
 import { ClipboardImageService } from '../../../../../shared/services/clipboard-image.service';
 import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../../../shared/services/clipboard-image.messages';
 import { CLIPBOARD_IMAGE_MAX_BYTES } from '../../../../../shared/services/clipboard-image.types';
+import { CameraCaptureButtonComponent } from '../../../../../shared/components/camera-capture-button/camera-capture-button.component';
 
 /**
  * UI state for the image upload component
@@ -55,6 +56,7 @@ export interface RecipeImageUndoSnapshot {
         MatProgressSpinnerModule,
         MatSnackBarModule,
         MatTooltipModule,
+        CameraCaptureButtonComponent,
     ],
     templateUrl: './recipe-image-upload.component.html',
     styleUrl: './recipe-image-upload.component.scss',
@@ -160,6 +162,18 @@ export class RecipeImageUploadComponent implements OnInit {
 
         this.processFile(file);
         input.value = ''; // Reset input
+    }
+
+    /**
+     * Plik z aparatu (PS-93) — ta sama ścieżka co wybór pliku / schowek.
+     */
+    onCameraFileSelected(file: File): void {
+        if (this.disabled || this.isUploading) {
+            return;
+        }
+
+        this.error.set(null);
+        this.processFile(file);
     }
 
     /**

@@ -2,6 +2,7 @@ import '@angular/compiler';
 import 'zone.js';
 import 'zone.js/testing';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import {
     BrowserDynamicTestingModule,
     platformBrowserDynamicTesting,
@@ -14,6 +15,7 @@ import { SupabaseService } from '../../../../../core/services/supabase.service';
 import { ClipboardImageService } from '../../../../../shared/services/clipboard-image.service';
 import { ClipboardImageError } from '../../../../../shared/services/clipboard-image.types';
 import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../../../shared/services/clipboard-image.messages';
+import { CameraCaptureButtonComponent } from '../../../../../shared/components/camera-capture-button/camera-capture-button.component';
 
 describe('RecipeImageUploadComponent (PS-92 schowek)', () => {
     let readImageFile: ReturnType<typeof vi.fn>;
@@ -144,5 +146,125 @@ describe('RecipeImageUploadComponent (PS-92 schowek)', () => {
         component.uiState.set('uploading');
 
         expect(component.isClipboardPasteDisabled).toBe(true);
+    });
+});
+
+describe('RecipeImageUploadComponent (PS-93 aparat)', () => {
+    let readImageFile: ReturnType<typeof vi.fn>;
+    let isClipboardReadSupported: ReturnType<typeof vi.fn>;
+
+    beforeAll(() => {
+        TestBed.resetTestEnvironment();
+        TestBed.initTestEnvironment(
+            BrowserDynamicTestingModule,
+            platformBrowserDynamicTesting(),
+        );
+    });
+
+    beforeEach(() => {
+        readImageFile = vi.fn();
+        isClipboardReadSupported = vi.fn(() => true);
+
+        TestBed.configureTestingModule({
+            imports: [RecipeImageUploadComponent],
+            providers: [
+                {
+                    provide: ClipboardImageService,
+                    useValue: {
+                        isClipboardReadSupported,
+                        readImageFile,
+                        messageForError: vi.fn(),
+                    },
+                },
+                {
+                    provide: RecipesService,
+                    useValue: {
+                        uploadRecipeImage: vi.fn(),
+                        deleteRecipeImage: vi.fn(),
+                    },
+                },
+                {
+                    provide: SupabaseService,
+                    useValue: {
+                        storage: {
+                            from: () => ({
+                                getPublicUrl: (path: string) => ({
+                                    data: { publicUrl: `https://cdn.test/${path}` },
+                                }),
+                            }),
+                        },
+                    },
+                },
+                {
+                    provide: MatSnackBar,
+                    useValue: {
+                        open: vi.fn(() => ({
+                            onAction: () => ({ subscribe: vi.fn() }),
+                        })),
+                    },
+                },
+            ],
+        });
+    });
+
+    function createFixture() {
+        const fixture = TestBed.createComponent(RecipeImageUploadComponent);
+        fixture.detectChanges();
+        return fixture;
+    }
+
+    function getCameraButton(fixture: ReturnType<typeof TestBed.createComponent>): HTMLButtonElement {
+        return fixture.nativeElement.querySelector(
+            '[aria-label="Zrób zdjęcie aparatem urządzenia"]',
+        ) as HTMLButtonElement;
+    }
+
+    it('onCameraFileSelected emituje pendingFileChanged w trybie tworzenia', () => {
+        const fixture = createFixture();
+        const component = fixture.componentInstance;
+        const file = new File(['jpg'], 'camera.jpg', { type: 'image/jpeg' });
+        const emitSpy = vi.spyOn(component.imageEvent, 'emit');
+
+        component.onCameraFileSelected(file);
+
+        expect(emitSpy).toHaveBeenCalledWith({ type: 'pendingFileChanged', file });
+    });
+
+    it('onCameraFileSelected ignoruje plik podczas uploadu', () => {
+        const fixture = createFixture();
+        const component = fixture.componentInstance;
+        component.uiState.set('uploading');
+        const emitSpy = vi.spyOn(component.imageEvent, 'emit');
+
+        component.onCameraFileSelected(
+            new File(['jpg'], 'camera.jpg', { type: 'image/jpeg' }),
+        );
+
+        expect(emitSpy).not.toHaveBeenCalled();
+    });
+
+    it('dezaktywuje przycisk aparatu gdy komponent jest disabled', () => {
+        const fixture = TestBed.createComponent(RecipeImageUploadComponent);
+        fixture.componentInstance.disabled = true;
+        fixture.detectChanges();
+
+        expect(getCameraButton(fixture).disabled).toBe(true);
+    });
+
+    it('emituje pendingFileChanged po fileSelected z pych-camera-capture-button', () => {
+        const fixture = createFixture();
+        const component = fixture.componentInstance;
+        const file = new File(['webp'], 'shot.webp', { type: 'image/webp' });
+        const emitSpy = vi.spyOn(component.imageEvent, 'emit');
+
+        const cameraDe = fixture.debugElement.query(
+            By.directive(CameraCaptureButtonComponent),
+        );
+        expect(cameraDe).toBeTruthy();
+
+        cameraDe.componentInstance.fileSelected.emit(file);
+        fixture.detectChanges();
+
+        expect(emitSpy).toHaveBeenCalledWith({ type: 'pendingFileChanged', file });
     });
 });
