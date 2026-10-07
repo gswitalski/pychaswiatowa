@@ -1,6 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    ElementRef,
     EventEmitter,
     Input,
     Output,
@@ -10,6 +11,7 @@ import {
     OnInit,
     computed,
     input,
+    ViewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -79,6 +81,8 @@ export class RecipeImageUploadComponent implements OnInit {
 
     /** Emits image-related events */
     @Output() imageEvent = new EventEmitter<RecipeImageEvent>();
+
+    @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
 
     /** Current UI state */
     readonly uiState = signal<RecipeImageUploadUiState>('idle');
@@ -174,6 +178,30 @@ export class RecipeImageUploadComponent implements OnInit {
 
         this.error.set(null);
         this.processFile(file);
+    }
+
+    /**
+     * Klik w drop zone — tylko wybór pliku z dysku (bez capture). Akcje w .upload-actions są poza strefą.
+     */
+    onDropZoneClick(event: MouseEvent): void {
+        if (this.disabled || this.isUploading) {
+            return;
+        }
+
+        const target = event.target;
+        if (target instanceof Element && target.closest('.upload-actions')) {
+            return;
+        }
+
+        this.openGalleryFilePicker();
+    }
+
+    openGalleryFilePicker(): void {
+        if (this.disabled || this.isUploading) {
+            return;
+        }
+
+        this.fileInputRef?.nativeElement.click();
     }
 
     /**

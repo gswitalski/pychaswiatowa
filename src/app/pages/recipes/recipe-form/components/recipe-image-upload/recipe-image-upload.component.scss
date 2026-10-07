@@ -8,6 +8,12 @@
     display: none;
 }
 
+.drop-zone-block {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
 // Drop zone for file selection, paste, and drag & drop
 .drop-zone {
     display: flex;

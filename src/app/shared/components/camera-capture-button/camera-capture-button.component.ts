@@ -2,6 +2,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     ElementRef,
+    HostListener,
     input,
     output,
     viewChild,
@@ -26,7 +27,16 @@ export class CameraCaptureButtonComponent {
     private readonly cameraInput =
         viewChild.required<ElementRef<HTMLInputElement>>('cameraInput');
 
+    /** Zapobiega „przechwyceniu” kliknięcia przez rodzica (np. drop zone → picker bez capture). */
+    @HostListener('click', ['$event'])
+    @HostListener('pointerdown', ['$event'])
+    @HostListener('touchstart', ['$event'])
+    public onHostInteractionStopPropagation(event: Event): void {
+        event.stopPropagation();
+    }
+
     public onButtonClick(event: MouseEvent): void {
+        event.preventDefault();
         event.stopPropagation();
         if (this.disabled()) {
             return;
