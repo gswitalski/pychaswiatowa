@@ -1614,16 +1614,10 @@ export async function deleteRecipe(
         userId,
     });
 
-    // Perform soft delete by setting deleted_at timestamp
-    // RLS policies ensure user can only delete their own recipes
-    // WHERE clause ensures recipe exists, belongs to user, and isn't already deleted
-    const { error, count } = await client
-        .from('recipes')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', recipeId)
-        .eq('user_id', userId)
-        .is('deleted_at', null)
-        .select('*', { count: 'exact', head: true });
+    const { data: wasDeleted, error } = await client.rpc(
+        'soft_delete_recipe',
+        { p_recipe_id: recipeId }
+    );
 
     if (error) {
         logger.error('Database error while deleting recipe', {
@@ -1634,8 +1628,7 @@ export async function deleteRecipe(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to delete recipe');
     }
 
-    // If no rows were updated, recipe doesn't exist or user has no access
-    if (count === 0) {
+    if (!wasDeleted) {
         logger.warn('Recipe not found for deletion', {
             recipeId,
             userId,

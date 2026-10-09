@@ -12,7 +12,8 @@ Zapoznaj się z  projektem
 <aktualne_zachowanie>
 
 endpoint 
-DELETE http://127.0.0.1:54331/functions/v1/profile/change-password
+DELETE https://fxgonghylivohevdrdnt.supabase.co/functions/v1/recipes/348
+
 
 zwraca bład 500
 

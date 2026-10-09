@@ -1091,6 +1091,10 @@ export type Database = {
         }[]
       }
       run_ai_credits_monthly_reset: { Args: never; Returns: number }
+      soft_delete_recipe: {
+        Args: { p_recipe_id: number }
+        Returns: boolean
+      }
       supported_marketing_consent_text_versions: {
         Args: never
         Returns: string[]
