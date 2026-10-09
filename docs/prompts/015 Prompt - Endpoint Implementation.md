@@ -3,7 +3,7 @@ Twoim zadaniem jest wdrożenie endpointa interfejsu API REST w oparciu o podany 
 Najpierw dokładnie przejrzyj dostarczony plan wdrożenia:
 
 <implementation_plan>
-@docs\results\impl-plans\endpoints\ps91-ai-draft-recipe-metadata-api-implementation-plan.md
+@docs/results/impl-plans/endpoints/ps95-recipe-favorite-and-try-flags-api-implementation-plan.md
 </implementation_plan>
 
 <types>

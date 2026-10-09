@@ -8,6 +8,7 @@ import {
 import {
     ApiError,
     RecipeDetailDto,
+    RecipeFlagsDto,
 } from '../../../../../shared/contracts/types';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,6 +19,7 @@ import { PageHeaderComponent } from '../page-header/page-header.component';
 import { RecipeHeaderComponent } from '../../../pages/recipes/recipe-detail/components/recipe-header/recipe-header.component';
 import { RecipeImageComponent } from '../../../pages/recipes/recipe-detail/components/recipe-image/recipe-image.component';
 import { RecipeContentListComponent } from '../../../pages/recipes/recipe-detail/components/recipe-content-list/recipe-content-list.component';
+import { RecipeFlagTogglesComponent } from '../recipe-flag-toggles/recipe-flag-toggles.component';
 
 export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
 
@@ -34,6 +36,7 @@ export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions
         RecipeHeaderComponent,
         RecipeImageComponent,
         RecipeContentListComponent,
+        RecipeFlagTogglesComponent,
     ],
     templateUrl: './recipe-detail-view.component.html',
     styleUrl: './recipe-detail-view.component.scss',
@@ -62,6 +65,8 @@ export class RecipeDetailViewComponent {
     readonly register = output<void>();
     readonly addToPlan = output<void>();
     readonly openPlan = output<void>();
+    readonly flagsChange = output<RecipeFlagsDto>();
+    readonly flagsSessionExpired = output<void>();
 
     readonly hasRecipe = computed(() => this.recipe() !== null);
 

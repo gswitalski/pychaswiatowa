@@ -124,6 +124,7 @@ export class PublicRecipeResultsComponent {
             slug: this.slugService.slugify(dto.name),
             isTermorobot: dto.is_termorobot ?? false,
             isGrill: dto.is_grill ?? false,
+            isFavorite: dto.is_favorite ?? false,
         };
     }
 

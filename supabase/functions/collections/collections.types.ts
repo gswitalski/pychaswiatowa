@@ -34,6 +34,7 @@ export interface RecipeListItemDto {
     category_name: string | null;
     servings: number | null;
     is_termorobot: boolean;
+    is_favorite?: boolean;
 }
 
 /**

@@ -92,6 +92,7 @@ export class CollectionDetailsPageComponent implements OnDestroy {
                 imageUrl: recipe.image_path,
                 categoryName: recipe.category_name ?? null,
                 isTermorobot: recipe.is_termorobot ?? false,
+                isFavorite: recipe.is_favorite ?? false,
             },
             isOwnRecipe: recipe.is_owner,
             inMyCollections: recipe.in_my_collections,

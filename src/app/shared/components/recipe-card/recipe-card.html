@@ -49,6 +49,15 @@
             </div>
             }
 
+            @if (recipe().isFavorite) {
+            <div
+                class="favorite-indicator"
+                role="img"
+                aria-label="Ulubiony przepis">
+                <mat-icon aria-hidden="true">favorite</mat-icon>
+            </div>
+            }
+
             @if (showRemoveAction()) {
             <button
                 mat-icon-button

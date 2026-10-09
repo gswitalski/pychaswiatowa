@@ -106,6 +106,7 @@ export class RecipesListPageComponent implements OnInit {
                 categoryName: recipe.category_name ?? null,
                 isTermorobot: recipe.is_termorobot ?? false,
                 isGrill: recipe.is_grill ?? false,
+                isFavorite: recipe.is_favorite ?? false,
             },
             isOwnRecipe: recipe.is_owner,
             inMyCollections: recipe.in_my_collections,

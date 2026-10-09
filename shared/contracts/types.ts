@@ -161,6 +161,8 @@ export type RecipeListItemDto = Pick<
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    /** True if recipe is marked as favorite by the authenticated user. */
+    is_favorite?: boolean;
 };
 
 /**
@@ -208,6 +210,8 @@ export interface PublicRecipeListItemDto {
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    /** True if recipe is marked as favorite by the authenticated user. */
+    is_favorite?: boolean;
     /** Search relevance metadata. Present when q parameter is provided and valid, null otherwise. */
     search: RecipeSearchMeta | null;
 }
@@ -243,6 +247,10 @@ export interface PublicRecipeDetailDto {
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    /** True if recipe is marked as favorite by the authenticated user. */
+    is_favorite?: boolean;
+    /** True if recipe is marked as wanting to try by the authenticated user. */
+    is_want_to_try?: boolean;
 }
 
 /**
@@ -298,7 +306,24 @@ export type RecipeDetailDto = Omit<
     normalized_ingredients_status: NormalizedIngredientsStatus;
     /** Timestamp of last normalized ingredients update (null if never processed or pending). */
     normalized_ingredients_updated_at: string | null;
+    /** True if recipe is marked as favorite by the authenticated user. */
+    is_favorite?: boolean;
+    /** True if recipe is marked as wanting to try by the authenticated user. */
+    is_want_to_try?: boolean;
 };
+
+/** State of the authenticated user's personal flags for a recipe. */
+export interface RecipeFlagsDto {
+    recipe_id: number;
+    is_favorite: boolean;
+    is_want_to_try: boolean;
+}
+
+/** Command model for PUT /recipes/{id}/flags. */
+export interface UpdateRecipeFlagsCommand {
+    is_favorite?: boolean;
+    is_want_to_try?: boolean;
+}
 
 /**
  * Command model for creating a new recipe.

@@ -49,6 +49,14 @@
             <pych-page-header
                 [title]="pageTitle()"
             >
+                <pych-recipe-flag-toggles
+                    [recipeId]="recipe()!.id!"
+                    [isFavorite]="recipe()!.is_favorite ?? false"
+                    [isWantToTry]="recipe()!.is_want_to_try ?? false"
+                    (flagsChange)="flagsChange.emit($event)"
+                    (sessionExpired)="flagsSessionExpired.emit()"
+                />
+
                 @if (headerMode() === 'ownerActions') {
                     <button
                         mat-icon-button

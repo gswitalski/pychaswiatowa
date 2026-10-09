@@ -9,19 +9,19 @@ Najpierw przejrzyj następujące informacje:
 
 2. Nowe wymagania do zaimplementowania:
 <new_requirements>
-@docs/results/new-features/user-stories/PS-93/PS-93-mobile-camera-capture-user-story.md
+@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-user-story.md
 </new_requirements>
 
 
 
 3. Widok do implementacji / zmiany w widokach
 <ui_plan>
-@docs/results/new-features/user-stories/PS-93/PS-93-mobile-camera-capture-ui-plan.md
+@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-ui-plan.md
 </ui_plan>
 
 5. Endpoint Description:
 <endpoint_description>
-bez zmian
+@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-api-plan.md
 </endpoint_description>
 
 

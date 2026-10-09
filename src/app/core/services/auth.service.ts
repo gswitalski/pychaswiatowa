@@ -205,10 +205,30 @@ export class AuthService {
         const {
             data: { session },
         } = await this.supabase.auth.getSession();
-        await this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
+
+        if (session) {
+            const {
+                data: { user },
+                error,
+            } = await this.supabase.auth.getUser(session.access_token);
+
+            if (error || !user || user.id !== session.user.id) {
+                console.warn('[AuthService] Usuwanie nieprawidłowej sesji lokalnej');
+                await this.supabase.auth.signOut({ scope: 'local' });
+                await this.updateAuthState(null, null);
+            } else {
+                await this.updateAuthState(session.access_token, user.id);
+            }
+        } else {
+            await this.updateAuthState(null, null);
+        }
 
         // Subscribe to auth state changes (login, logout, token refresh)
-        this.supabase.auth.onAuthStateChange((_event, session) => {
+        this.supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'INITIAL_SESSION') {
+                return;
+            }
+
             void this.updateAuthState(session?.access_token ?? null, session?.user?.id ?? null);
         });
     }

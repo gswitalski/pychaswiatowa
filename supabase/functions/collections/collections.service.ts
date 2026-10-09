@@ -6,6 +6,7 @@
 import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
+import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 import {
     CollectionListItemDto,
     CollectionDetailDto,
@@ -219,6 +220,11 @@ export async function getCollectionById(
     const categoriesMap = new Map(
         categoriesData.map((c: any) => [c.id, c.name])
     );
+    const flagsMap = await getRecipeFlagsMap(
+        client,
+        (recipeData ?? []).map((recipe: any) => Number(recipe.id)),
+        userId
+    );
 
     // Mapujemy dane z bazy na RecipeListItemDto
     const recipes: RecipeListItemDto[] = (recipeData ?? []).map((recipe: any) => {
@@ -241,6 +247,7 @@ export async function getCollectionById(
             category_name: categoryName,
             servings: recipe.servings,
             is_termorobot: recipe.is_termorobot,
+            is_favorite: flagsMap.get(Number(recipe.id))?.is_favorite ?? false,
         };
     });
 

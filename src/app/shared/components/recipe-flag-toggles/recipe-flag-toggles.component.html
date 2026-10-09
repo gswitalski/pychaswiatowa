@@ -1,0 +1,41 @@
+<div class="recipe-flag-toggles" aria-label="Osobiste oznaczenia przepisu">
+    <button
+        mat-icon-button
+        type="button"
+        aria-label="Ulubiony przepis"
+        [attr.aria-pressed]="favorite()"
+        [disabled]="favoritePending()"
+        [disabledInteractive]="true"
+        [matTooltip]="favorite() ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'"
+        (click)="toggleFavorite()"
+    >
+        <mat-icon
+            aria-hidden="true"
+            [class.active-favorite]="favorite()"
+        >
+            {{ favorite() ? 'favorite' : 'favorite_border' }}
+        </mat-icon>
+    </button>
+
+    <button
+        mat-icon-button
+        type="button"
+        aria-label="Chcę wypróbować ten przepis"
+        [attr.aria-pressed]="wantToTry()"
+        [disabled]="wantToTryPending()"
+        [disabledInteractive]="true"
+        [matTooltip]="
+            wantToTry()
+                ? 'Usuń z listy do wypróbowania'
+                : 'Chcę wypróbować'
+        "
+        (click)="toggleWantToTry()"
+    >
+        <mat-icon
+            aria-hidden="true"
+            [class.active-want-to-try]="wantToTry()"
+        >
+            {{ wantToTry() ? 'flag' : 'outlined_flag' }}
+        </mat-icon>
+    </button>
+</div>

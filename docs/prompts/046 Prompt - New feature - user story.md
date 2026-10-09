@@ -13,16 +13,20 @@ Opis wymagań do nowej funkcjonalności:
 
 <wymagania>
 
-Jako użytkownik wprowadzjący przepis do systemu za omoca urzadzenia mobilnego chę mieć możliwość łatwego zrobienia zdjęćia za pomoca aparatu urządzenia
+Jako użytkownik przeglądający przeisy chcę móc oznaczyć przepis który widzę dwiema flagami: 
+1. ulubiny (serduszko)
+2. Chcę wypróbować (jakaś inna ikonka)
 
-aktualnie musze wkleić abrzek lub wybrać plik, . robiąc zdjecie mogę wprowadzić przepis bez wychodzenia z sytemu
+aby zaznaczyć te flagi mogę po porstu kliknąć w którąś ikonkę.
 
-dotyczy dwóch miejc: wprowadzenie zdjecia przepisu do analizy przez ai oraz 
+Ikonka serduszka ma być też widoczna na kafelku.
+
+wyszukiwanie po tej fladze będzie w innej historyjce
 
 </wymagania>
 
 <numer_historyjki>
-93
+95
 </numer_historyjki>
 
 
@@ -97,3 +101,16 @@ Finalna odpowiedź powinna zawierać:
 Krótkie podsumowanie przeprowadzonej analizy (2–3 zdania) – co wynika z podsumowania projektu i wymagań.
 Pełną treść dokumentu Markdown gotową do zapisania pod wskazaną ścieżką.
 Jeśli zidentyfikowano potrzebę podziału na wiele historyjek – listę proponowanych dokumentów z ich nazwami plików.
+
+UWAGA:
+Zanim przystapisz do pracy, ale po zapoznaniu się podsumowaniem projektu, zadaj mi kilka pytań uszczegóławiających moje wymagania co do nowej funkcjonalności oraz twoje rekomenacje co do odpowiedzi. 
+pytania zadaj w formacie
+1. {Treść pytania pierwszego}
+Moja rekomendacja:
+{treść rekomendacji}
+
+2. {Treść pyutania drugiegoo}
+Moja rekomendacja:
+{treść rekomendacji}
+
+dopiero po udzieleniu przez zużytkownika odpowiedzi przystąp do wykonywannia powyższych poleceń. W swojej pracy uzyj odpowiedzi udzielonych przez użytkownika.

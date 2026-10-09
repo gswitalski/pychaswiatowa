@@ -33,6 +33,8 @@ export interface RecipeCardData {
     isTermorobot?: boolean;
     /** Czy przepis jest przeznaczony na grilla/barbecue */
     isGrill?: boolean;
+    /** Czy zalogowany użytkownik oznaczył przepis jako ulubiony */
+    isFavorite?: boolean;
 }
 
 /**

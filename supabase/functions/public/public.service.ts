@@ -14,6 +14,7 @@ import {
     validateCursorConsistency,
 } from '../_shared/cursor.ts';
 import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
+import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -131,6 +132,7 @@ export interface PublicRecipeListItemDto {
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    is_favorite?: boolean;
     /** Search relevance metadata. Present when q parameter is provided and valid, null otherwise. */
     search: RecipeSearchMeta | null;
 }
@@ -165,6 +167,8 @@ export interface PublicRecipeDetailDto {
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    is_favorite?: boolean;
+    is_want_to_try?: boolean;
 }
 
 /**
@@ -852,6 +856,7 @@ async function buildRecipeListResponse(
     // If user is authenticated, fetch collection information and plan information for all recipes
     let recipeIdsInCollections = new Set<number>();
     let recipeIdsInPlan = new Set<number>();
+    let flagsMap = new Map<number, { is_favorite: boolean; is_want_to_try: boolean }>();
 
     if (userId !== null) {
         const recipeIds = recipeRows.map(r => r.id);
@@ -882,8 +887,10 @@ async function buildRecipeListResponse(
             });
         }
 
-        // Check which recipes are in user's plan
-        recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, userId);
+        [recipeIdsInPlan, flagsMap] = await Promise.all([
+            getRecipeIdsInPlan(client, recipeIds, userId),
+            getRecipeFlagsMap(client, recipeIds, userId),
+        ]);
     }
 
     // Map database records to DTOs
@@ -927,6 +934,9 @@ async function buildRecipeListResponse(
             cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
             difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
             is_grill: Boolean(recipe.is_grill),
+            ...(userId !== null && {
+                is_favorite: flagsMap.get(recipe.id)?.is_favorite ?? false,
+            }),
             search: searchMeta,
         };
     });
@@ -1036,11 +1046,15 @@ export async function getPublicRecipeById(
     const isOwner = userId !== null && recipe.user_id === userId;
     let inMyPlan = false;
     let collectionIds: number[] = [];
+    let flags: { is_favorite: boolean; is_want_to_try: boolean } | undefined;
 
     if (userId !== null) {
-        // Check if recipe is in user's plan
-        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [params.id], userId);
+        const [recipeIdsInPlan, recipeFlagsMap] = await Promise.all([
+            getRecipeIdsInPlan(client, [params.id], userId),
+            getRecipeFlagsMap(client, [params.id], userId),
+        ]);
         inMyPlan = recipeIdsInPlan.has(params.id);
+        flags = recipeFlagsMap.get(params.id);
 
         // Get collection IDs that contain this recipe (owned by user)
         collectionIds = await getCollectionIdsForRecipe(client, params.id, userId);
@@ -1076,6 +1090,10 @@ export async function getPublicRecipeById(
         cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(recipe.is_grill),
+        ...(userId !== null && {
+            is_favorite: flags?.is_favorite ?? false,
+            is_want_to_try: flags?.is_want_to_try ?? false,
+        }),
     };
 
     logger.info('Public recipe fetched successfully', {
@@ -1404,6 +1422,7 @@ export async function getPublicRecipesFeed(
     // If user is authenticated, fetch collection information and plan information for all recipes
     let recipeIdsInCollections = new Set<number>();
     let recipeIdsInPlan = new Set<number>();
+    let flagsMap = new Map<number, { is_favorite: boolean; is_want_to_try: boolean }>();
 
     if (userId !== null) {
         const recipeIds = recipesToReturn.map(r => r.id);
@@ -1434,8 +1453,10 @@ export async function getPublicRecipesFeed(
             });
         }
 
-        // Check which recipes are in user's plan
-        recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, userId);
+        [recipeIdsInPlan, flagsMap] = await Promise.all([
+            getRecipeIdsInPlan(client, recipeIds, userId),
+            getRecipeFlagsMap(client, recipeIds, userId),
+        ]);
     }
 
     // Map database records to DTOs
@@ -1479,6 +1500,9 @@ export async function getPublicRecipesFeed(
             cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
             difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
             is_grill: Boolean(recipe.is_grill),
+            ...(userId !== null && {
+                is_favorite: flagsMap.get(recipe.id)?.is_favorite ?? false,
+            }),
             search: searchMeta,
         };
     });

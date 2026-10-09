@@ -7,6 +7,7 @@ import { createServiceRoleClient, TypedSupabaseClient } from '../_shared/supabas
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
+import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -106,6 +107,8 @@ export interface RecipeDetailDto {
     in_my_plan: boolean;
     /** Array of collection IDs (owned by authenticated user) that contain this recipe. Empty array for anonymous users. */
     collection_ids: number[];
+    is_favorite?: boolean;
+    is_want_to_try?: boolean;
 }
 
 /**
@@ -281,7 +284,10 @@ export async function getExploreRecipeById(params: {
         logger.info('Recipe is PUBLIC - access granted', { recipeId });
         
         // Check if recipe is in user's plan
-        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [recipeId], requesterUserId);
+        const [recipeIdsInPlan, flagsMap] = await Promise.all([
+            getRecipeIdsInPlan(client, [recipeId], requesterUserId),
+            getRecipeFlagsMap(client, [recipeId], requesterUserId),
+        ]);
         const inMyPlan = recipeIdsInPlan.has(recipeId);
         
         // Get collection IDs for authenticated users
@@ -289,7 +295,7 @@ export async function getExploreRecipeById(params: {
             ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
             : [];
         
-        return mapToDto(recipe, inMyPlan, collectionIds);
+        return mapToDto(recipe, inMyPlan, collectionIds, flagsMap.get(recipeId));
     }
 
     // Rule 2: If not PUBLIC, require authentication and author match
@@ -321,7 +327,10 @@ export async function getExploreRecipeById(params: {
     });
 
     // Check if recipe is in user's plan
-    const recipeIdsInPlan = await getRecipeIdsInPlan(client, [recipeId], requesterUserId);
+    const [recipeIdsInPlan, flagsMap] = await Promise.all([
+        getRecipeIdsInPlan(client, [recipeId], requesterUserId),
+        getRecipeFlagsMap(client, [recipeId], requesterUserId),
+    ]);
     const inMyPlan = recipeIdsInPlan.has(recipeId);
 
     // Get collection IDs for authenticated users
@@ -329,7 +338,7 @@ export async function getExploreRecipeById(params: {
         ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
         : [];
 
-    return mapToDto(recipe, inMyPlan, collectionIds);
+    return mapToDto(recipe, inMyPlan, collectionIds, flagsMap.get(recipeId));
 }
 
 /**
@@ -341,7 +350,12 @@ export async function getExploreRecipeById(params: {
  * @param collectionIds - Array of collection IDs that contain this recipe (empty for anonymous)
  * @returns RecipeDetailDto
  */
-function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean, collectionIds: number[]): RecipeDetailDto {
+function mapToDto(
+    recipe: RecipeDetailFullRow,
+    inMyPlan: boolean,
+    collectionIds: number[],
+    flags?: { is_favorite: boolean; is_want_to_try: boolean }
+): RecipeDetailDto {
     return {
         id: recipe.id,
         user_id: recipe.user_id,
@@ -368,5 +382,9 @@ function mapToDto(recipe: RecipeDetailFullRow, inMyPlan: boolean, collectionIds:
         updated_at: recipe.updated_at,
         in_my_plan: inMyPlan,
         collection_ids: collectionIds,
+        ...(flags && {
+            is_favorite: flags.is_favorite,
+            is_want_to_try: flags.is_want_to_try,
+        }),
     };
 }

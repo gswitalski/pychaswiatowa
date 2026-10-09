@@ -426,7 +426,7 @@ export async function handleGetPublicRecipeById(req: Request, recipeId: string):
             isAuthenticated: userId !== null,
         });
 
-        return createSuccessResponse(recipe);
+        return createCachedResponse(recipe, userId !== null);
     } catch (error) {
         return handleError(error);
     }

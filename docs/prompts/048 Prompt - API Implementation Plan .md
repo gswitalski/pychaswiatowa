@@ -11,12 +11,12 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. Nowe wymagania do zaimplementowania
 
 <new_requirements>
-@docs\results\new-features\user-stories\PS-91\PS-91-ai-draft-recipe-metadata-user-story.md
+@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-user-story.md
 </new_requirements>
 
 3. Lista zmian i nowych funkcjonalności w API
 <api_definition>
-@docs\results\new-features\user-stories\PS-91\PS-91-ai-draft-recipe-metadata-api-plan.md
+@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-api-plan.md
 </api_definition>
 
 

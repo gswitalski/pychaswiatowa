@@ -327,6 +327,41 @@ export type Database = {
           },
         ]
       }
+      user_recipe_flags: {
+        Row: {
+          created_at: string
+          is_favorite: boolean
+          is_want_to_try: boolean
+          recipe_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_favorite?: boolean
+          is_want_to_try?: boolean
+          recipe_id: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          is_favorite?: boolean
+          is_want_to_try?: boolean
+          recipe_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_recipe_flags_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           category_id: number | null
@@ -615,6 +650,18 @@ export type Database = {
       }
     }
     Functions: {
+      set_recipe_flags: {
+        Args: {
+          p_is_favorite?: boolean
+          p_is_want_to_try?: boolean
+          p_recipe_id: number
+        }
+        Returns: {
+          out_is_favorite: boolean
+          out_is_want_to_try: boolean
+          out_recipe_id: number
+        }[]
+      }
       add_recipe_to_plan_and_update_shopping_list: {
         Args: { p_recipe_id: number }
         Returns: Json

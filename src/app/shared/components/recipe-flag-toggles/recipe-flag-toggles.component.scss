@@ -1,0 +1,21 @@
+:host {
+    display: inline-flex;
+}
+
+.recipe-flag-toggles {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+button {
+    flex: 0 0 auto;
+}
+
+.active-favorite {
+    color: var(--mat-sys-error);
+}
+
+.active-want-to-try {
+    color: var(--mat-sys-primary);
+}

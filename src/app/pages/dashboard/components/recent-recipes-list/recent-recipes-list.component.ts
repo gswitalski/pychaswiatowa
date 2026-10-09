@@ -31,6 +31,7 @@ export class RecentRecipesListComponent {
             categoryName: recipe.category_name,
             isTermorobot: recipe.is_termorobot,
             isGrill: recipe.is_grill,
+            isFavorite: recipe.is_favorite ?? false,
         };
     }
 }

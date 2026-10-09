@@ -4,14 +4,17 @@ import {
     computed,
     inject,
     DestroyRef,
+    effect,
     OnInit,
     signal,
+    untracked,
 } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { LayoutService } from '../../core/services/layout.service';
+import { AuthService } from '../../core/services/auth.service';
 import { MyPlanService } from '../../core/services/my-plan.service';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TopbarComponent } from './components/topbar/topbar.component';
@@ -44,6 +47,7 @@ import { FooterComponent } from '../../shared/components/footer/footer.component
 })
 export class MainLayoutComponent implements OnInit {
     private readonly layoutService = inject(LayoutService);
+    private readonly authService = inject(AuthService);
     private readonly myPlanService = inject(MyPlanService);
     private readonly router = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
@@ -79,10 +83,22 @@ export class MainLayoutComponent implements OnInit {
     /** Footer visibility (hide on /auth/callback) */
     readonly isAuthCallbackRoute = signal(false);
 
-    ngOnInit(): void {
-        // Prefetch plan data for FAB visibility
-        this.myPlanService.prefetchPlan();
+    constructor() {
+        effect(() => {
+            const isAuthenticated = this.authService.isAuthenticated();
 
+            untracked(() => {
+                if (!isAuthenticated) {
+                    this.myPlanService.resetPlanState();
+                    return;
+                }
+
+                this.myPlanService.prefetchPlan();
+            });
+        });
+    }
+
+    ngOnInit(): void {
         this.isAuthCallbackRoute.set(this.checkAuthCallbackRoute(this.router.url));
 
         // Set initial sidebar visibility based on current URL

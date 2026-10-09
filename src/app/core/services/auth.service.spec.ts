@@ -22,6 +22,7 @@ interface MockSupabaseService {
         signInWithOAuth: ReturnType<typeof vi.fn>;
         signOut: ReturnType<typeof vi.fn>;
         getSession: ReturnType<typeof vi.fn>;
+        getUser: ReturnType<typeof vi.fn>;
         refreshSession: ReturnType<typeof vi.fn>;
         onAuthStateChange: ReturnType<typeof vi.fn>;
     };
@@ -57,6 +58,7 @@ describe('AuthService', () => {
                 signInWithOAuth: vi.fn(),
                 signOut: vi.fn(),
                 getSession: vi.fn(),
+                getUser: vi.fn(),
                 refreshSession: vi.fn(),
                 onAuthStateChange: vi.fn(),
             },
@@ -326,6 +328,10 @@ describe('AuthService', () => {
                 data: { session },
                 error: null,
             });
+            mockSupabaseService.auth.getUser.mockResolvedValue({
+                data: { user: session.user },
+                error: null,
+            });
             mockSupabaseService.auth.onAuthStateChange.mockReturnValue({
                 data: { subscription: { unsubscribe: vi.fn() } },
             });
@@ -342,6 +348,43 @@ describe('AuthService', () => {
                 me.ai_credits,
             );
             expect(mockAiCreditsService.refreshCredits).toHaveBeenCalledTimes(1);
+
+            const authChangeCallback =
+                mockSupabaseService.auth.onAuthStateChange.mock.calls[0][0] as (
+                    event: string,
+                    currentSession: Session | null,
+                ) => void;
+            authChangeCallback('INITIAL_SESSION', session);
+
+            expect(mockMeApiService.getMe).toHaveBeenCalledOnce();
+        });
+
+        it('powinien usunąć nieprawidłową sesję bez wywołania GET /me', async () => {
+            const session = {
+                access_token: 'expired-token',
+                user: { id: 'user-1' },
+            } as Session;
+
+            mockSupabaseService.auth.getSession.mockResolvedValue({
+                data: { session },
+                error: null,
+            });
+            mockSupabaseService.auth.getUser.mockResolvedValue({
+                data: { user: null },
+                error: { message: 'Invalid JWT' },
+            });
+            mockSupabaseService.auth.signOut.mockResolvedValue({ error: null });
+            mockSupabaseService.auth.onAuthStateChange.mockReturnValue({
+                data: { subscription: { unsubscribe: vi.fn() } },
+            });
+
+            await service.initAuthState();
+
+            expect(service.isAuthenticated()).toBe(false);
+            expect(mockSupabaseService.auth.signOut).toHaveBeenCalledWith({
+                scope: 'local',
+            });
+            expect(mockMeApiService.getMe).not.toHaveBeenCalled();
         });
     });
 });

@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 7 października 2026 — m.in. przycisk „Wklej ze schowka” PS-92 (plan widoków, bez zmian API), oraz wcześniej: Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65, metadane draftu AI PS-91 (`docs/results/`, `docs/Jira.xml`, historyjki Premium).
+> **Aktualizacja:** 10 października 2026 — warstwa API PS-95 dla osobistych flag przepisów, a wcześniej: przycisk „Wklej ze schowka” PS-92, Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65 i metadane draftu AI PS-91.
 
 ---
 
@@ -22,6 +22,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 **Limit „Mojego planu" dla Free (PS-65):** implementacja warstwy API i widoków — **zakończona**. `POST /plan/recipes` dla roli `user` odrzuca dodanie po osiągnięciu limitu (domyślnie 3 pozycje, zmienna środowiskowa `PLAN_LIMIT_FREE`) kodem `422 PLAN_LIMIT_EXCEEDED_FREE` z linkiem do `/pricing`. Premium i admin zachowują limit 50. Rola jest brana z JWT (`app_metadata.app_role`), nigdy z body. Istniejące pozycje ponad limit nie są usuwane (grandfathering) — blokowane są tylko nowe dodania. W UI: dialog po `422` zamiast snackbara, licznik „X / 3 pozycji” w nagłówku drawera (tylko `user`), a cennik pokazuje limit Free 3 zamiast wcześniejszych 7.
 
 **Przycisk „Wklej ze schowka” (PS-92):** implementacja widoków — **zakończona**; warstwa API **bez zmian** (upload jak przy paste/drop). Współdzielony `ClipboardImageService` (`navigator.clipboard.read()` w secure context) odczytuje PNG/JPG/WebP do 10 MB i przekazuje plik do istniejącej ścieżki sukcesu. Przycisk Material w strefie zdjęcia formularza (`RecipeImageUploadComponent`: `/recipes/new`, edycja) oraz w asyście AI w trybie obrazu (`RecipeNewAssistPageComponent`: `/recipes/new/assist`). Ctrl+V, drag & drop i wybór pliku bez zmian; przy braku Clipboard API przycisk jest nieaktywny z tooltipem. Błędy schowka — komunikaty inline (nie snackbar).
+
+**Osobiste flagi przepisów (PS-95):** warstwa API — **zakończona**. `PUT /recipes/{id}/flags` atomowo ustawia częściowo `is_favorite` / `is_want_to_try`; stan flag jest dostępny w szczegółach i listach dla zalogowanego użytkownika, bez ujawniania gościom. Dane są przechowywane w `user_recipe_flags` z RLS i RPC `set_recipe_flags`.
 
 ### Dostarczone poza pierwotnym szkicem summary
 
@@ -274,6 +276,7 @@ Bez zmian koncepcyjnych względem MVP: tagi i kolekcje per `user_id`, nazwy unik
 | `shopping_list_items` | `user_id`, `kind`, `name`, `unit`, `amount`, `text`, `is_owned` | Wiersze listy zakupów (`RECIPE` / `MANUAL`) |
 | `shopping_list_recipe_contributions` | `user_id`, `recipe_id`, `name`, `unit`, `amount` | Wkład składników z planu |
 | `user_ai_credits` | `user_id` UNIQUE, pule `draft_*` / `image_*`, `limit_type`, `next_reset_at` | Saldo kredytów AI (1:1 z użytkownikiem) |
+| `user_recipe_flags` | `user_id`, `recipe_id`, `is_favorite`, `is_want_to_try` | Prywatne flagi przepisu użytkownika (PK złożony, RLS) |
 
 #### `user_ai_credits`
 
@@ -287,6 +290,7 @@ Widok `recipe_details` agreguje przepis + autora + kolekcje na potrzeby API.
 auth.users 1:1 profiles
 auth.users 1:1 user_ai_credits
 auth.users 1:N recipes, tags, collections, plan_recipes, shopping_list_items, jobs
+auth.users 1:N user_recipe_flags
 categories 1:N recipes
 recipes N:M tags (via recipe_tags)
 recipes N:M collections (via recipe_collections)
@@ -320,6 +324,7 @@ recipes N:M users w planie (via plan_recipes)
 - Tabele łączące: własność kolekcji / tagu po stronie użytkownika operującego
 - Operacje admina na rolach: RPC z kontekstem service role, nie przez RLS na `auth.users`
 - `user_ai_credits`: SELECT własnego wiersza; INSERT/UPDATE/DELETE tylko service role
+- `user_recipe_flags`: użytkownik odczytuje i modyfikuje wyłącznie własne flagi; zapis wymaga widocznego, nieusuniętego przepisu
 
 ---
 
@@ -345,7 +350,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 |---|---|---|
 | `GET` | `/public/recipes` | Lista publicznych (offset). Filtry: `q`, `termorobot`, `grill`, `diet_type`, `cuisine`, `difficulty`. Relevance. |
 | `GET` | `/public/recipes/feed` | Lista publicznych (cursor, load more po 12). |
-| `GET` | `/public/recipes/{id}` | Szczegóły. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`. |
+| `GET` | `/public/recipes/{id}` | Szczegóły. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`; odpowiedź auth ma `no-store`. |
 | `GET` | `/explore/recipes/{id}` | Wariant katalogu Explore (ten sam kontrakt publiczny). |
 
 ### Przepisy (prywatne, auth required)
@@ -357,6 +362,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | `POST` | `/recipes` | Tworzenie. Parsowanie `ingredients_raw`, `steps_raw`, `tips_raw`. Job normalizacji. |
 | `POST` | `/recipes/import` | Import Markdown. Zwraca nowy przepis. |
 | `GET` | `/recipes/{id}` | Szczegóły. Helpery: `is_owner`, `in_my_collections`, `in_my_plan`, `collection_ids`. |
+| `PUT` | `/recipes/{id}/flags` | Częściowe, idempotentne ustawienie flag `is_favorite` / `is_want_to_try`; zwraca pełny stan obu flag. |
 | `PUT` | `/recipes/{id}` | Aktualizacja. Job normalizacji. |
 | `DELETE` | `/recipes/{id}` | Soft-delete. `204`. |
 | `POST` | `/recipes/{id}/image` | Upload zdjęcia (multipart). PNG/JPG/WebP, max 10 MB. |

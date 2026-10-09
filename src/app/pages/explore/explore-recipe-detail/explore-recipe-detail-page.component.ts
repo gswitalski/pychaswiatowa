@@ -21,6 +21,7 @@ import { SlugService } from '../../../shared/services/slug.service';
 import {
     RecipeDetailDto,
     ApiError,
+    RecipeFlagsDto,
 } from '../../../../../shared/contracts/types';
 import { PlanChangeEvent } from '../../../core/services/my-plan.service';
 
@@ -378,6 +379,19 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
      */
     onBackToExplore(): void {
         this.router.navigate(['/explore']);
+    }
+
+    onFlagsChange(flags: RecipeFlagsDto): void {
+        this.state.update((state) => ({
+            ...state,
+            recipe: state.recipe
+                ? {
+                    ...state.recipe,
+                    is_favorite: flags.is_favorite,
+                    is_want_to_try: flags.is_want_to_try,
+                }
+                : null,
+        }));
     }
 
     /**

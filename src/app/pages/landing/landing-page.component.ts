@@ -208,6 +208,7 @@ export class LandingPageComponent implements OnInit {
             imageUrl: dto.image_path,
             categoryName: dto.category?.name ?? null,
             isTermorobot: dto.is_termorobot ?? false,
+            isFavorite: dto.is_favorite ?? false,
         };
     }
 

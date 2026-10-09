@@ -28,6 +28,8 @@ import {
     UploadRecipeImageResponseDto,
     SetRecipeCollectionsInput,
     SetRecipeCollectionsResult,
+    setRecipeFlags,
+    SetRecipeFlagsInput,
 } from './recipes.service.ts';
 
 /** Maximum allowed limit for pagination. */
@@ -434,6 +436,25 @@ const setRecipeCollectionsSchema = z.object({
 });
 
 /**
+ * Schema for validating PUT /recipes/{id}/flags request body.
+ * At least one flag must be provided; unknown properties are rejected.
+ */
+const setRecipeFlagsSchema = z
+    .object({
+        is_favorite: z
+            .boolean({ invalid_type_error: 'is_favorite must be a boolean' })
+            .optional(),
+        is_want_to_try: z
+            .boolean({ invalid_type_error: 'is_want_to_try must be a boolean' })
+            .optional(),
+    })
+    .strict()
+    .refine(
+        (body) => body.is_favorite !== undefined || body.is_want_to_try !== undefined,
+        { message: 'At least one of is_favorite, is_want_to_try is required' }
+    );
+
+/**
  * Schema for validating GET /recipes query parameters.
  */
 const getRecipesQuerySchema = z.object({
@@ -737,9 +758,9 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
  * @throws ApplicationError with VALIDATION_ERROR if ID is not a valid positive integer
  */
 function parseAndValidateRecipeId(recipeIdParam: string): number {
-    const recipeId = parseInt(recipeIdParam, 10);
+    const recipeId = Number(recipeIdParam);
 
-    if (isNaN(recipeId) || recipeId <= 0 || !Number.isInteger(recipeId)) {
+    if (!Number.isInteger(recipeId) || recipeId <= 0) {
         throw new ApplicationError(
             'VALIDATION_ERROR',
             `Invalid recipe ID: '${recipeIdParam}'. ID must be a positive integer.`
@@ -1189,6 +1210,61 @@ export async function handleSetRecipeCollections(
 }
 
 /**
+ * Handles PUT /recipes/{id}/flags request.
+ * Updates one or both personal recipe flags and returns the complete state.
+ */
+export async function handleSetRecipeFlags(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        logger.info('Handling PUT /recipes/{id}/flags request', {
+            recipeIdParam,
+        });
+
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user } = await getAuthenticatedContext(req);
+
+        let requestBody: unknown;
+        try {
+            requestBody = await req.json();
+        } catch {
+            throw new ApplicationError('VALIDATION_ERROR', 'Invalid JSON in request body');
+        }
+
+        const validationResult = setRecipeFlagsSchema.safeParse(requestBody);
+
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+
+            logger.warn('Invalid request body for PUT /recipes/{id}/flags', {
+                recipeId,
+                errors: errorDetails,
+            });
+            throw new ApplicationError('VALIDATION_ERROR', `Invalid input: ${errorDetails}`);
+        }
+
+        const { is_favorite, is_want_to_try } = validationResult.data;
+        const result = await setRecipeFlags(client, {
+            recipeId,
+            isFavorite: is_favorite,
+            isWantToTry: is_want_to_try,
+        } satisfies SetRecipeFlagsInput);
+
+        logger.info('PUT /recipes/{id}/flags completed successfully', {
+            userId: user.id,
+            recipeId: result.recipe_id,
+        });
+
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Handles POST /recipes/{id}/image request.
  * Uploads or replaces a recipe image for the authenticated user.
  * Accepts multipart/form-data with a 'file' field containing the image.
@@ -1361,6 +1437,19 @@ function extractRecipeIdFromCollectionsPath(url: URL): string | null {
 
     if (collectionsPathMatch && collectionsPathMatch[1]) {
         return collectionsPathMatch[1];
+    }
+
+    return null;
+}
+
+/**
+ * Extracts the recipe ID from /recipes/{id}/flags path.
+ */
+function extractRecipeIdFromFlagsPath(url: URL): string | null {
+    const flagsPathMatch = url.pathname.match(/\/recipes\/([^/]+)\/flags\/?$/);
+
+    if (flagsPathMatch && flagsPathMatch[1]) {
+        return flagsPathMatch[1];
     }
 
     return null;
@@ -1704,6 +1793,9 @@ export async function recipesRouter(req: Request): Promise<Response> {
     // Check for /recipes/{id}/collections path (must be checked before extracting simple recipe ID)
     const collectionsRecipeId = extractRecipeIdFromCollectionsPath(url);
 
+    // Check for /recipes/{id}/flags path (must be checked before extracting simple recipe ID)
+    const flagsRecipeId = extractRecipeIdFromFlagsPath(url);
+
     // Check for /recipes/{id}/image path (must be checked before extracting simple recipe ID)
     const imageRecipeId = extractRecipeIdFromImagePath(url);
 
@@ -1720,6 +1812,26 @@ export async function recipesRouter(req: Request): Promise<Response> {
                 'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, Content-Type, Apikey',
             },
         });
+    }
+
+    if (flagsRecipeId) {
+        if (method === 'PUT') {
+            return handleSetRecipeFlags(req, flagsRecipeId);
+        }
+
+        return new Response(
+            JSON.stringify({
+                code: 'METHOD_NOT_ALLOWED',
+                message: `Method ${method} not allowed for /recipes/{id}/flags. Use PUT.`,
+            }),
+            {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Allow': 'PUT, OPTIONS',
+                },
+            }
+        );
     }
 
     // Route GET requests

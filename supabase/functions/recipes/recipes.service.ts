@@ -7,6 +7,11 @@ import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { Json } from '../_shared/database.types.ts';
+import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
+import type {
+    RecipeFlagsDto,
+    RecipeFlagsState,
+} from '../_shared/recipe-flags.ts';
 import {
     decodeCursor,
     buildFiltersHash,
@@ -87,6 +92,7 @@ export interface RecipeListItemDto {
     cuisine: RecipeCuisine | null;
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
+    is_favorite?: boolean;
 }
 
 /**
@@ -532,7 +538,10 @@ export async function getRecipes(
 
     // Bulk check which recipes are in user's plan
     const recipeIds = data.map((recipe) => Number(recipe.id));
-    const recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, requesterUserId);
+    const [recipeIdsInPlan, flagsMap] = await Promise.all([
+        getRecipeIdsInPlan(client, recipeIds, requesterUserId),
+        getRecipeFlagsMap(client, recipeIds, requesterUserId),
+    ]);
 
     // Map the data to DTOs
     const recipes: RecipeListItemDto[] = data.map((recipe) => ({
@@ -558,6 +567,7 @@ export async function getRecipes(
         cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(recipe.is_grill),
+        is_favorite: flagsMap.get(Number(recipe.id))?.is_favorite ?? false,
     }));
 
     return {
@@ -757,7 +767,10 @@ export async function getRecipesFeed(
 
     // Bulk check which recipes are in user's plan
     const recipeIds = data.map((recipe) => Number(recipe.id));
-    const recipeIdsInPlan = await getRecipeIdsInPlan(client, recipeIds, requesterUserId);
+    const [recipeIdsInPlan, flagsMap] = await Promise.all([
+        getRecipeIdsInPlan(client, recipeIds, requesterUserId),
+        getRecipeFlagsMap(client, recipeIds, requesterUserId),
+    ]);
 
     // Map the data to DTOs
     const recipes: RecipeListItemDto[] = data.map((recipe) => ({
@@ -783,6 +796,7 @@ export async function getRecipesFeed(
         cuisine: (recipe.cuisine as RecipeCuisine) ?? null,
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(recipe.is_grill),
+        is_favorite: flagsMap.get(Number(recipe.id))?.is_favorite ?? false,
     }));
 
     // Create next cursor if there are more results
@@ -898,14 +912,13 @@ export async function getRecipeById(
             recipeName: data.name,
         });
 
-        // Check if recipe is in user's plan
-        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [id], requesterUserId);
+        const [recipeIdsInPlan, collectionIds, flagsMap] = await Promise.all([
+            getRecipeIdsInPlan(client, [id], requesterUserId),
+            getCollectionIdsForRecipe(client, id, requesterUserId),
+            getRecipeFlagsMap(client, [id], requesterUserId),
+        ]);
         const inMyPlan = recipeIdsInPlan.has(id);
-
-        // Get collection IDs that contain this recipe (owned by user)
-        const collectionIds = await getCollectionIdsForRecipe(client, id, requesterUserId);
-
-        return mapToRecipeDetailDto(data, inMyPlan, collectionIds);
+        return mapToRecipeDetailDto(data, inMyPlan, collectionIds, flagsMap.get(id));
     }
 
     // Step B: If PGRST116 (not found by RLS), distinguish between 403 and 404
@@ -986,14 +999,13 @@ export async function getRecipeById(
             recipeName: publicRecipe.name,
         });
 
-        // Check if recipe is in user's plan
-        const recipeIdsInPlan = await getRecipeIdsInPlan(client, [id], requesterUserId);
+        const [recipeIdsInPlan, collectionIds, flagsMap] = await Promise.all([
+            getRecipeIdsInPlan(client, [id], requesterUserId),
+            getCollectionIdsForRecipe(client, id, requesterUserId),
+            getRecipeFlagsMap(client, [id], requesterUserId),
+        ]);
         const inMyPlan = recipeIdsInPlan.has(id);
-
-        // Get collection IDs that contain this recipe (owned by user)
-        const collectionIds = await getCollectionIdsForRecipe(client, id, requesterUserId);
-
-        return mapToRecipeDetailDto(publicRecipe, inMyPlan, collectionIds);
+        return mapToRecipeDetailDto(publicRecipe, inMyPlan, collectionIds, flagsMap.get(id));
     }
 
     // Other database errors
@@ -1009,7 +1021,12 @@ export async function getRecipeById(
  * Maps raw recipe_details view data to RecipeDetailDto.
  * Helper function to avoid code duplication.
  */
-function mapToRecipeDetailDto(data: any, inMyPlan: boolean, collectionIds: number[]): RecipeDetailDto {
+function mapToRecipeDetailDto(
+    data: any,
+    inMyPlan: boolean,
+    collectionIds: number[],
+    flags?: RecipeFlagsState
+): RecipeDetailDto {
     return {
         id: data.id!,
         user_id: data.user_id!,
@@ -1034,6 +1051,8 @@ function mapToRecipeDetailDto(data: any, inMyPlan: boolean, collectionIds: numbe
         cuisine: (data.cuisine as RecipeCuisine) ?? null,
         difficulty: (data.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(data.is_grill),
+        is_favorite: flags?.is_favorite ?? false,
+        is_want_to_try: flags?.is_want_to_try ?? false,
         collection_ids: collectionIds,
         normalized_ingredients_status: (data.normalized_ingredients_status as NormalizedIngredientsStatus) ?? 'PENDING',
         normalized_ingredients_updated_at: data.normalized_ingredients_updated_at ?? null,
@@ -1106,6 +1125,62 @@ export interface SetRecipeCollectionsInput {
     collectionIds: number[];
     /** ID of the user making the request. */
     requesterUserId: string;
+}
+
+export interface SetRecipeFlagsInput {
+    recipeId: number;
+    isFavorite?: boolean;
+    isWantToTry?: boolean;
+}
+
+/**
+ * Sets the authenticated user's recipe flags using the atomic database RPC.
+ */
+export async function setRecipeFlags(
+    client: TypedSupabaseClient,
+    input: SetRecipeFlagsInput
+): Promise<RecipeFlagsDto> {
+    const { data, error } = await client.rpc('set_recipe_flags', {
+        p_recipe_id: input.recipeId,
+        p_is_favorite: input.isFavorite ?? undefined,
+        p_is_want_to_try: input.isWantToTry ?? undefined,
+    });
+
+    if (error) {
+        if (error.code === 'P0002') {
+            throw new ApplicationError('NOT_FOUND', 'Recipe not found');
+        }
+
+        if (error.code === '22023') {
+            throw new ApplicationError('VALIDATION_ERROR', 'At least one recipe flag is required');
+        }
+
+        if (error.code === '42501') {
+            throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+        }
+
+        logger.error('Error setting recipe flags', {
+            errorCode: error.code,
+            errorMessage: error.message,
+            recipeId: input.recipeId,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to set recipe flags');
+    }
+
+    const row = data?.[0];
+
+    if (!row) {
+        logger.error('Recipe flags RPC returned no data', {
+            recipeId: input.recipeId,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to set recipe flags');
+    }
+
+    return {
+        recipe_id: Number(row.out_recipe_id),
+        is_favorite: row.out_is_favorite,
+        is_want_to_try: row.out_is_want_to_try,
+    };
 }
 
 /**
