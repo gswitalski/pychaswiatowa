@@ -12,24 +12,16 @@ Zapoznaj się z  projektem
 <aktualne_zachowanie>
 
 endpoint 
-http://127.0.0.1:54331/functions/v1/profile/change-password
+DELETE http://127.0.0.1:54331/functions/v1/profile/change-password
 
-z body
-
-{
-    "current_password": "554G5rjnbdAanGR",
-    "new_password": "tobitobi2626"
-}
-
-zwraca
-
-błąd 500
+zwraca bład 500
 
 {
-    "code": "INTERNAL_ERROR",
-    "message": "Failed to change password"
+  "code": "INTERNAL_ERROR",
+  "message": "Failed to delete recipe"
 }
 
+dziej sie tak tylko na produkcji. lokalnie dział 
 
 </aktualne_zachowanie>
 

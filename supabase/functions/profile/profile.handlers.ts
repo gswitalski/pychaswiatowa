@@ -213,13 +213,28 @@ export async function handleChangePassword(_req: Request): Promise<Response> {
 }
 
 /**
- * Extracts path after /profile from URL.
- * Supports both local (/profile) and Supabase (/functions/v1/profile) paths.
+ * Extracts the sub-path routed under the profile Edge Function.
+ * Supports local gateway (/functions/v1/profile/...), deployed runtime (/profile/...),
+ * and suffix-only paths (/change-password) used by Supabase in production.
  */
-function getPathFromUrl(url: string): string {
+export function extractProfileSubPath(url: string): string {
     const pathname = new URL(url).pathname;
-    const match = pathname.match(/(?:\/functions\/v1)?\/profile(.*)/);
-    return match ? match[1] : '';
+    const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+
+    const profileMatch = normalizedPath.match(/\/profile(\/.*)?$/);
+    if (profileMatch) {
+        const suffix = profileMatch[1];
+        if (!suffix || suffix === '/') {
+            return '/';
+        }
+        return suffix.replace(/\/+$/, '');
+    }
+
+    if (normalizedPath === '/change-password' || normalizedPath === '/username-available') {
+        return normalizedPath;
+    }
+
+    return '';
 }
 
 /**
@@ -230,7 +245,7 @@ function getPathFromUrl(url: string): string {
  */
 export async function profileRouter(req: Request): Promise<Response> {
     const method = req.method.toUpperCase();
-    const path = getPathFromUrl(req.url);
+    const path = extractProfileSubPath(req.url);
 
     logger.debug('Routing profile request', { method, path });
 
