@@ -3,8 +3,7 @@
     align-items: center;
     gap: 8px;
     width: 100%;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     scrollbar-width: none;
     padding-bottom: 4px;
 
@@ -12,12 +11,75 @@
         display: none;
     }
 
-    mat-chip-option,
+    mat-button-toggle,
     mat-button-toggle-group {
         flex-shrink: 0;
     }
 
     mat-button-toggle-group {
         display: flex;
+    }
+
+    .diet-filter {
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 960px) {
+    .explore-filters {
+        gap: 6px;
+
+        .icon-filter {
+            min-width: 42px;
+            width: 42px;
+            height: 40px;
+            min-height: 40px;
+            padding-inline: 8px;
+            justify-content: center;
+
+            .filter-label {
+                display: none;
+            }
+        }
+
+        .diet-filter {
+            margin-left: 0;
+        }
+    }
+}
+
+@media (max-width: 960px) {
+    :host ::ng-deep {
+        .icon-filter {
+            .mat-button-toggle-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+            }
+
+            .mat-button-toggle-label-content {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                padding: 0;
+                line-height: normal;
+            }
+        }
+    }
+}
+
+@media (max-width: 620px) {
+    .explore-filters {
+        .diet-filter {
+            flex-basis: 100%;
+            width: 100%;
+            order: 2;
+
+            mat-button-toggle {
+                flex: 1 1 0;
+            }
+        }
     }
 }

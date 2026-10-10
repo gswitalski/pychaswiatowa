@@ -1,24 +1,46 @@
 <div class="explore-filters" aria-label="Filtry przepisów">
     @if (isAuthenticated()) {
-        <mat-chip-option
-            [selected]="filters().favorite"
+        <mat-button-toggle
+            class="personal-filter icon-filter"
+            [checked]="filters().favorite"
             matTooltip="Pokaż ulubione przepisy"
             (click)="toggle('favorite')"
         >
-            <mat-icon matChipAvatar>favorite</mat-icon>
-            Ulubione
-        </mat-chip-option>
-        <mat-chip-option
-            [selected]="filters().wantToTry"
+            <mat-icon>favorite</mat-icon>
+            <span class="filter-label">Ulubione</span>
+        </mat-button-toggle>
+        <mat-button-toggle
+            class="personal-filter icon-filter"
+            [checked]="filters().wantToTry"
             matTooltip="Pokaż przepisy do wypróbowania"
             (click)="toggle('wantToTry')"
         >
-            <mat-icon matChipAvatar>bookmark</mat-icon>
-            Chcę wypróbować
-        </mat-chip-option>
+            <mat-icon>outlined_flag</mat-icon>
+            <span class="filter-label">Chcę wypróbować</span>
+        </mat-button-toggle>
     }
 
+    <mat-button-toggle
+        class="feature-filter icon-filter"
+        [checked]="filters().termorobot"
+        matTooltip="Pokaż przepisy na termorobot"
+        (click)="toggle('termorobot')"
+    >
+        <mat-icon>blender</mat-icon>
+        <span class="filter-label">Termorobot</span>
+    </mat-button-toggle>
+    <mat-button-toggle
+        class="feature-filter icon-filter"
+        [checked]="filters().grill"
+        matTooltip="Pokaż przepisy z grilla"
+        (click)="toggle('grill')"
+    >
+        <mat-icon>outdoor_grill</mat-icon>
+        <span class="filter-label">Grill</span>
+    </mat-button-toggle>
+
     <mat-button-toggle-group
+        class="diet-filter"
         [value]="filters().diet ?? ''"
         aria-label="Filtr diety"
         (change)="onDietChange($event)"
@@ -27,21 +49,4 @@
         <mat-button-toggle value="vege_plus">Wegetariańskie+</mat-button-toggle>
         <mat-button-toggle value="vegan">Tylko wegańskie</mat-button-toggle>
     </mat-button-toggle-group>
-
-    <mat-chip-option
-        [selected]="filters().termorobot"
-        matTooltip="Pokaż przepisy na termorobot"
-        (click)="toggle('termorobot')"
-    >
-        <mat-icon matChipAvatar>blender</mat-icon>
-        Termorobot
-    </mat-chip-option>
-    <mat-chip-option
-        [selected]="filters().grill"
-        matTooltip="Pokaż przepisy z grilla"
-        (click)="toggle('grill')"
-    >
-        <mat-icon matChipAvatar>outdoor_grill</mat-icon>
-        Grill
-    </mat-chip-option>
 </div>

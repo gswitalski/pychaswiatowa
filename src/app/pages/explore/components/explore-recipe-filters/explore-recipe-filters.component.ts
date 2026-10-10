@@ -4,9 +4,6 @@ import {
     input,
     output,
 } from '@angular/core';
-import {
-    MatChipsModule,
-} from '@angular/material/chips';
 import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -21,7 +18,7 @@ type ToggleFilter = 'termorobot' | 'grill' | 'favorite' | 'wantToTry';
 @Component({
     selector: 'pych-explore-recipe-filters',
     standalone: true,
-    imports: [MatChipsModule, MatButtonToggleModule, MatIconModule, MatTooltipModule],
+    imports: [MatButtonToggleModule, MatIconModule, MatTooltipModule],
     templateUrl: './explore-recipe-filters.component.html',
     styleUrl: './explore-recipe-filters.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
