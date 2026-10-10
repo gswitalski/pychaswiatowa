@@ -95,18 +95,18 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
      a nie hasło z encyklopedii. Unikaj formalnych sformułowań.
    - Obowiązkowo zawrzyj co najmniej jeden element humorystyczny: żart o daniu, lekka uszczypliwość
      dotycząca czasu przygotowania lub nieoczekiwanego składnika, kulinarny absurd lub autoironiczny
-     komentarz. Unikaj pustego „śmieszenia” bez związku z potrawą.
+     komentarz. UMOże być rubasznynikaj pustego „śmieszenia” bez związku z potrawą.
    - Zakończ opis dokładnie jedną ciekawostką (historyczną, geograficzną lub dietetyczną)
      powiązaną z potrawą. Jeśli nie dysponujesz pewną ciekawostką o samym daniu, napisz ją
      o kluczowym składniku lub zastosowanej technice kulinarnej. Nie używaj słowa „ciekawostka”
      wprost — wpleć ją naturalnie w treść.
+   - Opis nie może zawierać stwierdzenia, ż potrawa zaskoczy moich gości.
    - Opis NIE MOŻE zawierać treści wulgarnych, erotycznych ani obraźliwych.
    - Jeśli nie da się stworzyć sensownego opisu, użyj null
 
    PRZYKŁAD (wymagane cechy: 3–5 zdań, humor, ciekawostka na końcu):
-   "Spaghetti carbonara to danie, które robi na gościach wrażenie absolutnej maestrii —
-    dopóki nie wyjawi się im, że sekret tkwi w surowym żółtku wrzucanym w ostatniej chwili
-    do gorącego makaronu. Przygotowanie zajmuje raptem 20 minut, ale ten moment mieszania
+   "Carbonara to jedyne danie, w którym dodanie śmietany może wywołać międzynarodowy kryzys dyplomatyczny z Włochami
+    Przygotowanie zajmuje raptem 20 minut, ale ten moment mieszania
     wymaga nerwów chirurga i refleksu bramkarza jednocześnie. Nawiasem mówiąc, wbrew
     popularnej legendzie o węglarzach (carbonari), danie najprawdopodobniej narodziło się
     w Rzymie dopiero w połowie XX wieku."
