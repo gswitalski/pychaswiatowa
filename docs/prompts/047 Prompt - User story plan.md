@@ -12,7 +12,7 @@ Oto dokumenty o projekcie, które musisz przeanalizować:
 
 
 <user_story>
-@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-user-story.md
+@docs/results/new-features/user-stories/PS-34/PS-34-ai-recipe-description-improvement-user-story.md
 </user_story>
 
 Twoim zadaniem jest:

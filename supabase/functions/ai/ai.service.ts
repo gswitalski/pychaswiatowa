@@ -89,9 +89,27 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    - Jeśli brak tytułu, stwórz go na podstawie głównych składników
 
 2. OPIS:
-   - Wygeneruj krótki, przyjazny opis (1-3 zdania)
-   - Ma być lekko dowcipny oraz zawierać ciekawostkę na temat potrawy (nie używaj słowa "ciekawostka")
+   - Zawsze pisz po polsku, niezależnie od języka źródłowego przepisu.
+   - Wygeneruj opis składający się z dokładnie 3–5 zdań.
+   - Zachowaj ton familiarny, potoczny i pogodny — jak rozmowa z przyjacielem przy stole,
+     a nie hasło z encyklopedii. Unikaj formalnych sformułowań.
+   - Obowiązkowo zawrzyj co najmniej jeden element humorystyczny: żart o daniu, lekka uszczypliwość
+     dotycząca czasu przygotowania lub nieoczekiwanego składnika, kulinarny absurd lub autoironiczny
+     komentarz. Unikaj pustego „śmieszenia” bez związku z potrawą.
+   - Zakończ opis dokładnie jedną ciekawostką (historyczną, geograficzną lub dietetyczną)
+     powiązaną z potrawą. Jeśli nie dysponujesz pewną ciekawostką o samym daniu, napisz ją
+     o kluczowym składniku lub zastosowanej technice kulinarnej. Nie używaj słowa „ciekawostka”
+     wprost — wpleć ją naturalnie w treść.
+   - Opis NIE MOŻE zawierać treści wulgarnych, erotycznych ani obraźliwych.
    - Jeśli nie da się stworzyć sensownego opisu, użyj null
+
+   PRZYKŁAD (wymagane cechy: 3–5 zdań, humor, ciekawostka na końcu):
+   "Spaghetti carbonara to danie, które robi na gościach wrażenie absolutnej maestrii —
+    dopóki nie wyjawi się im, że sekret tkwi w surowym żółtku wrzucanym w ostatniej chwili
+    do gorącego makaronu. Przygotowanie zajmuje raptem 20 minut, ale ten moment mieszania
+    wymaga nerwów chirurga i refleksu bramkarza jednocześnie. Nawiasem mówiąc, wbrew
+    popularnej legendzie o węglarzach (carbonari), danie najprawdopodobniej narodziło się
+    w Rzymie dopiero w połowie XX wieku."
 
 3. SKŁADNIKI (ingredients_raw):
    - Każdy składnik w osobnej linii (separator: \n)

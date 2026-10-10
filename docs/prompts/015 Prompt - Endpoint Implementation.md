@@ -3,7 +3,7 @@ Twoim zadaniem jest wdrożenie endpointa interfejsu API REST w oparciu o podany 
 Najpierw dokładnie przejrzyj dostarczony plan wdrożenia:
 
 <implementation_plan>
-@docs/results/impl-plans/endpoints/ps96-explore-recipe-filters-api-implementation-plan.md
+@docs\results\impl-plans\endpoints\PS-34-ai-recipe-description-improvement-api-implementation-plan.md
 </implementation_plan>
 
 <types>

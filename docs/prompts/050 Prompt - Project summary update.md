@@ -12,11 +12,11 @@ Dane wejściowe
 </project_summary>
 
 <api_implementation_plan>
-@docs\results\impl-plans\endpoints\ps95-recipe-favorite-and-try-flags-api-implementation-plan.md
+@docs\results\impl-plans\endpoints\ps96-explore-recipe-filters-api-implementation-plan.md
 </api_implementation_plan>
 
 <view_implementation_plan>
-@docs\results\impl-plans\views\PS-95-recipe-flags-view-implementation-plan.md
+@docs\results\impl-plans\views\PS-96-explore-recipe-filters-view-implementation-plan.md
 </view_implementation_plan>
 Zadanie
 

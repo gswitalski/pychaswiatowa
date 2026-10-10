@@ -12,22 +12,11 @@ Zawiera kontekst biznesowy, cel projektu, grupę docelową użytkowników oraz o
 Opis wymagań do nowej funkcjonalności: 
 
 <wymagania>
-
-odkrywaj przepisy , ścieżka https://pychaswiatowa.pl/explore
-
-dodać podstawowee filtry w jedej linijce pod polem wyszukiwania. jeśli sie da to najlepiej w postaci ikonek:
-
-- ulubione, 
-- chcę wypróboać
-- wszystkie/wwegetariańskei i wegańskie/tylko wegańskie
-- termorobot
-- grill
-
-
+aktualnie opis przepisu generowany prze AI jest bardzo sztampowy i nieciekawy. trzeba poprawić promt aby opis był ciekwsy, zawierał jakąś ciekawostke, był dowcipny a nawet rubaszny
 </wymagania>
 
 <numer_historyjki>
-95
+34
 </numer_historyjki>
 
 

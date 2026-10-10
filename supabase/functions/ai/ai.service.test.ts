@@ -1,5 +1,5 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
-import { generateRecipeDraft } from './ai.service.ts';
+import { generateRecipeDraft, getSystemPrompt } from './ai.service.ts';
 
 function createDraft(overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
@@ -67,6 +67,44 @@ function generateTextDraft() {
         language: 'pl',
     });
 }
+
+Deno.test({
+    name: 'getSystemPrompt: zawiera wymagane instrukcje stylu opisu (PS-34)',
+    fn: () => {
+        const prompt = getSystemPrompt('pl');
+
+        assertEquals(
+            prompt.includes('3–5 zdań'),
+            true,
+            'Prompt powinien wymagać 3–5 zdań',
+        );
+        assertEquals(
+            prompt.includes('familiarny') || prompt.includes('potoczny'),
+            true,
+            'Prompt powinien wymagać tonu familiarnego/potocznego',
+        );
+        assertEquals(
+            prompt.includes('humorystyczny') || prompt.includes('uszczypliwość'),
+            true,
+            'Prompt powinien wymagać elementu humorystycznego',
+        );
+        assertEquals(
+            prompt.includes('ciekawostką') || prompt.includes('historyczną'),
+            true,
+            'Prompt powinien wymagać ciekawostki historycznej/geograficznej',
+        );
+        assertEquals(
+            prompt.includes('wulgarnych') || prompt.includes('obraźliwych'),
+            true,
+            'Prompt powinien zabraniać treści nieodpowiednich',
+        );
+        assertEquals(
+            prompt.includes('carbonara') || prompt.includes('PRZYKŁAD'),
+            true,
+            'Prompt powinien zawierać przykład few-shot',
+        );
+    },
+});
 
 Deno.test({
     name: 'generateRecipeDraft: zwraca komplet znormalizowanych metadanych',
