@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 10 października 2026 — warstwa API PS-95 dla osobistych flag przepisów, a wcześniej: przycisk „Wklej ze schowka” PS-92, Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65 i metadane draftu AI PS-91.
+> **Aktualizacja:** 10 października 2026 — osobiste flagi przepisów PS-95 (API i widoki), a wcześniej: przycisk „Wklej ze schowka” PS-92, Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65 i metadane draftu AI PS-91.
 
 ---
 
@@ -23,7 +23,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 
 **Przycisk „Wklej ze schowka” (PS-92):** implementacja widoków — **zakończona**; warstwa API **bez zmian** (upload jak przy paste/drop). Współdzielony `ClipboardImageService` (`navigator.clipboard.read()` w secure context) odczytuje PNG/JPG/WebP do 10 MB i przekazuje plik do istniejącej ścieżki sukcesu. Przycisk Material w strefie zdjęcia formularza (`RecipeImageUploadComponent`: `/recipes/new`, edycja) oraz w asyście AI w trybie obrazu (`RecipeNewAssistPageComponent`: `/recipes/new/assist`). Ctrl+V, drag & drop i wybór pliku bez zmian; przy braku Clipboard API przycisk jest nieaktywny z tooltipem. Błędy schowka — komunikaty inline (nie snackbar).
 
-**Osobiste flagi przepisów (PS-95):** warstwa API — **zakończona**. `PUT /recipes/{id}/flags` atomowo ustawia częściowo `is_favorite` / `is_want_to_try`; stan flag jest dostępny w szczegółach i listach dla zalogowanego użytkownika, bez ujawniania gościom. Dane są przechowywane w `user_recipe_flags` z RLS i RPC `set_recipe_flags`.
+**Osobiste flagi przepisów (PS-95):** implementacja warstwy API i widoków — **zakończona**. `PUT /recipes/{id}/flags` atomowo ustawia częściowo `is_favorite` / `is_want_to_try`; odczyt w szczegółach i listach tylko dla zalogowanego (gość bez pól w JSON). Baza: `user_recipe_flags`, RLS, RPC `set_recipe_flags`; współdzielony moduł `_shared/recipe-flags.ts`. UI: `RecipeFlagsService` + `RecipeFlagTogglesComponent` (optimistic update, snackbar) na `/recipes/:id-:slug` i `/explore/recipes/:id-:slug`; nieklikalne serduszko na kafelkach (dashboard, moje przepisy, kolekcja, explore, landing). Filtrowanie po flagach poza zakresem PS-95.
 
 ### Dostarczone poza pierwotnym szkicem summary
 
@@ -39,6 +39,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - **Limit planu Free (PS-65):** egzekwowanie na API (`PLAN_LIMIT_FREE`, domyślnie 3), dialog `PlanLimitExceededDialogComponent` z CTA do `/pricing`, licznik pozycji w drawerze „Mój plan”
 - **Strona cennika** (`/pricing`, publiczna): karty Free i Premium, okres miesięczny/roczny (domyślnie roczny, oszczędność ~17%), tabela porównawcza, FAQ, trial 7 dni na karcie Premium. CTA zależy od sesji i roli. Stub `/checkout` („Płatności wkrótce”). Regulamin subskrypcji `/legal/subscription`. Link „Cennik” dla gościa (nagłówek publiczny) i roli `user` (topbar). Blok promo Premium na landingu dla gościa i `user`
 - **Wklej ze schowka (PS-92):** `ClipboardImageService` + przycisk „Wklej ze schowka” w uploadzie zdjęcia przepisu i w asyście AI (tryb obrazu); walidacja MIME/rozmiaru i mapowanie błędów schowka; testy jednostkowe serwisu i komponentów
+- **Osobiste flagi przepisów (PS-95):** przełączniki „Ulubiony” / „Chcę wypróbować” w nagłówku szczegółów; wskaźnik serduszka na `RecipeCardComponent`; wszystkie role zalogowane; prywatność flag względem autora i innych użytkowników
 
 ### Backlog produktowy (Jira — Do zrobienia)
 
@@ -78,6 +79,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - Publiczny cennik `/pricing` (Free vs Premium, ceny statyczne) i zapowiedź płatności na `/checkout`; sprzedaż subskrypcji jeszcze nie działa
 - Kredyty AI per użytkownik: Free dożywotnie, Premium miesięcznie, admin bez limitu; podgląd w ustawieniach i korekta w panelu admina
 - Asynchroniczna normalizacja składników (worker cron + retry)
+- Osobiste flagi przepisu (PS-95): „Ulubiony” i „Chcę wypróbować” na własnych i widocznych cudzych przepisach; tylko zalogowany; serduszko na kafelkach list
 - Zgodność: regulamin, polityka prywatności i regulamin subskrypcji, zgoda marketingowa, menedżer zgód cookies
 
 ### Granice (poza zakresem / zaplanowane później)
@@ -86,6 +88,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - Zarządzanie spiżarnią
 - Funkcje społecznościowe (znajomi, komentarze, oceny)
 - Zaawansowane wartości odżywcze, historia zmian, notatki użytkownika przy cudzym przepisie
+- Wyszukiwanie i filtrowanie list po flagach „Ulubiony” / „Chcę wypróbować” (osobna historyjka; PS-95 to tylko ustawianie i wskaźnik serduszka)
 - Subskrypcja i płatności (strona `/pricing` oraz stub `/checkout` są; brak endpointu planów i bramki płatności). Pule kredytów AI są wdrożone; dokupienie pakietu nie jest
 - Tworzenie/usuwanie kont z panelu admina, audyt zmian ról, masowa zmiana ról
 - Inni dostawcy OAuth (poza Google)
@@ -122,6 +125,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-025 | Oznaczenie cudzych przepisów w kolekcjach | Chip "W moich kolekcjach", brak Edytuj/Usuń dla nie-autora. |
 | US-027 | Szybka zmiana zdjęcia (paste/drop) | Strefa zdjęcia: Ctrl+V, drag&drop, wybór pliku, auto-upload, Undo. PS-92: dedykowany przycisk „Wklej ze schowka” (Clipboard API). |
 | PS-92 | Wklej ze schowka (przycisk) | Odczyt obrazu przez `navigator.clipboard.read()` bez wymogu fokusu na strefie paste. Formularz przepisu i asysta AI (obraz). Te same formaty i limit 10 MB co upload; błędy inline. |
+| PS-95 | Osobiste flagi przepisu | Toggle „Ulubiony” i „Chcę wypróbować” na szczegółach (`/recipes/…`, `/explore/recipes/…`); serduszko na kafelkach list; prywatne, wszystkie role; `PUT /recipes/{id}/flags`. |
 | US-028 | Liczba porcji | Opcjonalne pole 1-99, wyświetlane pod tytułem z odmianą. |
 | US-029 | Flaga "Termorobot" | Toggle w formularzu, badge na kartach/listach. |
 | US-030 | Przycisk "Więcej" (load more) | Domyślnie 12 elementów, doładowywanie kolejnych 12. |
@@ -348,20 +352,20 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 
 | Metoda | URL | Opis |
 |---|---|---|
-| `GET` | `/public/recipes` | Lista publicznych (offset). Filtry: `q`, `termorobot`, `grill`, `diet_type`, `cuisine`, `difficulty`. Relevance. |
-| `GET` | `/public/recipes/feed` | Lista publicznych (cursor, load more po 12). |
-| `GET` | `/public/recipes/{id}` | Szczegóły. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`; odpowiedź auth ma `no-store`. |
-| `GET` | `/explore/recipes/{id}` | Wariant katalogu Explore (ten sam kontrakt publiczny). |
+| `GET` | `/public/recipes` | Lista publicznych (offset). Filtry: `q`, `termorobot`, `grill`, `diet_type`, `cuisine`, `difficulty`. Relevance. Dla auth: `is_favorite` w elementach. |
+| `GET` | `/public/recipes/feed` | Lista publicznych (cursor, load more po 12). Dla auth: `is_favorite` w elementach. |
+| `GET` | `/public/recipes/{id}` | Szczegóły. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`; odpowiedź auth bez cache publicznego (`no-store`). |
+| `GET` | `/explore/recipes/{id}` | Wariant katalogu Explore (ten sam kontrakt co publiczne szczegóły, w tym flagi dla auth). |
 
 ### Przepisy (prywatne, auth required)
 
 | Metoda | URL | Opis |
 |---|---|---|
-| `GET` | `/recipes` | Lista (offset). `view=owned\|my_recipes`. Filtry: category, tags, termorobot, grill, diet_type, cuisine, difficulty, search. |
-| `GET` | `/recipes/feed` | Lista (cursor, load more). |
+| `GET` | `/recipes` | Lista (offset). `view=owned\|my_recipes`. Filtry: category, tags, termorobot, grill, diet_type, cuisine, difficulty, search. Elementy: `is_favorite`. |
+| `GET` | `/recipes/feed` | Lista (cursor, load more). Elementy: `is_favorite`. |
 | `POST` | `/recipes` | Tworzenie. Parsowanie `ingredients_raw`, `steps_raw`, `tips_raw`. Job normalizacji. |
 | `POST` | `/recipes/import` | Import Markdown. Zwraca nowy przepis. |
-| `GET` | `/recipes/{id}` | Szczegóły. Helpery: `is_owner`, `in_my_collections`, `in_my_plan`, `collection_ids`. |
+| `GET` | `/recipes/{id}` | Szczegóły. Helpery: `is_owner`, `in_my_collections`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`. |
 | `PUT` | `/recipes/{id}/flags` | Częściowe, idempotentne ustawienie flag `is_favorite` / `is_want_to_try`; zwraca pełny stan obu flag. |
 | `PUT` | `/recipes/{id}` | Aktualizacja. Job normalizacji. |
 | `DELETE` | `/recipes/{id}` | Soft-delete. `204`. |
@@ -400,7 +404,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 |---|---|---|
 | `GET` | `/collections` | Lista kolekcji użytkownika. |
 | `POST` | `/collections` | Tworzenie. `409` przy duplikacie nazwy. |
-| `GET` | `/collections/{id}` | Kolekcja + przepisy (limit 500). |
+| `GET` | `/collections/{id}` | Kolekcja + przepisy (limit 500). Przepisy: `is_favorite`. |
 | `GET` | `/collections/{id}/recipes` | Minimalne dane (id, name, image_path) dla Sidebara. |
 | `PUT` | `/collections/{id}` | Aktualizacja. |
 | `DELETE` | `/collections/{id}` | Usunięcie kolekcji (nie usuwa przepisów). |
@@ -465,9 +469,9 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 
 | Widok | Ścieżka | Opis |
 |---|---|---|
-| Landing Page | `/` | Wyszukiwarka publicznych przepisów, sekcje, CTA logowanie/rejestracja. Zalogowany: nawigacja konta, bez CTA logowania. Logo widoczne także dla gościa. Dla gościa i roli `user`: blok promo Premium z linkiem do cennika. |
-| Katalog Explore | `/explore` | Publiczne przepisy, search (min 3 zn.), load more 12. Badge "Twój przepis". |
-| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania. Zalogowany nie-autor: kolekcja/plan. Autor: pełne akcje. |
+| Landing Page | `/` | Wyszukiwarka publicznych przepisów, sekcje, CTA logowanie/rejestracja. Zalogowany: nawigacja konta, bez CTA logowania, serduszko na kafelkach sekcji (PS-95). Logo widoczne także dla gościa. Dla gościa i roli `user`: blok promo Premium z linkiem do cennika. |
+| Katalog Explore | `/explore` | Publiczne przepisy, search (min 3 zn.), load more 12. Badge "Twój przepis". Zalogowany: wskaźnik serduszka na kafelku (PS-95). |
+| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania. Zalogowany: flagi PS-95, kolekcja/plan. Autor: pełne akcje. |
 | Logowanie | `/login` | Email+hasło + **Zaloguj się przez Google** (`OauthGoogleButtonComponent`); komunikaty po błędach OAuth z `?error=`. |
 | Rejestracja | `/register` | Username, email, hasło, zgoda marketingowa + **Zarejestruj się przez Google** (ten sam flow OAuth). |
 | Wysłano link | `/register/verify-sent` | Komunikat + ponowna wysyłka (cooldown 60s). |
@@ -486,17 +490,17 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 
 | Widok | Ścieżka | Opis |
 |---|---|---|
-| Moja Pycha (Dashboard) | `/dashboard` | Kafelki, ostatnie przepisy (karty). |
+| Moja Pycha (Dashboard) | `/dashboard` | Kafelki, ostatnie przepisy (karty z wskaźnikiem ulubionego, PS-95). |
 | Admin - Dashboard | `/admin`, `/admin/dashboard` | Placeholder metryk („Wkrótce”) + nawigacja admina (sidebar). |
 | Admin - Użytkownicy | `/admin/users` | Tabela, paginacja, sortowanie, dialog zmiany roli. |
-| Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Własne + publiczne z kolekcji. Filtry, load more 12. |
-| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. |
+| Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Własne + publiczne z kolekcji. Filtry, load more 12. Kafelki: serduszko ulubionego (PS-95). |
+| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. Zalogowany: przełączniki flag PS-95 w nagłówku. |
 | Kreator - wybór trybu | `/recipes/new/start` | Pusty formularz (wszyscy) lub AI (premium/admin; badge). Kafelek AI nadal zablokowany dla roli `user`. |
 | Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. Wskaźnik kredytów `draft`, baner i blokada przycisku przy wyczerpaniu, dialog przy `402`. Tryb obrazu: „Wklej ze schowka” (PS-92) obok paste Ctrl+V i wyboru pliku. |
 | Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (`RecipeImageUploadComponent`: paste/drop/file, przycisk „Wklej ze schowka” PS-92, generowanie AI). Sticky Zapisz. Przy zdjęciu AI: kompaktowy wskaźnik kredytów `image` i blokada przycisku przy wyczerpaniu. |
 | Import Markdown | `/recipes/import` | Live preview → edycja. |
 | Lista kolekcji | `/collections` | CRUD kolekcji. |
-| Szczegóły kolekcji | `/collections/:id` | Wszystkie przepisy (limit 500). |
+| Szczegóły kolekcji | `/collections/:id` | Wszystkie przepisy (limit 500). Kafelki: serduszko ulubionego (PS-95). |
 | Zakupy | `/shopping` | Grupy z planu + ręczne. |
 | Ustawienia | `/settings` | Username, zgoda marketingowa, hasło; e-mail RO. Sekcja „Kredyty AI” (paski postępu) dla `user` i `premium`; ukryta dla `admin`. CTA do `/pricing` dla roli `user`. |
 | Brak dostępu | `/forbidden` | 403 (role / premium). |
@@ -517,6 +521,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Dialog wyczerpania kredytów | Po `402` lub kliknięciu wyczerpanego wskaźnika. Free: CTA do `/pricing`. Premium: informacja o dacie resetu. |
 | Przycisk Google OAuth | Współdzielony `OauthGoogleButtonComponent` (login/rejestracja). |
 | Schowek obrazu (PS-92) | `ClipboardImageService`: detekcja API, odczyt pliku, komunikaty błędów; konsumowane przez upload zdjęcia przepisu i asystę AI. |
+| Flagi przepisu (PS-95) | `RecipeFlagsService` + `RecipeFlagTogglesComponent` w `RecipeDetailViewComponent`; wskaźnik `.favorite-indicator` na `RecipeCardComponent`. |
 
 ---
 
@@ -546,6 +551,7 @@ Piramida testów: solidna baza jednostkowych, uzupełniona integracjami i E2E.
 8. Cennik: `/pricing` dla gościa i zalogowanego (CTA według roli); `/checkout` pokazuje „Płatności wkrótce”
 9. Limit planu Free: `user` dodaje 3 przepisy, czwarte → dialog z CTA (bez snackbara); licznik w drawerze; `premium`/`admin` bez blokady do 50; istniejący plan ponad limit nie jest czyszczony
 10. Wklej ze schowka (PS-92): happy path PNG/JPG/WebP na formularzu i w asyście (obraz); pusty schowek / zły format / >10 MB / odmowa uprawnień → komunikat inline; brak Clipboard API → przycisk disabled + tooltip; Ctrl+V i DnD nadal działają
+11. Flagi przepisów (PS-95): toggle ulubiony i „Chcę wypróbować” na szczegółach, stan po odświeżeniu; serduszko na liście po powrocie; klik w serduszko na kafelku nawiguje do szczegółów; gość bez ikon flag i bez serduszka; błąd zapisu → rollback i snackbar; `401` → login
 
 Przewodniki: `docs/testing/`.
 

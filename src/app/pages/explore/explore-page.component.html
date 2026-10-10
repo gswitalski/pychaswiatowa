@@ -7,15 +7,51 @@
         </p>
     </header>
 
-    <!-- Wyszukiwarka z wynikami -->
-    <div class="search-section">
-        <pych-public-recipes-search
-            context="explore"
-            [initialQuery]="initialQuery()"
-            placeholder="Szukaj przepisów po nazwie, składnikach, tagach i wskazówkach..."
-            [showResults]="true"
-            [debounceMs]="350"
-            [pageSize]="12"
+    <section class="search-section" aria-label="Wyszukiwanie i filtrowanie przepisów">
+        <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Szukaj przepisów po nazwie, składnikach, tagach i wskazówkach...</mat-label>
+            <input
+                matInput
+                [formControl]="queryControl"
+                (keydown.enter)="onSearchSubmit(); $event.preventDefault()"
+                type="text"
+                autocomplete="off"
+                aria-label="Pole wyszukiwania przepisów"
+            />
+            <mat-icon matPrefix>search</mat-icon>
+            @if (shortQueryHintVisible()) {
+                <mat-hint>Wpisz min. 3 znaki, aby wyszukać</mat-hint>
+            }
+        </mat-form-field>
+
+        <pych-explore-recipe-filters
+            [filters]="filters()"
+            [isAuthenticated]="isAuthenticated()"
+            (filtersChange)="onFiltersChange($event)"
         />
-    </div>
+
+        <pych-public-recipe-results
+            [items]="items()"
+            [mode]="mode()"
+            [context]="'explore'"
+            [loadingInitial]="loadingInitial()"
+            [loadingMore]="loadingMore()"
+            [hasMore]="pageInfo().hasMore"
+            [errorMessage]="errorMessage()"
+            [renderEmptyState]="!filterState.hasActiveFilters(filters())"
+            (loadMore)="loadMore()"
+            (retry)="retry()"
+        />
+
+        @if (showEmptyState() && filterState.hasActiveFilters(filters())) {
+            <div class="explore-empty-state" role="status">
+                <mat-icon>search_off</mat-icon>
+                <p>Brak przepisów pasujących do wybranych filtrów.</p>
+                <button mat-button type="button" (click)="clearFilters()">
+                    <mat-icon>filter_alt_off</mat-icon>
+                    Wyczyść filtry
+                </button>
+            </div>
+        }
+    </section>
 </div>

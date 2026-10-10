@@ -50,7 +50,7 @@ Najpierw przejrzyj następujące informacje:
 9. Frontend rules
 <rules>
 
-@.cursor/rules/fronend.mdc 
+@.cursor/rules/frontend.mdc 
 
 </rules>
 

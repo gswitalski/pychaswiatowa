@@ -9,6 +9,12 @@
 export type RecipeDietType = 'MEAT' | 'VEGETARIAN' | 'VEGAN';
 
 /**
+ * New diet filter used by the explore recipes API.
+ * `vege_plus` includes both vegetarian and vegan recipes.
+ */
+export type PublicRecipesDietFilter = 'vege_plus' | 'vegan';
+
+/**
  * Recipe cuisine enum (public API).
  */
 export type RecipeCuisine = 
@@ -54,9 +60,12 @@ export interface GetPublicRecipesQuery {
     q?: string;
     termorobot?: boolean;
     dietType?: RecipeDietType;
+    diet?: PublicRecipesDietFilter;
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
     grill?: boolean;
+    favorite?: boolean;
+    wantToTry?: boolean;
 }
 
 /**
@@ -77,9 +86,12 @@ export interface GetPublicRecipesFeedQuery {
     q?: string;
     termorobot?: boolean;
     dietType?: RecipeDietType;
+    diet?: PublicRecipesDietFilter;
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
     grill?: boolean;
+    favorite?: boolean;
+    wantToTry?: boolean;
 }
 
 /**

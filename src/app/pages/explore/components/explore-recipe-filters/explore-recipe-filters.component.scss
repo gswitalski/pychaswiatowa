@@ -1,0 +1,23 @@
+.explore-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    mat-chip-option,
+    mat-button-toggle-group {
+        flex-shrink: 0;
+    }
+
+    mat-button-toggle-group {
+        display: flex;
+    }
+}

@@ -3,13 +3,13 @@ Twoim zadaniem jest zaimplementowanie widoku frontendu w oparciu o podany plan i
 Najpierw przejrzyj plan implementacji:
 
 <implementation_plan>
-@docs/results/impl-plans/views/PS-95-recipe-flags-view-implementation-plan.md
+@docs/results/impl-plans/views/PS-96-explore-recipe-filters-view-implementation-plan.md
 </implementation_plan>
 
 Teraz przejrzyj zasady implementacji:
 
 <implementation_rules>
-@.cursor\rules\fronend.mdc
+@.cursor\rules\frontend.mdc
 </implementation_rules>
 
 Przejrzyj zdefiniowane typy:
@@ -20,9 +20,6 @@ Przejrzyj zdefiniowane typy:
 
 Wdrażaj plan zgodnie z następującym podejściem:
 
-<implementation_approach>
-Realizuj maksymalnie 3 kroki planu implementacji, podsumuj krótko co zrobiłeś i opisz plan na 3 kolejne działania - zatrzymaj w tym momencie pracę i czekaj na mój feedback.
-</implementation_approach>
 
 Dokładnie przeanalizuj plan wdrożenia i zasady. Zwróć szczególną uwagę na strukturę komponentów, wymagania dotyczące integracji API i interakcje użytkownika opisane w planie.
 

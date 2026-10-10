@@ -9,19 +9,19 @@ Najpierw przejrzyj następujące informacje:
 
 2. Nowe wymagania do zaimplementowania:
 <new_requirements>
-@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-user-story.md
+@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-user-story.md
 </new_requirements>
 
 
 
 3. Widok do implementacji / zmiany w widokach
 <ui_plan>
-@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-ui-plan.md
+@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-ui-plan.md
 </ui_plan>
 
 5. Endpoint Description:
 <endpoint_description>
-@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-api-plan.md
+@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-api-plan.md
 </endpoint_description>
 
 
@@ -37,7 +37,7 @@ Najpierw przejrzyj następujące informacje:
 
 9. Frontend rules
 <rules>
-@.cursor/rules/fronend.mdc 
+@.cursor/rules/frontend.mdc 
 </rules>
 
 Przed utworzeniem ostatecznego planu wdrożenia przeprowadź analizę i planowanie wewnątrz tagów <implementation_breakdown> w swoim bloku myślenia. Ta sekcja może być dość długa, ponieważ ważne jest, aby być dokładnym.

@@ -11,12 +11,12 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. Nowe wymagania do zaimplementowania
 
 <new_requirements>
-@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-user-story.md
+@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-user-story.md
 </new_requirements>
 
 3. Lista zmian i nowych funkcjonalności w API
 <api_definition>
-@docs/results/new-features/user-stories/PS-95/PS-95-recipe-favorite-and-try-flags-api-plan.md
+@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-api-plan.md
 </api_definition>
 
 

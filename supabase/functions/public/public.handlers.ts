@@ -119,6 +119,24 @@ const GetPublicRecipesQuerySchema = z.object({
         }
         throw new Error('filter[grill] must be true, false, 1, or 0');
     }),
+    termorobot: z.string().optional().transform((val) => {
+        if (val === 'true' || val === '1') return true;
+        if (val === 'false' || val === '0') return false;
+        return undefined;
+    }),
+    grill: z.string().optional().transform((val) => {
+        if (val === 'true' || val === '1') return true;
+        if (val === 'false' || val === '0') return false;
+        return undefined;
+    }),
+    favorite: z.string().optional().transform((val) => val === 'true' ? true : undefined),
+    want_to_try: z.string().optional().transform((val) => val === 'true' ? true : undefined),
+    diet: z.string().optional().transform((val) => {
+        if (val === 'vege_plus' || val === 'vegan') {
+            return val;
+        }
+        return undefined;
+    }),
 });
 
 /**
@@ -225,6 +243,24 @@ const GetPublicRecipesFeedQuerySchema = z.object({
         }
         throw new Error('filter[grill] must be true, false, 1, or 0');
     }),
+    termorobot: z.string().optional().transform((val) => {
+        if (val === 'true' || val === '1') return true;
+        if (val === 'false' || val === '0') return false;
+        return undefined;
+    }),
+    grill: z.string().optional().transform((val) => {
+        if (val === 'true' || val === '1') return true;
+        if (val === 'false' || val === '0') return false;
+        return undefined;
+    }),
+    favorite: z.string().optional().transform((val) => val === 'true' ? true : undefined),
+    want_to_try: z.string().optional().transform((val) => val === 'true' ? true : undefined),
+    diet: z.string().optional().transform((val) => {
+        if (val === 'vege_plus' || val === 'vegan') {
+            return val;
+        }
+        return undefined;
+    }),
 });
 
 /**
@@ -319,6 +355,12 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             'filter[diet_type]': url.searchParams.get('filter[diet_type]') || undefined,
             'filter[cuisine]': url.searchParams.get('filter[cuisine]') || undefined,
             'filter[difficulty]': url.searchParams.get('filter[difficulty]') || undefined,
+            'filter[grill]': url.searchParams.get('filter[grill]') || undefined,
+            termorobot: url.searchParams.get('termorobot') || undefined,
+            grill: url.searchParams.get('grill') || undefined,
+            favorite: url.searchParams.get('favorite') || undefined,
+            want_to_try: url.searchParams.get('want_to_try') || undefined,
+            diet: url.searchParams.get('diet') || undefined,
         };
 
         let validatedParams;
@@ -343,11 +385,14 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
             sortField: validatedParams.sort.field,
             sortDirection: validatedParams.sort.direction,
             q: validatedParams.q,
-            termorobot: validatedParams['filter[termorobot]'],
+            termorobot: validatedParams.termorobot ?? validatedParams['filter[termorobot]'],
             dietType: validatedParams['filter[diet_type]'],
+            diet: validatedParams.diet,
             cuisine: validatedParams['filter[cuisine]'],
             difficulty: validatedParams['filter[difficulty]'],
-            grill: validatedParams['filter[grill]'],
+            grill: validatedParams.grill ?? validatedParams['filter[grill]'],
+            favorite: validatedParams.favorite,
+            wantToTry: validatedParams.want_to_try,
         };
 
         // Create service role client for public access
@@ -470,6 +515,12 @@ export async function handleGetPublicRecipesFeed(req: Request): Promise<Response
             'filter[diet_type]': url.searchParams.get('filter[diet_type]') || undefined,
             'filter[cuisine]': url.searchParams.get('filter[cuisine]') || undefined,
             'filter[difficulty]': url.searchParams.get('filter[difficulty]') || undefined,
+            'filter[grill]': url.searchParams.get('filter[grill]') || undefined,
+            termorobot: url.searchParams.get('termorobot') || undefined,
+            grill: url.searchParams.get('grill') || undefined,
+            favorite: url.searchParams.get('favorite') || undefined,
+            want_to_try: url.searchParams.get('want_to_try') || undefined,
+            diet: url.searchParams.get('diet') || undefined,
         };
 
         let validatedParams;
@@ -501,11 +552,14 @@ export async function handleGetPublicRecipesFeed(req: Request): Promise<Response
             sortField: validatedParams.sort.field,
             sortDirection: validatedParams.sort.direction,
             q: validatedParams.q,
-            termorobot: validatedParams['filter[termorobot]'],
+            termorobot: validatedParams.termorobot ?? validatedParams['filter[termorobot]'],
             dietType: validatedParams['filter[diet_type]'],
+            diet: validatedParams.diet,
             cuisine: validatedParams['filter[cuisine]'],
             difficulty: validatedParams['filter[difficulty]'],
-            grill: validatedParams['filter[grill]'],
+            grill: validatedParams.grill ?? validatedParams['filter[grill]'],
+            favorite: validatedParams.favorite,
+            wantToTry: validatedParams.want_to_try,
         };
 
         // Create service role client for public access

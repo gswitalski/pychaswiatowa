@@ -26,7 +26,7 @@ Logo jest widoczne dla użytkowników niezalogowanych
 
 <implementation_rules>
 
-@.cursor\rules\fronend.mdc
+@.cursor\rules\frontend.mdc
 
 </implementation_rules>
 

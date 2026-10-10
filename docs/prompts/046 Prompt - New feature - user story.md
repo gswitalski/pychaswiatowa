@@ -13,15 +13,16 @@ Opis wymagań do nowej funkcjonalności:
 
 <wymagania>
 
-Jako użytkownik przeglądający przeisy chcę móc oznaczyć przepis który widzę dwiema flagami: 
-1. ulubiny (serduszko)
-2. Chcę wypróbować (jakaś inna ikonka)
+odkrywaj przepisy , ścieżka https://pychaswiatowa.pl/explore
 
-aby zaznaczyć te flagi mogę po porstu kliknąć w którąś ikonkę.
+dodać podstawowee filtry w jedej linijce pod polem wyszukiwania. jeśli sie da to najlepiej w postaci ikonek:
 
-Ikonka serduszka ma być też widoczna na kafelku.
+- ulubione, 
+- chcę wypróboać
+- wszystkie/wwegetariańskei i wegańskie/tylko wegańskie
+- termorobot
+- grill
 
-wyszukiwanie po tej fladze będzie w innej historyjce
 
 </wymagania>
 

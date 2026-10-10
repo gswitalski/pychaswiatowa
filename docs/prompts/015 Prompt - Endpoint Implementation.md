@@ -3,7 +3,7 @@ Twoim zadaniem jest wdrożenie endpointa interfejsu API REST w oparciu o podany 
 Najpierw dokładnie przejrzyj dostarczony plan wdrożenia:
 
 <implementation_plan>
-@docs/results/impl-plans/endpoints/ps95-recipe-favorite-and-try-flags-api-implementation-plan.md
+@docs/results/impl-plans/endpoints/ps96-explore-recipe-filters-api-implementation-plan.md
 </implementation_plan>
 
 <types>
@@ -18,9 +18,6 @@ Najpierw dokładnie przejrzyj dostarczony plan wdrożenia:
 
 </implementation_rules>
 
-<implementation_approach>
-Realizuj maksymalnie 3 kroki planu implementacji, podsumuj krótko co zrobiłeś i opisz plan na 3 kolejne działania - zatrzymaj w tym momencie pracę i czekaj na mój feedback.
-</implementation_approach>
 
 Teraz wykonaj następujące kroki, aby zaimplementować punkt końcowy interfejsu API REST:
 

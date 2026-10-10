@@ -65,6 +65,9 @@ export class PublicRecipeResultsComponent {
     /** Komunikat błędu */
     readonly errorMessage = input<string | null>(null);
 
+    /** Czy komponent ma renderować własny empty state */
+    readonly renderEmptyState = input<boolean>(true);
+
     // ==================== Outputs ====================
 
     /** Emitowane przy kliknięciu "Więcej" */
@@ -80,7 +83,8 @@ export class PublicRecipeResultsComponent {
 
     /** Czy pokazać empty state */
     readonly showEmptyState = computed(() => {
-        return !this.loadingInitial() && 
+        return this.renderEmptyState() &&
+               !this.loadingInitial() && 
                !this.errorMessage() && 
                this.items().length === 0;
     });

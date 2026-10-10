@@ -34,6 +34,11 @@ export interface GetPublicRecipesFeedParams {
     sort?: string;
     /** Fraza do wyszukiwania (min. 3 znaki) */
     q?: string;
+    termorobot?: 'true';
+    grill?: 'true';
+    diet?: 'vege_plus' | 'vegan';
+    favorite?: 'true';
+    want_to_try?: 'true';
 }
 
 /**
@@ -132,6 +137,22 @@ export class PublicRecipesService {
         // Tylko wysyłaj q jeśli ma co najmniej 3 znaki
         if (params.q && params.q.length >= 3) {
             queryParams.append('q', params.q);
+        }
+
+        if (params.termorobot) {
+            queryParams.append('termorobot', params.termorobot);
+        }
+        if (params.grill) {
+            queryParams.append('grill', params.grill);
+        }
+        if (params.diet) {
+            queryParams.append('diet', params.diet);
+        }
+        if (params.favorite) {
+            queryParams.append('favorite', params.favorite);
+        }
+        if (params.want_to_try) {
+            queryParams.append('want_to_try', params.want_to_try);
         }
 
         const queryString = queryParams.toString();

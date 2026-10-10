@@ -1,0 +1,47 @@
+<div class="explore-filters" aria-label="Filtry przepisów">
+    @if (isAuthenticated()) {
+        <mat-chip-option
+            [selected]="filters().favorite"
+            matTooltip="Pokaż ulubione przepisy"
+            (click)="toggle('favorite')"
+        >
+            <mat-icon matChipAvatar>favorite</mat-icon>
+            Ulubione
+        </mat-chip-option>
+        <mat-chip-option
+            [selected]="filters().wantToTry"
+            matTooltip="Pokaż przepisy do wypróbowania"
+            (click)="toggle('wantToTry')"
+        >
+            <mat-icon matChipAvatar>bookmark</mat-icon>
+            Chcę wypróbować
+        </mat-chip-option>
+    }
+
+    <mat-button-toggle-group
+        [value]="filters().diet ?? ''"
+        aria-label="Filtr diety"
+        (change)="onDietChange($event)"
+    >
+        <mat-button-toggle value="">Wszystkie diety</mat-button-toggle>
+        <mat-button-toggle value="vege_plus">Wegetariańskie+</mat-button-toggle>
+        <mat-button-toggle value="vegan">Tylko wegańskie</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <mat-chip-option
+        [selected]="filters().termorobot"
+        matTooltip="Pokaż przepisy na termorobot"
+        (click)="toggle('termorobot')"
+    >
+        <mat-icon matChipAvatar>blender</mat-icon>
+        Termorobot
+    </mat-chip-option>
+    <mat-chip-option
+        [selected]="filters().grill"
+        matTooltip="Pokaż przepisy z grilla"
+        (click)="toggle('grill')"
+    >
+        <mat-icon matChipAvatar>outdoor_grill</mat-icon>
+        Grill
+    </mat-chip-option>
+</div>

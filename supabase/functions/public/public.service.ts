@@ -17,6 +17,46 @@ import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 
 /**
+ * Returns recipe IDs matching the requested personal flags.
+ * Personal filters are ignored for anonymous requests.
+ */
+async function getRecipeIdsMatchingPublicFlags(
+    client: TypedSupabaseClient,
+    query: { favorite?: boolean; wantToTry?: boolean },
+    userId: string | null
+): Promise<Set<number> | null> {
+    const filterFavorite = userId !== null && query.favorite === true;
+    const filterWantToTry = userId !== null && query.wantToTry === true;
+
+    if (!filterFavorite && !filterWantToTry) {
+        return null;
+    }
+
+    const { data, error } = await client
+        .from('user_recipe_flags')
+        .select('recipe_id, is_favorite, is_want_to_try')
+        .eq('user_id', userId as string);
+
+    if (error) {
+        logger.error('Database error while fetching public recipe flags', {
+            errorCode: error.code,
+            errorMessage: error.message,
+            userId,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe flags');
+    }
+
+    const matchingRecipeIds = (data ?? [])
+        .filter((row) =>
+            (!filterFavorite || row.is_favorite === true) &&
+            (!filterWantToTry || row.is_want_to_try === true)
+        )
+        .map((row) => row.recipe_id);
+
+    return new Set(matchingRecipeIds);
+}
+
+/**
  * DTO for a category (minimal subset).
  */
 export interface CategoryDto {
@@ -616,8 +656,12 @@ export async function getPublicRecipes(
         dbQuery = dbQuery.eq('is_termorobot', query.termorobot);
     }
 
-    // Apply diet type filter if provided
-    if (query.dietType !== undefined) {
+    // The new diet filter takes precedence over the backward-compatible one.
+    if (query.diet === 'vege_plus') {
+        dbQuery = dbQuery.in('diet_type', ['VEGETARIAN', 'VEGAN']);
+    } else if (query.diet === 'vegan') {
+        dbQuery = dbQuery.eq('diet_type', 'VEGAN');
+    } else if (query.dietType !== undefined) {
         dbQuery = dbQuery.eq('diet_type', query.dietType);
     }
 
@@ -634,6 +678,21 @@ export async function getPublicRecipes(
     // Apply grill filter if provided
     if (query.grill !== undefined) {
         dbQuery = dbQuery.eq('is_grill', query.grill);
+    }
+
+    const matchingFlagRecipeIds = await getRecipeIdsMatchingPublicFlags(client, query, userId);
+    if (matchingFlagRecipeIds !== null) {
+        if (matchingFlagRecipeIds.size === 0) {
+            return {
+                data: [],
+                pagination: {
+                    currentPage: query.page,
+                    totalPages: 0,
+                    totalItems: 0,
+                },
+            };
+        }
+        dbQuery = dbQuery.in('id', [...matchingFlagRecipeIds]);
     }
 
     // For search queries: fetch all results to filter and sort by relevance in app
@@ -1159,9 +1218,12 @@ export async function getPublicRecipesFeed(
         q: query.q,
         termorobot: query.termorobot,
         dietType: query.dietType,
+        diet: query.diet,
         cuisine: query.cuisine,
         difficulty: query.difficulty,
         grill: query.grill,
+        favorite: query.favorite,
+        wantToTry: query.wantToTry,
         userId: userId ?? undefined,
     });
 
@@ -1214,8 +1276,12 @@ export async function getPublicRecipesFeed(
         dbQuery = dbQuery.eq('is_termorobot', query.termorobot);
     }
 
-    // Apply diet type filter if provided
-    if (query.dietType !== undefined) {
+    // The new diet filter takes precedence over the backward-compatible one.
+    if (query.diet === 'vege_plus') {
+        dbQuery = dbQuery.in('diet_type', ['VEGETARIAN', 'VEGAN']);
+    } else if (query.diet === 'vegan') {
+        dbQuery = dbQuery.eq('diet_type', 'VEGAN');
+    } else if (query.dietType !== undefined) {
         dbQuery = dbQuery.eq('diet_type', query.dietType);
     }
 
@@ -1232,6 +1298,20 @@ export async function getPublicRecipesFeed(
     // Apply grill filter if provided
     if (query.grill !== undefined) {
         dbQuery = dbQuery.eq('is_grill', query.grill);
+    }
+
+    const matchingFlagRecipeIds = await getRecipeIdsMatchingPublicFlags(client, query, userId);
+    if (matchingFlagRecipeIds !== null) {
+        if (matchingFlagRecipeIds.size === 0) {
+            return {
+                data: [],
+                pageInfo: {
+                    hasMore: false,
+                    nextCursor: null,
+                },
+            };
+        }
+        dbQuery = dbQuery.in('id', [...matchingFlagRecipeIds]);
     }
 
     // For search queries: fetch all results to filter and sort by relevance in app
