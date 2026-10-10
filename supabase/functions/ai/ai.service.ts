@@ -101,6 +101,7 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
      o kluczowym składniku lub zastosowanej technice kulinarnej. Nie używaj słowa „ciekawostka”
      wprost — wpleć ją naturalnie w treść.
    - Opis nie może zawierać stwierdzenia, ż potrawa zaskoczy moich gości.
+   - Opis nie może zawierać informacji o czasie przygotowania.
    - Opis NIE MOŻE zawierać treści wulgarnych, erotycznych ani obraźliwych.
    - Jeśli nie da się stworzyć sensownego opisu, użyj null
 
