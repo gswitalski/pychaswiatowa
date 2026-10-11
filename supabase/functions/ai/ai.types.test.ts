@@ -1,6 +1,7 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
 import {
     AiRecipeDraftLlmResponseSchema,
+    AiRecipeDraftRequestSchema,
     AiRecipeImageRequestSchema,
 } from './ai.types.ts';
 
@@ -81,6 +82,27 @@ Deno.test('AiRecipeImageRequestSchema: prompt_hint powyżej limitu zwraca błąd
         );
         assertEquals(hasPromptHintError, true);
     }
+});
+
+Deno.test('AiRecipeDraftRequestSchema: akceptuje źródło URL', () => {
+    const result = AiRecipeDraftRequestSchema.safeParse({
+        source: 'url',
+        url: 'https://example.com/przepis',
+        output_format: 'pycha_recipe_draft_v1',
+        language: 'pl',
+    });
+
+    assertEquals(result.success, true);
+});
+
+Deno.test('AiRecipeDraftRequestSchema: odrzuca niedozwolony schemat URL', () => {
+    const result = AiRecipeDraftRequestSchema.safeParse({
+        source: 'url',
+        url: 'ftp://example.com/przepis',
+        output_format: 'pycha_recipe_draft_v1',
+    });
+
+    assertEquals(result.success, false);
 });
 
 function createValidDraft(overrides: Record<string, unknown> = {}): Record<string, unknown> {

@@ -72,6 +72,26 @@ function createValidationErrorResponse(errors: z.ZodError): Response {
 }
 
 /**
+ * Creates the public error response for malformed URL source requests.
+ */
+function createInvalidUrlResponse(errors: z.ZodError): Response {
+    return new Response(
+        JSON.stringify({
+            code: 'INVALID_URL',
+            message: 'URL must start with http:// or https:// and have valid syntax',
+            errors: errors.errors.map((error) => ({
+                field: error.path.join('.'),
+                message: error.message,
+            })),
+        }),
+        {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+        },
+    );
+}
+
+/**
  * Creates a 405 Method Not Allowed response.
  */
 function createMethodNotAllowedResponse(allowedMethods: string[]): Response {
@@ -227,9 +247,9 @@ function decodeBase64(base64String: string): Uint8Array {
 
 /**
  * Handles POST /ai/recipes/draft request.
- * Generates a recipe draft from text or image using AI.
+ * Generates a recipe draft from text, image, or URL using AI.
  *
- * Premium feature - requires app_role of 'premium' or 'admin'.
+ * Available to authenticated users with a supported application role.
  *
  * @param req - The incoming HTTP request
  * @returns Response with generated recipe draft or error
@@ -282,7 +302,12 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 userId: user.id,
                 errors: validationResult.error.errors,
             });
-            return createValidationErrorResponse(validationResult.error);
+            const source = typeof body === 'object' && body !== null
+                ? (body as Record<string, unknown>).source
+                : undefined;
+            return source === 'url'
+                ? createInvalidUrlResponse(validationResult.error)
+                : createValidationErrorResponse(validationResult.error);
         }
 
         const requestData = validationResult.data;
@@ -291,6 +316,7 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
         let inputText: string | undefined;
         let imageBytes: Uint8Array | undefined;
         let imageMimeType: string | undefined;
+        let inputUrl: string | undefined;
 
         if (requestData.source === 'text') {
             inputText = requestData.text.trim();
@@ -322,6 +348,12 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 imageSize: imageBytes.length,
                 mimeType: imageMimeType,
             });
+        } else if (requestData.source === 'url') {
+            inputUrl = requestData.url;
+            logger.info('Processing URL source', {
+                userId: user.id,
+                urlPrefix: inputUrl.substring(0, 50),
+            });
         }
 
         const supabaseAdmin = createServiceRoleClient();
@@ -340,6 +372,7 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 text: inputText,
                 imageBytes,
                 imageMimeType,
+                url: inputUrl,
                 language: requestData.language,
             });
         } catch (error) {
@@ -967,7 +1000,7 @@ async function handlePostAiRecipesNormalizedIngredients(req: Request): Promise<R
  *
  * Supported routes:
  * - GET /ai/credits - Return the authenticated user's AI credit balance
- * - POST /ai/recipes/draft - Generate recipe draft from text or image
+ * - POST /ai/recipes/draft - Generate recipe draft from text, image, or URL
  * - POST /ai/recipes/image - Generate preview image of a recipe dish (premium)
  * - POST /ai/recipes/normalized-ingredients - Normalize ingredients for shopping lists
  */

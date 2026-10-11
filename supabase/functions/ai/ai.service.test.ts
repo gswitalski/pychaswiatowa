@@ -1,5 +1,10 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
-import { generateRecipeDraft, getSystemPrompt } from './ai.service.ts';
+import {
+    extractTextFromHtml,
+    generateRecipeDraft,
+    getSystemPrompt,
+    isPrivateIp,
+} from './ai.service.ts';
 
 function createDraft(overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
@@ -104,6 +109,24 @@ Deno.test({
             'Prompt powinien zawierać przykład few-shot',
         );
     },
+});
+
+Deno.test('isPrivateIp: blokuje prywatne i zarezerwowane adresy', () => {
+    assertEquals(isPrivateIp('10.0.0.1'), true);
+    assertEquals(isPrivateIp('192.168.1.10'), true);
+    assertEquals(isPrivateIp('169.254.169.254'), true);
+    assertEquals(isPrivateIp('::1'), true);
+    assertEquals(isPrivateIp('fc00::1'), true);
+    assertEquals(isPrivateIp('8.8.8.8'), false);
+});
+
+Deno.test('extractTextFromHtml: usuwa elementy techniczne i dekoduje encje', () => {
+    assertEquals(
+        extractTextFromHtml(
+            '<nav>Menu</nav><main>Przepis &amp; sos&nbsp;pomidorowy</main><script>secret</script>',
+        ),
+        'Przepis & sos pomidorowy',
+    );
 });
 
 Deno.test({

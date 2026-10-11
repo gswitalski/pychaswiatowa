@@ -47,6 +47,25 @@ export class AiDraftPayloadTooLargeError extends Error {
     }
 }
 
+export type UrlDraftErrorCode =
+    | 'INVALID_URL'
+    | 'URL_INVALID_HOST'
+    | 'URL_FETCH_FAILED'
+    | 'URL_TIMEOUT'
+    | 'URL_CONTENT_TOO_LARGE';
+
+export class AiDraftUrlError extends Error {
+    readonly status: number;
+    readonly code: UrlDraftErrorCode;
+
+    constructor(code: UrlDraftErrorCode, message: string, status: number) {
+        super(message);
+        this.name = 'AiDraftUrlError';
+        this.code = code;
+        this.status = status;
+    }
+}
+
 /**
  * Service for generating AI-assisted recipe drafts.
  * Calls Edge Function POST /ai/recipes/draft via supabase.functions.invoke.
@@ -105,6 +124,7 @@ export class AiRecipeDraftService {
                 error instanceof AiDraftValidationError ||
                 error instanceof AiDraftRateLimitError ||
                 error instanceof AiDraftPayloadTooLargeError ||
+                error instanceof AiDraftUrlError ||
                 error instanceof AiCreditsExhaustedApiError
             ) {
                 throw error;
@@ -151,12 +171,20 @@ export class AiRecipeDraftService {
             case 413:
                 throw new AiDraftPayloadTooLargeError();
 
+            case 400:
             case 422: {
-                const unprocessableData: AiRecipeDraftUnprocessableEntityDto =
-                    await response.json().catch(() => ({
-                        message: 'Wklejony materiał nie opisuje pojedynczego przepisu.',
-                        reasons: [],
-                    }));
+                const errorData = await response.json().catch(() => ({}));
+                const urlCode = this.urlErrorCode(errorData.error);
+
+                if (urlCode) {
+                    throw new AiDraftUrlError(
+                        urlCode,
+                        this.urlErrorMessage(urlCode),
+                        status,
+                    );
+                }
+
+                const unprocessableData = errorData as AiRecipeDraftUnprocessableEntityDto;
                 throw new AiDraftValidationError(
                     unprocessableData.message ||
                         'Wklejony materiał nie opisuje pojedynczego przepisu.',
@@ -176,5 +204,36 @@ export class AiRecipeDraftService {
                 );
             }
         }
+    }
+
+    private urlErrorCode(value: unknown): UrlDraftErrorCode | null {
+        const codes: UrlDraftErrorCode[] = [
+            'INVALID_URL',
+            'URL_INVALID_HOST',
+            'URL_FETCH_FAILED',
+            'URL_TIMEOUT',
+            'URL_CONTENT_TOO_LARGE',
+        ];
+
+        return typeof value === 'string' && codes.includes(value as UrlDraftErrorCode)
+            ? (value as UrlDraftErrorCode)
+            : null;
+    }
+
+    private urlErrorMessage(code: UrlDraftErrorCode): string {
+        const messages: Record<UrlDraftErrorCode, string> = {
+            INVALID_URL:
+                'Podany adres jest nieprawidłowy. Sprawdź, czy link zaczyna się od https://.',
+            URL_INVALID_HOST:
+                'Adres wskazuje na niedozwolony zasób. Spróbuj z innym linkiem.',
+            URL_FETCH_FAILED:
+                'Nie udało się pobrać strony. Sprawdź, czy adres jest dostępny publicznie, lub skopiuj treść przepisu ręcznie i użyj trybu Tekst.',
+            URL_TIMEOUT:
+                'Czas oczekiwania na stronę minął. Spróbuj ponownie lub użyj trybu Tekst.',
+            URL_CONTENT_TOO_LARGE:
+                'Strona jest zbyt duża, aby ją przetworzyć. Skopiuj treść przepisu i użyj trybu Tekst.',
+        };
+
+        return messages[code];
     }
 }

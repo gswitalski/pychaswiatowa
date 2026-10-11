@@ -111,6 +111,22 @@ describe('RecipeNewAssistPageComponent (PS-92 schowek)', () => {
 
         expect(readImageFile).not.toHaveBeenCalled();
     });
+
+    it('blokuje generowanie w trybie URL bez poprawnego adresu', () => {
+        const component = createComponent();
+        component.onSourceChange('url');
+
+        expect(component.isNextDisabled()).toBe(true);
+    });
+
+    it('odblokowuje generowanie w trybie URL po otrzymaniu poprawnego adresu', () => {
+        const component = createComponent();
+        component.onSourceChange('url');
+        component.onUrlChange('https://example.com/przepis');
+
+        expect(component.hasAiInput()).toBe(true);
+        expect(component.isNextDisabled()).toBe(false);
+    });
 });
 
 describe('RecipeNewAssistPageComponent (PS-93 aparat)', () => {

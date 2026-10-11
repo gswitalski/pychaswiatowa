@@ -9,19 +9,19 @@ Najpierw przejrzyj następujące informacje:
 
 2. Nowe wymagania do zaimplementowania:
 <new_requirements>
-@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-user-story.md
+@docs/results/new-features/user-stories/PS-97/PS-97-ai-recipe-from-url-user-story.md
 </new_requirements>
 
 
 
 3. Widok do implementacji / zmiany w widokach
 <ui_plan>
-@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-ui-plan.md
+@docs/results/new-features/user-stories/PS-97/PS-97-ai-recipe-from-url-ui-plan.md
 </ui_plan>
 
 5. Endpoint Description:
 <endpoint_description>
-@docs/results/new-features/user-stories/PS-96/PS-96-explore-recipe-filters-api-plan.md
+@docs/results/new-features/user-stories/PS-97/PS-97-ai-recipe-from-url-api-plan.md
 </endpoint_description>
 
 

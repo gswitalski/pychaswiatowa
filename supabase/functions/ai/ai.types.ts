@@ -3,7 +3,7 @@
  * Data Transfer Objects (DTOs) and validation schemas for AI-powered recipe draft endpoint.
  *
  * Supported operations:
- * - POST /ai/recipes/draft - Generate recipe draft from text or image
+ * - POST /ai/recipes/draft - Generate recipe draft from text, image, or URL
  */
 
 import { z } from 'npm:zod@3.22.4';
@@ -15,6 +15,18 @@ export { AiRecipeDraftMetadataSchema } from './ai-draft-metadata.ts';
 
 /** Maximum text length for recipe input (characters) */
 export const MAX_TEXT_LENGTH = 50_000;
+
+/** Maximum URL length in characters */
+export const MAX_URL_LENGTH = 2048;
+
+/** Timeout for fetching source URLs in milliseconds */
+export const URL_FETCH_TIMEOUT_MS = 10_000;
+
+/** Maximum HTML response size in bytes */
+export const MAX_URL_CONTENT_BYTES = 500_000;
+
+/** Maximum extracted source text length before AI processing */
+export const MAX_URL_EXTRACTED_TEXT_LENGTH = 50_000;
 
 /** Maximum image size after base64 decoding (bytes) - 10 MB */
 export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -92,7 +104,7 @@ const AiRecipeDraftImageSchema = z.object({
 });
 
 /**
- * Base schema with common fields for both text and image variants.
+ * Base schema with common fields for all source variants.
  */
 const BaseRequestSchema = z.object({
     output_format: z.literal(REQUIRED_OUTPUT_FORMAT, {
@@ -124,11 +136,36 @@ const ImageSourceSchema = BaseRequestSchema.extend({
 });
 
 /**
- * Main request schema - discriminated union of text and image sources.
+ * Schema for URL source variant.
+ */
+const UrlSourceSchema = BaseRequestSchema.extend({
+    source: z.literal('url'),
+    url: z.string()
+        .min(1, 'URL cannot be empty')
+        .max(MAX_URL_LENGTH, `URL exceeds maximum length of ${MAX_URL_LENGTH} characters`)
+        .refine(
+            (value) => /^https?:\/\//i.test(value),
+            'URL must start with http:// or https://',
+        )
+        .refine((value) => {
+            try {
+                new URL(value);
+                return true;
+            } catch {
+                return false;
+            }
+        }, 'URL has invalid syntax'),
+    text: z.undefined().optional(),
+    image: z.undefined().optional(),
+});
+
+/**
+ * Main request schema - discriminated union of text, image, and URL sources.
  */
 export const AiRecipeDraftRequestSchema = z.discriminatedUnion('source', [
     TextSourceSchema,
     ImageSourceSchema,
+    UrlSourceSchema,
 ]);
 
 /**
@@ -189,7 +226,7 @@ export const AiRecipeDraftErrorResponseSchema = z.object({
 
 // #region --- Inferred Types ---
 
-/** Type for request body (text or image variant) */
+/** Type for request body */
 export type AiRecipeDraftRequest = z.infer<typeof AiRecipeDraftRequestSchema>;
 
 /** Type for text source request */
@@ -197,6 +234,9 @@ export type AiTextSourceRequest = z.infer<typeof TextSourceSchema>;
 
 /** Type for image source request */
 export type AiImageSourceRequest = z.infer<typeof ImageSourceSchema>;
+
+/** Type for URL source request */
+export type AiUrlSourceRequest = z.infer<typeof UrlSourceSchema>;
 
 /** Strictly validated content fields returned for a recipe draft */
 export type AiRecipeDraftContentDto = z.infer<typeof AiRecipeDraftContentSchema>;
@@ -231,10 +271,11 @@ export type AiRecipeDraftLlmErrorResponse = z.infer<typeof AiRecipeDraftErrorRes
  */
 export interface GenerateRecipeDraftParams {
     userId: string;
-    source: 'text' | 'image';
+    source: 'text' | 'image' | 'url';
     text?: string;
     imageBytes?: Uint8Array;
     imageMimeType?: string;
+    url?: string;
     language: string;
 }
 

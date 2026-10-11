@@ -1,0 +1,18 @@
+<mat-form-field appearance="outline" class="full-width">
+    <mat-label>Link do przepisu</mat-label>
+    <input
+        matInput
+        type="url"
+        [formControl]="urlControl"
+        aria-label="Adres strony z przepisem"
+        aria-describedby="recipe-url-hint recipe-url-error"
+        autocomplete="url"
+        placeholder="https://example.com/przepis"
+        (blur)="onBlur()" />
+    <mat-hint id="recipe-url-hint">
+        Wklej publiczny adres strony zawierającej przepis
+    </mat-hint>
+    @if (errorMessage(); as message) {
+    <mat-error id="recipe-url-error">{{ message }}</mat-error>
+    }
+</mat-form-field>

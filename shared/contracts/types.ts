@@ -1025,7 +1025,7 @@ export interface DeleteRecipeItemsGroupResponseDto {
 /**
  * Source type for AI recipe draft generation.
  */
-export type AiRecipeDraftSource = 'text' | 'image';
+export type AiRecipeDraftSource = 'text' | 'image' | 'url';
 
 /**
  * Allowed MIME types for image source.
@@ -1042,7 +1042,7 @@ export interface AiRecipeDraftImageDto {
 
 /**
  * Request DTO for AI recipe draft generation endpoint.
- * Supports two variants: text source or image source.
+ * Supports text, image, and URL source variants.
  */
 export type AiRecipeDraftRequestDto =
     | {
@@ -1054,6 +1054,12 @@ export type AiRecipeDraftRequestDto =
     | {
           source: 'image';
           image: AiRecipeDraftImageDto;
+          output_format: 'pycha_recipe_draft_v1';
+          language?: string;
+      }
+    | {
+          source: 'url';
+          url: string;
           output_format: 'pycha_recipe_draft_v1';
           language?: string;
       };

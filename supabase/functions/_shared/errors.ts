@@ -17,6 +17,11 @@ export type ErrorCode =
     | 'UNPROCESSABLE_ENTITY'
     | 'TOO_MANY_REQUESTS'
     | 'RATE_LIMITED'
+    | 'INVALID_URL'
+    | 'URL_INVALID_HOST'
+    | 'URL_FETCH_FAILED'
+    | 'URL_TIMEOUT'
+    | 'URL_CONTENT_TOO_LARGE'
     | 'PAYMENT_PROVIDER_ERROR'
     | 'INVALID_SIGNATURE'
     | 'METHOD_NOT_ALLOWED'
@@ -55,6 +60,11 @@ export class ApplicationError extends Error {
             UNPROCESSABLE_ENTITY: 422,
             TOO_MANY_REQUESTS: 429,
             RATE_LIMITED: 429,
+            INVALID_URL: 400,
+            URL_INVALID_HOST: 400,
+            URL_FETCH_FAILED: 422,
+            URL_TIMEOUT: 422,
+            URL_CONTENT_TOO_LARGE: 422,
             PAYMENT_PROVIDER_ERROR: 502,
             INVALID_SIGNATURE: 400,
             METHOD_NOT_ALLOWED: 405,

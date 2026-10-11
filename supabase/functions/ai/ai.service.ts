@@ -26,8 +26,11 @@ import {
     LlmGenerationResult,
     MAX_RECIPE_NAME_LENGTH,
     MAX_TAGS_COUNT,
+    MAX_URL_CONTENT_BYTES,
+    MAX_URL_EXTRACTED_TEXT_LENGTH,
     NormalizedIngredientsGenerationResult,
     ReferenceImageData,
+    URL_FETCH_TIMEOUT_MS,
 } from "./ai.types.ts";
 
 // #region --- Constants ---
@@ -307,6 +310,197 @@ Zwróć odpowiedź w formacie JSON zgodnie z instrukcjami.`;
 
 // #endregion
 
+// #region --- URL Source Helpers ---
+
+const MAX_URL_REDIRECTS = 5;
+const URL_USER_AGENT = "PychaSwiatowa-Bot/1.0 (+https://pychaswiatowa.web.app)";
+
+/**
+ * Checks whether an IPv4 or IPv6 address belongs to a private or reserved range.
+ */
+export function isPrivateIp(ip: string): boolean {
+    const normalizedIp = ip.trim().toLowerCase().replace(/^\[|\]$/g, "");
+
+    if (normalizedIp.includes(":")) {
+        const firstHextet = parseInt(normalizedIp.split(":")[0] || "0", 16);
+        return normalizedIp === "::1"
+            || normalizedIp === "::"
+            || (firstHextet >= 0xfc00 && firstHextet <= 0xfdff)
+            || (firstHextet >= 0xfe80 && firstHextet <= 0xfebf)
+            || (normalizedIp.startsWith("::ffff:") && isPrivateIp(normalizedIp.substring(7)));
+    }
+
+    const octets = normalizedIp.split(".").map(Number);
+    if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+        return false;
+    }
+
+    const [first, second] = octets;
+    return first === 0
+        || first === 10
+        || first === 127
+        || (first === 100 && second >= 64 && second <= 127)
+        || (first === 169 && second === 254)
+        || (first === 172 && second >= 16 && second <= 31)
+        || (first === 192 && second === 168)
+        || first >= 240;
+}
+
+function isIpAddress(hostname: string): boolean {
+    const normalizedHostname = hostname.replace(/^\[|\]$/g, "");
+    return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalizedHostname)
+        || normalizedHostname.includes(":");
+}
+
+/**
+ * Resolves a hostname and rejects every private or reserved address returned by DNS.
+ */
+export async function resolveAndCheckHost(hostname: string): Promise<void> {
+    const normalizedHostname = hostname.replace(/^\[|\]$/g, "");
+
+    if (isIpAddress(normalizedHostname)) {
+        if (isPrivateIp(normalizedHostname)) {
+            throw new ApplicationError("URL_INVALID_HOST", "The target URL resolves to a private or reserved IP address");
+        }
+        return;
+    }
+
+    const [ipv4Result, ipv6Result] = await Promise.allSettled([
+        Deno.resolveDns(normalizedHostname, "A"),
+        Deno.resolveDns(normalizedHostname, "AAAA"),
+    ]);
+    const addresses = [
+        ...(ipv4Result.status === "fulfilled" ? ipv4Result.value : []),
+        ...(ipv6Result.status === "fulfilled" ? ipv6Result.value : []),
+    ];
+
+    if (addresses.length === 0) {
+        throw new ApplicationError("URL_FETCH_FAILED", "Failed to resolve the host of the provided URL");
+    }
+    if (addresses.some((address) => isPrivateIp(address))) {
+        throw new ApplicationError("URL_INVALID_HOST", "The target URL resolves to a private or reserved IP address");
+    }
+}
+
+/**
+ * Fetches HTML while enforcing redirect, timeout, and response-size limits.
+ */
+export async function fetchUrlContent(url: string): Promise<string> {
+    let currentUrl = url;
+
+    for (let redirectCount = 0; redirectCount <= MAX_URL_REDIRECTS; redirectCount++) {
+        await resolveAndCheckHost(new URL(currentUrl).hostname);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), URL_FETCH_TIMEOUT_MS);
+        let response: Response;
+
+        try {
+            response = await fetch(currentUrl, {
+                redirect: "manual",
+                headers: {
+                    "User-Agent": URL_USER_AGENT,
+                    "Accept": "text/html,application/xhtml+xml",
+                },
+                signal: controller.signal,
+            });
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error instanceof Error && error.name === "AbortError") {
+                throw new ApplicationError("URL_TIMEOUT", "Request to the provided URL timed out after 10 seconds.");
+            }
+            throw new ApplicationError("URL_FETCH_FAILED", "Failed to fetch content from the provided URL. The page may be unavailable, require authentication, or block automated access.");
+        }
+
+        if (response.status >= 300 && response.status < 400) {
+            clearTimeout(timeoutId);
+            const location = response.headers.get("Location");
+            if (!location || redirectCount === MAX_URL_REDIRECTS) {
+                throw new ApplicationError("URL_FETCH_FAILED", "Failed to fetch content from the provided URL. The page may be unavailable, require authentication, or block automated access.");
+            }
+            const nextUrl = new URL(location, currentUrl);
+            if (!/^https?:$/.test(nextUrl.protocol)) {
+                throw new ApplicationError("URL_FETCH_FAILED", "The final URL must use http or https.");
+            }
+            currentUrl = nextUrl.toString();
+            continue;
+        }
+
+        if (!response.ok) {
+            clearTimeout(timeoutId);
+            throw new ApplicationError("URL_FETCH_FAILED", "Failed to fetch content from the provided URL. The page may be unavailable, require authentication, or block automated access.");
+        }
+        const finalUrl = new URL(response.url || currentUrl);
+        if (!/^https?:$/.test(finalUrl.protocol)) {
+            clearTimeout(timeoutId);
+            throw new ApplicationError("URL_FETCH_FAILED", "The final URL must use http or https.");
+        }
+
+        const contentLength = Number(response.headers.get("Content-Length"));
+        if (Number.isFinite(contentLength) && contentLength > MAX_URL_CONTENT_BYTES) {
+            clearTimeout(timeoutId);
+            throw new ApplicationError("URL_CONTENT_TOO_LARGE", "The page content exceeds the maximum allowed size of 500 KB.");
+        }
+        if (!response.body) {
+            clearTimeout(timeoutId);
+            return "";
+        }
+
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let totalBytes = 0;
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                totalBytes += value.length;
+                if (totalBytes > MAX_URL_CONTENT_BYTES) {
+                    await reader.cancel();
+                    throw new ApplicationError("URL_CONTENT_TOO_LARGE", "The page content exceeds the maximum allowed size of 500 KB.");
+                }
+                chunks.push(value);
+            }
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error instanceof Error && error.name === "AbortError") {
+                throw new ApplicationError("URL_TIMEOUT", "Request to the provided URL timed out after 10 seconds.");
+            }
+            if (error instanceof ApplicationError) throw error;
+            throw new ApplicationError("URL_FETCH_FAILED", "Failed to fetch content from the provided URL. The page may be unavailable, require authentication, or block automated access.");
+        }
+        clearTimeout(timeoutId);
+
+        const bytes = new Uint8Array(totalBytes);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.length;
+        }
+        return new TextDecoder().decode(bytes);
+    }
+
+    throw new ApplicationError("URL_FETCH_FAILED", "Failed to fetch content from the provided URL. The page may be unavailable, require authentication, or block automated access.");
+}
+
+/**
+ * Extracts readable text from HTML without introducing an HTML parser dependency.
+ */
+export function extractTextFromHtml(html: string): string {
+    return html
+        .replace(/<(script|style|nav|footer|header|aside|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ")
+        .replace(/<!--[\s\S]*?-->/g, " ")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCodePoint(parseInt(code, 16)))
+        .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+// #endregion
+
 // #region --- API Integration ---
 
 /**
@@ -582,7 +776,7 @@ function getMetadataWarningFields(warnings: string[]): string[] {
 // #region --- Main Service Function ---
 
 /**
- * Generates a recipe draft from text or image using AI.
+ * Generates a recipe draft from text, image, or URL using AI.
  *
  * @param params - Generation parameters including source type and content
  * @returns LlmGenerationResult with either success data or failure reasons
@@ -591,7 +785,7 @@ function getMetadataWarningFields(warnings: string[]): string[] {
 export async function generateRecipeDraft(
     params: GenerateRecipeDraftParams,
 ): Promise<LlmGenerationResult> {
-    const { userId, source, text, imageBytes, imageMimeType, language } =
+    const { userId, source, text, imageBytes, imageMimeType, url, language } =
         params;
 
     logger.info("Starting recipe draft generation", {
@@ -600,6 +794,7 @@ export async function generateRecipeDraft(
         language,
         textLength: text?.length,
         imageSize: imageBytes?.length,
+        urlPrefix: url?.substring(0, 50),
     });
 
     // Build messages for OpenAI
@@ -616,6 +811,8 @@ export async function generateRecipeDraft(
                 { type: string; text?: string; image_url?: { url: string } }
             >;
     };
+
+    const sourceWarnings: string[] = [];
 
     if (source === "text" && text) {
         userMessage = {
@@ -641,11 +838,23 @@ export async function generateRecipeDraft(
                 { type: "image_url", image_url: { url: dataUrl } },
             ],
         };
+    } else if (source === "url" && url) {
+        const htmlContent = await fetchUrlContent(url);
+        let extractedText = extractTextFromHtml(htmlContent);
+        if (extractedText.length > MAX_URL_EXTRACTED_TEXT_LENGTH) {
+            extractedText = extractedText.substring(0, MAX_URL_EXTRACTED_TEXT_LENGTH);
+            sourceWarnings.push("Source content was truncated to 50000 characters before AI processing");
+        }
+        userMessage = {
+            role: "user",
+            content: getTextExtractionPrompt(extractedText),
+        };
     } else {
         logger.error("Invalid source configuration", {
             source,
             hasText: !!text,
             hasImage: !!imageBytes,
+            hasUrl: !!url,
         });
         throw new ApplicationError(
             "INTERNAL_ERROR",
@@ -723,7 +932,7 @@ export async function generateRecipeDraft(
         warnings: metadataWarnings,
     } = normalizeDraftMetadata(rawMetadata);
     const warnings = mergeDraftWarnings(
-        successResponse.meta?.warnings ?? [],
+        [...(successResponse.meta?.warnings ?? []), ...sourceWarnings],
         metadataWarnings,
     );
 

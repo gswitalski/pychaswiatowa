@@ -48,7 +48,7 @@
                 }
             </div>
             <mat-card-subtitle>
-                Wklej tekst przepisu lub zdjęcie, a AI pomoże Ci zaimportować dane
+                Wklej tekst, zdjęcie lub link do przepisu, a AI pomoże Ci zaimportować dane
             </mat-card-subtitle>
         </mat-card-header>
 
@@ -66,6 +66,10 @@
                     <mat-button-toggle value="image">
                         <mat-icon>image</mat-icon>
                         Obraz
+                    </mat-button-toggle>
+                    <mat-button-toggle value="url">
+                        <mat-icon>link</mat-icon>
+                        Link URL
                     </mat-button-toggle>
                 </mat-button-toggle-group>
             </div>
@@ -168,6 +172,14 @@
                     />
                 </div>
                 }
+            </div>
+            }
+
+            @if (source() === 'url') {
+            <div class="url-input-container">
+                <pych-recipe-assist-url-input
+                    [disabled]="isLoading()"
+                    (urlChange)="onUrlChange($event)" />
             </div>
             }
 

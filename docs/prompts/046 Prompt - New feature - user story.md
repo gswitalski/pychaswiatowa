@@ -12,11 +12,13 @@ Zawiera kontekst biznesowy, cel projektu, grupę docelową użytkowników oraz o
 Opis wymagań do nowej funkcjonalności: 
 
 <wymagania>
-aktualnie opis przepisu generowany prze AI jest bardzo sztampowy i nieciekawy. trzeba poprawić promt aby opis był ciekwsy, zawierał jakąś ciekawostke, był dowcipny a nawet rubaszny
+
+obecnie pzepis można wygenerować przez AI na bazi luźnego tekstu lub obrazka ze zdjęciem przepisu. chce aby uzytkownik miał trzecią mozliwość : generowanie przepisu na podstawie linku do przepus w internecie
+
 </wymagania>
 
 <numer_historyjki>
-34
+97
 </numer_historyjki>
 
 

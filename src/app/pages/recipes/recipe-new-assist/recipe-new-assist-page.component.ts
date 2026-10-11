@@ -46,9 +46,10 @@ import {
     ImageCompressionError,
     ImageCompressionService,
 } from '../../../shared/services/image-compression.service';
+import { RecipeAssistUrlInputComponent } from './components/recipe-assist-url-input/recipe-assist-url-input.component';
 
 /** Source type for AI input */
-type AiInputSource = 'text' | 'image';
+type AiInputSource = 'text' | 'image' | 'url';
 
 /** Allowed MIME types for image paste */
 const ALLOWED_IMAGE_TYPES: AiRecipeDraftImageMimeType[] = [
@@ -76,6 +77,7 @@ const ALLOWED_IMAGE_TYPES: AiRecipeDraftImageMimeType[] = [
         PageHeaderComponent,
         AiCreditsIndicatorComponent,
         CameraCaptureButtonComponent,
+        RecipeAssistUrlInputComponent,
     ],
     templateUrl: './recipe-new-assist-page.component.html',
     styleUrl: './recipe-new-assist-page.component.scss',
@@ -108,6 +110,9 @@ export class RecipeNewAssistPageComponent {
     /** Image preview URL (data URL) */
     readonly imagePreviewUrl = signal<string | null>(null);
 
+    /** Current valid URL from the URL input component */
+    readonly urlValue = signal<string | null>(null);
+
     /** Loading state during API call */
     readonly isLoading = signal<boolean>(false);
 
@@ -120,7 +125,8 @@ export class RecipeNewAssistPageComponent {
     readonly hasAiInput = computed(
         () =>
             (this.source() === 'text' && this.text().trim().length > 0) ||
-            (this.source() === 'image' && this.imageFile() !== null)
+            (this.source() === 'image' && this.imageFile() !== null) ||
+            (this.source() === 'url' && this.urlValue() !== null)
     );
 
     readonly isCreditsExhausted = computed(() =>
@@ -128,7 +134,10 @@ export class RecipeNewAssistPageComponent {
     );
 
     readonly isNextDisabled = computed(
-        () => this.isLoading() || (this.hasAiInput() && this.isCreditsExhausted())
+        () =>
+            this.isLoading() ||
+            (this.source() === 'url' && this.urlValue() === null) ||
+            (this.hasAiInput() && this.isCreditsExhausted()),
     );
 
     readonly nextButtonTooltip = computed(() =>
@@ -148,14 +157,23 @@ export class RecipeNewAssistPageComponent {
     onSourceChange(newSource: AiInputSource): void {
         this.source.set(newSource);
         this.clearError();
+        this.urlValue.set(null);
 
         if (newSource === 'text') {
             // Clear image when switching to text mode
             this.clearImage();
-        } else {
+        } else if (newSource === 'image') {
             // Clear text when switching to image mode
             this.text.set('');
+        } else {
+            this.text.set('');
+            this.clearImage();
         }
+    }
+
+    onUrlChange(url: string | null): void {
+        this.urlValue.set(url);
+        this.clearError();
     }
 
     /**
@@ -317,9 +335,10 @@ export class RecipeNewAssistPageComponent {
         const currentSource = this.source();
         const hasText = currentSource === 'text' && this.text().trim().length > 0;
         const hasImage = currentSource === 'image' && this.imageFile() !== null;
+        const hasUrl = currentSource === 'url' && this.urlValue() !== null;
 
         // If no input, navigate to empty form
-        if (!hasText && !hasImage) {
+        if (!hasText && !hasImage && !hasUrl) {
             this.draftStateService.clearDraft();
             this.router.navigate(['/recipes/new']);
             return;
@@ -355,7 +374,7 @@ export class RecipeNewAssistPageComponent {
                 output_format: 'pycha_recipe_draft_v1',
                 language: 'pl',
             };
-        } else {
+        } else if (this.source() === 'image') {
             const file = this.imageFile()!;
             const base64 = await this.fileToBase64(file);
 
@@ -365,6 +384,19 @@ export class RecipeNewAssistPageComponent {
                     mime_type: file.type as AiRecipeDraftImageMimeType,
                     data_base64: base64,
                 },
+                output_format: 'pycha_recipe_draft_v1',
+                language: 'pl',
+            };
+        } else {
+            const url = this.urlValue();
+
+            if (!url) {
+                throw new Error('Wklej poprawny adres strony z przepisem.');
+            }
+
+            return {
+                source: 'url',
+                url,
                 output_format: 'pycha_recipe_draft_v1',
                 language: 'pl',
             };
