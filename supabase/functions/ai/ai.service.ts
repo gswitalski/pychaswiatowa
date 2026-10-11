@@ -91,26 +91,34 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
 2. OPIS:
    - Zawsze pisz po polsku, niezależnie od języka źródłowego przepisu.
    - Wygeneruj opis składający się z dokładnie 3–5 zdań.
+   - Nie pisz infantylnych, niczego nie wnoszących zdań typu  "To danie zaspokoi każde podniebienie"
    - Zachowaj ton familiarny, potoczny i pogodny — jak rozmowa z przyjacielem przy stole,
      a nie hasło z encyklopedii. Unikaj formalnych sformułowań.
-   - Obowiązkowo zawrzyj co najmniej jeden element humorystyczny: żart o daniu, lekka uszczypliwość
-     dotycząca czasu przygotowania lub nieoczekiwanego składnika, kulinarny absurd lub autoironiczny
-     komentarz. UMOże być rubasznynikaj pustego „śmieszenia” bez związku z potrawą.
+   - Jak się da,to napisz coś o pochodzeniu dania oraz jego właściościach zdrowotych
    - Zakończ opis dokładnie jedną ciekawostką (historyczną, geograficzną lub dietetyczną)
      powiązaną z potrawą. Jeśli nie dysponujesz pewną ciekawostką o samym daniu, napisz ją
      o kluczowym składniku lub zastosowanej technice kulinarnej. Nie używaj słowa „ciekawostka”
      wprost — wpleć ją naturalnie w treść.
    - Opis nie może zawierać stwierdzenia, ż potrawa zaskoczy moich gości.
-   - Opis nie może zawierać informacji o czasie przygotowania.
+   - Opis nie może zawierać informacji o czasie przygotowania, że jest szybka, bo nie jest to ważne.
    - Opis NIE MOŻE zawierać treści wulgarnych, erotycznych ani obraźliwych.
    - Jeśli nie da się stworzyć sensownego opisu, użyj null
 
-   PRZYKŁAD (wymagane cechy: 3–5 zdań, humor, ciekawostka na końcu):
-   "Carbonara to jedyne danie, w którym dodanie śmietany może wywołać międzynarodowy kryzys dyplomatyczny z Włochami
-    Przygotowanie zajmuje raptem 20 minut, ale ten moment mieszania
-    wymaga nerwów chirurga i refleksu bramkarza jednocześnie. Nawiasem mówiąc, wbrew
-    popularnej legendzie o węglarzach (carbonari), danie najprawdopodobniej narodziło się
-    w Rzymie dopiero w połowie XX wieku."
+   PRZYKŁAD 1:
+    "Spaghetti carbonara to prawdziwy klasyk kuchni rzymskiej, w którym kilka prostych składników tworzy wyjątkowo
+    smaczne połączenie. Kremowy sos z jajek, sera Pecorino Romano i świeżo mielonego pieprzu otula makaron,
+    a chrupiące guanciale dodaje mu wyrazistego, lekko słonego smaku. To danie jest dość kaloryczne, ale dostarcza
+    też solidnej porcji białka, a tradycyjna receptura nie wymaga ani kropli śmietany. Co ciekawe, choć carbonara
+    uchodzi dziś za symbol włoskiej kuchni, jej dokładne pochodzenie pozostaje zagadką, a popularność zdobyła
+    dopiero po II wojnie światowej."
+
+   PRZYKŁAD 2:
+   "Kotlet de volaille to klasyka polskich obiadów z francuskim akcentem – chrupiąca, złocista panierka skrywa soczystą pierś kurczaka wypełnioną
+   aromatycznym masłem, często z dodatkiem natki pietruszki. Największa przyjemność zaczyna się po przekrojeniu kotleta, kiedy ze środka wypływa
+   gorące, pachnące masło, które świetnie komponuje się z delikatnym mięsem. Danie dostarcza sporo białka, choć
+   ze względu na smażenie i maślane nadzienie trudno zaliczyć je do lekkich posiłków. Co ciekawe, mimo francuskiej nazwy
+   de volaille, oznaczającej „z drobiu”, potrawa wywodzi się najprawdopodobniej z tradycji wschodnioeuropejskiej
+   i jest blisko spokrewniona ze słynnym kotletem kijowskim."
 
 3. SKŁADNIKI (ingredients_raw):
    - Każdy składnik w osobnej linii (separator: \n)
