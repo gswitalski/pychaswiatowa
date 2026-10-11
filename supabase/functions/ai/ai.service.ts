@@ -144,30 +144,312 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
      Czyli: "wymieszać", "dodać", "zdjąć", "posolić", "podsmażyć", "ugotować", "upiec", "odczekać", "schłodzić".
    - dozwolone są tyloko formy dokonane. ZAWSZE używaj formy dokonanej. Patrz mapa konwersji poniżej.   - Jeśli w źródle są czasowniki niedokonane – MASZ OBOWIĄZEK przepisać je na formy dokonane.
 
-   MAPA KONWERSJI (używaj gdy pasuje znaczeniowo):
-   - mieszać -> wymieszać
-   - dodawać -> dodać
-   - zdejmować -> zdjąć
-   - kroić -> pokroić
-   - siekać -> posiekać
-   - obierać -> obrać
-   - smażyć -> usmażyć / podsmażyć (jeśli krótko)
-   - gotować -> ugotować
-   - piec -> upiec
-   - dusić -> udusić
-   - blendować/miksować -> zblendować / zmiksować
-   - rozgrzewać -> rozgrzać
-   - studzić -> wystudzić
-   - schładzać -> schłodzić
-   - odstawiać -> odstawić
-   - czekać -> odczekać
-   - polewać/skrapiać -> polać / skropić
-   - smarować -> posmarować
-   - przelewać -> przelać
-   - wylewać -> wylać
-   - nakładać -> nałożyć
+    **ZASADY NORMALIZACJI KROKÓW PRZEPISU:**
 
-   NOTACJA THERMOMIX:
+    1. Każdy krok przygotowania rozpocznij od bezokolicznika w aspekcie dokonanym, np. „Pokroić”, „Wymieszać”, „Zagotować”, „Dodać”.
+    2. Zamieniaj czasowniki w trybie rozkazującym, formy osobowe i bezokoliczniki niedokonane na bezokoliczniki dokonane.
+    3. Wybieraj czasownik na podstawie znaczenia całej czynności, a nie tylko mechanicznego dopasowania do mapy konwersji.
+    4. Zachowaj wszystkie istotne informacje: czas, temperaturę, ilości, kolejność czynności, sposób wykonania i oczekiwany rezultat.
+    5. Jeśli czynność trwa określony czas, zastosuj konstrukcję z czasownikiem dokonanym, która zachowuje informację o czasie, np.:
+    - „Gotuj przez 10 minut” → „Gotować przez 10 minut” jest niedopuszczalne. Użyj „Podgotować przez 10 minut” lub „Ugotować w ciągu około 10 minut”, jeśli odpowiada to znaczeniu.
+    - „Smaż przez 3 minuty” → „Podsmażyć przez 3 minuty”.
+    - „Mieszaj przez minutę” → „Wymieszać dokładnie, mieszając przez minutę” (jeśli dopuszczalne są imiesłowy).
+    6. Nie zmieniaj znaczenia czynności: „podsmażyć” nie zawsze oznacza to samo co „usmażyć”, a „zagotować” nie jest synonimem „ugotować”.
+    7. Nie używaj w instrukcjach form takich jak „dodaj”, „mieszamy”, „należy pokroić”, „trzeba zagotować”.
+    8. Unikaj bezokoliczników niedokonanych, takich jak „mieszać”, „gotować”, „piec”, „smażyć”, gdy można zastosować poprawny odpowiednik dokonany.
+    9. Jeśli nie da się naturalnie zastosować aspektu dokonanego bez zmiany znaczenia, przebuduj zdanie, zachowując sens oryginału.
+    10. Po wygenerowaniu przepisu sprawdź każdy krok i upewnij się, że główne czynności mają postać bezokoliczników dokonanych.
+
+    PRZYKŁADOWA MAPA KONWERSJI
+    (Stosuj odpowiednik zgodny ze znaczeniem i kontekstem przepisu)
+
+    PRZYGOTOWANIE SKŁADNIKÓW:
+    - myć -> umyć
+    - płukać -> opłukać / wypłukać
+    - oczyszczać -> oczyścić
+    - obierać -> obrać
+    - skrobać -> oskrobać
+    - kroić -> pokroić
+    - przekrawać -> przekroić
+    - rozkrajać -> rozkroić
+    - nacinać -> naciąć
+    - siekać -> posiekać
+    - rozdrabniać -> rozdrobnić
+    - szatkować -> poszatkować
+    - ścierać -> zetrzeć
+    - trzeć na tarce -> zetrzeć na tarce
+    - miażdżyć -> zmiażdżyć
+    - rozgniatać -> rozgnieść
+    - zgniatać -> zgnieść
+    - ucierać -> utrzeć
+    - mielić -> zmielić
+    - rozbijać -> rozbić
+    - tłuc -> utłuc
+    - wałkować -> rozwałkować
+    - wykrawać -> wykroić
+    - wydrążać -> wydrążyć
+    - usuwać -> usunąć
+    - oddzielać -> oddzielić
+    - odcinać -> odciąć
+    - odkrawać -> odkroić
+    - odrywać -> oderwać
+    - wyjmować -> wyjąć
+    - wyciągać -> wyciągnąć
+    - wyciskać -> wycisnąć
+    - odciskać -> odcisnąć
+    - odsączać -> odsączyć
+    - odcedzać -> odcedzić
+    - przecedzać -> przecedzić
+    - przesiewać -> przesiać
+    - rozmrażać -> rozmrozić
+    - namaczać -> namoczyć
+    - moczyć -> namoczyć / wymoczyć
+    - osuszać -> osuszyć
+    - suszyć -> wysuszyć
+    - obrywać -> oberwać
+    - łuskać -> wyłuskać
+    - drylować -> wydrylować
+
+    ŁĄCZENIE I MIESZANIE:
+    - mieszać -> wymieszać
+    - łączyć -> połączyć
+    - dodawać -> dodać
+    - dosypywać -> dosypać
+    - wsypywać -> wsypać
+    - dolewać -> dolać
+    - wlewać -> wlać
+    - przelewać -> przelać
+    - wylewać -> wylać
+    - przekładać -> przełożyć
+    - wkładać -> włożyć
+    - wrzucać -> wrzucić
+    - umieszczać -> umieścić
+    - dodawać stopniowo -> dodawać porcjami aż do połączenia
+    - rozprowadzać -> rozprowadzić
+    - rozpuszczać -> rozpuścić
+    - rozcieńczać -> rozcieńczyć
+    - zagęszczać -> zagęścić
+    - rozrzedzać -> rozrzedzić
+    - emulgować -> zemulgować
+    - ubijać -> ubić
+    - roztrzepywać -> roztrzepać
+    - miksować -> zmiksować
+    - blendować -> zblendować
+    - rozdrabniać blenderem -> rozdrobnić blenderem
+    - ucierać -> utrzeć
+    - wyrabiać -> wyrobić
+    - zagniatać -> zagnieść
+    - mieszać trzepaczką -> wymieszać trzepaczką
+    - potrząsać -> potrząsnąć
+    - wstrząsać -> wstrząsnąć
+    - łączyć delikatnie -> delikatnie połączyć
+
+    OBRÓBKA CIEPLNA:
+    - gotować -> ugotować / zagotować
+    - zagotowywać -> zagotować
+    - podgotowywać -> podgotować
+    - dogotowywać -> dogotować
+    - obgotowywać -> obgotować
+    - blanszować -> zblanszować
+    - parzyć -> sparzyć / zaparzyć
+    - zaparzać -> zaparzyć
+    - smażyć -> usmażyć / podsmażyć
+    - podsmażać -> podsmażyć
+    - obsmażać -> obsmażyć
+    - dosmażać -> dosmażyć
+    - przesmażać -> przesmażyć
+    - piec -> upiec
+    - podpiekać -> podpiec
+    - dopiekać -> dopiec
+    - zapiekać -> zapiec
+    - przypiekać -> przypiec
+    - opiekać -> opiec
+    - grillować -> ugrillować / zgrillować
+    - prażyć -> uprażyć
+    - podprażać -> podprażyć
+    - tostować -> stostować / podpiec
+    - dusić -> udusić / poddusić
+    - podduszać -> poddusić
+    - odparowywać -> odparować
+    - redukować sos -> zredukować sos
+    - karmelizować -> skarmelizować
+    - rumienić -> zrumienić / przyrumienić
+    - przyrumieniać -> przyrumienić
+    - zarumieniać -> zarumienić
+    - przypalać -> przypalić
+    - roztapiać -> roztopić
+    - topić -> stopić / roztopić
+    - podgrzewać -> podgrzać
+    - rozgrzewać -> rozgrzać
+    - ogrzewać -> ogrzać
+    - zagotowywać ponownie -> ponownie zagotować
+    - odgrzewać -> odgrzać
+    - studzić -> wystudzić / ostudzić
+    - schładzać -> schłodzić
+    - chłodzić -> schłodzić
+    - zamrażać -> zamrozić
+    - rozmrażać -> rozmrozić
+
+    DOPRAWIANIE I MARYNOWANIE:
+    - doprawiać -> doprawić
+    - przyprawiać -> przyprawić
+    - solić -> posolić
+    - pieprzyć -> popieprzyć
+    - słodzić -> posłodzić
+    - dosładzać -> dosłodzić
+    - dosalać -> dosolić
+    - zakwaszać -> zakwasić
+    - skrapiać -> skropić
+    - polewać -> polać
+    - posypywać -> posypać
+    - oprószać -> oprószyć
+    - nacierać -> natrzeć
+    - smarować -> posmarować
+    - marynować -> zamarynować
+    - aromatyzować -> za aromatyzować / nadać aromat
+    - zakiszać -> zakisić
+    - kisić -> ukisić / zakisić
+    - peklować -> zapeklować
+    - panierować -> opanierować
+    - obtaczać -> obtoczyć
+    - nadziewać -> nadziać
+    - faszerować -> nafaszerować
+    - dekorować -> udekorować
+
+    FORMOWANIE I PRACA Z CIASTEM:
+    - formować -> uformować
+    - kształtować -> ukształtować
+    - lepić -> ulepić
+    - sklejać -> skleić
+    - zawijać -> zawinąć
+    - zwijać -> zwinąć
+    - składać -> złożyć
+    - zaginać -> zagiąć
+    - ugniatać -> ugnieść
+    - wyrabiać -> wyrobić
+    - zagniatać -> zagnieść
+    - rozwałkowywać -> rozwałkować
+    - rozciągać -> rozciągnąć
+    - rozprowadzać -> rozprowadzić
+    - wykładać formę -> wyłożyć formę
+    - natłuszczać -> natłuścić
+    - smarować formę -> wysmarować formę
+    - oprószać mąką -> oprószyć mąką
+    - nakłuwać -> nakłuć
+    - napełniać -> napełnić
+    - wypełniać -> wypełnić
+    - nadziewać -> nadziać
+    - wycinać -> wyciąć
+    - wykrawać -> wykroić
+    - dzielić -> podzielić
+    - porcjować -> poporcjować / podzielić na porcje
+
+    CZYNNOŚCI KOŃCOWE I PODAWANIE:
+    - odstawiać -> odstawić
+    - zostawiać -> zostawić / pozostawić
+    - czekać -> odczekać
+    - wyjmować -> wyjąć
+    - zdejmować -> zdjąć
+    - ściągać -> ściągnąć
+    - przekładać -> przełożyć
+    - przenosić -> przenieść
+    - odcedzać -> odcedzić
+    - odsączać -> odsączyć
+    - przelewać -> przelać
+    - wykładać -> wyłożyć
+    - nakładać -> nałożyć
+    - rozkładać -> rozłożyć
+    - układać -> ułożyć
+    - dzielić -> podzielić
+    - kroić na porcje -> pokroić na porcje
+    - porcjować -> poporcjować
+    - serwować -> zaserwować
+    - podawać -> podać
+    - dekorować -> udekorować
+    - ozdabiać -> ozdobić
+    - posypywać -> posypać
+    - polewać -> polać
+    - skrapiać -> skropić
+    - przechowywać -> schować / umieścić do przechowania
+    - pakować -> zapakować
+    - przykrywać -> przykryć
+    - odkrywać -> odkryć
+    - zamykać -> zamknąć
+    - otwierać -> otworzyć
+
+    KONWERSJA TRYBU ROZKAZUJĄCEGO:
+    - dodaj -> dodać
+    - dodajemy -> dodać
+    - dodawać -> dodać
+    - wymieszaj -> wymieszać
+    - mieszamy -> wymieszać
+    - pokrój -> pokroić
+    - kroimy -> pokroić
+    - posiekaj -> posiekać
+    - siekamy -> posiekać
+    - obierz -> obrać
+    - obieramy -> obrać
+    - umyj -> umyć
+    - myjemy -> umyć
+    - wsyp -> wsypać
+    - wsypujemy -> wsypać
+    - wlej -> wlać
+    - wlewamy -> wlać
+    - dolej -> dolać
+    - dolewamy -> dolać
+    - wrzuć -> wrzucić
+    - wrzucamy -> wrzucić
+    - włóż -> włożyć
+    - wkładamy -> włożyć
+    - wyjmij -> wyjąć
+    - wyjmujemy -> wyjąć
+    - odcedź -> odcedzić
+    - odcedzamy -> odcedzić
+    - odsącz -> odsączyć
+    - odsączamy -> odsączyć
+    - podgrzej -> podgrzać
+    - podgrzewamy -> podgrzać
+    - rozgrzej -> rozgrzać
+    - rozgrzewamy -> rozgrzać
+    - zagotuj -> zagotować
+    - zagotowujemy -> zagotować
+    - ugotuj -> ugotować
+    - gotujemy -> ugotować / zagotować
+    - usmaż -> usmażyć
+    - smażymy -> usmażyć / podsmażyć
+    - upiecz -> upiec
+    - pieczemy -> upiec
+    - duś -> udusić / poddusić
+    - dusimy -> udusić / poddusić
+    - zmiksuj -> zmiksować
+    - miksujemy -> zmiksować
+    - zblenduj -> zblendować
+    - blendujemy -> zblendować
+    - dopraw -> doprawić
+    - doprawiamy -> doprawić
+    - posól -> posolić
+    - solimy -> posolić
+    - posyp -> posypać
+    - posypujemy -> posypać
+    - polej -> polać
+    - polewamy -> polać
+    - przykryj -> przykryć
+    - przykrywamy -> przykryć
+    - odstaw -> odstawić
+    - odstawiamy -> odstawić
+    - odczekaj -> odczekać
+    - czekamy -> odczekać
+    - podaj -> podać
+    - podajemy -> podać
+    - weź -> wziąć
+    - bierzemy -> wziąć
+    - przygotuj -> przygotować
+    - przygotowujemy -> przygotować
+    - zrób -> zrobić
+    - robimy -> zrobić
+
+
+NOTACJA THERMOMIX:
    - ZACHOWAJ notacje Thermomix bez zmian: "5 s/obr. 5", "6 min/120°C/obr. 1", "32 min/100°C/obr. 5"
 
    WALIDACJA PRZED ZWROTEM:
