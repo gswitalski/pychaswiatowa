@@ -39,10 +39,10 @@ import {
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 /** Model to use for text generation */
-const OPENAI_MODEL = "gpt-4o-mini";
+const OPENAI_MODEL = "gpt-6.1-sol";
 
 /** Maximum tokens for response */
-const MAX_TOKENS = 2000;
+const MAX_TOKENS = 3000;
 
 /** Temperature for generation (low for consistency) */
 const TEMPERATURE = 0.3;
@@ -1278,7 +1278,8 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 /** Gemini image generation model (image-to-image with reference) */
 // Note: Use latest stable model from Gemini documentation
 // const GEMINI_IMAGE_MODEL = "gemini-2.0-flash-exp";
-const GEMINI_IMAGE_MODEL = "gemini-3-pro-image-preview";
+// const GEMINI_IMAGE_MODEL = "gemini-3-pro-image-preview";
+const GEMINI_IMAGE_MODEL = "gemini-3.1-flash-lite-image";
 
 
 
