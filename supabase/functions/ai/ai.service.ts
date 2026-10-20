@@ -44,10 +44,7 @@ const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MODEL = "gpt-6-luna";
 
 /** Maximum tokens for response */
-const MAX_TOKENS = 2000;
-
-/** Temperature for generation (low for consistency) */
-const TEMPERATURE = 0.3;
+const MAX_TOKENS = 8000;
 
 /** Timeout for API calls in milliseconds */
 const API_TIMEOUT_MS = 30_000;
@@ -837,8 +834,7 @@ async function callOpenAI(
             body: JSON.stringify({
                 model: OPENAI_MODEL,
                 messages,
-                max_tokens: MAX_TOKENS,
-                temperature: TEMPERATURE,
+                max_completion_tokens: MAX_TOKENS,
                 response_format: { type: "json_object" },
             }),
             signal: controller.signal,
