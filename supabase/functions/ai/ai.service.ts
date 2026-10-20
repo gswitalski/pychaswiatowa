@@ -47,7 +47,7 @@ const OPENAI_MODEL = "gpt-6-luna";
 const MAX_TOKENS = 8000;
 
 /** Timeout for API calls in milliseconds */
-const API_TIMEOUT_MS = 30_000;
+const API_TIMEOUT_MS = 100_000;
 
 // #endregion
 
