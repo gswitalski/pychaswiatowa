@@ -12,7 +12,7 @@ Oto dokumenty o projekcie, które musisz przeanalizować:
 
 
 <user_story>
-@docs/results/new-features/user-stories/PS-97/PS-97-ai-recipe-from-url-user-story.md
+@docs\results\new-features\user-stories\PS-99\PS-99-recipe-rating-user-story.md
 </user_story>
 
 Twoim zadaniem jest:

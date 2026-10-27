@@ -1,5 +1,6 @@
 <header class="recipe-header">
     <h1 class="recipe-title">{{ recipe().name }}</h1>
+    <ng-content select="[recipeRating]" />
 
     @if (servingsLabel()) {
         <p class="recipe-servings">{{ servingsLabel() }}</p>

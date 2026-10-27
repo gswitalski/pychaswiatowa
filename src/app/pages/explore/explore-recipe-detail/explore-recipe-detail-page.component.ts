@@ -22,6 +22,7 @@ import {
     RecipeDetailDto,
     ApiError,
     RecipeFlagsDto,
+    RecipeRatingDto,
 } from '../../../../../shared/contracts/types';
 import { PlanChangeEvent } from '../../../core/services/my-plan.service';
 
@@ -389,6 +390,20 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
                     ...state.recipe,
                     is_favorite: flags.is_favorite,
                     is_want_to_try: flags.is_want_to_try,
+                }
+                : null,
+        }));
+    }
+
+    onRatingChange(rating: RecipeRatingDto): void {
+        this.state.update((state) => ({
+            ...state,
+            recipe: state.recipe
+                ? {
+                    ...state.recipe,
+                    my_rating: rating.my_rating,
+                    average_rating: rating.average_rating,
+                    ratings_count: rating.ratings_count,
                 }
                 : null,
         }));

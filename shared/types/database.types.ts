@@ -362,6 +362,38 @@ export type Database = {
           },
         ]
       }
+      recipe_ratings: {
+        Row: {
+          created_at: string
+          rating: number
+          recipe_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          rating: number
+          recipe_id: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          rating?: number
+          recipe_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ratings_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           category_id: number | null
@@ -610,6 +642,7 @@ export type Database = {
         Row: {
           category_id: number | null
           category_name: string | null
+          average_rating: number | null
           collection_ids: number[] | null
           collections: Json | null
           created_at: string | null
@@ -627,6 +660,7 @@ export type Database = {
           normalized_ingredients_status: string | null
           normalized_ingredients_updated_at: string | null
           prep_time_minutes: number | null
+          ratings_count: number | null
           search_vector: unknown
           servings: number | null
           steps: Json | null
@@ -650,6 +684,18 @@ export type Database = {
       }
     }
     Functions: {
+      set_recipe_rating: {
+        Args: {
+          p_rating?: number
+          p_recipe_id: number
+        }
+        Returns: {
+          out_average_rating: number | null
+          out_my_rating: number | null
+          out_ratings_count: number
+          out_recipe_id: number
+        }[]
+      }
       set_recipe_flags: {
         Args: {
           p_is_favorite?: boolean

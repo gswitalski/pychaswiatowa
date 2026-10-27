@@ -251,6 +251,12 @@ export interface PublicRecipeDetailDto {
     is_favorite?: boolean;
     /** True if recipe is marked as wanting to try by the authenticated user. */
     is_want_to_try?: boolean;
+    /** Average rating to one decimal place, or null when there are no ratings. */
+    average_rating: number | null;
+    /** Number of ratings for this public recipe. */
+    ratings_count: number;
+    /** Authenticated user's rating, omitted for anonymous responses. */
+    my_rating?: number | null;
 }
 
 /**
@@ -272,7 +278,13 @@ export type RecipeContent = RecipeContentItem[];
  */
 export type RecipeDetailDto = Omit<
     RecipeDetail,
-    'ingredients' | 'steps' | 'tips' | 'tags' | 'collections'
+    | 'ingredients'
+    | 'steps'
+    | 'tips'
+    | 'tags'
+    | 'collections'
+    | 'average_rating'
+    | 'ratings_count'
 > & {
     /** Structured ingredients list. */
     ingredients: RecipeContent;
@@ -310,6 +322,12 @@ export type RecipeDetailDto = Omit<
     is_favorite?: boolean;
     /** True if recipe is marked as wanting to try by the authenticated user. */
     is_want_to_try?: boolean;
+    /** Average rating to one decimal place; hidden for non-public recipes. */
+    average_rating: number | null;
+    /** Number of ratings; null when ratings are hidden for a non-public recipe. */
+    ratings_count: number | null;
+    /** Authenticated user's rating, omitted for anonymous responses. */
+    my_rating?: number | null;
 };
 
 /** State of the authenticated user's personal flags for a recipe. */
@@ -323,6 +341,19 @@ export interface RecipeFlagsDto {
 export interface UpdateRecipeFlagsCommand {
     is_favorite?: boolean;
     is_want_to_try?: boolean;
+}
+
+/** Complete rating state returned by PUT /recipes/{id}/rating. */
+export interface RecipeRatingDto {
+    recipe_id: number;
+    my_rating: number | null;
+    average_rating: number | null;
+    ratings_count: number;
+}
+
+/** Command model for PUT /recipes/{id}/rating. Null removes the rating. */
+export interface UpdateRecipeRatingCommand {
+    rating: number | null;
 }
 
 /**

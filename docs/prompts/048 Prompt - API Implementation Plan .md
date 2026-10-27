@@ -11,12 +11,12 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. Nowe wymagania do zaimplementowania
 
 <new_requirements>
-@docs/results/new-features/user-stories/PS-97/PS-97-ai-recipe-from-url-user-story.md
+@docs/results/new-features/user-stories/PS-99/PS-99-recipe-rating-user-story.md
 </new_requirements>
 
 3. Lista zmian i nowych funkcjonalności w API
 <api_definition>
-@docs/results/new-features/user-stories/PS-97/PS-97-ai-recipe-from-url-api-plan.md
+@docs/results/new-features/user-stories/PS-99/PS-99-recipe-rating-api-plan.md
 </api_definition>
 
 
@@ -111,4 +111,4 @@ Końcowym wynikiem powinien być dobrze zorganizowany plan wdrożenia wszystkich
 
 Końcowe wyniki powinny składać się wyłącznie z planu wdrożenia w formacie markdown i nie powinny powielać ani powtarzać żadnej pracy wykonanej w sekcji analizy.
 
-Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/{story-number}-{story-name}-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.
+Pamiętaj, aby zapisać swój plan wdrożenia jako docs/results/impl-plans/endpoints/PS-{story-number}-{story-name}-api-implementation-plan.md. Upewnij się, że plan jest szczegółowy, przejrzysty i zapewnia kompleksowe wskazówki dla zespołu programistów.

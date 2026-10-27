@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 10 października 2026 — filtry katalogu Odkrywaj PS-96 (API i widoki), wcześniej: osobiste flagi przepisów PS-95, przycisk „Wklej ze schowka” PS-92, Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65 i metadane draftu AI PS-91.
+> **Aktualizacja:** 27 października 2026 — oceny przepisów PS-99 (API i widoki), wcześniej: filtry katalogu Odkrywaj PS-96 (API i widoki), osobiste flagi przepisów PS-95, przycisk „Wklej ze schowka” PS-92, Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65 i metadane draftu AI PS-91.
 
 ---
 
@@ -26,6 +26,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 **Osobiste flagi przepisów (PS-95):** implementacja warstwy API i widoków — **zakończona**. `PUT /recipes/{id}/flags` atomowo ustawia częściowo `is_favorite` / `is_want_to_try`; odczyt w szczegółach i listach tylko dla zalogowanego (gość bez pól w JSON). Baza: `user_recipe_flags`, RLS, RPC `set_recipe_flags`; współdzielony moduł `_shared/recipe-flags.ts`. UI: `RecipeFlagsService` + `RecipeFlagTogglesComponent` (optimistic update, snackbar) na `/recipes/:id-:slug` i `/explore/recipes/:id-:slug`; nieklikalne serduszko na kafelkach (dashboard, moje przepisy, kolekcja, explore, landing). Filtrowanie list prywatnych po flagach pozostaje poza zakresem; w `/explore` — PS-96.
 
 **Filtry przepisów w Odkrywaj (PS-96):** implementacja warstwy API i widoków — **zakończona**. Rozszerzenie `GET /public/recipes` i `GET /public/recipes/feed` (Edge Function `public`, bez migracji): parametry `diet` (`vege_plus` = wegetariańskie + wegańskie, `vegan` = tylko wegańskie; priorytet nad `filter[diet_type]`), `favorite` i `want_to_try` (tylko z JWT — bez tokenu ignorowane, `user_id` wyłącznie z JWT). UI: pasek chipów pod wyszukiwaniem na `/explore` (`ExploreRecipeFiltersComponent`), synchronizacja filtrów i `q` z URL, `ExploreFilterStateService`, przebudowany `ExplorePageComponent` (feed cursor, load more 12, empty state z „Wyczyść filtry”). Chipy flag widoczne tylko dla zalogowanych; landing (`PublicRecipesSearchComponent` / facade) bez zmian.
+
+**Oceny przepisów (PS-99):** implementacja warstwy API i widoków — **zakończona**. `PUT /recipes/{id}/rating` atomowo ustawia ocenę 1–5 albo usuwa ją przez `null`; autor nie może ocenić własnego przepisu, a cudzy niepubliczny przepis zwraca `404`. Baza: `recipe_ratings` z RLS, agregaty w `recipe_details` i RPC `set_recipe_rating`. Szczegóły `/recipes/{id}`, `/explore/recipes/{id}` i `/public/recipes/{id}` zwracają średnią i liczbę ocen; `my_rating` jest dostępne wyłącznie dla zalogowanego użytkownika. UI: `RecipeRatingService` i `RecipeRatingComponent` na `/recipes/:id-:slug` oraz `/explore/recipes/:id-:slug`, z optimistic update, rollbackiem i obsługą gościa/autora.
 
 ### Dostarczone poza pierwotnym szkicem summary
 
@@ -89,7 +91,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 
 - Import z linków URL, automatyczne planowanie posiłków, zamienniki AI, konto rodzinne — plan Premium (`PREM-*`), nie w kodzie
 - Zarządzanie spiżarnią
-- Funkcje społecznościowe (znajomi, komentarze, oceny)
+- Funkcje społecznościowe (znajomi, komentarze i tekstowe recenzje)
 - Zaawansowane wartości odżywcze, historia zmian, notatki użytkownika przy cudzym przepisie
 - Filtrowanie po flagach na listach prywatnych (np. „Moje przepisy”, kolekcje); w katalogu `/explore` filtry flag są wdrożone (PS-96)
 - Subskrypcja i płatności (strona `/pricing` oraz stub `/checkout` są; brak endpointu planów i bramki płatności). Pule kredytów AI są wdrożone; dokupienie pakietu nie jest
@@ -130,6 +132,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | PS-92 | Wklej ze schowka (przycisk) | Odczyt obrazu przez `navigator.clipboard.read()` bez wymogu fokusu na strefie paste. Formularz przepisu i asysta AI (obraz). Te same formaty i limit 10 MB co upload; błędy inline. |
 | PS-95 | Osobiste flagi przepisu | Toggle „Ulubiony” i „Chcę wypróbować” na szczegółach (`/recipes/…`, `/explore/recipes/…`); serduszko na kafelkach list; prywatne, wszystkie role; `PUT /recipes/{id}/flags`. |
 | PS-96 | Filtry w katalogu Odkrywaj | `/explore`: chipy filtrów (Termorobot, Grill, dieta vege_plus/vegan, Ulubione/Chcę wypróbować dla zalogowanych); sync z URL; `GET /public/recipes/feed` z parametrami `diet`, `favorite`, `want_to_try`; reset paginacji przy zmianie filtrów; empty state „Wyczyść filtry”. |
+| PS-99 | Oceny przepisów | Ocena 1–5 na szczegółach publicznych przepisów; agregat dostępny dla gościa, zapis dla zalogowanego nie-autora, optimistic update i rollback. |
 | US-028 | Liczba porcji | Opcjonalne pole 1-99, wyświetlane pod tytułem z odmianą. |
 | US-029 | Flaga "Termorobot" | Toggle w formularzu, badge na kartach/listach. |
 | US-030 | Przycisk "Więcej" (load more) | Domyślnie 12 elementów, doładowywanie kolejnych 12. |
@@ -475,7 +478,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 |---|---|---|
 | Landing Page | `/` | Wyszukiwarka publicznych przepisów, sekcje, CTA logowanie/rejestracja. Zalogowany: nawigacja konta, bez CTA logowania, serduszko na kafelkach sekcji (PS-95). Logo widoczne także dla gościa. Dla gościa i roli `user`: blok promo Premium z linkiem do cennika. |
 | Katalog Explore | `/explore` | Publiczne przepisy: pole wyszukiwania (debounce 350 ms, min 3 zn.), **pasek filtrów chipów** (PS-96: Termorobot, Grill, dieta, dla zalogowanych Ulubione/Chcę wypróbować), sync filtrów i `q` z query URL, load more 12. Badge "Twój przepis". Zalogowany: wskaźnik serduszka na kafelku (PS-95). Empty state z „Wyczyść filtry” przy aktywnych filtrach bez wyników. |
-| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania. Zalogowany: flagi PS-95, kolekcja/plan. Autor: pełne akcje. |
+| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania i podgląd ocen PS-99. Zalogowany: flagi PS-95, ocena PS-99, kolekcja/plan. Autor: pełne akcje bez możliwości oceniania własnego przepisu. |
 | Logowanie | `/login` | Email+hasło + **Zaloguj się przez Google** (`OauthGoogleButtonComponent`); komunikaty po błędach OAuth z `?error=`. |
 | Rejestracja | `/register` | Username, email, hasło, zgoda marketingowa + **Zarejestruj się przez Google** (ten sam flow OAuth). |
 | Wysłano link | `/register/verify-sent` | Komunikat + ponowna wysyłka (cooldown 60s). |
@@ -498,7 +501,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Admin - Dashboard | `/admin`, `/admin/dashboard` | Placeholder metryk („Wkrótce”) + nawigacja admina (sidebar). |
 | Admin - Użytkownicy | `/admin/users` | Tabela, paginacja, sortowanie, dialog zmiany roli. |
 | Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Własne + publiczne z kolekcji. Filtry, load more 12. Kafelki: serduszko ulubionego (PS-95). |
-| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. Zalogowany: przełączniki flag PS-95 w nagłówku. |
+| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. Zalogowany: przełączniki flag PS-95 oraz ocena PS-99 dla publicznego przepisu. |
 | Kreator - wybór trybu | `/recipes/new/start` | Pusty formularz (wszyscy) lub AI (premium/admin; badge). Kafelek AI nadal zablokowany dla roli `user`. |
 | Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. Wskaźnik kredytów `draft`, baner i blokada przycisku przy wyczerpaniu, dialog przy `402`. Tryb obrazu: „Wklej ze schowka” (PS-92) obok paste Ctrl+V i wyboru pliku. |
 | Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (`RecipeImageUploadComponent`: paste/drop/file, przycisk „Wklej ze schowka” PS-92, generowanie AI). Sticky Zapisz. Przy zdjęciu AI: kompaktowy wskaźnik kredytów `image` i blokada przycisku przy wyczerpaniu. |
@@ -526,6 +529,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Przycisk Google OAuth | Współdzielony `OauthGoogleButtonComponent` (login/rejestracja). |
 | Schowek obrazu (PS-92) | `ClipboardImageService`: detekcja API, odczyt pliku, komunikaty błędów; konsumowane przez upload zdjęcia przepisu i asystę AI. |
 | Flagi przepisu (PS-95) | `RecipeFlagsService` + `RecipeFlagTogglesComponent` w `RecipeDetailViewComponent`; wskaźnik `.favorite-indicator` na `RecipeCardComponent`. |
+| Oceny przepisu (PS-99) | `RecipeRatingService` + `RecipeRatingComponent` w `RecipeDetailViewComponent`; średnia i liczba ocen dla gościa, interaktywna ocena dla zalogowanego nie-autora. |
 | Filtry Explore (PS-96) | `ExploreRecipeFiltersComponent` + `ExploreFilterStateService` (URL ↔ API); stan i ładowanie feedu w `ExplorePageComponent`; rozszerzenie `PublicRecipesService.getPublicRecipesFeed`. |
 
 ---

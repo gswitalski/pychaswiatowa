@@ -13,12 +13,12 @@ Opis wymagań do nowej funkcjonalności:
 
 <wymagania>
 
-obecnie pzepis można wygenerować przez AI na bazi luźnego tekstu lub obrazka ze zdjęciem przepisu. chce aby uzytkownik miał trzecią mozliwość : generowanie przepisu na podstawie linku do przepus w internecie
+Jako zalogowany użytkownik chce mieć możliwośc ocenienie przepisu w skali 1-5 
 
 </wymagania>
 
 <numer_historyjki>
-97
+99
 </numer_historyjki>
 
 

@@ -15,6 +15,7 @@ import {
 } from '../_shared/cursor.ts';
 import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
+import { buildRatingFields, getMyRatingsMap } from '../_shared/recipe-ratings.ts';
 
 /**
  * Returns recipe IDs matching the requested personal flags.
@@ -209,6 +210,9 @@ export interface PublicRecipeDetailDto {
     is_grill: boolean;
     is_favorite?: boolean;
     is_want_to_try?: boolean;
+    average_rating: number | null;
+    ratings_count: number;
+    my_rating?: number | null;
 }
 
 /**
@@ -259,6 +263,8 @@ interface RecipeDetailsRow {
     diet_type: string | null;
     cuisine: string | null;
     difficulty: string | null;
+    average_rating: number | null;
+    ratings_count: number | null;
 }
 
 /**
@@ -300,7 +306,7 @@ interface ProfileRow {
 const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, ingredients, tips';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
-const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tips, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill';
+const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tips, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, ratings_count, average_rating';
 
 /** Columns to select from profiles table. */
 const PROFILE_SELECT_COLUMNS = 'id, username';
@@ -1106,14 +1112,17 @@ export async function getPublicRecipeById(
     let inMyPlan = false;
     let collectionIds: number[] = [];
     let flags: { is_favorite: boolean; is_want_to_try: boolean } | undefined;
+    let myRating: number | undefined;
 
     if (userId !== null) {
-        const [recipeIdsInPlan, recipeFlagsMap] = await Promise.all([
+        const [recipeIdsInPlan, recipeFlagsMap, ratingsMap] = await Promise.all([
             getRecipeIdsInPlan(client, [params.id], userId),
             getRecipeFlagsMap(client, [params.id], userId),
+            getMyRatingsMap(client, [params.id], userId),
         ]);
         inMyPlan = recipeIdsInPlan.has(params.id);
         flags = recipeFlagsMap.get(params.id);
+        myRating = ratingsMap.get(params.id);
 
         // Get collection IDs that contain this recipe (owned by user)
         collectionIds = await getCollectionIdsForRecipe(client, params.id, userId);
@@ -1153,6 +1162,7 @@ export async function getPublicRecipeById(
             is_favorite: flags?.is_favorite ?? false,
             is_want_to_try: flags?.is_want_to_try ?? false,
         }),
+        ...buildRatingFields(recipe, myRating, userId !== null),
     };
 
     logger.info('Public recipe fetched successfully', {

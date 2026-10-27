@@ -93,6 +93,10 @@
  * - added_ids (number[]) - Collection IDs added in this operation
  * - removed_ids (number[]) - Collection IDs removed in this operation
  *
+ * PUT /functions/v1/recipes/{id}/rating
+ * Sets an authenticated user's rating (1-5) for a public recipe by another author.
+ * Use `{ "rating": null }` to remove the caller's rating.
+ *
  * DELETE /functions/v1/recipes/{id}
  * Soft-deletes an existing recipe for the authenticated user.
  * Sets the deleted_at timestamp; the recipe remains in the database but is no longer accessible.

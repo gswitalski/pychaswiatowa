@@ -8,6 +8,7 @@ import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
+import { buildRatingFields, getMyRatingsMap } from '../_shared/recipe-ratings.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -109,6 +110,9 @@ export interface RecipeDetailDto {
     collection_ids: number[];
     is_favorite?: boolean;
     is_want_to_try?: boolean;
+    average_rating: number | null;
+    ratings_count: number | null;
+    my_rating?: number | null;
 }
 
 /**
@@ -132,6 +136,8 @@ interface RecipeDetailFullRow {
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
+    average_rating: number | null;
+    ratings_count: number | null;
 }
 
 /**
@@ -140,7 +146,7 @@ interface RecipeDetailFullRow {
  */
 const RECIPE_DETAIL_SELECT_COLUMNS =
     'id, user_id, name, description, image_path, visibility, category_id, category_name, ' +
-    'ingredients, steps, tags, servings, prep_time_minutes, total_time_minutes, is_termorobot, diet_type, cuisine, difficulty, is_grill, created_at, updated_at, deleted_at';
+    'ingredients, steps, tags, servings, prep_time_minutes, total_time_minutes, is_termorobot, diet_type, cuisine, difficulty, is_grill, created_at, updated_at, deleted_at, ratings_count, average_rating';
 
 /**
  * Checks which recipes from the given list are in the authenticated user's plan.
@@ -284,9 +290,10 @@ export async function getExploreRecipeById(params: {
         logger.info('Recipe is PUBLIC - access granted', { recipeId });
         
         // Check if recipe is in user's plan
-        const [recipeIdsInPlan, flagsMap] = await Promise.all([
+        const [recipeIdsInPlan, flagsMap, ratingsMap] = await Promise.all([
             getRecipeIdsInPlan(client, [recipeId], requesterUserId),
             getRecipeFlagsMap(client, [recipeId], requesterUserId),
+            getMyRatingsMap(client, [recipeId], requesterUserId),
         ]);
         const inMyPlan = recipeIdsInPlan.has(recipeId);
         
@@ -295,7 +302,14 @@ export async function getExploreRecipeById(params: {
             ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
             : [];
         
-        return mapToDto(recipe, inMyPlan, collectionIds, flagsMap.get(recipeId));
+        return mapToDto(
+            recipe,
+            inMyPlan,
+            collectionIds,
+            flagsMap.get(recipeId),
+            ratingsMap.get(recipeId),
+            requesterUserId !== null
+        );
     }
 
     // Rule 2: If not PUBLIC, require authentication and author match
@@ -327,9 +341,10 @@ export async function getExploreRecipeById(params: {
     });
 
     // Check if recipe is in user's plan
-    const [recipeIdsInPlan, flagsMap] = await Promise.all([
+    const [recipeIdsInPlan, flagsMap, ratingsMap] = await Promise.all([
         getRecipeIdsInPlan(client, [recipeId], requesterUserId),
         getRecipeFlagsMap(client, [recipeId], requesterUserId),
+        getMyRatingsMap(client, [recipeId], requesterUserId),
     ]);
     const inMyPlan = recipeIdsInPlan.has(recipeId);
 
@@ -338,7 +353,14 @@ export async function getExploreRecipeById(params: {
         ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
         : [];
 
-    return mapToDto(recipe, inMyPlan, collectionIds, flagsMap.get(recipeId));
+    return mapToDto(
+        recipe,
+        inMyPlan,
+        collectionIds,
+        flagsMap.get(recipeId),
+        ratingsMap.get(recipeId),
+        true
+    );
 }
 
 /**
@@ -354,7 +376,9 @@ function mapToDto(
     recipe: RecipeDetailFullRow,
     inMyPlan: boolean,
     collectionIds: number[],
-    flags?: { is_favorite: boolean; is_want_to_try: boolean }
+    flags?: { is_favorite: boolean; is_want_to_try: boolean },
+    myRating?: number,
+    isAuthenticated = false
 ): RecipeDetailDto {
     return {
         id: recipe.id,
@@ -386,5 +410,6 @@ function mapToDto(
             is_favorite: flags.is_favorite,
             is_want_to_try: flags.is_want_to_try,
         }),
+        ...buildRatingFields(recipe, myRating, isAuthenticated),
     };
 }

@@ -30,6 +30,8 @@ import {
     SetRecipeCollectionsResult,
     setRecipeFlags,
     SetRecipeFlagsInput,
+    setRecipeRating,
+    SetRecipeRatingInput,
 } from './recipes.service.ts';
 
 /** Maximum allowed limit for pagination. */
@@ -453,6 +455,21 @@ const setRecipeFlagsSchema = z
         (body) => body.is_favorite !== undefined || body.is_want_to_try !== undefined,
         { message: 'At least one of is_favorite, is_want_to_try is required' }
     );
+
+/** Schema for PUT /recipes/{id}/rating. Null removes the caller's rating. */
+const setRecipeRatingSchema = z
+    .object({
+        rating: z
+            .number({
+                required_error: 'rating is required',
+                invalid_type_error: 'rating must be an integer between 1 and 5 or null',
+            })
+            .int('rating must be an integer')
+            .min(1, 'rating must be at least 1')
+            .max(5, 'rating must be at most 5')
+            .nullable(),
+    })
+    .strict();
 
 /**
  * Schema for validating GET /recipes query parameters.
@@ -1265,6 +1282,52 @@ export async function handleSetRecipeFlags(
 }
 
 /**
+ * Handles PUT /recipes/{id}/rating.
+ * Sets, changes, or removes the authenticated user's rating of a public recipe.
+ */
+export async function handleSetRecipeRating(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user } = await getAuthenticatedContext(req);
+
+        let requestBody: unknown;
+        try {
+            requestBody = await req.json();
+        } catch {
+            throw new ApplicationError('VALIDATION_ERROR', 'Invalid JSON in request body');
+        }
+
+        const validationResult = setRecipeRatingSchema.safeParse(requestBody);
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+            logger.warn('Invalid request body for PUT /recipes/{id}/rating', {
+                recipeId,
+                errors: errorDetails,
+            });
+            throw new ApplicationError('VALIDATION_ERROR', `Invalid input: ${errorDetails}`);
+        }
+
+        const result = await setRecipeRating(client, {
+            recipeId,
+            rating: validationResult.data.rating,
+        } satisfies SetRecipeRatingInput);
+
+        logger.info('PUT /recipes/{id}/rating completed successfully', {
+            userId: user.id,
+            recipeId,
+        });
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Handles POST /recipes/{id}/image request.
  * Uploads or replaces a recipe image for the authenticated user.
  * Accepts multipart/form-data with a 'file' field containing the image.
@@ -1450,6 +1513,17 @@ function extractRecipeIdFromFlagsPath(url: URL): string | null {
 
     if (flagsPathMatch && flagsPathMatch[1]) {
         return flagsPathMatch[1];
+    }
+
+    return null;
+}
+
+/** Extracts the recipe ID from /recipes/{id}/rating. */
+function extractRecipeIdFromRatingPath(url: URL): string | null {
+    const ratingPathMatch = url.pathname.match(/\/recipes\/([^/]+)\/rating\/?$/);
+
+    if (ratingPathMatch && ratingPathMatch[1]) {
+        return ratingPathMatch[1];
     }
 
     return null;
@@ -1767,6 +1841,7 @@ export async function handlePostRecipeNormalizedIngredientsRefresh(
  * - POST /recipes/{id}/normalized-ingredients/refresh - Enqueue normalization refresh (dev/test)
  * - PUT /recipes/{id} - Update an existing recipe
  * - PUT /recipes/{id}/collections - Set recipe collections (atomic)
+ * - PUT /recipes/{id}/rating - Set or remove the caller's rating
  * - DELETE /recipes/{id} - Soft-delete a recipe
  * - DELETE /recipes/{id}/image - Remove recipe image
  *
@@ -1796,6 +1871,9 @@ export async function recipesRouter(req: Request): Promise<Response> {
     // Check for /recipes/{id}/flags path (must be checked before extracting simple recipe ID)
     const flagsRecipeId = extractRecipeIdFromFlagsPath(url);
 
+    // Check for /recipes/{id}/rating path (must be checked before extracting simple recipe ID)
+    const ratingRecipeId = extractRecipeIdFromRatingPath(url);
+
     // Check for /recipes/{id}/image path (must be checked before extracting simple recipe ID)
     const imageRecipeId = extractRecipeIdFromImagePath(url);
 
@@ -1823,6 +1901,26 @@ export async function recipesRouter(req: Request): Promise<Response> {
             JSON.stringify({
                 code: 'METHOD_NOT_ALLOWED',
                 message: `Method ${method} not allowed for /recipes/{id}/flags. Use PUT.`,
+            }),
+            {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Allow': 'PUT, OPTIONS',
+                },
+            }
+        );
+    }
+
+    if (ratingRecipeId) {
+        if (method === 'PUT') {
+            return handleSetRecipeRating(req, ratingRecipeId);
+        }
+
+        return new Response(
+            JSON.stringify({
+                code: 'METHOD_NOT_ALLOWED',
+                message: `Method ${method} not allowed for /recipes/{id}/rating. Use PUT.`,
             }),
             {
                 status: 405,

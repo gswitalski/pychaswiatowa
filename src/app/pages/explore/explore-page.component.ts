@@ -258,8 +258,11 @@ export class ExplorePageComponent implements OnInit {
         if (this.isAuthenticated()) {
             Object.assign(params, filterParams);
         } else {
-            const { favorite: _favorite, want_to_try: _wantToTry, ...publicFilters } =
-                filterParams;
+            const publicFilters = Object.fromEntries(
+                Object.entries(filterParams).filter(
+                    ([name]) => name !== 'favorite' && name !== 'want_to_try'
+                )
+            );
             Object.assign(params, publicFilters);
         }
 

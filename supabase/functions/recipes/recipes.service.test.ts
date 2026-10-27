@@ -2,7 +2,7 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals
 import { assertRejects } from 'https://deno.land/std@0.224.0/assert/assert_rejects.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import type { TypedSupabaseClient } from '../_shared/supabase-client.ts';
-import { deleteRecipe, setRecipeFlags } from './recipes.service.ts';
+import { deleteRecipe, setRecipeFlags, setRecipeRating } from './recipes.service.ts';
 
 const USER_ID = '5fb3646f-8980-4afb-aeb1-8a4e5fa58212';
 
@@ -126,4 +126,52 @@ Deno.test('setRecipeFlags: mapuje kody błędów RPC', async () => {
     );
 
     assertEquals(error.code, 'NOT_FOUND');
+});
+
+Deno.test('setRecipeRating: przekazuje null jako pominięty argument RPC i mapuje stan', async () => {
+    let calledFunction: string | undefined;
+    let calledArgs: unknown;
+    const client = {
+        rpc: (functionName: string, args: unknown) => {
+            calledFunction = functionName;
+            calledArgs = args;
+            return Promise.resolve({
+                data: [{
+                    out_recipe_id: 348,
+                    out_my_rating: null,
+                    out_average_rating: null,
+                    out_ratings_count: 0,
+                }],
+                error: null,
+            });
+        },
+    } as unknown as TypedSupabaseClient;
+
+    const result = await setRecipeRating(client, { recipeId: 348, rating: null });
+
+    assertEquals(calledFunction, 'set_recipe_rating');
+    assertEquals(calledArgs, { p_recipe_id: 348, p_rating: undefined });
+    assertEquals(result, {
+        recipe_id: 348,
+        my_rating: null,
+        average_rating: null,
+        ratings_count: 0,
+    });
+});
+
+Deno.test('setRecipeRating: mapuje błąd autora na FORBIDDEN', async () => {
+    const error = await assertRejects(
+        () => setRecipeRating({
+            rpc: () => Promise.resolve({
+                data: null,
+                error: { code: 'P0403', message: 'Authors cannot rate their own recipes' },
+            }),
+        } as unknown as TypedSupabaseClient, {
+            recipeId: 348,
+            rating: 5,
+        }),
+        ApplicationError
+    );
+
+    assertEquals(error.code, 'FORBIDDEN');
 });

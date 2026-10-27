@@ -13,6 +13,11 @@ import type {
     RecipeFlagsState,
 } from '../_shared/recipe-flags.ts';
 import {
+    buildRatingFields,
+    getMyRatingsMap,
+} from '../_shared/recipe-ratings.ts';
+import type { RecipeRatingDto } from '../_shared/recipe-ratings.ts';
+import {
     decodeCursor,
     buildFiltersHash,
     createNextCursor,
@@ -198,6 +203,9 @@ export interface RecipeDetailDto {
     normalized_ingredients_status: NormalizedIngredientsStatus;
     /** Timestamp of last normalized ingredients update (null if never processed or pending). */
     normalized_ingredients_updated_at: string | null;
+    average_rating: number | null;
+    ratings_count: number | null;
+    my_rating?: number | null;
 }
 
 /**
@@ -250,7 +258,7 @@ const RECIPE_LIST_SELECT_COLUMNS = 'id, name, image_path, created_at, visibility
 
 /** Columns to select for recipe detail queries. */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tips, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, normalized_ingredients_status, normalized_ingredients_updated_at';
+    'id, user_id, category_id, name, description, image_path, created_at, updated_at, category_name, visibility, ingredients, steps, tips, tags, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, normalized_ingredients_status, normalized_ingredients_updated_at, ratings_count, average_rating';
 
 /** Allowed sort fields to prevent SQL injection. */
 const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at'];
@@ -912,13 +920,20 @@ export async function getRecipeById(
             recipeName: data.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap] = await Promise.all([
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap] = await Promise.all([
             getRecipeIdsInPlan(client, [id], requesterUserId),
             getCollectionIdsForRecipe(client, id, requesterUserId),
             getRecipeFlagsMap(client, [id], requesterUserId),
+            getMyRatingsMap(client, [id], requesterUserId),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
-        return mapToRecipeDetailDto(data, inMyPlan, collectionIds, flagsMap.get(id));
+        return mapToRecipeDetailDto(
+            data,
+            inMyPlan,
+            collectionIds,
+            flagsMap.get(id),
+            ratingsMap.get(id)
+        );
     }
 
     // Step B: If PGRST116 (not found by RLS), distinguish between 403 and 404
@@ -999,13 +1014,20 @@ export async function getRecipeById(
             recipeName: publicRecipe.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap] = await Promise.all([
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap] = await Promise.all([
             getRecipeIdsInPlan(client, [id], requesterUserId),
             getCollectionIdsForRecipe(client, id, requesterUserId),
             getRecipeFlagsMap(client, [id], requesterUserId),
+            getMyRatingsMap(client, [id], requesterUserId),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
-        return mapToRecipeDetailDto(publicRecipe, inMyPlan, collectionIds, flagsMap.get(id));
+        return mapToRecipeDetailDto(
+            publicRecipe,
+            inMyPlan,
+            collectionIds,
+            flagsMap.get(id),
+            ratingsMap.get(id)
+        );
     }
 
     // Other database errors
@@ -1025,7 +1047,8 @@ function mapToRecipeDetailDto(
     data: any,
     inMyPlan: boolean,
     collectionIds: number[],
-    flags?: RecipeFlagsState
+    flags?: RecipeFlagsState,
+    myRating?: number
 ): RecipeDetailDto {
     return {
         id: data.id!,
@@ -1056,6 +1079,7 @@ function mapToRecipeDetailDto(
         collection_ids: collectionIds,
         normalized_ingredients_status: (data.normalized_ingredients_status as NormalizedIngredientsStatus) ?? 'PENDING',
         normalized_ingredients_updated_at: data.normalized_ingredients_updated_at ?? null,
+        ...buildRatingFields(data, myRating, true),
     };
 }
 
@@ -1131,6 +1155,56 @@ export interface SetRecipeFlagsInput {
     recipeId: number;
     isFavorite?: boolean;
     isWantToTry?: boolean;
+}
+
+export interface SetRecipeRatingInput {
+    recipeId: number;
+    rating: number | null;
+}
+
+/** Sets or removes the authenticated user's rating through the atomic database RPC. */
+export async function setRecipeRating(
+    client: TypedSupabaseClient,
+    input: SetRecipeRatingInput
+): Promise<RecipeRatingDto> {
+    const { data, error } = await client.rpc('set_recipe_rating', {
+        p_recipe_id: input.recipeId,
+        p_rating: input.rating ?? undefined,
+    });
+
+    if (error?.code === 'P0002') {
+        throw new ApplicationError('NOT_FOUND', 'Recipe not found');
+    }
+
+    if (error?.code === 'P0403') {
+        throw new ApplicationError('FORBIDDEN', 'Authors cannot rate their own recipes');
+    }
+
+    if (error?.code === '22023') {
+        throw new ApplicationError('VALIDATION_ERROR', 'Rating must be between 1 and 5 or null');
+    }
+
+    if (error?.code === '42501') {
+        throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+    }
+
+    const row = data?.[0];
+    if (error || !row) {
+        logger.error('Error setting recipe rating', {
+            errorCode: error?.code,
+            errorMessage: error?.message,
+            recipeId: input.recipeId,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to set recipe rating');
+    }
+
+    const ratingsCount = Number(row.out_ratings_count);
+    return {
+        recipe_id: Number(row.out_recipe_id),
+        my_rating: row.out_my_rating ?? null,
+        average_rating: ratingsCount === 0 ? null : Number(row.out_average_rating),
+        ratings_count: ratingsCount,
+    };
 }
 
 /**

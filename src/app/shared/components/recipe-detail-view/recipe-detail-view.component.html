@@ -165,7 +165,22 @@
                     <pych-recipe-header
                         [recipe]="recipe()!"
                         [isPublic]="isPublicView()"
-                    />
+                    >
+                        @if (showRating()) {
+                            <pych-recipe-rating
+                                recipeRating
+                                [recipeId]="recipe()!.id!"
+                                [averageRating]="recipe()!.average_rating ?? null"
+                                [ratingsCount]="recipe()!.ratings_count ?? 0"
+                                [myRating]="recipe()!.my_rating ?? null"
+                                [isAuthenticated]="isAuthenticated()"
+                                [isOwner]="isOwner()"
+                                (ratingChange)="ratingChange.emit($event)"
+                                (sessionExpired)="ratingSessionExpired.emit()"
+                                (loginRequested)="onLogin()"
+                            />
+                        }
+                    </pych-recipe-header>
                 </div>
 
                 <pych-recipe-image

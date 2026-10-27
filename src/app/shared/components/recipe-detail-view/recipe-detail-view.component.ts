@@ -9,6 +9,7 @@ import {
     ApiError,
     RecipeDetailDto,
     RecipeFlagsDto,
+    RecipeRatingDto,
 } from '../../../../../shared/contracts/types';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,6 +21,7 @@ import { RecipeHeaderComponent } from '../../../pages/recipes/recipe-detail/comp
 import { RecipeImageComponent } from '../../../pages/recipes/recipe-detail/components/recipe-image/recipe-image.component';
 import { RecipeContentListComponent } from '../../../pages/recipes/recipe-detail/components/recipe-content-list/recipe-content-list.component';
 import { RecipeFlagTogglesComponent } from '../recipe-flag-toggles/recipe-flag-toggles.component';
+import { RecipeRatingComponent } from '../recipe-rating/recipe-rating.component';
 
 export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
 
@@ -37,6 +39,7 @@ export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions
         RecipeImageComponent,
         RecipeContentListComponent,
         RecipeFlagTogglesComponent,
+        RecipeRatingComponent,
     ],
     templateUrl: './recipe-detail-view.component.html',
     styleUrl: './recipe-detail-view.component.scss',
@@ -67,8 +70,23 @@ export class RecipeDetailViewComponent {
     readonly openPlan = output<void>();
     readonly flagsChange = output<RecipeFlagsDto>();
     readonly flagsSessionExpired = output<void>();
+    readonly ratingChange = output<RecipeRatingDto>();
+    readonly ratingSessionExpired = output<void>();
 
     readonly hasRecipe = computed(() => this.recipe() !== null);
+    protected readonly showRating = computed(() => {
+        const recipe = this.recipe();
+
+        if (recipe === null || recipe.id === null) {
+            return false;
+        }
+
+        if (recipe.visibility !== 'PUBLIC') {
+            return false;
+        }
+
+        return recipe.ratings_count !== null && recipe.ratings_count !== undefined;
+    });
 
     onAddToCollection(): void {
         this.addToCollection.emit();

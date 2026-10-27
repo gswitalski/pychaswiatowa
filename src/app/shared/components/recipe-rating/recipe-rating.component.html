@@ -1,0 +1,86 @@
+<div class="recipe-rating" [attr.aria-busy]="pending()">
+    @if (mode() === 'interactive') {
+        <div
+            class="rating-stars"
+            role="radiogroup"
+            aria-label="Twoja ocena przepisu"
+            (mouseleave)="onGroupLeave()"
+            (focusout)="onBlurGroup($event)"
+        >
+            @for (star of stars; track star) {
+                <button
+                    #starButton
+                    mat-icon-button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="selected() === star"
+                    [attr.aria-label]="star + ' z 5'"
+                    [attr.tabindex]="rovingStar() === star ? 0 : -1"
+                    [disabled]="pending()"
+                    [disabledInteractive]="true"
+                    [matTooltip]="starTooltip(star)"
+                    (click)="rate(star)"
+                    (mouseenter)="onHover(star)"
+                    (focus)="onFocusStar(star)"
+                    (keydown)="onKeydown($event, star)"
+                >
+                    <mat-icon
+                        aria-hidden="true"
+                        [class.filled]="isStarFilled(star)"
+                        [class.preview]="isPreviewStar(star)"
+                    >
+                        {{ isStarFilled(star) ? 'star' : 'star_border' }}
+                    </mat-icon>
+                </button>
+            }
+        </div>
+
+        @if (selected() !== null) {
+            <button
+                mat-button
+                type="button"
+                [disabled]="pending()"
+                [disabledInteractive]="true"
+                (click)="rate(null)"
+            >
+                Usuń ocenę
+            </button>
+        }
+    } @else {
+        <span
+            class="rating-stars readonly"
+            role="img"
+            [attr.aria-label]="readonlyAriaLabel()"
+        >
+            @for (star of stars; track star) {
+                <mat-icon
+                    aria-hidden="true"
+                    [class.filled]="isReadonlyStarFilled(star)"
+                >
+                    {{ isReadonlyStarFilled(star) ? 'star' : 'star_border' }}
+                </mat-icon>
+            }
+        </span>
+    }
+
+    <span class="rating-summary" aria-live="polite">{{ summaryText() }}</span>
+
+    @if (mode() === 'guest') {
+        <button mat-button type="button" (click)="loginRequested.emit()">
+            Zaloguj się, aby ocenić
+        </button>
+    }
+
+    @if (mode() === 'owner') {
+        <span class="rating-note">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+            Nie możesz oceniać własnych przepisów
+        </span>
+    }
+
+    @if (mode() === 'interactive' && isEmpty()) {
+        <span class="rating-hint">
+            Bądź pierwszą osobą, która oceni ten przepis.
+        </span>
+    }
+</div>
