@@ -114,6 +114,33 @@ Content-Type: application/json
     "language": "pl"
 }
 
+### Test 9a: Multi-image recipe source (1–5 images, ordered pages)
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "image",
+    "images": [
+        { "mime_type": "image/jpeg", "data_base64": "REPLACE_WITH_PAGE_1_BASE64" },
+        { "mime_type": "image/jpeg", "data_base64": "REPLACE_WITH_PAGE_2_BASE64" }
+    ],
+    "output_format": "pycha_recipe_draft_v1",
+    "language": "pl"
+}
+
+### Test 9b: Invalid image source - image and images are mutually exclusive (400)
+POST {{baseUrl}}/recipes/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "source": "image",
+    "image": { "mime_type": "image/png", "data_base64": "YQ==" },
+    "images": [{ "mime_type": "image/png", "data_base64": "YQ==" }],
+    "output_format": "pycha_recipe_draft_v1"
+}
+
 ### ============================================
 ### AI Normalized Ingredients - Test Requests
 ### ============================================

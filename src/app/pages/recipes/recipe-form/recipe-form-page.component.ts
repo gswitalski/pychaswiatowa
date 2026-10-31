@@ -34,13 +34,16 @@ import {
     AiCreditsExhaustedDialogData,
 } from '../../../shared/components/ai-credits-exhausted-dialog/ai-credits-exhausted-dialog.component';
 import { RecipeBasicInfoFormComponent } from './components/recipe-basic-info-form/recipe-basic-info-form.component';
-import { RecipeImageUploadComponent, RecipeImageEvent } from './components/recipe-image-upload/recipe-image-upload.component';
+import {
+    RecipeImageUploadComponent,
+    RecipeImageEvent,
+} from './components/recipe-image-upload/recipe-image-upload.component';
 import { RecipeCategorizationFormComponent } from './components/recipe-categorization-form/recipe-categorization-form.component';
 import { EditableListComponent } from '../../../shared/components/editable-list/editable-list.component';
 import {
     AiRecipeImagePreviewDialogComponent,
     AiRecipeImageDialogData,
-    AiRecipeImageDialogResult
+    AiRecipeImageDialogResult,
 } from './components/ai-recipe-image-preview-dialog/ai-recipe-image-preview-dialog.component';
 
 import { CategoriesService } from '../../../core/services/categories.service';
@@ -55,7 +58,7 @@ import {
     AiRecipeImageService,
     AiImageValidationError,
     AiImageRateLimitError,
-    AiImagePremiumRequiredError
+    AiImagePremiumRequiredError,
 } from '../services/ai-recipe-image.service';
 import {
     RecipeDetailDto,
@@ -63,6 +66,7 @@ import {
     UpdateRecipeCommand,
     RecipeVisibility,
     AiRecipeDraftDto,
+    AiRecipeDraftMetaDto,
     CategoryDto,
     AiRecipeImageRequestDto,
     AiRecipeImageContentItem,
@@ -71,6 +75,7 @@ import {
     RecipeDifficulty,
     AiRecipeDraftImageMimeType,
 } from '../../../../../shared/contracts/types';
+import { formatUnreadableImagesMessage } from './draft-image-warnings.messages';
 
 export interface RecipeFormViewModel {
     name: FormControl<string>;
@@ -150,6 +155,10 @@ export class RecipeFormPageComponent implements OnInit {
 
     /** Flag indicating if form was prefilled from AI draft */
     readonly isPrefilledFromDraft = signal<boolean>(false);
+    readonly draftImageWarnings = signal<number[]>([]);
+    readonly draftImageWarningMessage = computed(() =>
+        formatUnreadableImagesMessage(this.draftImageWarnings()),
+    );
 
     /** Pending draft to apply after categories are loaded */
     private pendingDraft: AiRecipeDraftDto | null = null;
@@ -185,9 +194,7 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly pendingImageFile = signal<File | null>(null);
 
     /** Page title computed based on mode */
-    readonly pageTitle = computed(() =>
-        this.isEditMode() ? 'Edytuj przepis' : 'Nowy przepis'
-    );
+    readonly pageTitle = computed(() => (this.isEditMode() ? 'Edytuj przepis' : 'Nowy przepis'));
 
     /** Signal: track form validity manually */
     private readonly formValid = signal<boolean>(false);
@@ -213,9 +220,7 @@ export class RecipeFormPageComponent implements OnInit {
         return role === 'user';
     });
 
-    readonly isImageCreditsExhausted = computed(() =>
-        this.creditsService.isExhausted('image')
-    );
+    readonly isImageCreditsExhausted = computed(() => this.creditsService.isExhausted('image'));
 
     /** Computed: is AI image button disabled */
     readonly isAiImageButtonDisabled = computed(() => {
@@ -229,7 +234,7 @@ export class RecipeFormPageComponent implements OnInit {
 
     /** Computed: has reference image for AI generation */
     readonly hasAiReferenceImage = computed(() =>
-        this.isEditMode() ? !!this.currentImagePath() : !!this.pendingImageFile()
+        this.isEditMode() ? !!this.currentImagePath() : !!this.pendingImageFile(),
     );
 
     /** Computed: tooltip for AI image button */
@@ -238,9 +243,7 @@ export class RecipeFormPageComponent implements OnInit {
             return 'Brak kredytów AI — przejdź na Premium';
         }
 
-        return this.hasAiReferenceImage()
-            ? 'Generuj z referencją zdjęcia'
-            : 'Generuj z przepisu';
+        return this.hasAiReferenceImage() ? 'Generuj z referencją zdjęcia' : 'Generuj z przepisu';
     });
 
     /** Main form group */
@@ -326,42 +329,45 @@ export class RecipeFormPageComponent implements OnInit {
     }
 
     private initForm(): void {
-        this.form = this.fb.group<RecipeFormViewModel>({
-            name: this.fb.control('', {
-                nonNullable: true,
-                validators: [Validators.required, Validators.maxLength(150)],
-            }),
-            description: this.fb.control('', { nonNullable: true }),
-            categoryId: this.fb.control<number | null>(null),
-            visibility: this.fb.control<RecipeVisibility>('PRIVATE', {
-                nonNullable: true,
-                validators: [Validators.required],
-            }),
-            tags: this.fb.array<FormControl<string>>([]),
-            ingredients: this.fb.array<FormControl<string>>([], {
-                validators: [Validators.required, this.minArrayLength(1)],
-            }),
-            steps: this.fb.array<FormControl<string>>([], {
-                validators: [Validators.required, this.minArrayLength(1)],
-            }),
-            tips: this.fb.array<FormControl<string>>([]),
-            servings: this.fb.control<number | null>(null, {
-                validators: [Validators.min(1), Validators.max(99), this.integerValidator()],
-            }),
-            isTermorobot: this.fb.control<boolean>(false, { nonNullable: true }),
-            isGrill: this.fb.control<boolean>(false, { nonNullable: true }),
-            prepTimeMinutes: this.fb.control<number | null>(null, {
-                validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
-            }),
-            totalTimeMinutes: this.fb.control<number | null>(null, {
-                validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
-            }),
-            dietType: this.fb.control<RecipeDietType | null>(null),
-            cuisine: this.fb.control<RecipeCuisine | null>(null),
-            difficulty: this.fb.control<RecipeDifficulty | null>(null),
-        }, {
-            validators: [this.timeRelationValidator()],
-        });
+        this.form = this.fb.group<RecipeFormViewModel>(
+            {
+                name: this.fb.control('', {
+                    nonNullable: true,
+                    validators: [Validators.required, Validators.maxLength(150)],
+                }),
+                description: this.fb.control('', { nonNullable: true }),
+                categoryId: this.fb.control<number | null>(null),
+                visibility: this.fb.control<RecipeVisibility>('PRIVATE', {
+                    nonNullable: true,
+                    validators: [Validators.required],
+                }),
+                tags: this.fb.array<FormControl<string>>([]),
+                ingredients: this.fb.array<FormControl<string>>([], {
+                    validators: [Validators.required, this.minArrayLength(1)],
+                }),
+                steps: this.fb.array<FormControl<string>>([], {
+                    validators: [Validators.required, this.minArrayLength(1)],
+                }),
+                tips: this.fb.array<FormControl<string>>([]),
+                servings: this.fb.control<number | null>(null, {
+                    validators: [Validators.min(1), Validators.max(99), this.integerValidator()],
+                }),
+                isTermorobot: this.fb.control<boolean>(false, { nonNullable: true }),
+                isGrill: this.fb.control<boolean>(false, { nonNullable: true }),
+                prepTimeMinutes: this.fb.control<number | null>(null, {
+                    validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
+                }),
+                totalTimeMinutes: this.fb.control<number | null>(null, {
+                    validators: [Validators.min(0), Validators.max(999), this.integerValidator()],
+                }),
+                dietType: this.fb.control<RecipeDietType | null>(null),
+                cuisine: this.fb.control<RecipeCuisine | null>(null),
+                difficulty: this.fb.control<RecipeDifficulty | null>(null),
+            },
+            {
+                validators: [this.timeRelationValidator()],
+            },
+        );
     }
 
     private loadCategories(): void {
@@ -401,7 +407,24 @@ export class RecipeFormPageComponent implements OnInit {
         }
 
         this.populateFormFromDraft(draftData.draft);
+        this.setDraftImageWarnings(draftData.meta);
         this.isPrefilledFromDraft.set(true);
+    }
+
+    dismissDraftImageWarnings(): void {
+        this.draftImageWarnings.set([]);
+    }
+
+    private setDraftImageWarnings(meta: AiRecipeDraftMetaDto): void {
+        const indices = (meta.image_warnings ?? [])
+            .filter(
+                (warning) =>
+                    warning.code === 'IMAGE_UNREADABLE' &&
+                    Number.isInteger(warning.image_index) &&
+                    warning.image_index >= 1,
+            )
+            .map((warning) => warning.image_index);
+        this.draftImageWarnings.set([...new Set(indices)].sort((a, b) => a - b));
     }
 
     /**
@@ -432,9 +455,7 @@ export class RecipeFormPageComponent implements OnInit {
                 .filter((line) => line.length > 0);
 
             ingredients.forEach((ingredient) => {
-                this.ingredientsArray.push(
-                    this.fb.control(ingredient, { nonNullable: true })
-                );
+                this.ingredientsArray.push(this.fb.control(ingredient, { nonNullable: true }));
             });
         }
 
@@ -447,9 +468,7 @@ export class RecipeFormPageComponent implements OnInit {
                 .filter((line) => line.length > 0);
 
             steps.forEach((step) => {
-                this.stepsArray.push(
-                    this.fb.control(step, { nonNullable: true })
-                );
+                this.stepsArray.push(this.fb.control(step, { nonNullable: true }));
             });
         }
 
@@ -462,9 +481,7 @@ export class RecipeFormPageComponent implements OnInit {
                 .filter((line) => line.length > 0);
 
             tips.forEach((tip) => {
-                this.tipsArray.push(
-                    this.fb.control(tip, { nonNullable: true })
-                );
+                this.tipsArray.push(this.fb.control(tip, { nonNullable: true }));
             });
         }
 
@@ -473,9 +490,7 @@ export class RecipeFormPageComponent implements OnInit {
         if (draft.tags && draft.tags.length > 0) {
             const uniqueTags = [...new Set(draft.tags)];
             uniqueTags.forEach((tag) => {
-                this.tagsArray.push(
-                    this.fb.control(tag, { nonNullable: true })
-                );
+                this.tagsArray.push(this.fb.control(tag, { nonNullable: true }));
             });
         }
 
@@ -508,7 +523,7 @@ export class RecipeFormPageComponent implements OnInit {
         }
 
         const matchedCategory = loadedCategories.find(
-            (cat: CategoryDto) => cat.name.trim().toLowerCase() === categoryName
+            (cat: CategoryDto) => cat.name.trim().toLowerCase() === categoryName,
         );
 
         if (matchedCategory) {
@@ -561,9 +576,7 @@ export class RecipeFormPageComponent implements OnInit {
         this.tagsArray.clear();
         if (recipe.tags) {
             recipe.tags.forEach((tag) => {
-                this.tagsArray.push(
-                    this.fb.control(tag.name, { nonNullable: true })
-                );
+                this.tagsArray.push(this.fb.control(tag.name, { nonNullable: true }));
             });
         }
 
@@ -571,12 +584,8 @@ export class RecipeFormPageComponent implements OnInit {
         this.ingredientsArray.clear();
         if (recipe.ingredients && recipe.ingredients.length > 0) {
             recipe.ingredients.forEach((item) => {
-                const value = item.type === 'header'
-                    ? `# ${item.content}`
-                    : item.content;
-                this.ingredientsArray.push(
-                    this.fb.control(value, { nonNullable: true })
-                );
+                const value = item.type === 'header' ? `# ${item.content}` : item.content;
+                this.ingredientsArray.push(this.fb.control(value, { nonNullable: true }));
             });
         }
 
@@ -584,12 +593,8 @@ export class RecipeFormPageComponent implements OnInit {
         this.stepsArray.clear();
         if (recipe.steps && recipe.steps.length > 0) {
             recipe.steps.forEach((item) => {
-                const value = item.type === 'header'
-                    ? `# ${item.content}`
-                    : item.content;
-                this.stepsArray.push(
-                    this.fb.control(value, { nonNullable: true })
-                );
+                const value = item.type === 'header' ? `# ${item.content}` : item.content;
+                this.stepsArray.push(this.fb.control(value, { nonNullable: true }));
             });
         }
 
@@ -597,12 +602,8 @@ export class RecipeFormPageComponent implements OnInit {
         this.tipsArray.clear();
         if (recipe.tips && recipe.tips.length > 0) {
             recipe.tips.forEach((item) => {
-                const value = item.type === 'header'
-                    ? `# ${item.content}`
-                    : item.content;
-                this.tipsArray.push(
-                    this.fb.control(value, { nonNullable: true })
-                );
+                const value = item.type === 'header' ? `# ${item.content}` : item.content;
+                this.tipsArray.push(this.fb.control(value, { nonNullable: true }));
             });
         }
     }
@@ -661,26 +662,27 @@ export class RecipeFormPageComponent implements OnInit {
     }
 
     private mapFormToCommand(
-        formValue: ReturnType<FormGroup<RecipeFormViewModel>['getRawValue']>
+        formValue: ReturnType<FormGroup<RecipeFormViewModel>['getRawValue']>,
     ): CreateRecipeCommand {
         // Normalizacja servings: puste wartości → null, wartości liczbowe → liczba całkowita
-        const servings = formValue.servings !== null && formValue.servings !== undefined
-            ? Math.round(formValue.servings)
-            : null;
+        const servings =
+            formValue.servings !== null && formValue.servings !== undefined
+                ? Math.round(formValue.servings)
+                : null;
 
         // Normalizacja czasów: puste wartości → null, wartości liczbowe → liczba całkowita
-        const prepTimeMinutes = formValue.prepTimeMinutes !== null && formValue.prepTimeMinutes !== undefined
-            ? Math.round(formValue.prepTimeMinutes)
-            : null;
+        const prepTimeMinutes =
+            formValue.prepTimeMinutes !== null && formValue.prepTimeMinutes !== undefined
+                ? Math.round(formValue.prepTimeMinutes)
+                : null;
 
-        const totalTimeMinutes = formValue.totalTimeMinutes !== null && formValue.totalTimeMinutes !== undefined
-            ? Math.round(formValue.totalTimeMinutes)
-            : null;
+        const totalTimeMinutes =
+            formValue.totalTimeMinutes !== null && formValue.totalTimeMinutes !== undefined
+                ? Math.round(formValue.totalTimeMinutes)
+                : null;
 
         // Normalizacja tips_raw: join z \n, pusty string jeśli brak wskazówek
-        const tipsRaw = formValue.tips.length > 0
-            ? formValue.tips.join('\n')
-            : undefined;
+        const tipsRaw = formValue.tips.length > 0 ? formValue.tips.join('\n') : undefined;
 
         return {
             name: formValue.name,
@@ -747,7 +749,7 @@ export class RecipeFormPageComponent implements OnInit {
                 this.snackBar.open(
                     'Przepis zapisany, ale nie udało się wgrać zdjęcia.',
                     undefined,
-                    { duration: 5000 }
+                    { duration: 5000 },
                 );
                 this.saving.set(false);
                 this.navigateToRecipe(recipeId, recipeName);
@@ -813,14 +815,18 @@ export class RecipeFormPageComponent implements OnInit {
                 void this.generateAiImageInDialog(dialogRef, promptHint, (image) => {
                     lastGeneratedImage = image;
                 });
-            }
+            },
         );
 
-        const result = await dialogRef.afterClosed().toPromise() as AiRecipeImageDialogResult | undefined;
+        const result = (await dialogRef.afterClosed().toPromise()) as
+            AiRecipeImageDialogResult | undefined;
         generateSubscription.unsubscribe();
 
         if (result?.action === 'applied') {
-            const generatedImage = lastGeneratedImage as { dataBase64: string; mimeType: string } | null;
+            const generatedImage = lastGeneratedImage as {
+                dataBase64: string;
+                mimeType: string;
+            } | null;
             if (generatedImage !== null) {
                 this.applyAiGeneratedImage(generatedImage.dataBase64, generatedImage.mimeType);
             }
@@ -860,7 +866,7 @@ export class RecipeFormPageComponent implements OnInit {
         // Map category ID to category name
         let categoryName: string | null = null;
         if (formValue.categoryId) {
-            const category = this.categories()?.find(c => c.id === formValue.categoryId);
+            const category = this.categories()?.find((c) => c.id === formValue.categoryId);
             categoryName = category?.name ?? null;
         }
 
@@ -912,8 +918,7 @@ export class RecipeFormPageComponent implements OnInit {
         if (!this.isEditMode()) {
             const pendingFile = this.pendingImageFile();
             if (pendingFile) {
-                const compressedFile =
-                    await this.imageCompression.compressToMaxSize(pendingFile);
+                const compressedFile = await this.imageCompression.compressToMaxSize(pendingFile);
                 const dataBase64 = await this.readFileAsBase64(compressedFile);
                 const mimeType = this.toAiDraftImageMimeType(compressedFile.type);
                 request.reference_image = {
@@ -930,7 +935,7 @@ export class RecipeFormPageComponent implements OnInit {
     private async generateAiImageInDialog(
         dialogRef: MatDialogRef<AiRecipeImagePreviewDialogComponent, AiRecipeImageDialogResult>,
         promptHint: string | undefined,
-        onSuccess: (image: { dataBase64: string; mimeType: string }) => void
+        onSuccess: (image: { dataBase64: string; mimeType: string }) => void,
     ): Promise<void> {
         if (this.aiGenerating()) {
             return;
@@ -968,15 +973,13 @@ export class RecipeFormPageComponent implements OnInit {
         imageDialogRef: MatDialogRef<
             AiRecipeImagePreviewDialogComponent,
             AiRecipeImageDialogResult
-        >
+        >,
     ): void {
         const details = error.response.details;
         const dialogData: AiCreditsExhaustedDialogData = {
             creditType: details.credit_type,
             limitType: details.limit_type === 'monthly' ? 'monthly' : 'lifetime',
-            nextResetAt: details.next_reset_at
-                ? new Date(details.next_reset_at)
-                : null,
+            nextResetAt: details.next_reset_at ? new Date(details.next_reset_at) : null,
         };
 
         imageDialogRef.close({ action: 'cancelled' });
@@ -1088,7 +1091,8 @@ export class RecipeFormPageComponent implements OnInit {
 
                 resolve(data);
             };
-            reader.onerror = () => reject(new Error('Nie udało się odczytać obrazu referencyjnego.'));
+            reader.onerror = () =>
+                reject(new Error('Nie udało się odczytać obrazu referencyjnego.'));
             reader.readAsDataURL(file);
         });
     }
@@ -1159,13 +1163,20 @@ export class RecipeFormPageComponent implements OnInit {
             const totalTime = totalControl.value;
 
             // Jeśli którakolwiek wartość jest null - brak walidacji relacji
-            if (prepTime === null || prepTime === undefined || totalTime === null || totalTime === undefined) {
+            if (
+                prepTime === null ||
+                prepTime === undefined ||
+                totalTime === null ||
+                totalTime === undefined
+            ) {
                 // Usuń błąd relacji jeśli był ustawiony
                 const currentErrors = totalControl.errors;
                 if (currentErrors && currentErrors['totalLessThanPrep']) {
-                const remainingErrors = { ...currentErrors };
-                delete remainingErrors['totalLessThanPrep'];
-                totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
+                    const remainingErrors = { ...currentErrors };
+                    delete remainingErrors['totalLessThanPrep'];
+                    totalControl.setErrors(
+                        Object.keys(remainingErrors).length > 0 ? remainingErrors : null,
+                    );
                 }
                 return null;
             }
@@ -1183,9 +1194,11 @@ export class RecipeFormPageComponent implements OnInit {
             // Relacja OK - usuń błąd totalLessThanPrep jeśli istnieje
             const currentErrors = totalControl.errors;
             if (currentErrors && currentErrors['totalLessThanPrep']) {
-            const remainingErrors = { ...currentErrors };
-            delete remainingErrors['totalLessThanPrep'];
-            totalControl.setErrors(Object.keys(remainingErrors).length > 0 ? remainingErrors : null);
+                const remainingErrors = { ...currentErrors };
+                delete remainingErrors['totalLessThanPrep'];
+                totalControl.setErrors(
+                    Object.keys(remainingErrors).length > 0 ? remainingErrors : null,
+                );
             }
 
             return null;

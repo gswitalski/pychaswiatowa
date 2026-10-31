@@ -1084,7 +1084,17 @@ export type AiRecipeDraftRequestDto =
       }
     | {
           source: 'image';
+          /** @deprecated Użyj `images`. */
           image: AiRecipeDraftImageDto;
+          images?: never;
+          output_format: 'pycha_recipe_draft_v1';
+          language?: string;
+      }
+    | {
+          source: 'image';
+          /** Zdjęcia jednego przepisu, w kolejności stron (1–5). */
+          images: AiRecipeDraftImageDto[];
+          image?: never;
           output_format: 'pycha_recipe_draft_v1';
           language?: string;
       }
@@ -1140,6 +1150,23 @@ export interface AiRecipeDraftMetaDto {
     confidence: number;
     /** Warnings about potential issues with the extraction */
     warnings: string[];
+    /** Pomijane, gdy żadne przesłane zdjęcie nie było nieczytelne. */
+    image_warnings?: AiRecipeDraftImageWarningDto[];
+}
+
+export interface AiRecipeDraftImageWarningDto {
+    code: 'IMAGE_UNREADABLE';
+    /** Numer zdjęcia od 1, zgodny z kolejnością w żądaniu. */
+    image_index: number;
+}
+
+export interface AiRecipeDraftPayloadTooLargeDto {
+    code: 'PAYLOAD_TOO_LARGE';
+    message: string;
+    details?: {
+        limit: 'per_file' | 'total';
+        max_bytes: number;
+    };
 }
 
 /**

@@ -11,12 +11,12 @@ Zanim zaczniemy, zapoznaj się z poniższymi informacjami:
 2. Nowe wymagania do zaimplementowania
 
 <new_requirements>
-@docs/results/new-features/user-stories/PS-99/PS-99-recipe-rating-user-story.md
+@docs/results/new-features/user-stories/PS-100/PS-100-multi-image-ai-recipe-draft-user-story.md
 </new_requirements>
 
 3. Lista zmian i nowych funkcjonalności w API
 <api_definition>
-@docs/results/new-features/user-stories/PS-99/PS-99-recipe-rating-api-plan.md
+@docs/results/new-features/user-stories/PS-100/PS-100-multi-image-ai-recipe-draft-api-plan.md
 </api_definition>
 
 

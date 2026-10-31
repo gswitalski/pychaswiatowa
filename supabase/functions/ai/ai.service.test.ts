@@ -30,13 +30,15 @@ function createDraft(overrides: Record<string, unknown> = {}): Record<string, un
 async function withMockedOpenAI<T>(
     llmPayload: Record<string, unknown>,
     run: () => Promise<T>,
+    requests: Array<Record<string, unknown>> = [],
 ): Promise<T> {
     const originalFetch = globalThis.fetch;
     const originalApiKey = Deno.env.get('OPENAI_API_KEY');
 
     Deno.env.set('OPENAI_API_KEY', 'test');
-    globalThis.fetch = (() =>
-        Promise.resolve(
+    globalThis.fetch = ((_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.body) requests.push(JSON.parse(String(init.body)) as Record<string, unknown>);
+        return Promise.resolve(
             new Response(
                 JSON.stringify({
                     choices: [{
@@ -50,7 +52,8 @@ async function withMockedOpenAI<T>(
                     headers: { 'Content-Type': 'application/json' },
                 },
             ),
-        )) as typeof fetch;
+        );
+    }) as typeof fetch;
 
     try {
         return await run();
@@ -69,6 +72,16 @@ function generateTextDraft() {
         userId: '5fb3646f-8980-4afb-aeb1-8a4e5fa58212',
         source: 'text',
         text: 'Lasagne ze szpinakiem',
+        language: 'pl',
+    });
+}
+
+function generateImageDraft(images: Array<{ bytes: Uint8Array; mimeType: string }>, imageDetail?: 'high') {
+    return generateRecipeDraft({
+        userId: '5fb3646f-8980-4afb-aeb1-8a4e5fa58212',
+        source: 'image',
+        images,
+        imageDetail,
         language: 'pl',
     });
 }
@@ -108,6 +121,96 @@ Deno.test({
             true,
             'Prompt powinien zawierać przykład few-shot',
         );
+        assertEquals(prompt.includes('unreadable_images'), true);
+    },
+});
+
+Deno.test({
+    name: 'generateRecipeDraft: przekazuje wiele zdjęć w kolejności z detail=high',
+    permissions: { env: true },
+    fn: async () => {
+        const requests: Array<Record<string, unknown>> = [];
+        await withMockedOpenAI(
+            { is_valid_recipe: true, draft: createDraft(), meta: { confidence: 0.9, warnings: [] } },
+            () => generateImageDraft([
+                { bytes: new Uint8Array([97]), mimeType: 'image/png' },
+                { bytes: new Uint8Array([98]), mimeType: 'image/jpeg' },
+                { bytes: new Uint8Array([99]), mimeType: 'image/webp' },
+            ], 'high'),
+            requests,
+        );
+        const messages = requests[0].messages as Array<{ content: Array<Record<string, unknown>> }>;
+        const content = messages[1].content;
+        const imageParts = content.filter((part) => part.type === 'image_url');
+        assertEquals(imageParts.map((part) => (part.image_url as { url: string }).url), [
+            'data:image/png;base64,YQ==',
+            'data:image/jpeg;base64,Yg==',
+            'data:image/webp;base64,Yw==',
+        ]);
+        assertEquals(imageParts.every((part) => (part.image_url as { detail?: string }).detail === 'high'), true);
+        assertEquals(content.some((part) => part.text === 'Zdjęcie 2 z 3:'), true);
+    },
+});
+
+Deno.test({
+    name: 'generateRecipeDraft: stare pole image nie przekazuje detail ani image_warnings',
+    permissions: { env: true },
+    fn: async () => {
+        const requests: Array<Record<string, unknown>> = [];
+        const result = await withMockedOpenAI(
+            {
+                is_valid_recipe: true,
+                draft: createDraft(),
+                meta: { confidence: 0.9, warnings: [] },
+                unreadable_images: [1],
+            },
+            () => generateImageDraft([{ bytes: new Uint8Array([97]), mimeType: 'image/png' }]),
+            requests,
+        );
+        const messages = requests[0].messages as Array<{ content: Array<Record<string, unknown>> }>;
+        const imagePart = messages[1].content.find((part) => part.type === 'image_url');
+        assertEquals((imagePart?.image_url as { detail?: string }).detail, undefined);
+        assertEquals(result.success, true);
+        if (result.success) assertEquals(result.data.meta.image_warnings, undefined);
+    },
+});
+
+Deno.test({
+    name: 'generateRecipeDraft: raportuje nieczytelne zdjęcia tylko dla wielu obrazów',
+    permissions: { env: true },
+    fn: async () => {
+        const result = await withMockedOpenAI(
+            {
+                is_valid_recipe: true,
+                draft: createDraft(),
+                meta: { confidence: 0.9, warnings: ['Ostrzeżenie modelu.'] },
+                unreadable_images: [2],
+            },
+            () => generateImageDraft([
+                { bytes: new Uint8Array([97]), mimeType: 'image/png' },
+                { bytes: new Uint8Array([98]), mimeType: 'image/png' },
+                { bytes: new Uint8Array([99]), mimeType: 'image/png' },
+            ], 'high'),
+        );
+        assertEquals(result.success, true);
+        if (!result.success) return;
+        assertEquals(result.data.meta.image_warnings, [{ code: 'IMAGE_UNREADABLE', image_index: 2 }]);
+        assertEquals(result.data.meta.warnings.includes('Zdjęcie 2 było nieczytelne i zostało pominięte.'), true);
+    },
+});
+
+Deno.test({
+    name: 'generateRecipeDraft: wszystkie nieczytelne zdjęcia zwracają 422 bez wymagania kompletnego draftu',
+    permissions: { env: true },
+    fn: async () => {
+        const result = await withMockedOpenAI(
+            { unreadable_images: [1, 2] },
+            () => generateImageDraft([
+                { bytes: new Uint8Array([97]), mimeType: 'image/png' },
+                { bytes: new Uint8Array([98]), mimeType: 'image/png' },
+            ], 'high'),
+        );
+        assertEquals(result, { success: false, reasons: ['Żadne ze zdjęć nie było czytelne.'] });
     },
 });
 

@@ -672,7 +672,7 @@ Public endpoints are available without authentication:
 
 #### `POST /ai/recipes/draft` (Supabase Edge Function)
 
--   **Description**: Generate a structured recipe draft from either a raw text paste or a pasted image (OCR + LLM). This endpoint does **not** create a recipe record. The client uses the returned draft to prefill the `/recipes/new` form, where the user can review and edit before saving.
+-   **Description**: Generate a structured recipe draft from raw text, a URL, or 1–5 pasted images (OCR + LLM). This endpoint does **not** create a recipe record. The client uses the returned draft to prefill the `/recipes/new` form, where the user can review and edit before saving.
 -   **Auth**: Required (`Authorization: Bearer <JWT>`).
 -   **Notes**:
     - The frontend MUST NOT call this endpoint when both text and image are empty. In that case it should open an empty recipe form (`/recipes/new`) directly.
@@ -696,14 +696,15 @@ Public endpoints are available without authentication:
     ```json
     {
       "source": "image",
-      "image": {
-        "mime_type": "image/png",
-        "data_base64": "iVBORw0KGgoAAA..."
-      },
+      "images": [
+        { "mime_type": "image/png", "data_base64": "iVBORw0KGgoAAA..." },
+        { "mime_type": "image/jpeg", "data_base64": "/9j/4AAQ..." }
+      ],
       "language": "pl",
       "output_format": "pycha_recipe_draft_v1"
     }
     ```
+    The deprecated `image` object is still accepted for backward compatibility. Send exactly one of `image` or `images`; each image is limited to 10 MB decoded and the combined decoded size is limited to 15 MB.
 -   **Success Response**:
     -   **Code**: `200 OK`
     -   **Payload**:
@@ -728,7 +729,8 @@ Public endpoints are available without authentication:
           },
           "meta": {
             "confidence": 0.82,
-            "warnings": []
+            "warnings": ["Zdjęcie 2 było nieczytelne i zostało pominięte."],
+            "image_warnings": [{ "code": "IMAGE_UNREADABLE", "image_index": 2 }]
           }
         }
         ```
@@ -736,7 +738,7 @@ Public endpoints are available without authentication:
     -   **Code**: `400 Bad Request` (invalid payload, missing required fields for the chosen `source`)
     -   **Code**: `401 Unauthorized`
     -   **Code**: `402 Payment Required` (`AI_CREDITS_EXHAUSTED`)
-    -   **Code**: `413 Payload Too Large` (image too large)
+    -   **Code**: `413 Payload Too Large` (image larger than 10 MB or images larger than 15 MB in total); the optional `details` field contains `limit` (`per_file` or `total`) and `max_bytes`.
     -   **Code**: `422 Unprocessable Entity` (input is not a single recipe)
         -   **Payload** (example):
             ```json

@@ -1,6 +1,9 @@
 /** Limit obrazu referencyjnego w POST /ai/recipes/image (backend). */
 export const REFERENCE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
+/** Próg, od którego zdjęcia do analizy przepisu są kompresowane. */
+export const AI_DRAFT_IMAGE_COMPRESS_THRESHOLD_BYTES = 1.5 * 1024 * 1024;
+
 /** Maks. dłuższy bok przed kompresją (zdjęcia z aparatu). */
 export const IMAGE_COMPRESS_MAX_DIMENSION_PX = 2048;
 

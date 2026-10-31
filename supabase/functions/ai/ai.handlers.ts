@@ -36,6 +36,15 @@ import {
     MAX_IMAGE_REQUEST_PAYLOAD_SIZE,
     MAX_REFERENCE_IMAGE_SIZE_BYTES,
 } from './ai.types.ts';
+import {
+    DRAFT_IMAGE_DETAIL,
+    MAX_DRAFT_REQUEST_BODY_BYTES,
+    MAX_IMAGE_SIZE_BYTES as MAX_DRAFT_IMAGE_SIZE_BYTES,
+    MAX_TOTAL_DRAFT_IMAGES_SIZE_BYTES,
+    decodeDraftImages,
+    resolveDraftImages,
+    tryDecodeBase64,
+} from './ai-draft-images.ts';
 
 // #region --- Response Helpers ---
 
@@ -68,6 +77,17 @@ function createValidationErrorResponse(errors: z.ZodError): Response {
             status: 400,
             headers: { 'Content-Type': 'application/json' },
         }
+    );
+}
+
+function createFieldValidationErrorResponse(field: string, message: string): Response {
+    return new Response(
+        JSON.stringify({
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid request data',
+            errors: [{ field, message }],
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
     );
 }
 
@@ -113,11 +133,15 @@ function createMethodNotAllowedResponse(allowedMethods: string[]): Response {
 /**
  * Creates a 413 Payload Too Large response.
  */
-function createPayloadTooLargeResponse(message: string): Response {
+function createPayloadTooLargeResponse(
+    message: string,
+    details?: { limit: 'per_file' | 'total'; max_bytes: number },
+): Response {
     return new Response(
         JSON.stringify({
             code: 'PAYLOAD_TOO_LARGE',
             message,
+            ...(details ? { details } : {}),
         }),
         {
             status: 413,
@@ -224,21 +248,9 @@ function getPathFromUrl(url: string): string {
  * Throws ApplicationError if decoding fails.
  */
 function decodeBase64(base64String: string): Uint8Array {
-    try {
-        // Handle both standard base64 and base64url
-        const normalized = base64String
-            .replace(/-/g, '+')
-            .replace(/_/g, '/');
-        
-        const binaryString = atob(normalized);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes;
-    } catch {
-        throw new ApplicationError('VALIDATION_ERROR', 'Invalid base64 encoding in image data');
-    }
+    const bytes = tryDecodeBase64(base64String);
+    if (bytes !== null) return bytes;
+    throw new ApplicationError('VALIDATION_ERROR', 'Invalid base64 encoding in image data');
 }
 
 // #endregion
@@ -276,7 +288,17 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
             appRole: jwtPayload.app_role,
         });
 
-        // Step 3: Parse request body
+        // Step 3: Reject clearly oversized bodies before JSON parsing.
+        const contentLength = Number(req.headers.get('Content-Length'));
+        if (Number.isFinite(contentLength) && contentLength > MAX_DRAFT_REQUEST_BODY_BYTES) {
+            logger.warn('Recipe draft request body exceeds limit', { userId: user.id, contentLength });
+            return createPayloadTooLargeResponse(
+                'Total size of images exceeds maximum allowed size of 15 MB',
+                { limit: 'total', max_bytes: MAX_TOTAL_DRAFT_IMAGES_SIZE_BYTES },
+            );
+        }
+
+        // Step 4: Parse request body
         let body: unknown;
         try {
             body = await req.json();
@@ -314,8 +336,10 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
 
         // Process based on source type
         let inputText: string | undefined;
-        let imageBytes: Uint8Array | undefined;
-        let imageMimeType: string | undefined;
+        let images: Array<{ bytes: Uint8Array; mimeType: string }> | undefined;
+        let imageDetail: 'high' | undefined;
+        let usedLegacyImageField = false;
+        let totalImageBytes: number | undefined;
         let inputUrl: string | undefined;
 
         if (requestData.source === 'text') {
@@ -326,27 +350,47 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 textLength: inputText.length,
             });
         } else if (requestData.source === 'image') {
-            // Decode base64 image
-            imageBytes = decodeBase64(requestData.image.data_base64);
-            imageMimeType = requestData.image.mime_type;
-
-            // Validate image size
-            if (imageBytes.length > MAX_IMAGE_SIZE_BYTES) {
-                const maxSizeMB = MAX_IMAGE_SIZE_BYTES / (1024 * 1024);
-                logger.warn('Image size exceeds limit', {
-                    userId: user.id,
-                    imageSize: imageBytes.length,
-                    maxSize: MAX_IMAGE_SIZE_BYTES,
-                });
+            const resolvedImages = resolveDraftImages(requestData);
+            usedLegacyImageField = resolvedImages.usedLegacyImageField;
+            const decodedImages = decodeDraftImages(resolvedImages.images);
+            if (!decodedImages.ok) {
+                if (decodedImages.reason === 'INVALID_BASE64') {
+                    const fieldPrefix = usedLegacyImageField ? 'image' : `images.${decodedImages.index}`;
+                    return createFieldValidationErrorResponse(
+                        `${fieldPrefix}.data_base64`,
+                        'Invalid base64 encoding in image data',
+                    );
+                }
+                if (decodedImages.limit === 'per_file') {
+                    const imageNumber = (decodedImages.index ?? 0) + 1;
+                    const message = usedLegacyImageField
+                        ? 'Image size exceeds maximum allowed size of 10 MB'
+                        : `Image ${imageNumber} exceeds maximum allowed size of 10 MB`;
+                    logger.warn('Draft image exceeds per-file limit', {
+                        userId: user.id,
+                        imageIndex: decodedImages.index,
+                    });
+                    return createPayloadTooLargeResponse(message, {
+                        limit: 'per_file',
+                        max_bytes: MAX_DRAFT_IMAGE_SIZE_BYTES,
+                    });
+                }
+                logger.warn('Draft images exceed total size limit', { userId: user.id });
                 return createPayloadTooLargeResponse(
-                    `Image size exceeds maximum allowed size of ${maxSizeMB} MB`
+                    'Total size of images exceeds maximum allowed size of 15 MB',
+                    { limit: 'total', max_bytes: MAX_TOTAL_DRAFT_IMAGES_SIZE_BYTES },
                 );
             }
+            images = decodedImages.images;
+            totalImageBytes = decodedImages.totalBytes;
+            imageDetail = usedLegacyImageField ? undefined : DRAFT_IMAGE_DETAIL;
 
             logger.info('Processing image source', {
                 userId: user.id,
-                imageSize: imageBytes.length,
-                mimeType: imageMimeType,
+                imagesCount: images.length,
+                totalImageBytes,
+                usedLegacyImageField,
+                imageDetail,
             });
         } else if (requestData.source === 'url') {
             inputUrl = requestData.url;
@@ -370,8 +414,8 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 userId: user.id,
                 source: requestData.source,
                 text: inputText,
-                imageBytes,
-                imageMimeType,
+                images,
+                imageDetail,
                 url: inputUrl,
                 language: requestData.language,
             });
@@ -424,6 +468,7 @@ async function handlePostAiRecipesDraft(req: Request): Promise<Response> {
                 result.data.draft.prep_time_minutes !== null ||
                 result.data.draft.total_time_minutes !== null,
             confidence: result.data.meta.confidence,
+            imageWarningsCount: result.data.meta.image_warnings?.length ?? 0,
             duration,
         });
 

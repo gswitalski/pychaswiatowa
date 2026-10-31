@@ -6,6 +6,12 @@
 
 import { ApplicationError } from "../_shared/errors.ts";
 import { logger } from "../_shared/logger.ts";
+import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts';
+import {
+    getDraftApiTimeoutMs,
+    getMultiImageUserPromptParts,
+    normalizeUnreadableImages,
+} from './ai-draft-images.ts';
 import {
     DRAFT_METADATA_KEYS,
     getMetadataPromptSection,
@@ -529,7 +535,8 @@ json
   "meta": {
     "confidence": 0.95,
     "warnings": ["Opcjonalne ostrzeżenia o jakości danych"]
-  }
+  },
+  "unreadable_images": []
 }
 
 UWAGA O POLACH:
@@ -549,6 +556,7 @@ UWAGA O POLACH:
   - "difficulty" - zawsze obecne (jedna z dozwolonych wartości)
   - "is_termorobot" - zawsze obecne (boolean)
   - "is_grill" - zawsze obecne (boolean)
+  - "unreadable_images" - opcjonalna tablica numerów zdjęć (od 1), które są nieczytelne lub nie zawierają treści przepisu; dla wielu zdjęć zwróć pustą tablicę, gdy wszystkie są czytelne.
 
 
 Dla NIEPOPRAWNEJ treści:
@@ -799,17 +807,22 @@ export function extractTextFromHtml(html: string): string {
  * @returns Parsed JSON response from the model
  * @throws ApplicationError on API or parsing errors
  */
+type OpenAiContentPart = {
+    type: string;
+    text?: string;
+    image_url?: { url: string; detail?: 'high' };
+};
+
 async function callOpenAI(
     messages: Array<
         {
             role: string;
             content:
                 | string
-                | Array<
-                    { type: string; text?: string; image_url?: { url: string } }
-                >;
+                | OpenAiContentPart[];
         }
     >,
+    timeoutMs = API_TIMEOUT_MS,
 ): Promise<unknown> {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
 
@@ -822,7 +835,7 @@ async function callOpenAI(
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
         const response = await fetch(OPENAI_API_URL, {
@@ -1026,13 +1039,15 @@ function extractRawMetadata(llmResponse: unknown): Record<string, unknown> {
  */
 function mergeDraftWarnings(
     llmWarnings: string[],
+    sourceWarnings: string[],
+    imageWarnings: string[],
     metadataWarnings: string[],
 ): string[] {
     const MAX_WARNINGS = 20;
     const MAX_WARNING_LENGTH = 300;
     const uniqueWarnings = new Set<string>();
 
-    for (const warning of [...llmWarnings, ...metadataWarnings]) {
+    for (const warning of [...llmWarnings, ...sourceWarnings, ...imageWarnings, ...metadataWarnings]) {
         uniqueWarnings.add(warning.slice(0, MAX_WARNING_LENGTH));
         if (uniqueWarnings.size >= MAX_WARNINGS) {
             break;
@@ -1073,7 +1088,7 @@ function getMetadataWarningFields(warnings: string[]): string[] {
 export async function generateRecipeDraft(
     params: GenerateRecipeDraftParams,
 ): Promise<LlmGenerationResult> {
-    const { userId, source, text, imageBytes, imageMimeType, url, language } =
+    const { userId, source, text, images, imageDetail, url, language } =
         params;
 
     logger.info("Starting recipe draft generation", {
@@ -1081,7 +1096,8 @@ export async function generateRecipeDraft(
         source,
         language,
         textLength: text?.length,
-        imageSize: imageBytes?.length,
+        imagesCount: images?.length,
+        totalImageBytes: images?.reduce((total, image) => total + image.bytes.length, 0),
         urlPrefix: url?.substring(0, 50),
     });
 
@@ -1095,9 +1111,7 @@ export async function generateRecipeDraft(
         role: string;
         content:
             | string
-            | Array<
-                { type: string; text?: string; image_url?: { url: string } }
-            >;
+            | OpenAiContentPart[];
     };
 
     const sourceWarnings: string[] = [];
@@ -1107,24 +1121,31 @@ export async function generateRecipeDraft(
             role: "user",
             content: getTextExtractionPrompt(text),
         };
-    } else if (source === "image" && imageBytes && imageMimeType) {
-        // Convert image bytes to base64 data URL
-        // Process in chunks to avoid stack overflow for large images
-        const CHUNK_SIZE = 8192;
-        let binaryString = "";
-        for (let i = 0; i < imageBytes.length; i += CHUNK_SIZE) {
-            const chunk = imageBytes.slice(i, i + CHUNK_SIZE);
-            binaryString += String.fromCharCode(...chunk);
+    } else if (source === "image" && images && images.length > 0) {
+        const imageParts: OpenAiContentPart[] = images.map((image) => ({
+            type: 'image_url',
+            image_url: {
+                url: `data:${image.mimeType};base64,${encodeBase64(image.bytes)}`,
+                ...(imageDetail ? { detail: imageDetail } : {}),
+            },
+        }));
+        const content: OpenAiContentPart[] = [{ type: 'text', text: getImageExtractionPrompt() }];
+        if (images.length > 1) {
+            const promptParts = getMultiImageUserPromptParts(images.length);
+            content[0] = { type: 'text', text: promptParts.intro };
+            for (let index = 0; index < imageParts.length; index++) {
+                content.push(
+                    { type: 'text', text: `Zdjęcie ${index + 1} z ${images.length}:` },
+                    imageParts[index],
+                );
+            }
+            content.push({ type: 'text', text: promptParts.outro });
+        } else {
+            content.push(imageParts[0]);
         }
-        const base64 = btoa(binaryString);
-        const dataUrl = `data:${imageMimeType};base64,${base64}`;
-
         userMessage = {
             role: "user",
-            content: [
-                { type: "text", text: getImageExtractionPrompt() },
-                { type: "image_url", image_url: { url: dataUrl } },
-            ],
+            content,
         };
     } else if (source === "url" && url) {
         const htmlContent = await fetchUrlContent(url);
@@ -1141,7 +1162,7 @@ export async function generateRecipeDraft(
         logger.error("Invalid source configuration", {
             source,
             hasText: !!text,
-            hasImage: !!imageBytes,
+            hasImages: !!images?.length,
             hasUrl: !!url,
         });
         throw new ApplicationError(
@@ -1151,7 +1172,10 @@ export async function generateRecipeDraft(
     }
 
     // Call OpenAI API
-    const llmResponse = await callOpenAI([systemMessage, userMessage]);
+    const llmResponse = await callOpenAI(
+        [systemMessage, userMessage],
+        source === 'image' ? getDraftApiTimeoutMs(images?.length ?? 0, API_TIMEOUT_MS) : undefined,
+    );
 
     // Check if response indicates invalid recipe
     if (
@@ -1181,6 +1205,19 @@ export async function generateRecipeDraft(
         return {
             success: false,
             reasons: errorResponse.reasons,
+        };
+    }
+
+    const unreadableImages = normalizeUnreadableImages(
+        typeof llmResponse === 'object' && llmResponse !== null
+            ? (llmResponse as Record<string, unknown>).unreadable_images
+            : undefined,
+        images?.length ?? 0,
+    );
+    if (images && images.length > 1 && unreadableImages.indices.length === images.length) {
+        return {
+            success: false,
+            reasons: ['Żadne ze zdjęć nie było czytelne.'],
         };
     }
 
@@ -1220,7 +1257,9 @@ export async function generateRecipeDraft(
         warnings: metadataWarnings,
     } = normalizeDraftMetadata(rawMetadata);
     const warnings = mergeDraftWarnings(
-        [...(successResponse.meta?.warnings ?? []), ...sourceWarnings],
+        successResponse.meta?.warnings ?? [],
+        sourceWarnings,
+        unreadableImages.warnings,
         metadataWarnings,
     );
 
@@ -1240,6 +1279,14 @@ export async function generateRecipeDraft(
         meta: {
             confidence: successResponse.meta?.confidence ?? 0.8,
             warnings,
+            ...(unreadableImages.indices.length > 0
+                ? {
+                    image_warnings: unreadableImages.indices.map((imageIndex) => ({
+                        code: 'IMAGE_UNREADABLE' as const,
+                        image_index: imageIndex,
+                    })),
+                }
+                : {}),
         },
     };
 

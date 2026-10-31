@@ -13,12 +13,12 @@ Opis wymagań do nowej funkcjonalności:
 
 <wymagania>
 
-Jako zalogowany użytkownik chce mieć możliwośc ocenienie przepisu w skali 1-5 
+Aktualnie mogę dodać przepis ze zdjęcia które LLM przetworzy na sformalizowany przepis. Prolem jest wtedy gdy mam przepis na dwóchh albo trzech różnych stronach a załadować mogę tylko jeden obraszek. Chce mieć mozloiwośc analizy przepisu z obrazu z wiecej niż jednego obrazkia, w szczególnosci gdy robię zdjęcia telefonem
 
 </wymagania>
 
 <numer_historyjki>
-99
+100
 </numer_historyjki>
 
 

@@ -8,8 +8,13 @@
 
 import { z } from 'npm:zod@3.22.4';
 import type { AiRecipeDraftMetadata } from './ai-draft-metadata.ts';
+import type { DecodedDraftImage } from './ai-draft-images.ts';
 
 export { AiRecipeDraftMetadataSchema } from './ai-draft-metadata.ts';
+export {
+    MAX_IMAGE_SIZE_BYTES,
+} from './ai-draft-images.ts';
+import { MAX_DRAFT_IMAGES } from './ai-draft-images.ts';
 
 // #region --- Constants ---
 
@@ -27,9 +32,6 @@ export const MAX_URL_CONTENT_BYTES = 500_000;
 
 /** Maximum extracted source text length before AI processing */
 export const MAX_URL_EXTRACTED_TEXT_LENGTH = 50_000;
-
-/** Maximum image size after base64 decoding (bytes) - 10 MB */
-export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
 /** Maximum number of tags in response */
 export const MAX_TAGS_COUNT = 20;
@@ -124,6 +126,7 @@ const TextSourceSchema = BaseRequestSchema.extend({
         .min(1, 'Text cannot be empty')
         .max(MAX_TEXT_LENGTH, `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters`),
     image: z.undefined().optional(),
+    images: z.undefined().optional(),
 });
 
 /**
@@ -131,7 +134,12 @@ const TextSourceSchema = BaseRequestSchema.extend({
  */
 const ImageSourceSchema = BaseRequestSchema.extend({
     source: z.literal('image'),
-    image: AiRecipeDraftImageSchema,
+    /** @deprecated Use `images` instead. */
+    image: AiRecipeDraftImageSchema.optional(),
+    images: z.array(AiRecipeDraftImageSchema)
+        .min(1, `images must contain between 1 and ${MAX_DRAFT_IMAGES} items`)
+        .max(MAX_DRAFT_IMAGES, `images must contain between 1 and ${MAX_DRAFT_IMAGES} items`)
+        .optional(),
     text: z.undefined().optional(),
 });
 
@@ -157,6 +165,7 @@ const UrlSourceSchema = BaseRequestSchema.extend({
         }, 'URL has invalid syntax'),
     text: z.undefined().optional(),
     image: z.undefined().optional(),
+    images: z.undefined().optional(),
 });
 
 /**
@@ -166,7 +175,26 @@ export const AiRecipeDraftRequestSchema = z.discriminatedUnion('source', [
     TextSourceSchema,
     ImageSourceSchema,
     UrlSourceSchema,
-]);
+]).superRefine((data, ctx) => {
+    if (data.source !== 'image') {
+        return;
+    }
+    if (data.image !== undefined && data.images !== undefined) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Provide either image or images, not both',
+            path: ['image'],
+        });
+        return;
+    }
+    if (data.image === undefined && data.images === undefined) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'images is required for source "image"',
+            path: ['images'],
+        });
+    }
+});
 
 /**
  * Schema for the strictly validated recipe draft content.
@@ -212,6 +240,7 @@ export const AiRecipeDraftMetaSchema = z.object({
 export const AiRecipeDraftLlmResponseSchema = z.object({
     draft: AiRecipeDraftOutputSchema,
     meta: AiRecipeDraftMetaSchema,
+    unreadable_images: z.unknown().optional(),
 });
 
 /**
@@ -247,10 +276,15 @@ export type AiRecipeDraftDto = AiRecipeDraftContentDto & AiRecipeDraftMetadata;
 /** Type for response meta information */
 export type AiRecipeDraftMeta = z.infer<typeof AiRecipeDraftMetaSchema>;
 
+export interface AiRecipeDraftImageWarning {
+    code: 'IMAGE_UNREADABLE';
+    image_index: number;
+}
+
 /** Type for complete API response */
 export interface AiRecipeDraftResponseDto {
     draft: AiRecipeDraftDto;
-    meta: AiRecipeDraftMeta;
+    meta: AiRecipeDraftMeta & { image_warnings?: AiRecipeDraftImageWarning[] };
 }
 
 /** Type for 422 Unprocessable Entity response */
@@ -273,8 +307,8 @@ export interface GenerateRecipeDraftParams {
     userId: string;
     source: 'text' | 'image' | 'url';
     text?: string;
-    imageBytes?: Uint8Array;
-    imageMimeType?: string;
+    images?: DecodedDraftImage[];
+    imageDetail?: 'high';
     url?: string;
     language: string;
 }

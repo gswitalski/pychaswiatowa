@@ -3,7 +3,7 @@ Twoim zadaniem jest zaimplementowanie widoku frontendu w oparciu o podany plan i
 Najpierw przejrzyj plan implementacji:
 
 <implementation_plan>
-@docs/results/impl-plans/views/PS-99-recipe-rating-view-implementation-plan.md
+@docs/results/impl-plans/views/PS-100-recipe-new-assist-multi-image-view-implementation-plan.md
 </implementation_plan>
 
 Teraz przejrzyj zasady implementacji:

@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 27 października 2026 — oceny przepisów PS-99 (API i widoki), wcześniej: filtry katalogu Odkrywaj PS-96 (API i widoki), osobiste flagi przepisów PS-95, przycisk „Wklej ze schowka” PS-92, Google OAuth, cennik, kredyty AI PS-64, limit planu Free PS-65 i metadane draftu AI PS-91.
+> **Aktualizacja:** 31 października 2026 — analiza jednego przepisu AI z wielu zdjęć PS-100, wcześniej: oceny przepisów PS-99 (API i widoki), filtry katalogu Odkrywaj PS-96, osobiste flagi przepisów PS-95 oraz metadane draftu AI PS-91.
 
 ---
 
@@ -18,6 +18,8 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 **Kredyty AI (PS-64):** implementacja warstwy API i widoków — **zakończona**. Osobne pule `draft` i `image`: Free — limit dożywotni (domyślnie 3 drafty, 0 zdjęć), Premium — limit miesięczny (domyślnie 20 / 5, zmienne środowiskowe), admin — bez limitu. Reset miesięczny cronem (codziennie 02:00 UTC) oraz przy wywołaniu, gdy termin minął. Kredyt jest rezerwowany przed wywołaniem modelu i zwracany, gdy wywołanie się nie uda. Zmiana roli w panelu admina ustawia pulę zgodną z nową rolą. Sprzedaż pakietów kredytów i bramka płatności nie są podłączone. Endpoint `POST /ai/recipes/draft` przyjmuje rolę `user` i rozlicza kredyty; trasa UI `/recipes/new/assist` oraz kafelek na `/recipes/new/start` nadal wymagają `premium`/`admin` (plan API zdejmował bramkę roli, plan widoków jej nie zmieniał).
 
 **Metadane draftu AI (PS-91):** warstwa API `POST /ai/recipes/draft` zwraca porcje, czasy, typ diety, kuchnię, trudność oraz flagi Termorobot/Grill. Model odczytuje wartości ze źródła lub je wnioskuje, a backend tolerancyjnie normalizuje zakresy i enumy. Błąd pojedynczego pola nie odrzuca draftu: odpowiedź pozostaje `200`, bezpieczne wartości to `null`/`false`, a korekty są raportowane w `meta.warnings`.
+
+**Wiele zdjęć draftu AI (PS-100):** implementacja warstwy API i widoków — **zakończona**. `POST /ai/recipes/draft` akceptuje `images` (1–5 obrazów w kolejności stron) obok przestarzałego, kompatybilnego pola `image`; oba pola są wzajemnie wykluczające. Backend waliduje base64, 10 MB na plik i 15 MB łącznie przed rezerwacją jednego kredytu `draft`, a model otrzymuje obrazy w jednym wywołaniu z detalem `high`. Asysta AI umożliwia dodawanie, usuwanie i zmianę kolejności zdjęć z dysku, schowka oraz aparatu; kompresuje je po stronie klienta, sprawdza limity i wysyła jeden draft. Częściowo nieczytelne zdjęcia są raportowane przez `meta.warnings` oraz `meta.image_warnings`; formularz pokazuje zamykany komunikat z numerami pominiętych zdjęć. Gdy wszystkie są nieczytelne, odpowiedź to `422` z jednokrotnym zwrotem kredytu.
 
 **Limit „Mojego planu" dla Free (PS-65):** implementacja warstwy API i widoków — **zakończona**. `POST /plan/recipes` dla roli `user` odrzuca dodanie po osiągnięciu limitu (domyślnie 3 pozycje, zmienna środowiskowa `PLAN_LIMIT_FREE`) kodem `422 PLAN_LIMIT_EXCEEDED_FREE` z linkiem do `/pricing`. Premium i admin zachowują limit 50. Rola jest brana z JWT (`app_metadata.app_role`), nigdy z body. Istniejące pozycje ponad limit nie są usuwane (grandfathering) — blokowane są tylko nowe dodania. W UI: dialog po `422` zamiast snackbara, licznik „X / 3 pozycji” w nagłówku drawera (tylko `user`), a cennik pokazuje limit Free 3 zamiast wcześniejszych 7.
 
@@ -387,7 +389,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | Metoda | URL | Opis |
 |---|---|---|
 | `GET` | `/ai/credits` | Pełne saldo zalogowanego użytkownika (`draft`, `image`, `limit_type`, `next_reset_at`). Admin: `unlimited` bez odczytu puli. |
-| `POST` | `/ai/recipes/draft` | Draft z tekstu lub obrazu z 8 polami metadanych: porcje, czasy, dieta, kuchnia, trudność, Termorobot i Grill. Nie zapisuje. Niepoprawne metadane są normalizowane do `null`/`false` z ostrzeżeniami bez odrzucania draftu. Rate limit. Role `user`/`premium`/`admin`. Przed wywołaniem rezerwacja kredytu `draft`; `402` `AI_CREDITS_EXHAUSTED` przy pustej puli; zwrot przy błędzie modelu. |
+| `POST` | `/ai/recipes/draft` | Draft z tekstu, URL lub obrazu; `images` obsługuje 1–5 stron jednego przepisu (legacy `image` nadal działa). Zwraca 8 pól metadanych i opcjonalne ostrzeżenia o nieczytelnych obrazach. Limity: 10 MB na plik, 15 MB łącznie. Przed wywołaniem rezerwacja jednego kredytu `draft`; zwrot przy błędzie modelu lub `422`. |
 | `POST` | `/ai/recipes/normalized-ingredients` | Normalizacja (worker, nie UI). |
 | `POST` | `/ai/recipes/image` | Zdjęcie AI. Wymaga `premium`/`admin` oraz kredytu `image`. Tryb `recipe_only` / `with_reference`. Base64 webp 1024x1024. Działa też przed zapisem (kreator). `402` przy wyczerpaniu puli. |
 

@@ -57,7 +57,7 @@ function assistPageProviders(readImageFile: ReturnType<typeof vi.fn>) {
         {
             provide: ImageCompressionService,
             useValue: {
-                compressToMaxSize: vi.fn(async (file: File) => file),
+                compressForAiDraft: vi.fn(async (file: File) => file),
             },
         },
     ];
@@ -68,10 +68,7 @@ describe('RecipeNewAssistPageComponent (PS-92 schowek)', () => {
 
     beforeAll(() => {
         TestBed.resetTestEnvironment();
-        TestBed.initTestEnvironment(
-            BrowserDynamicTestingModule,
-            platformBrowserDynamicTesting(),
-        );
+        TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
     });
 
     beforeEach(() => {
@@ -86,7 +83,7 @@ describe('RecipeNewAssistPageComponent (PS-92 schowek)', () => {
         return TestBed.runInInjectionContext(() => new RecipeNewAssistPageComponent());
     }
 
-    it('ustawia imageFile po kliknięciu schowka w trybie obrazu', async () => {
+    it('dopisuje zdjęcie po kliknięciu schowka w trybie obrazu', async () => {
         const file = new File(['img'], 'clipboard-paste.png', { type: 'image/png' });
         readImageFile.mockResolvedValue(file);
 
@@ -98,7 +95,7 @@ describe('RecipeNewAssistPageComponent (PS-92 schowek)', () => {
         } as unknown as MouseEvent);
 
         expect(readImageFile).toHaveBeenCalledOnce();
-        expect(component.imageFile()).toBe(file);
+        expect(component.readyImages().map((item) => item.file)).toEqual([file]);
     });
 
     it('ignoruje klik schowka w trybie tekstowym', async () => {
@@ -134,10 +131,7 @@ describe('RecipeNewAssistPageComponent (PS-93 aparat)', () => {
 
     beforeAll(() => {
         TestBed.resetTestEnvironment();
-        TestBed.initTestEnvironment(
-            BrowserDynamicTestingModule,
-            platformBrowserDynamicTesting(),
-        );
+        TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
     });
 
     beforeEach(() => {
@@ -160,14 +154,14 @@ describe('RecipeNewAssistPageComponent (PS-93 aparat)', () => {
         return fixture;
     }
 
-    it('ustawia imageFile po onCameraFileSelected (handleImageFile)', async () => {
+    it('dopisuje zdjęcie po onCameraFileSelected', async () => {
         const component = createComponent();
         component.onSourceChange('image');
         const file = new File(['img'], 'camera-shot.jpeg', { type: 'image/jpeg' });
 
         await component.onCameraFileSelected(file);
 
-        expect(component.imageFile()).toBe(file);
+        expect(component.readyImages().map((item) => item.file)).toEqual([file]);
     });
 
     it('ignoruje plik z aparatu gdy isLoading()', async () => {
@@ -179,19 +173,17 @@ describe('RecipeNewAssistPageComponent (PS-93 aparat)', () => {
             new File(['img'], 'camera-shot.jpeg', { type: 'image/jpeg' }),
         );
 
-        expect(component.imageFile()).toBeNull();
+        expect(component.images()).toEqual([]);
     });
 
-    it('waliduje format pliku z aparatu jak handleImageFile', () => {
+    it('waliduje format pliku z aparatu', async () => {
         const component = createComponent();
         component.onSourceChange('image');
 
-        component.onCameraFileSelected(
-            new File(['gif'], 'anim.gif', { type: 'image/gif' }),
-        );
+        await component.onCameraFileSelected(new File(['gif'], 'anim.gif', { type: 'image/gif' }));
 
-        expect(component.imageFile()).toBeNull();
-        expect(component.errorMessage()).toBe(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
+        expect(component.images()).toEqual([]);
+        expect(component.imageMessages()).toContain(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
     });
 
     it('ustawia imageFile po fileSelected z pych-camera-capture-button', async () => {
@@ -199,16 +191,14 @@ describe('RecipeNewAssistPageComponent (PS-93 aparat)', () => {
         const component = fixture.componentInstance;
         const file = new File(['png'], 'camera.png', { type: 'image/png' });
 
-        const cameraDe = fixture.debugElement.query(
-            By.directive(CameraCaptureButtonComponent),
-        );
+        const cameraDe = fixture.debugElement.query(By.directive(CameraCaptureButtonComponent));
         expect(cameraDe).toBeTruthy();
 
         cameraDe.componentInstance.fileSelected.emit(file);
         fixture.detectChanges();
         await fixture.whenStable();
 
-        expect(component.imageFile()).toBe(file);
+        expect(component.readyImages().map((item) => item.file)).toEqual([file]);
     });
 
     it('dezaktywuje przycisk aparatu gdy isLoading()', async () => {

@@ -23,6 +23,21 @@
     gap: 24px;
 }
 
+.draft-image-warning {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+
+    span {
+        flex: 1;
+    }
+}
+
 .error-banner {
     display: flex;
     align-items: center;
@@ -108,4 +123,3 @@
         padding: 16px;
     }
 }
-

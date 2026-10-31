@@ -105,6 +105,51 @@ Deno.test('AiRecipeDraftRequestSchema: odrzuca niedozwolony schemat URL', () => 
     assertEquals(result.success, false);
 });
 
+function createDraftImage(): Record<string, string> {
+    return { mime_type: 'image/png', data_base64: 'YQ==' };
+}
+
+Deno.test('AiRecipeDraftRequestSchema: obsługuje nowe i stare pole obrazu', () => {
+    const base = { source: 'image', output_format: 'pycha_recipe_draft_v1' };
+    assertEquals(AiRecipeDraftRequestSchema.safeParse({ ...base, image: createDraftImage() }).success, true);
+    assertEquals(AiRecipeDraftRequestSchema.safeParse({
+        ...base,
+        images: Array.from({ length: 5 }, createDraftImage),
+    }).success, true);
+    const both = AiRecipeDraftRequestSchema.safeParse({
+        ...base,
+        image: createDraftImage(),
+        images: [createDraftImage()],
+    });
+    assertEquals(both.success, false);
+    if (!both.success) assertEquals(both.error.errors.some((error) => error.path.join('.') === 'image'), true);
+});
+
+Deno.test('AiRecipeDraftRequestSchema: waliduje listę zdjęć i zabrania jej dla innych źródeł', () => {
+    const base = { source: 'image', output_format: 'pycha_recipe_draft_v1' };
+    const empty = AiRecipeDraftRequestSchema.safeParse({ ...base, images: [] });
+    const tooMany = AiRecipeDraftRequestSchema.safeParse({
+        ...base,
+        images: Array.from({ length: 6 }, createDraftImage),
+    });
+    const invalidMime = AiRecipeDraftRequestSchema.safeParse({
+        ...base,
+        images: [createDraftImage(), { mime_type: 'image/gif', data_base64: 'YQ==' }],
+    });
+    assertEquals(empty.success, false);
+    assertEquals(tooMany.success, false);
+    assertEquals(invalidMime.success, false);
+    if (!invalidMime.success) {
+        assertEquals(invalidMime.error.errors.some((error) => error.path.join('.') === 'images.1.mime_type'), true);
+    }
+    assertEquals(AiRecipeDraftRequestSchema.safeParse({
+        source: 'text',
+        text: 'Przepis',
+        images: [createDraftImage()],
+        output_format: 'pycha_recipe_draft_v1',
+    }).success, false);
+});
+
 function createValidDraft(overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
         name: 'Sernik klasyczny',

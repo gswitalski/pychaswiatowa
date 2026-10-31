@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import {
+    AI_DRAFT_IMAGE_COMPRESS_THRESHOLD_BYTES,
     IMAGE_COMPRESS_MAX_DIMENSION_PX,
     IMAGE_COMPRESS_MIN_DIMENSION_PX,
     IMAGE_COMPRESS_MIN_QUALITY,
@@ -17,6 +18,18 @@ export class ImageCompressionError extends Error {
     providedIn: 'root',
 })
 export class ImageCompressionService {
+    /**
+     * Kompresuje zdjęcie dla analizy przepisu AI.
+     * Błąd kompresji nie blokuje dodania pliku — limit weryfikuje wywołujący.
+     */
+    public async compressForAiDraft(file: File): Promise<File> {
+        try {
+            return await this.compressToMaxSize(file, AI_DRAFT_IMAGE_COMPRESS_THRESHOLD_BYTES);
+        } catch {
+            return file;
+        }
+    }
+
     /**
      * Zmniejsza plik do maxBytes (domyślnie 2 MB — limit obrazu referencyjnego AI).
      * Pliki już mieszczące się w limicie zwracane są bez zmian.
@@ -40,18 +53,20 @@ export class ImageCompressionService {
         width = Math.max(1, Math.round(width * scaleToMaxDimension));
         height = Math.max(1, Math.round(height * scaleToMaxDimension));
 
-        const outputType = this.pickOutputMimeType(file.type);
+        const outputTypes = this.outputMimeTypes(file.type);
         const qualities = [0.85, 0.75, 0.65, 0.55, 0.45, IMAGE_COMPRESS_MIN_QUALITY];
 
         while (true) {
-            for (const quality of qualities) {
-                const blob = await this.renderToBlob(image, width, height, outputType, quality);
-                if (!blob) {
-                    continue;
-                }
+            for (const outputType of outputTypes) {
+                for (const quality of qualities) {
+                    const blob = await this.renderToBlob(image, width, height, outputType, quality);
+                    if (!blob) {
+                        continue;
+                    }
 
-                if (blob.size <= maxBytes) {
-                    return this.blobToFile(blob, file.name, outputType);
+                    if (blob.size <= maxBytes) {
+                        return this.blobToFile(blob, file.name, outputType);
+                    }
                 }
             }
 
@@ -69,14 +84,14 @@ export class ImageCompressionService {
         );
     }
 
-    private pickOutputMimeType(sourceType: string): string {
+    private outputMimeTypes(sourceType: string): string[] {
         if (sourceType === 'image/png') {
-            return 'image/webp';
+            return ['image/webp', 'image/jpeg'];
         }
         if (sourceType === 'image/jpeg' || sourceType === 'image/webp') {
-            return sourceType;
+            return [sourceType];
         }
-        return 'image/webp';
+        return ['image/webp'];
     }
 
     private loadImage(file: File): Promise<HTMLImageElement> {
@@ -114,15 +129,25 @@ export class ImageCompressionService {
             return Promise.resolve(null);
         }
 
+        if (mimeType === 'image/jpeg') {
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, width, height);
+        }
+
         context.drawImage(image, 0, 0, width, height);
         return new Promise((resolve) => {
-            canvas.toBlob((blob) => resolve(blob), mimeType, quality);
+            canvas.toBlob(
+                (blob) => resolve(blob?.type === mimeType ? blob : null),
+                mimeType,
+                quality,
+            );
         });
     }
 
     private blobToFile(blob: Blob, originalName: string, mimeType: string): File {
         const baseName = originalName.replace(/\.[^.]+$/, '') || 'photo';
-        const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/jpeg' ? 'jpg' : 'webp';
+        const extension =
+            mimeType === 'image/png' ? 'png' : mimeType === 'image/jpeg' ? 'jpg' : 'webp';
         return new File([blob], `${baseName}.${extension}`, { type: mimeType });
     }
 }

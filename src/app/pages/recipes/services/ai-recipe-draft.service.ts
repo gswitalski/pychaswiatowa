@@ -3,11 +3,13 @@ import { SupabaseService } from '../../../core/services/supabase.service';
 import { environment } from '../../../../environments/environment';
 import {
     AiCreditsExhaustedErrorDto,
+    AiRecipeDraftPayloadTooLargeDto,
     AiRecipeDraftRequestDto,
     AiRecipeDraftResponseDto,
     AiRecipeDraftUnprocessableEntityDto,
 } from '../../../../../shared/contracts/types';
 import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.model';
+import { AI_DRAFT_IMAGES_UI_MESSAGES } from '../recipe-new-assist/ai-draft-images.messages';
 
 /**
  * Custom error for AI draft validation failures (422 response)
@@ -41,8 +43,12 @@ export class AiDraftRateLimitError extends Error {
 export class AiDraftPayloadTooLargeError extends Error {
     readonly status = 413;
 
-    constructor() {
-        super('Przesłany obraz jest zbyt duży. Maksymalny rozmiar to 10 MB.');
+    constructor(readonly limit: 'per_file' | 'total' = 'per_file') {
+        super(
+            limit === 'total'
+                ? AI_DRAFT_IMAGES_UI_MESSAGES.totalTooLarge
+                : AI_DRAFT_IMAGES_UI_MESSAGES.perFileTooLarge,
+        );
         this.name = 'AiDraftPayloadTooLargeError';
     }
 }
@@ -87,9 +93,7 @@ export class AiRecipeDraftService {
      * @throws AiCreditsExhaustedApiError for 402 responses (credit pool exhausted)
      * @throws Error for other failures
      */
-    async generateDraft(
-        request: AiRecipeDraftRequestDto
-    ): Promise<AiRecipeDraftResponseDto> {
+    async generateDraft(request: AiRecipeDraftRequestDto): Promise<AiRecipeDraftResponseDto> {
         const {
             data: { session },
         } = await this.supabase.auth.getSession();
@@ -135,7 +139,7 @@ export class AiRecipeDraftService {
             throw new Error(
                 error instanceof Error
                     ? error.message
-                    : 'Wystąpił błąd podczas generowania przepisu. Spróbuj ponownie.'
+                    : 'Wystąpił błąd podczas generowania przepisu. Spróbuj ponownie.',
             );
         }
     }
@@ -152,8 +156,9 @@ export class AiRecipeDraftService {
                 throw new Error('Brak autoryzacji. Zaloguj się ponownie.');
 
             case 402: {
-                const exhaustedData: AiCreditsExhaustedErrorDto =
-                    await response.json().catch(() => ({
+                const exhaustedData: AiCreditsExhaustedErrorDto = await response
+                    .json()
+                    .catch(() => ({
                         error: 'AI_CREDITS_EXHAUSTED',
                         message: 'Wyczerpano pulę kredytów AI.',
                         details: {
@@ -168,8 +173,14 @@ export class AiRecipeDraftService {
                 throw new AiCreditsExhaustedApiError(exhaustedData);
             }
 
-            case 413:
-                throw new AiDraftPayloadTooLargeError();
+            case 413: {
+                const body = (await response
+                    .json()
+                    .catch(() => ({}))) as Partial<AiRecipeDraftPayloadTooLargeDto>;
+                throw new AiDraftPayloadTooLargeError(
+                    body?.details?.limit === 'total' ? 'total' : 'per_file',
+                );
+            }
 
             case 400:
             case 422: {
@@ -177,18 +188,14 @@ export class AiRecipeDraftService {
                 const urlCode = this.urlErrorCode(errorData.error);
 
                 if (urlCode) {
-                    throw new AiDraftUrlError(
-                        urlCode,
-                        this.urlErrorMessage(urlCode),
-                        status,
-                    );
+                    throw new AiDraftUrlError(urlCode, this.urlErrorMessage(urlCode), status);
                 }
 
                 const unprocessableData = errorData as AiRecipeDraftUnprocessableEntityDto;
                 throw new AiDraftValidationError(
                     unprocessableData.message ||
                         'Wklejony materiał nie opisuje pojedynczego przepisu.',
-                    unprocessableData.reasons || []
+                    unprocessableData.reasons || [],
                 );
             }
 
@@ -200,7 +207,7 @@ export class AiRecipeDraftService {
                     message: 'Wystąpił błąd podczas przetwarzania przepisu.',
                 }));
                 throw new Error(
-                    errorData.message || 'Wystąpił błąd podczas przetwarzania przepisu.'
+                    errorData.message || 'Wystąpił błąd podczas przetwarzania przepisu.',
                 );
             }
         }
@@ -224,12 +231,10 @@ export class AiRecipeDraftService {
         const messages: Record<UrlDraftErrorCode, string> = {
             INVALID_URL:
                 'Podany adres jest nieprawidłowy. Sprawdź, czy link zaczyna się od https://.',
-            URL_INVALID_HOST:
-                'Adres wskazuje na niedozwolony zasób. Spróbuj z innym linkiem.',
+            URL_INVALID_HOST: 'Adres wskazuje na niedozwolony zasób. Spróbuj z innym linkiem.',
             URL_FETCH_FAILED:
                 'Nie udało się pobrać strony. Sprawdź, czy adres jest dostępny publicznie, lub skopiuj treść przepisu ręcznie i użyj trybu Tekst.',
-            URL_TIMEOUT:
-                'Czas oczekiwania na stronę minął. Spróbuj ponownie lub użyj trybu Tekst.',
+            URL_TIMEOUT: 'Czas oczekiwania na stronę minął. Spróbuj ponownie lub użyj trybu Tekst.',
             URL_CONTENT_TOO_LARGE:
                 'Strona jest zbyt duża, aby ją przetworzyć. Skopiuj treść przepisu i użyj trybu Tekst.',
         };

@@ -1,9 +1,5 @@
 <pych-page-header title="Dodaj przepis (AI)">
-    <button
-        mat-stroked-button
-        type="button"
-        (click)="onBack()"
-        [disabled]="isLoading()">
+    <button mat-stroked-button type="button" (click)="onBack()" [disabled]="isLoading()">
         Wróć
     </button>
     <span [matTooltip]="nextButtonTooltip()">
@@ -12,14 +8,15 @@
             color="primary"
             type="button"
             [disabled]="isNextDisabled()"
-            (click)="onNext()">
+            (click)="onNext()"
+        >
             @if (isLoading()) {
-            <mat-spinner diameter="20"></mat-spinner>
+                <mat-spinner diameter="20"></mat-spinner>
             } @else {
-            <span class="next-button-content">
-                Dalej
-                <mat-icon matButtonIcon>arrow_forward</mat-icon>
-            </span>
+                <span class="next-button-content">
+                    Dalej
+                    <mat-icon matButtonIcon>arrow_forward</mat-icon>
+                </span>
             }
         </button>
     </span>
@@ -58,7 +55,8 @@
                 <mat-button-toggle-group
                     [value]="source()"
                     (change)="onSourceChange($event.value)"
-                    [disabled]="isLoading()">
+                    [disabled]="isLoading()"
+                >
                     <mat-button-toggle value="text">
                         <mat-icon>text_fields</mat-icon>
                         Tekst
@@ -76,48 +74,180 @@
 
             <!-- Text input -->
             @if (source() === 'text') {
-            <div class="text-input-container">
-                <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Tekst przepisu</mat-label>
-                    <textarea
-                        matInput
-                        [value]="text()"
-                        (input)="onTextChange($any($event.target).value)"
-                        [disabled]="isLoading()"
-                        placeholder="Wklej tutaj tekst przepisu..."
-                        rows="12"
-                        cdkTextareaAutosize
-                        cdkAutosizeMinRows="8"
-                        cdkAutosizeMaxRows="20"></textarea>
-                    <mat-hint>
-                        Wklej skopiowany tekst przepisu ze strony, książki lub innego źródła
-                    </mat-hint>
-                </mat-form-field>
-            </div>
+                <div class="text-input-container">
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Tekst przepisu</mat-label>
+                        <textarea
+                            matInput
+                            [value]="text()"
+                            (input)="onTextChange($any($event.target).value)"
+                            [disabled]="isLoading()"
+                            placeholder="Wklej tutaj tekst przepisu..."
+                            rows="12"
+                            cdkTextareaAutosize
+                            cdkAutosizeMinRows="8"
+                            cdkAutosizeMaxRows="20"
+                        ></textarea>
+                        <mat-hint>
+                            Wklej skopiowany tekst przepisu ze strony, książki lub innego źródła
+                        </mat-hint>
+                    </mat-form-field>
+                </div>
             }
 
             <!-- Image paste area -->
             @if (source() === 'image') {
-            <div class="image-input-container">
-                @if (!imagePreviewUrl()) {
-                <div
-                    #imagePasteArea
-                    class="image-paste-area"
-                    tabindex="0"
-                    role="button"
-                    aria-label="Kliknij i wklej obraz używając Ctrl+V"
-                    (click)="focusImageArea()"
-                    [class.disabled]="isLoading()">
-                    <div class="paste-content">
-                        <mat-icon>content_paste</mat-icon>
-                        <p class="paste-title">Wklej obraz przepisu</p>
-                        <p class="paste-hint">
-                            Kliknij tutaj i użyj <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                <div class="image-input-container">
+                    <div class="info-hint">
+                        <mat-icon>info</mat-icon>
+                        <p>{{ imageHint }}</p>
+                    </div>
+                    @if (images().length === 0) {
+                        <div
+                            #imagePasteArea
+                            class="image-paste-area"
+                            tabindex="0"
+                            role="button"
+                            aria-label="Kliknij i wklej obraz używając Ctrl+V"
+                            (click)="focusImageArea()"
+                            [class.disabled]="!canAddImages()"
+                        >
+                            <div class="paste-content">
+                                <mat-icon>content_paste</mat-icon>
+                                <p class="paste-title">Wklej zdjęcia przepisu</p>
+                                <p class="paste-hint">
+                                    Kliknij tutaj i użyj <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                                </p>
+                                <p class="paste-formats">
+                                    Obsługiwane formaty: PNG, JPEG, WebP (max 10 MB na zdjęcie, do 5
+                                    zdjęć)
+                                </p>
+                                <div class="upload-actions">
+                                    <button
+                                        mat-stroked-button
+                                        type="button"
+                                        data-add-images
+                                        aria-label="Dodaj zdjęcia z dysku"
+                                        [disabled]="!canAddImages()"
+                                        (click)="onAddImagesClick($event)"
+                                    >
+                                        <mat-icon>add_photo_alternate</mat-icon>
+                                        {{ addImagesLabel }}
+                                    </button>
+                                    <button
+                                        mat-stroked-button
+                                        type="button"
+                                        class="clipboard-paste-btn"
+                                        aria-label="Wklej zdjęcie ze schowka"
+                                        [disabled]="isClipboardPasteDisabled()"
+                                        [matTooltip]="clipboardUnsupportedTooltip"
+                                        [matTooltipDisabled]="clipboardSupported"
+                                        (click)="onPasteFromClipboardClick($event)"
+                                    >
+                                        <mat-icon>content_paste</mat-icon>
+                                        Wklej ze schowka
+                                    </button>
+                                    <pych-camera-capture-button
+                                        [disabled]="!canAddImages()"
+                                        (fileSelected)="onCameraFileSelected($event)"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    } @else {
+                        <ul class="image-list" role="list">
+                            @for (item of images(); track item.id; let i = $index; let n = $count) {
+                                <li
+                                    class="image-item"
+                                    [class.processing]="item.status === 'processing'"
+                                >
+                                    <div
+                                        class="image-thumbnail"
+                                        [attr.aria-busy]="item.status === 'processing'"
+                                    >
+                                        @if (item.previewUrl) {
+                                            <img
+                                                [src]="item.previewUrl"
+                                                [alt]="'Zdjęcie ' + (i + 1) + ' z ' + n"
+                                            />
+                                        } @else {
+                                            <mat-spinner diameter="28" />
+                                        }
+                                        <button
+                                            mat-mini-fab
+                                            color="warn"
+                                            type="button"
+                                            class="remove-image-button"
+                                            [attr.data-remove-for]="item.id"
+                                            [disabled]="isLoading()"
+                                            [attr.aria-label]="
+                                                'Usuń zdjęcie ' + (i + 1) + ' z ' + n
+                                            "
+                                            (click)="removeImage(item.id)"
+                                        >
+                                            <mat-icon>close</mat-icon>
+                                        </button>
+                                    </div>
+                                    <div class="image-controls">
+                                        <button
+                                            mat-icon-button
+                                            type="button"
+                                            [attr.data-move-for]="item.id"
+                                            data-dir="left"
+                                            [disabled]="
+                                                isLoading() ||
+                                                item.status === 'processing' ||
+                                                i === 0
+                                            "
+                                            [attr.aria-label]="
+                                                'Przesuń zdjęcie ' + (i + 1) + ' z ' + n + ' w lewo'
+                                            "
+                                            (click)="moveImage(i, -1)"
+                                        >
+                                            <mat-icon>chevron_left</mat-icon>
+                                        </button>
+                                        <span>Zdjęcie {{ i + 1 }} z {{ n }}</span>
+                                        <button
+                                            mat-icon-button
+                                            type="button"
+                                            [attr.data-move-for]="item.id"
+                                            data-dir="right"
+                                            [disabled]="
+                                                isLoading() ||
+                                                item.status === 'processing' ||
+                                                i === n - 1
+                                            "
+                                            [attr.aria-label]="
+                                                'Przesuń zdjęcie ' +
+                                                (i + 1) +
+                                                ' z ' +
+                                                n +
+                                                ' w prawo'
+                                            "
+                                            (click)="moveImage(i, 1)"
+                                        >
+                                            <mat-icon>chevron_right</mat-icon>
+                                        </button>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                        <p class="image-counter" aria-live="polite">
+                            Zdjęcia: {{ imageCounterLabel() }}
                         </p>
-                        <p class="paste-formats">
-                            Obsługiwane formaty: PNG, JPEG, WebP (max 10 MB)
-                        </p>
-                        <div class="upload-actions">
+                        <p class="paste-hint">Możesz też wkleić kolejne zdjęcie przez Ctrl + V.</p>
+                        <div class="image-preview-actions">
+                            <button
+                                mat-stroked-button
+                                type="button"
+                                data-add-images
+                                aria-label="Dodaj zdjęcia z dysku"
+                                [disabled]="!canAddImages()"
+                                (click)="onAddImagesClick($event)"
+                            >
+                                <mat-icon>add_photo_alternate</mat-icon>
+                                {{ addImagesLabel }}
+                            </button>
                             <button
                                 mat-stroked-button
                                 type="button"
@@ -126,88 +256,78 @@
                                 [disabled]="isClipboardPasteDisabled()"
                                 [matTooltip]="clipboardUnsupportedTooltip"
                                 [matTooltipDisabled]="clipboardSupported"
-                                (click)="onPasteFromClipboardClick($event)">
+                                (click)="onPasteFromClipboardClick($event)"
+                            >
                                 <mat-icon>content_paste</mat-icon>
                                 Wklej ze schowka
                             </button>
                             <pych-camera-capture-button
-                                [disabled]="isLoading()"
+                                [disabled]="!canAddImages()"
                                 (fileSelected)="onCameraFileSelected($event)"
                             />
                         </div>
-                    </div>
-                </div>
-                } @else {
-                <div class="image-preview-container">
-                    <img
-                        [src]="imagePreviewUrl()"
-                        alt="Podgląd wklejonego obrazu"
-                        class="image-preview" />
-                    <button
-                        mat-mini-fab
-                        color="warn"
-                        class="remove-image-button"
-                        (click)="onRemoveImage()"
-                        [disabled]="isLoading()"
-                        aria-label="Usuń obraz">
-                        <mat-icon>close</mat-icon>
-                    </button>
-                </div>
-                <div class="image-preview-actions">
-                    <button
-                        mat-stroked-button
-                        type="button"
-                        class="clipboard-paste-btn"
-                        aria-label="Wklej zdjęcie ze schowka"
-                        [disabled]="isClipboardPasteDisabled()"
-                        [matTooltip]="clipboardUnsupportedTooltip"
-                        [matTooltipDisabled]="clipboardSupported"
-                        (click)="onPasteFromClipboardClick($event)">
-                        <mat-icon>content_paste</mat-icon>
-                        Wklej ze schowka
-                    </button>
-                    <pych-camera-capture-button
-                        [disabled]="isLoading()"
-                        (fileSelected)="onCameraFileSelected($event)"
+                    }
+                    @if (isImageLimitReached()) {
+                        <p class="image-limit-info">{{ imageLimitInfo }}</p>
+                    }
+                    @if (showAnalyzingHint()) {
+                        <p class="analyzing-hint" aria-live="polite">{{ analyzingHint }}</p>
+                    }
+                    <input
+                        #fileInput
+                        type="file"
+                        multiple
+                        accept="image/png,image/jpeg,image/webp"
+                        hidden
+                        (change)="onFilesSelected($event)"
                     />
                 </div>
-                }
-            </div>
             }
 
             @if (source() === 'url') {
-            <div class="url-input-container">
-                <pych-recipe-assist-url-input
-                    [disabled]="isLoading()"
-                    (urlChange)="onUrlChange($event)" />
-            </div>
+                <div class="url-input-container">
+                    <pych-recipe-assist-url-input
+                        [disabled]="isLoading()"
+                        (urlChange)="onUrlChange($event)"
+                    />
+                </div>
             }
 
             <!-- Error messages -->
-            @if (errorMessage()) {
-            <div class="error-container">
-                <div class="error-message">
-                    <mat-icon>error</mat-icon>
-                    <span>{{ errorMessage() }}</span>
-                </div>
-                @if (unprocessableReasons().length > 0) {
-                <ul class="error-reasons">
-                    @for (reason of unprocessableReasons(); track reason) {
-                    <li>{{ reason }}</li>
+            @if (errorMessage() || imageMessages().length > 0) {
+                <div class="error-container" role="alert">
+                    @for (message of imageMessages(); track message) {
+                        <div class="error-message">
+                            <mat-icon>error</mat-icon>
+                            <span>{{ message }}</span>
+                        </div>
                     }
-                </ul>
-                }
-            </div>
+                    @if (errorMessage()) {
+                        <div class="error-message">
+                            <mat-icon>error</mat-icon>
+                            <span>{{ errorMessage() }}</span>
+                        </div>
+                        @if (unprocessableReasons().length > 0) {
+                            <ul class="error-reasons">
+                                @for (reason of unprocessableReasons(); track reason) {
+                                    <li>{{ reason }}</li>
+                                }
+                            </ul>
+                        }
+                    }
+                </div>
             }
 
             <!-- Info hint -->
-            <div class="info-hint">
-                <mat-icon>info</mat-icon>
-                <p>
-                    Jeśli nie podasz żadnych danych, zostaniesz przekierowany do pustego formularza
-                </p>
-            </div>
+            @if (source() !== 'image') {
+                <div class="info-hint">
+                    <mat-icon>info</mat-icon>
+                    <p>
+                        Jeśli nie podasz żadnych danych, zostaniesz przekierowany do pustego
+                        formularza
+                    </p>
+                </div>
+            }
         </mat-card-content>
     </mat-card>
 </div>
-

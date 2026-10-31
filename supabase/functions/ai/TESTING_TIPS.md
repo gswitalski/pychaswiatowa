@@ -4,7 +4,7 @@
 `POST /functions/v1/ai/recipes/draft`
 
 ## Change Summary
-The draft supports optional `tips_raw` and always returns eight normalized recipe metadata fields: `servings`, `prep_time_minutes`, `total_time_minutes`, `diet_type`, `cuisine`, `difficulty`, `is_termorobot`, and `is_grill`.
+The draft supports optional `tips_raw`, eight normalized recipe metadata fields (`servings`, `prep_time_minutes`, `total_time_minutes`, `diet_type`, `cuisine`, `difficulty`, `is_termorobot`, `is_grill`) and image input through the legacy `image` field or the new `images` array (1–5 ordered images).
 
 ## Testing Locally
 
@@ -140,6 +140,11 @@ Verify that values stated in source text take precedence over inference. The res
 
 ## Validation Checklist
 
+- [ ] Test 9a: 1, 3 and 5 images produce one draft in submitted order; each request uses exactly one `draft` credit
+- [ ] Test 9b: `image` together with `images` returns `400` without deducting a credit
+- [ ] Image larger than 10 MB returns `413` with `details.limit = "per_file"`; combined decoded images larger than 15 MB return `413` with `details.limit = "total"`
+- [ ] Invalid base64 returns `400` with the affected `images.{index}.data_base64` field
+- [ ] A partially unreadable multi-image request returns `200`, a Polish warning and `meta.image_warnings`; all unreadable images return `422`
 - [ ] Test 1: Recipe WITH tips returns `tips_raw` field
 - [ ] Test 2: Recipe WITHOUT tips does NOT include `tips_raw` field
 - [ ] Test 3: Structured tips preserve section headers (# prefix)

@@ -2,11 +2,14 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    DestroyRef,
     ElementRef,
     HostListener,
     inject,
+    Injector,
     signal,
     ViewChild,
+    afterNextRender,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -38,23 +41,29 @@ import {
 } from '../../../../../shared/contracts/types';
 import { ClipboardImageService } from '../../../shared/services/clipboard-image.service';
 import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../shared/services/clipboard-image.messages';
-import {
-    CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES,
-    CLIPBOARD_IMAGE_MAX_BYTES,
-} from '../../../shared/services/clipboard-image.types';
-import {
-    ImageCompressionError,
-    ImageCompressionService,
-} from '../../../shared/services/image-compression.service';
+import { CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES } from '../../../shared/services/clipboard-image.types';
+import { ImageCompressionService } from '../../../shared/services/image-compression.service';
 import { RecipeAssistUrlInputComponent } from './components/recipe-assist-url-input/recipe-assist-url-input.component';
+import {
+    AI_DRAFT_ANALYZING_HINT_MIN_IMAGES,
+    AI_DRAFT_MAX_IMAGE_BYTES,
+    AI_DRAFT_MAX_IMAGES,
+    AI_DRAFT_MAX_TOTAL_IMAGES_BYTES,
+} from './ai-draft-images.constants';
+import { AI_DRAFT_IMAGES_UI_MESSAGES } from './ai-draft-images.messages';
 
 /** Source type for AI input */
 type AiInputSource = 'text' | 'image' | 'url';
 
 /** Allowed MIME types for image paste */
-const ALLOWED_IMAGE_TYPES: AiRecipeDraftImageMimeType[] = [
-    ...CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES,
-];
+const ALLOWED_IMAGE_TYPES: AiRecipeDraftImageMimeType[] = [...CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES];
+
+interface AssistImageItem {
+    id: string;
+    file: File | null;
+    previewUrl: string | null;
+    status: 'processing' | 'ready';
+}
 
 /**
  * Recipe creation wizard - AI Assist page component.
@@ -91,12 +100,19 @@ export class RecipeNewAssistPageComponent {
     private readonly dialog = inject(MatDialog);
     private readonly clipboardImageService = inject(ClipboardImageService);
     private readonly imageCompression = inject(ImageCompressionService);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly injector = inject(Injector);
 
     readonly clipboardSupported = this.clipboardImageService.isClipboardReadSupported();
 
     readonly clipboardUnsupportedTooltip = CLIPBOARD_IMAGE_UI_MESSAGES.clipboardUnsupportedTooltip;
+    readonly addImagesLabel = AI_DRAFT_IMAGES_UI_MESSAGES.addImages;
+    readonly imageHint = AI_DRAFT_IMAGES_UI_MESSAGES.hint;
+    readonly imageLimitInfo = AI_DRAFT_IMAGES_UI_MESSAGES.limitInfo;
+    readonly analyzingHint = AI_DRAFT_IMAGES_UI_MESSAGES.analyzing;
 
     @ViewChild('imagePasteArea') imagePasteArea!: ElementRef<HTMLDivElement>;
+    @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
     /** Current input source mode */
     readonly source = signal<AiInputSource>('text');
@@ -104,11 +120,25 @@ export class RecipeNewAssistPageComponent {
     /** Text input value */
     readonly text = signal<string>('');
 
-    /** Current image file (if any) */
-    readonly imageFile = signal<File | null>(null);
-
-    /** Image preview URL (data URL) */
-    readonly imagePreviewUrl = signal<string | null>(null);
+    /** Zdjęcia przepisu, zachowujące kolejność wysyłki do AI. */
+    readonly images = signal<AssistImageItem[]>([]);
+    readonly imageMessages = signal<string[]>([]);
+    readonly imageCount = computed(() => this.images().length);
+    readonly readyImages = computed(() =>
+        this.images().filter((item) => item.status === 'ready' && item.file !== null),
+    );
+    readonly isProcessingImages = computed(() =>
+        this.images().some((item) => item.status === 'processing'),
+    );
+    readonly isImageLimitReached = computed(() => this.imageCount() >= AI_DRAFT_MAX_IMAGES);
+    readonly canAddImages = computed(() => !this.isLoading() && !this.isImageLimitReached());
+    readonly imageCounterLabel = computed(() => `${this.imageCount()} / ${AI_DRAFT_MAX_IMAGES}`);
+    readonly showAnalyzingHint = computed(
+        () =>
+            this.isLoading() &&
+            this.source() === 'image' &&
+            this.readyImages().length >= AI_DRAFT_ANALYZING_HINT_MIN_IMAGES,
+    );
 
     /** Current valid URL from the URL input component */
     readonly urlValue = signal<string | null>(null);
@@ -125,30 +155,34 @@ export class RecipeNewAssistPageComponent {
     readonly hasAiInput = computed(
         () =>
             (this.source() === 'text' && this.text().trim().length > 0) ||
-            (this.source() === 'image' && this.imageFile() !== null) ||
-            (this.source() === 'url' && this.urlValue() !== null)
+            (this.source() === 'image' && this.readyImages().length > 0) ||
+            (this.source() === 'url' && this.urlValue() !== null),
     );
 
-    readonly isCreditsExhausted = computed(() =>
-        this.creditsService.isExhausted('draft')
-    );
+    readonly isCreditsExhausted = computed(() => this.creditsService.isExhausted('draft'));
 
     readonly isNextDisabled = computed(
         () =>
             this.isLoading() ||
             (this.source() === 'url' && this.urlValue() === null) ||
+            this.isProcessingImages() ||
+            (this.source() === 'image' && this.readyImages().length === 0) ||
             (this.hasAiInput() && this.isCreditsExhausted()),
     );
 
     readonly nextButtonTooltip = computed(() =>
         this.hasAiInput() && this.isCreditsExhausted()
             ? 'Brak kredytów AI — przejdź na Premium'
-            : ''
+            : '',
     );
 
     readonly isClipboardPasteDisabled = computed(
-        () => this.isLoading() || !this.clipboardSupported,
+        () => !this.canAddImages() || !this.clipboardSupported,
     );
+
+    constructor() {
+        this.destroyRef.onDestroy(() => this.clearAllImages());
+    }
 
     /**
      * Handle source toggle change.
@@ -161,13 +195,13 @@ export class RecipeNewAssistPageComponent {
 
         if (newSource === 'text') {
             // Clear image when switching to text mode
-            this.clearImage();
+            this.clearAllImages();
         } else if (newSource === 'image') {
             // Clear text when switching to image mode
             this.text.set('');
         } else {
             this.text.set('');
-            this.clearImage();
+            this.clearAllImages();
         }
     }
 
@@ -189,8 +223,7 @@ export class RecipeNewAssistPageComponent {
      */
     @HostListener('paste', ['$event'])
     onPaste(event: ClipboardEvent): void {
-        // Only handle paste in image mode
-        if (this.source() !== 'image') {
+        if (this.source() !== 'image' || this.isLoading()) {
             return;
         }
 
@@ -200,6 +233,7 @@ export class RecipeNewAssistPageComponent {
         }
 
         let sawUnsupportedImage = false;
+        const files: File[] = [];
 
         for (const item of Array.from(items)) {
             if (!item.type.startsWith('image/')) {
@@ -211,12 +245,15 @@ export class RecipeNewAssistPageComponent {
                 continue;
             }
 
-            event.preventDefault();
             const file = item.getAsFile();
-
             if (file) {
-                void this.handleImageFile(file);
+                files.push(file);
             }
+        }
+
+        if (files.length > 0) {
+            event.preventDefault();
+            void this.addFiles(files);
             return;
         }
 
@@ -241,7 +278,7 @@ export class RecipeNewAssistPageComponent {
 
         try {
             const file = await this.clipboardImageService.readImageFile();
-            await this.handleImageFile(file);
+            await this.addFiles([file]);
         } catch (err) {
             this.errorMessage.set(this.clipboardImageService.messageForError(err));
         }
@@ -251,71 +288,166 @@ export class RecipeNewAssistPageComponent {
      * Plik z aparatu (PS-93) — ta sama walidacja co wklejanie / schowek.
      */
     async onCameraFileSelected(file: File): Promise<void> {
+        await this.addFiles([file]);
+    }
+
+    onAddImagesClick(event: MouseEvent): void {
+        event.stopPropagation();
+        if (this.canAddImages()) {
+            this.fileInput?.nativeElement.click();
+        }
+    }
+
+    onFilesSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        void this.addFiles(Array.from(input.files ?? []));
+        input.value = '';
+    }
+
+    async addFiles(files: File[]): Promise<void> {
+        if (this.isLoading() || files.length === 0) {
+            return;
+        }
+
+        this.clearError();
+        this.imageMessages.set([]);
+        const messages = new Set<string>();
+        const placeholders: { id: string; file: File }[] = [];
+        let skippedOverLimit = 0;
+
+        for (const file of files) {
+            if (this.imageCount() + placeholders.length >= AI_DRAFT_MAX_IMAGES) {
+                skippedOverLimit++;
+                continue;
+            }
+
+            if (!ALLOWED_IMAGE_TYPES.includes(file.type as AiRecipeDraftImageMimeType)) {
+                messages.add(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
+                continue;
+            }
+
+            placeholders.push({ id: crypto.randomUUID(), file });
+        }
+
+        if (placeholders.length > 0) {
+            this.images.update((items) => [
+                ...items,
+                ...placeholders.map(({ id }) => ({
+                    id,
+                    file: null,
+                    previewUrl: null,
+                    status: 'processing' as const,
+                })),
+            ]);
+        }
+
+        if (skippedOverLimit > 0) {
+            messages.add(AI_DRAFT_IMAGES_UI_MESSAGES.limitReached);
+        }
+
+        const results = await Promise.all(
+            placeholders.map(({ id, file }) => this.processImage(id, file)),
+        );
+        results
+            .filter((message): message is string => message !== null)
+            .forEach((message) => messages.add(message));
+        this.imageMessages.set([...messages]);
+    }
+
+    private async processImage(id: string, file: File): Promise<string | null> {
+        const compressed = await this.imageCompression.compressForAiDraft(file);
+        const placeholder = this.images().find((item) => item.id === id);
+        if (!placeholder) {
+            return null;
+        }
+
+        if (compressed.size > AI_DRAFT_MAX_IMAGE_BYTES) {
+            this.removeImageItem(id);
+            return CLIPBOARD_IMAGE_UI_MESSAGES.fileTooLarge;
+        }
+
+        const previewUrl = URL.createObjectURL(compressed);
+        this.images.update((items) =>
+            items.map((item) =>
+                item.id === id
+                    ? { ...item, file: compressed, previewUrl, status: 'ready' as const }
+                    : item,
+            ),
+        );
+        return null;
+    }
+
+    removeImage(id: string): void {
         if (this.isLoading()) {
             return;
         }
 
-        await this.handleImageFile(file);
-    }
+        const index = this.images().findIndex((item) => item.id === id);
+        if (index === -1) {
+            return;
+        }
 
-    /**
-     * Validate and set image file
-     */
-    private async handleImageFile(file: File): Promise<void> {
+        const nextItem = this.images()[index + 1] ?? this.images()[index - 1];
+        this.removeImageItem(id);
         this.clearError();
+        this.imageMessages.set([]);
+        afterNextRender(
+            () => {
+                const selector = nextItem
+                    ? `[data-remove-for="${nextItem.id}"]`
+                    : '[data-add-images]';
+                (document.querySelector(selector) as HTMLElement | null)?.focus();
+            },
+            { injector: this.injector },
+        );
+    }
 
-        // Validate MIME type
-        if (!ALLOWED_IMAGE_TYPES.includes(file.type as AiRecipeDraftImageMimeType)) {
-            this.errorMessage.set(CLIPBOARD_IMAGE_UI_MESSAGES.unsupportedFormat);
+    moveImage(index: number, direction: -1 | 1): void {
+        const target = index + direction;
+        if (
+            this.isLoading() ||
+            this.isProcessingImages() ||
+            target < 0 ||
+            target >= this.images().length
+        ) {
             return;
         }
 
-        try {
-            file = await this.imageCompression.compressToMaxSize(file);
-        } catch (err) {
-            this.errorMessage.set(
-                err instanceof ImageCompressionError
-                    ? err.message
-                    : CLIPBOARD_IMAGE_UI_MESSAGES.compressionFailed,
-            );
-            return;
+        const item = this.images()[index];
+        this.images.update((items) => {
+            const reordered = [...items];
+            [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+            return reordered;
+        });
+        afterNextRender(
+            () => {
+                const directionName = direction === -1 ? 'left' : 'right';
+                (
+                    document.querySelector(
+                        `[data-move-for="${item.id}"][data-dir="${directionName}"]`,
+                    ) as HTMLElement | null
+                )?.focus();
+            },
+            { injector: this.injector },
+        );
+    }
+
+    private removeImageItem(id: string): void {
+        const item = this.images().find((current) => current.id === id);
+        if (item?.previewUrl) {
+            URL.revokeObjectURL(item.previewUrl);
         }
-
-        if (file.size > CLIPBOARD_IMAGE_MAX_BYTES) {
-            this.errorMessage.set(CLIPBOARD_IMAGE_UI_MESSAGES.fileTooLarge);
-            return;
-        }
-
-        // Set file and create preview
-        this.imageFile.set(file);
-        this.createImagePreview(file);
+        this.images.update((items) => items.filter((current) => current.id !== id));
     }
 
-    /**
-     * Create image preview URL from file
-     */
-    private createImagePreview(file: File): void {
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.imagePreviewUrl.set(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    /**
-     * Remove current image
-     */
-    onRemoveImage(): void {
-        this.clearImage();
-        this.clearError();
-    }
-
-    /**
-     * Clear image state
-     */
-    private clearImage(): void {
-        this.imageFile.set(null);
-        this.imagePreviewUrl.set(null);
+    private clearAllImages(): void {
+        this.images().forEach((item) => {
+            if (item.previewUrl) {
+                URL.revokeObjectURL(item.previewUrl);
+            }
+        });
+        this.images.set([]);
+        this.imageMessages.set([]);
     }
 
     /**
@@ -334,13 +466,25 @@ export class RecipeNewAssistPageComponent {
     async onNext(): Promise<void> {
         const currentSource = this.source();
         const hasText = currentSource === 'text' && this.text().trim().length > 0;
-        const hasImage = currentSource === 'image' && this.imageFile() !== null;
+        const hasImage = currentSource === 'image' && this.readyImages().length > 0;
         const hasUrl = currentSource === 'url' && this.urlValue() !== null;
 
-        // If no input, navigate to empty form
+        if (currentSource === 'image' && (!hasImage || this.isProcessingImages())) {
+            return;
+        }
+
         if (!hasText && !hasImage && !hasUrl) {
             this.draftStateService.clearDraft();
             this.router.navigate(['/recipes/new']);
+            return;
+        }
+
+        if (
+            currentSource === 'image' &&
+            this.readyImages().reduce((total, item) => total + item.file!.size, 0) >
+                AI_DRAFT_MAX_TOTAL_IMAGES_BYTES
+        ) {
+            this.errorMessage.set(AI_DRAFT_IMAGES_UI_MESSAGES.totalTooLarge);
             return;
         }
 
@@ -375,15 +519,16 @@ export class RecipeNewAssistPageComponent {
                 language: 'pl',
             };
         } else if (this.source() === 'image') {
-            const file = this.imageFile()!;
-            const base64 = await this.fileToBase64(file);
+            const images = await Promise.all(
+                this.readyImages().map(async (item) => ({
+                    mime_type: item.file!.type as AiRecipeDraftImageMimeType,
+                    data_base64: await this.fileToBase64(item.file!),
+                })),
+            );
 
             return {
                 source: 'image',
-                image: {
-                    mime_type: file.type as AiRecipeDraftImageMimeType,
-                    data_base64: base64,
-                },
+                images,
                 output_format: 'pycha_recipe_draft_v1',
                 language: 'pl',
             };
@@ -429,9 +574,7 @@ export class RecipeNewAssistPageComponent {
             const dialogData: AiCreditsExhaustedDialogData = {
                 creditType: details.credit_type,
                 limitType: details.limit_type === 'monthly' ? 'monthly' : 'lifetime',
-                nextResetAt: details.next_reset_at
-                    ? new Date(details.next_reset_at)
-                    : null,
+                nextResetAt: details.next_reset_at ? new Date(details.next_reset_at) : null,
             };
 
             this.dialog.open(AiCreditsExhaustedDialogComponent, {
@@ -470,4 +613,3 @@ export class RecipeNewAssistPageComponent {
         this.imagePasteArea?.nativeElement?.focus();
     }
 }
-

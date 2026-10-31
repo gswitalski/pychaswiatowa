@@ -92,6 +92,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 16px;
+
+    > * {
+        width: 100%;
+    }
 }
 
 .image-paste-area {
@@ -103,7 +108,9 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease;
     background: var(--mat-sys-surface-container-low);
 
     &:hover,
@@ -180,23 +187,62 @@
     }
 }
 
-.image-preview-container {
-    position: relative;
-    max-width: 100%;
-    display: inline-block;
+.image-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.image-preview {
-    max-width: 100%;
-    max-height: 400px;
-    border-radius: 12px;
-    box-shadow: var(--mat-sys-level2);
+.image-item {
+    min-width: 0;
+}
+
+.image-thumbnail {
+    position: relative;
+    display: grid;
+    min-height: 160px;
+    overflow: hidden;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--mat-sys-surface-container);
+
+    img {
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        object-fit: cover;
+    }
 }
 
 .remove-image-button {
     position: absolute;
-    top: -12px;
-    right: -12px;
+    top: 8px;
+    right: 8px;
+}
+
+.image-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    margin-top: 4px;
+    font-size: 0.75rem;
+
+    button {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
+
+.image-counter,
+.image-limit-info,
+.analyzing-hint {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+    text-align: center;
+    font-size: 0.875rem;
 }
 
 .image-preview-actions {
@@ -304,8 +350,8 @@
         }
     }
 
-    .image-preview {
-        max-height: 300px;
+    .image-list {
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
     }
 
     .input-card-header,
@@ -314,4 +360,3 @@
         flex-direction: column;
     }
 }
-
