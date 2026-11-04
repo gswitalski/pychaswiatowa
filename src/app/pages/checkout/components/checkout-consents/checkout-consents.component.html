@@ -27,6 +27,11 @@
         Chcę korzystać z Premium od razu i wiem, że tracę prawo do odstąpienia od umowy w 14 dni.
     </mat-checkbox>
 
+    <p class="consents__privacy">
+        Informacje o przetwarzaniu danych osobowych znajdziesz w
+        <a href="/legal/privacy" target="_blank" rel="noopener">Polityce prywatności</a>.
+    </p>
+
     <div class="consents__message" aria-live="polite">
         @if (highlightMissing() && (!acceptedTerms() || !acceptedDigitalWaiver())) {
             Zaznacz obie wymagane zgody.

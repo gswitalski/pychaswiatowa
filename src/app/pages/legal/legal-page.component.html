@@ -22,9 +22,10 @@
                     />
                 }
                 @case ('publisher') {
-                    <p class="legal-page__text">
-                        Treść informacji o wydawcy serwisu zostanie uzupełniona wkrótce.
-                    </p>
+                    <pych-legal-markdown-viewer
+                        [assetPath]="'/assets/legal/publisher.md'"
+                        [documentName]="'informacji o wydawcy'"
+                    />
                 }
                 @default {
                     <p class="legal-page__text">Treść zostanie uzupełniona wkrótce.</p>

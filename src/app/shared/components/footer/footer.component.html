@@ -8,6 +8,7 @@
                 <a
                     class="footer__link"
                     [routerLink]="link.path"
+                    [fragment]="link.fragment"
                     [attr.aria-label]="link.ariaLabel ?? null"
                 >
                     {{ link.label }}

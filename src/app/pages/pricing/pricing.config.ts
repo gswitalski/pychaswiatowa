@@ -217,15 +217,15 @@ export const PRICING_FEATURE_CATEGORIES: readonly PricingFeatureCategory[] = [
 export const PRICING_FAQ = [
     {
         question: 'Jak działa 7-dniowy trial?',
-        answer: 'Przez 7 dni od rejestracji konta Premium masz pełny dostęp do funkcji Premium. Trial aktywuje się automatycznie — nie wymagamy danych karty z góry.',
+        answer: 'Przez 7 dni od aktywacji konta Premium masz pełny dostęp do funkcji Premium. Aktywacja trialu wymaga podania metody płatności — karta nie zostaje obciążona przed upływem okresu próbnego.',
     },
     {
         question: 'Co się dzieje po zakończeniu trialu?',
-        answer: 'Jeśli nie subskrybujesz, konto wraca do planu Free. Twoje przepisy i dane są bezpieczne — nie usuwamy żadnych danych.',
+        answer: 'Jeśli anulujesz trial przed jego końcem, konto wraca do planu Free i karta nie jest obciążana. Jeśli go nie anulujesz, po 7 dniach pobierana jest opłata za wybrany plan. Przepisy i dane zostają na koncie.',
     },
     {
         question: 'Czy mogę anulować subskrypcję w dowolnym momencie?',
-        answer: 'Tak. Możesz anulować w ustawieniach konta w dowolnej chwili. Dostęp do Premium obowiązuje do końca opłaconego okresu.',
+        answer: 'Tak. Anulowanie zatrzymuje przyszłe odnowienia, a dostęp do Premium zostaje do końca bieżącego okresu. Anulowanie zgłaszasz do nas — adres jest w regulaminie subskrypcji.',
     },
     {
         question: 'Jakie metody płatności są dostępne?',
@@ -233,6 +233,6 @@ export const PRICING_FAQ = [
     },
     {
         question: 'Czy mogę zmienić plan z miesięcznego na roczny?',
-        answer: 'Tak — w ustawieniach konta, ze zmianą od następnego okresu rozliczeniowego.',
+        answer: 'Zmiana planu miesięcznego na roczny albo rocznego na miesięczny obowiązuje od następnego okresu rozliczeniowego. Szczegóły opisuje regulamin subskrypcji.',
     },
 ] as const;

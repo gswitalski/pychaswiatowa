@@ -1,7 +1,7 @@
 # Regulamin serwisu „PychaŚwiatowa” (Warunki korzystania)
 
 > **Data publikacji:** 28.02.2026
-> **Ostatnia aktualizacja:** 28.
+> **Ostatnia aktualizacja:** 04.11.2026
 
 ## 1. Informacje podstawowe
 
@@ -13,10 +13,10 @@
 
 1. Usługodawcą oraz wydawcą Serwisu („**Usługodawca**”) jest:
    - **Forma prawna:** jednoosobowa działalność gospodarcza (JDG)
-   - **Nazwa firmy:** \<NAZWA_FIRMY\>
-   - **Adres:** \<ADRES\>
-   - **NIP:** \<NIP\>
-   - **E-mail kontaktowy:** \<EMAIL\>
+   - **Nazwa firmy:** Aneta Zajfert-Świtalska
+   - **Adres:** ul. Jasia i Małgosi 8, 55-002 Kamieniec Wrocławski, Polska
+   - **NIP:** 8991394492
+   - **E-mail kontaktowy:** kontakt@pychaswiatowa.pl
 2. Dodatkowe informacje o wydawcy mogą być prezentowane na stronie `/legal/publisher`.
 
 ## 3. Definicje
@@ -27,7 +27,7 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
 2. **Konto** – konto Użytkownika w Serwisie, tworzone w ramach procesu rejestracji.
 3. **Treści Użytkownika** – wszelkie treści wprowadzane lub przesyłane przez Użytkownika w Serwisie, w szczególności: przepisy, nazwy, opisy, składniki, kroki, wskazówki, tagi, zdjęcia.
 4. **Przepis** – Treść Użytkownika w postaci receptury kulinarnej zapisywanej w Serwisie.
-5. **Przepis Publiczny** – Przepis oznaczony jako „Publiczny” (widoczny publicznie w katalogu publicznym), po zatwierdzeniu przez administratora zgodnie z Regulaminem.
+5. **Przepis Publiczny** – Przepis oznaczony jako „Publiczny”, widoczny publicznie w katalogu publicznym.
 6. **Użytkownik Premium** – Użytkownik, który opłaca abonament zapewniający dostęp do funkcji premium.
 7. **Funkcje AI** – funkcje oparte na modelach sztucznej inteligencji, w szczególności: asystowane dodawanie przepisu na podstawie tekstu/obrazu oraz generowanie zdjęć.
 
@@ -37,7 +37,7 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
    - rejestrację i logowanie do Konta (z weryfikacją adresu e-mail),
    - tworzenie, edycję i usuwanie Przepisów,
    - organizację Przepisów (kategorie, tagi, kolekcje),
-   - wybór widoczności Przepisów (w tym publikację w katalogu publicznym po zatwierdzeniu),
+   - wybór widoczności Przepisów, w tym publikację w katalogu publicznym,
    - wyszukiwanie Przepisów,
    - funkcję „Mój plan” oraz listę zakupów (jeśli dostępne w danej wersji Serwisu),
    - Funkcje AI (jeśli dostępne w danej wersji Serwisu), w tym funkcje premium.
@@ -75,9 +75,8 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
 ## 8. Widoczność Przepisów i katalog publiczny
 
 1. Serwis może umożliwiać ustawienie widoczności Przepisu, w tym oznaczenie go jako „Publiczny”.
-2. **Oznaczenie Przepisu jako „Publiczny” jest równoznaczne z wnioskiem Użytkownika o publikację i wymaga akceptacji administratora Serwisu.** Do czasu akceptacji Przepis nie jest traktowany jako Przepis Publiczny i może pozostać niewidoczny publicznie.
+2. Oznaczenie Przepisu jako „Publiczny” powoduje jego natychmiastowe opublikowanie w katalogu publicznym Serwisu. Usługodawca zastrzega sobie prawo do wycofania Przepisu Publicznego z katalogu w przypadku stwierdzenia naruszeń Regulaminu lub prawa.
 3. Usługodawca zastrzega sobie prawo do:
-   - **odmowy publikacji** Przepisu jako Publicznego (w szczególności, gdy istnieje uzasadnione podejrzenie naruszenia prawa lub Regulaminu),
    - **wycofania** Przepisu Publicznego z katalogu publicznego (czasowo lub trwale), w szczególności w razie zgłoszeń lub stwierdzenia naruszeń.
 4. **Przeredagowanie Przepisu Publicznego (redakcja językowa):**
    1. Użytkownik przyjmuje do wiadomości i akceptuje, że w związku z publikacją Przepisu Publicznego Usługodawca może dokonać przeredagowania treści Przepisu w celu:
@@ -107,10 +106,7 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
    - wymagają weryfikacji przez Użytkownika przed zapisaniem/udostępnieniem,
    - mogą różnić się w zależności od danych wejściowych i ograniczeń technologii.
 3. Użytkownik zobowiązuje się nie wykorzystywać Funkcji AI w sposób naruszający prawo lub prawa osób trzecich (w szczególności poprzez generowanie lub publikowanie treści bezprawnych).
-4. **Limity generowania (placeholder):**
-   1. Generowanie zdjęć AI może podlegać limitom ilościowym.
-   2. Dla Użytkowników Premium limit wynosi: **\<X\> obrazów miesięcznie**.
-   3. Usługodawca może zmieniać limity z ważnych przyczyn (np. koszty usług zewnętrznych, nadużycia, bezpieczeństwo), z poszanowaniem praw Użytkowników Premium.
+4. Funkcje AI podlegają limitom ilościowym uzależnionym od posiadanego planu. Aktualne limity dla planów Free i Premium są prezentowane w Serwisie na stronie `/pricing`. Usługodawca może zmieniać limity z ważnych przyczyn (np. koszty usług zewnętrznych, nadużycia), z poszanowaniem praw Użytkowników Premium.
 
 ## 11. Premium (abonament)
 
@@ -118,7 +114,7 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
 2. Status Użytkownika Premium jest przyznawany po opłaceniu abonamentu zgodnie z ofertą prezentowaną w Serwisie (lub w innym uzgodnionym kanale sprzedaży).
 3. Szczegółowe warunki abonamentu (cena, okres rozliczeniowy, odnowienia, metody płatności, faktury, rezygnacja, zwroty) są określone w:
    - opisie oferty w Serwisie oraz/lub
-   - odrębnych warunkach płatności (\<LINK_DO_WARUNKÓW_PŁATNOŚCI – jeśli dotyczy\>).
+   - regulaminie subskrypcji dostępnym pod adresem `/legal/subscription`.
 4. W razie sprzeczności pomiędzy Regulaminem a warunkami płatności – w zakresie płatności i rozliczeń – pierwszeństwo mają warunki płatności.
 
 ## 12. Odpowiedzialność
@@ -140,11 +136,11 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
    - ograniczać widoczność Przepisów,
    - blokować czasowo lub trwale Konto.
 2. Usługodawca może zastosować sankcje w szczególności w przypadku naruszeń Regulaminu lub prawa.
-3. Zgłoszenia naruszeń oraz kontakt w sprawach związanych z Treściami Użytkownika można kierować na adres e-mail: \<EMAIL\>.
+3. Zgłoszenia naruszeń oraz kontakt w sprawach związanych z Treściami Użytkownika można kierować na adres e-mail: kontakt@pychaswiatowa.pl.
 
 ## 14. Reklamacje i kontakt
 
-1. Reklamacje dotyczące działania Serwisu można składać drogą elektroniczną na adres: \<EMAIL\>.
+1. Reklamacje dotyczące działania Serwisu można składać drogą elektroniczną na adres: kontakt@pychaswiatowa.pl.
 2. Reklamacja powinna zawierać co najmniej: dane identyfikujące Użytkownika (np. e-mail), opis problemu oraz – o ile to możliwe – okoliczności jego wystąpienia.
 3. Usługodawca udzieli odpowiedzi w rozsądnym terminie, nie dłuższym niż 14 dni, o ile bezwzględnie obowiązujące przepisy nie stanowią inaczej.
 

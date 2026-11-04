@@ -19,6 +19,11 @@
         color: var(--mat-sys-error);
         font: var(--mat-sys-body-small);
     }
+
+    &__privacy {
+        margin: 0;
+        font: var(--mat-sys-body-small);
+    }
 }
 
 .consent--invalid {

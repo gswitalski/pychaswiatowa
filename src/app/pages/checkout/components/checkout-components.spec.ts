@@ -62,6 +62,20 @@ describe('Komponenty prezentacyjne checkoutu', () => {
         expect(fixture.nativeElement.textContent).toContain('Zaznacz obie wymagane zgody.');
     });
 
+    it('powinien zawierać linki do regulaminu subskrypcji i polityki prywatności', () => {
+        const fixture = TestBed.createComponent(CheckoutConsentsComponent);
+        fixture.componentRef.setInput('acceptedTerms', false);
+        fixture.componentRef.setInput('acceptedDigitalWaiver', false);
+        fixture.detectChanges();
+
+        const links = Array.from(fixture.nativeElement.querySelectorAll('a')).map(
+            (link: HTMLAnchorElement) => link.getAttribute('href'),
+        );
+
+        expect(links).toContain('/legal/subscription');
+        expect(links).toContain('/legal/privacy');
+    });
+
     it('powinien emitować żądanie płatności tylko dla aktywnego przycisku', () => {
         const fixture = TestBed.createComponent(OrderSummaryComponent);
         const pay = vi.fn();

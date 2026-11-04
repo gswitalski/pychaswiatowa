@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 interface LegalLinkVm {
     label: string;
     path: string;
+    fragment?: string;
     ariaLabel?: string;
 }
 
@@ -22,14 +23,13 @@ export class FooterComponent {
     readonly currentYear = new Date().getFullYear();
 
     readonly legalLinks: LegalLinkVm[] = [
-        { label: 'O nas', path: '#' },
-        { label: 'FAQ', path: '#' },
+        { label: 'FAQ', path: '/pricing', fragment: 'faq' },
         // { label: 'Kontakt', path: '#' },
         { label: 'Cennik', path: '/pricing' },
         { label: 'Regulamin subskrypcji', path: '/legal/subscription' },
         { label: 'Regulamin Serwisu', path: '/legal/terms' },
         // { label: 'Wyłączenie odpowiedzialności', path: '#' },
         { label: 'Polityka prywatności', path: '/legal/privacy' },
-        // { label: 'Wydawca serwisu', path: '/legal/publisher' },
+        { label: 'Wydawca serwisu', path: '/legal/publisher' },
     ];
 }

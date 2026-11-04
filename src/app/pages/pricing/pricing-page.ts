@@ -2,12 +2,15 @@ import {
     ChangeDetectionStrategy,
     Component,
     OnInit,
+    afterNextRender,
     computed,
     inject,
     signal,
 } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { CurrencyPipe, ViewportScroller } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { skip } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -44,6 +47,8 @@ import {
 export class PricingPageComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly subscriptionState = inject(SubscriptionStateService);
+    private readonly route = inject(ActivatedRoute);
+    private readonly viewportScroller = inject(ViewportScroller);
 
     readonly billingPeriod = signal<BillingPeriod>('yearly');
     readonly isAuthenticated = this.authService.isAuthenticated;
@@ -71,6 +76,14 @@ export class PricingPageComponent implements OnInit {
 
     readonly showPremiumCta = computed(() => this.appRole() !== 'admin');
 
+    constructor() {
+        afterNextRender(() => this.scrollToFragment());
+
+        this.route.fragment.pipe(skip(1), takeUntilDestroyed()).subscribe(() => {
+            requestAnimationFrame(() => this.scrollToFragment());
+        });
+    }
+
     ngOnInit(): void {
         if (this.appRole() === 'premium') {
             void this.subscriptionState.ensureLoaded();
@@ -79,5 +92,14 @@ export class PricingPageComponent implements OnInit {
 
     setBillingPeriod(period: BillingPeriod): void {
         this.billingPeriod.set(period);
+    }
+
+    private scrollToFragment(): void {
+        const fragment = this.route.snapshot.fragment;
+        if (!fragment || !document.getElementById(fragment)) {
+            return;
+        }
+
+        this.viewportScroller.scrollToAnchor(fragment);
     }
 }

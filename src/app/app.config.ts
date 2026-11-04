@@ -8,7 +8,7 @@ import {
 import { provideHttpClient } from '@angular/common/http';
 import { registerLocaleData } from '@angular/common';
 import localePl from '@angular/common/locales/pl';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { MatPaginatorIntl } from '@angular/material/paginator';
 import { provideMarkdown } from 'ngx-markdown';
 
@@ -26,7 +26,7 @@ export const appConfig: ApplicationConfig = {
         provideAnimations(),
         provideHttpClient(),
         provideMarkdown(),
-        provideRouter(routes),
+        provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled' })),
         { provide: LOCALE_ID, useValue: 'pl' },
         { provide: MatPaginatorIntl, useClass: PolishPaginatorIntl },
         // Initialize auth state at app startup

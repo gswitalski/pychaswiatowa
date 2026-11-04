@@ -1,8 +1,7 @@
 # Polityka prywatności serwisu „PychaŚwiatowa”
 
-> **Wersja:** 0.1 (MVP)  
-> **Data publikacji:** \<YYYY-MM-DD\>  
-> **Ostatnia aktualizacja:** \<YYYY-MM-DD\>  
+> **Data publikacji:** 04.11.2026
+> **Ostatnia aktualizacja:** 04.11.2026
 
 Niniejsza Polityka prywatności („**Polityka**”) opisuje zasady przetwarzania danych osobowych oraz informacje o plikach cookies i podobnych technologiach w związku z korzystaniem z serwisu internetowego „PychaŚwiatowa” („**Serwis**”).
 
@@ -14,11 +13,11 @@ Polityka jest powiązana z dokumentem „Regulamin serwisu PychaŚwiatowa” dos
 
 1. Administratorem Twoich danych osobowych jest:
     - **Forma prawna:** jednoosobowa działalność gospodarcza (JDG)  
-    - **Nazwa firmy:** \<NAZWA_FIRMY\>  
-    - **Adres:** \<ADRES\>  
-    - **NIP:** \<NIP\>  
-    - **E-mail kontaktowy:** \<EMAIL\>  
-2. Kontakt w sprawach ochrony danych osobowych: **\<EMAIL\>** (na tym etapie: ten sam adres, co kontaktowy).
+    - **Nazwa firmy:** Aneta Zajfert-Świtalska
+    - **Adres:** ul. Jasia i Małgosi 8, 55-002 Kamieniec Wrocławski, Polska
+    - **NIP:** 8991394492
+    - **E-mail kontaktowy:** kontakt@pychaswiatowa.pl
+2. Kontakt w sprawach ochrony danych osobowych: kontakt@pychaswiatowa.pl.
 
 ---
 
@@ -89,7 +88,7 @@ Poniżej wskazujemy główne cele przetwarzania danych oraz podstawy prawne zgod
     - **Podstawa prawna:** art. 6 ust. 1 lit. b RODO (umowa) oraz art. 6 ust. 1 lit. c RODO (obowiązki prawne, np. podatkowe/rachunkowe — jeśli dotyczy).
 6. **Marketing i komunikacja marketingowa**
     - **Cel:** wysyłka powiadomień marketingowych (np. informacje o nowościach, funkcjach, promocjach).
-    - **Kanały (planowane):** e-mail i/lub powiadomienia w Serwisie (\<DOPRECYZUJ KANAŁY\>).
+    - **Kanały (planowane):** e-mail.
     - **Podstawa prawna:** co do zasady art. 6 ust. 1 lit. a RODO (zgoda) — oraz dodatkowo wymogi prawa telekomunikacyjnego/ustawy o świadczeniu usług drogą elektroniczną dla komunikacji elektronicznej (w zależności od kanału i treści).  
     - Zgodę możesz w każdej chwili wycofać (szczegóły: rozdział o prawach).
 7. **Analityka (Google Analytics)**
@@ -124,7 +123,7 @@ W związku z działaniem Serwisu Twoje dane mogą być przekazywane następując
     - Operator płatności: \<OPERATOR_PŁATNOŚCI\>  
     - Dane przekazywane operatorowi zależą od wdrożenia, ale zwykle obejmują identyfikatory transakcji, kwoty, statusy płatności, oraz niezbędne dane do obsługi płatności i zwrotów.
 6. **Hosting frontendu / CDN**
-    - Serwis może być hostowany na platformie typu \<HOSTING_FRONTEND\> (np. Firebase Hosting) oraz korzystać z CDN w celu poprawy wydajności.
+    - Serwis jest hostowany w Firebase Hosting (Google Ireland Limited / Google LLC) i może korzystać z CDN w celu poprawy wydajności.
 7. **Uprawnione organy publiczne**
     - Gdy jest to wymagane prawem (np. na żądanie sądu, organów ścigania).
 
@@ -140,20 +139,21 @@ Jeżeli dochodzi do transferu danych poza EOG, stosujemy odpowiednie zabezpiecze
 - **standardowe klauzule umowne (SCC)** zatwierdzone przez Komisję Europejską, i/lub
 - inne mechanizmy legalizujące transfer przewidziane przez RODO (w zależności od dostawcy i konfiguracji).
 
-\<DODAJ: KRÓTKI OPIS MECHANIZMÓW DLA KONKRETNYCH DOSTAWCÓW, GDY WYBIERZESZ FINALNĄ KONFIGURACJĘ\>
+W przypadku dostawców wymagających transferu poza EOG stosujemy standardowe
+klauzule umowne (SCC): OpenAI oraz Google (Gemini i Analytics). Supabase
+korzysta z infrastruktury w UE, w regionie AWS `eu-central-1`.
 
 ---
 
 ## 7. Okres przechowywania danych (retencja)
 
 1. **Dane konta** przechowujemy przez czas posiadania konta w Serwisie.
-2. **Treści użytkownika** (przepisy, kolekcje, plan, lista zakupów) przechowujemy przez czas posiadania konta lub do ich usunięcia w Serwisie (zależnie od funkcji).
+2. **Treści użytkownika** (przepisy, kolekcje, plan, lista zakupów) przechowujemy przez czas posiadania konta. Skutek usunięcia przepisu opisuje pkt 7.
 3. **Publiczne przepisy** pozostają publiczne do czasu zmiany widoczności przez autora lub usunięcia przepisu (zależnie od funkcji Serwisu).
 4. **Dane płatnicze/rozliczeniowe** przechowujemy przez okres wymagany przepisami prawa (np. podatkowymi/rachunkowymi), o ile dotyczy.
 5. **Logi techniczne i bezpieczeństwa** przechowujemy co do zasady przez **12 miesięcy**, chyba że dłuższy okres jest potrzebny do wyjaśnienia incydentu bezpieczeństwa lub obrony roszczeń.
 6. **Kopie zapasowe** mogą zawierać Twoje dane przez okres do **30 dni** (rotacja backupów). Dane w backupach są nadpisywane cyklicznie.
-
-\<UWAGA WDROŻENIOWA\>: jeśli wdrożysz „soft delete” lub inne mechanizmy, uzupełnij to w tej sekcji, aby opis retencji odpowiadał rzeczywistemu działaniu.
+7. **Usunięte przepisy** przestają być widoczne i dostępne w Serwisie. Nie są od razu trwale kasowane z bazy danych i mogą pozostać zapisane do czasu odrębnego, trwałego usunięcia. Serwis nie usuwa ich automatycznie po upływie z góry określonej liczby dni.
 
 ---
 
@@ -168,7 +168,7 @@ W granicach przewidzianych przez RODO przysługują Ci prawa:
 6. wniesienia sprzeciwu (gdy podstawą jest uzasadniony interes),
 7. cofnięcia zgody w dowolnym momencie (gdy podstawą jest zgoda) — cofnięcie zgody nie wpływa na zgodność z prawem przetwarzania przed cofnięciem.
 
-Aby skorzystać z praw, skontaktuj się z nami: **\<EMAIL\>**.
+Aby skorzystać z praw, skontaktuj się z nami: **kontakt@pychaswiatowa.pl**.
 
 Masz również prawo wniesienia skargi do organu nadzorczego: **Prezesa Urzędu Ochrony Danych Osobowych (UODO)**.
 
@@ -219,13 +219,14 @@ Serwis może korzystać z:
 
 1. Korzystamy z **Google Analytics** w celu analizy korzystania z Serwisu i jego ulepszania.
 2. Dane zbierane przez Google Analytics mogą obejmować m.in.: identyfikatory online, informacje o urządzeniu/przeglądarce, zdarzenia w Serwisie, przybliżoną lokalizację (zależnie od konfiguracji).
-3. Google Analytics uruchamiamy:
-    - \<WARIANT A — REKOMENDOWANY\>: **dopiero po wyrażeniu zgody** w banerze cookies (zgoda może być w każdej chwili wycofana), albo
-    - \<WARIANT B\>: w innej konfiguracji zgodnej z prawem (do uzupełnienia po wdrożeniu).
+3. Google Analytics uruchamiamy **dopiero po wyrażeniu zgody** w banerze cookies
+   (Clickio Consent Manager). Zgodę możesz wycofać w dowolnym momencie przez
+   panel ustawień cookies dostępny na każdej stronie Serwisu.
 
 ### 13.3. Zarządzanie zgodami / ustawieniami cookies
 
-W Serwisie udostępniamy mechanizm zarządzania cookies: \<OPIS_MECHANIZMU_ZGÓD / LINK_DO_USTAWIEŃ\>.
+W Serwisie udostępniamy Clickio Consent Manager w banerze cookies na każdej
+stronie Serwisu.
 
 ---
 
@@ -234,8 +235,8 @@ W Serwisie udostępniamy mechanizm zarządzania cookies: \<OPIS_MECHANIZMU_ZGÓD
 1. Jeżeli wyrazisz zgodę, możemy wysyłać Ci powiadomienia marketingowe (np. o nowych funkcjach, treściach, promocjach).
 2. Zgodę możesz w każdej chwili wycofać:
     - poprzez link rezygnacji w wiadomości e-mail (jeśli dotyczy) i/lub
-    - poprzez ustawienia konta w Serwisie: \<LINK/ŚCIEŻKA\> i/lub
-    - kontaktując się z nami: **\<EMAIL\>**.
+    - poprzez ustawienia konta w Serwisie: `/settings` i/lub
+    - kontaktując się z nami: **kontakt@pychaswiatowa.pl**.
 
 ---
 
@@ -247,5 +248,5 @@ Możemy aktualizować Politykę z ważnych przyczyn, w szczególności w razie z
 
 ## 16. Kontakt
 
-W sprawach prywatności skontaktujesz się z nami pod adresem: **\<EMAIL\>**.
+W sprawach prywatności skontaktujesz się z nami pod adresem: **kontakt@pychaswiatowa.pl**.
 
