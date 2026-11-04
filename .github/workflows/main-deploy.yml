@@ -48,7 +48,7 @@ jobs:
 
       - name: Push database migrations
         run: |
-          supabase db push --remote
+          supabase db push --remote --yes
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -70,22 +70,22 @@ jobs:
       - name: Deploy Edge Functions
         run: |
           # Public/anon endpoints must skip JWT verification
-          supabase functions deploy explore --no-verify-jwt
-          supabase functions deploy public --no-verify-jwt
+          supabase functions deploy --yes explore --no-verify-jwt
+          supabase functions deploy --yes public --no-verify-jwt
           # Auth-required endpoints keep default JWT verification
-          supabase functions deploy admin
-          supabase functions deploy ai
-          supabase functions deploy categories
-          supabase functions deploy collections
-          supabase functions deploy me
-          supabase functions deploy plan
-          supabase functions deploy profile
-          supabase functions deploy recipes
-          supabase functions deploy search
-          supabase functions deploy tags
+          supabase functions deploy --yes admin
+          supabase functions deploy --yes ai
+          supabase functions deploy --yes categories
+          supabase functions deploy --yes collections
+          supabase functions deploy --yes me
+          supabase functions deploy --yes plan
+          supabase functions deploy --yes profile
+          supabase functions deploy --yes recipes
+          supabase functions deploy --yes search
+          supabase functions deploy --yes tags
           # Internal worker uses custom auth (not JWT) - must skip Supabase JWT verification
-          supabase functions deploy internal --no-verify-jwt
-          supabase functions deploy shopping-list
+          supabase functions deploy --yes internal --no-verify-jwt
+          supabase functions deploy --yes shopping-list
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
