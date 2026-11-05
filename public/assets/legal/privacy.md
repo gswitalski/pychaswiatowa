@@ -113,8 +113,8 @@ W związku z działaniem Serwisu Twoje dane mogą być przekazywane następując
 2. **Przechowywanie i serwowanie zdjęć**
     - Zdjęcia przepisów są przechowywane w usłudze storage (w ramach Supabase Storage lub równoważnej konfiguracji).
 3. **Dostawcy AI**
-    - **OpenAI** — dostawca modeli wykorzystywanych m.in. do generowania zdjęć (`gpt-image-1.5`) oraz/lub do funkcji AI przetwarzających treści przepisu.
-    - **Google (Gemini)** — dostawca modeli wykorzystywanych do części funkcji AI.  
+    - **OpenAI** — dostawca modeli wykorzystywanych do funkcji AI przetwarzających treści przepisu (szkic przepisu, normalizacja składników).
+    - **Google (Gemini)** — dostawca modelu `gemini-3-pro-image-preview` wykorzystywanego do generowania zdjęć przepisów (z referencją i bez niej) oraz części pozostałych funkcji AI.  
     - **Założenie (zgodnie z Twoją decyzją):** dane przesyłane do dostawców AI **nie są wykorzystywane do trenowania modeli** (na podstawie konfiguracji/warunków dostawców).  
     - W ramach funkcji AI do dostawców mogą trafić dane wejściowe takie jak: tekst przepisu, obraz wklejony przez użytkownika, fragmenty formularza przepisu (zakres zależy od konkretnej funkcji).
 4. **Analityka**

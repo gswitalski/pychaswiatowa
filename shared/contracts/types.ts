@@ -1316,7 +1316,7 @@ export interface RefreshRecipeNormalizedIngredientsResponseDto {
 /**
  * Allowed output MIME types for AI recipe image generation.
  */
-export type AiRecipeImageMimeType = 'image/webp' | 'image/png';
+export type AiRecipeImageMimeType = 'image/webp' | 'image/png' | 'image/jpeg';
 
 /**
  * AI recipe image generation mode.

@@ -63,9 +63,13 @@ export const MAX_RECIPE_CONTENT_ITEMS = 200;
 /** Maximum total payload size for recipe image request (characters) */
 export const MAX_IMAGE_REQUEST_PAYLOAD_SIZE = 4_000_000;
 
-/** Allowed output MIME types for recipe image (MVP: only webp via gpt-image-1) */
+/** Output MIME types the client may request (MVP request contract) */
 export const ALLOWED_IMAGE_OUTPUT_MIME_TYPES = ['image/webp'] as const;
 export type AllowedImageOutputMimeType = typeof ALLOWED_IMAGE_OUTPUT_MIME_TYPES[number];
+
+/** MIME types Gemini may return and the API passes through */
+export const AI_RECIPE_IMAGE_RESPONSE_MIME_TYPES = ['image/webp', 'image/png', 'image/jpeg'] as const;
+export type AiRecipeImageResponseMimeType = typeof AI_RECIPE_IMAGE_RESPONSE_MIME_TYPES[number];
 
 /** Fixed output dimensions for recipe image (MVP) */
 export const IMAGE_OUTPUT_WIDTH = 1024;
@@ -506,7 +510,7 @@ export interface AiRecipeImageMeta {
  */
 export interface AiRecipeImageResponseDto {
     image: {
-        mime_type: AllowedImageOutputMimeType;
+        mime_type: AiRecipeImageResponseMimeType;
         data_base64: string;
     };
     meta: AiRecipeImageMeta;

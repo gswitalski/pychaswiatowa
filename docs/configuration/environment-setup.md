@@ -31,8 +31,8 @@ Następnie wklej powyższe zmienne i zapisz plik.
 ### Zmienne wymagane dla AI Services
 
 Funkcje AI wymagają kluczy API do generowania draftów przepisów i obrazów:
-- **OpenAI API** - dla generowania draftów i obrazów w trybie `recipe_only`
-- **Gemini API** - dla generowania obrazów w trybie `with_reference` (z obrazem referencyjnym)
+- **OpenAI API** - dla generowania draftów przepisów i normalizacji składników
+- **Gemini API** - dla generowania obrazów w obu trybach (`recipe_only` i `with_reference`)
 
 #### Środowisko lokalne
 
@@ -90,19 +90,14 @@ supabase secrets list
 - Implementacja zawiera timeout 30s i obsługę rate limiting (429)
 
 #### AI Recipe Image (`/ai/recipes/image`) - Premium Feature
-- Endpoint używa dwóch modeli w zależności od trybu:
-  - **`recipe_only`**: OpenAI `gpt-image-1.5` (generacja z tekstu przepisu)
-  - **`with_reference`**: Google Gemini `gemini-3-pro-image-preview` (generacja z obrazem referencyjnym)
+- Endpoint używa Google Gemini `gemini-3-pro-image-preview` w obu trybach:
+  - **`recipe_only`**: generacja z tekstu przepisu
+  - **`with_reference`**: generacja z obrazem referencyjnym
 - **UWAGA**: Generacja obrazów jest droższa niż generacja tekstu
-- Koszty:
-  - OpenAI: sprawdź aktualne ceny na [OpenAI Pricing](https://openai.com/pricing)
-  - Gemini: darmowy plan obejmuje ~50-1500 zapytań dziennie (zależnie od modelu)
-- Implementacja zawiera:
-  - OpenAI: timeout 60s
-  - Gemini: timeout 90s (3x dłuższy ze względu na przetwarzanie obrazów)
-  - Obsługa rate limiting (429)
+- Koszty Gemini: darmowy plan obejmuje ~50-1500 zapytań dziennie (zależnie od modelu)
+- Implementacja zawiera timeout 90s i obsługę rate limiting (429)
 - Dostępne tylko dla użytkowników z `app_role: premium` lub `admin`
-- Zwraca obraz w formacie WebP (base64, 1024x1024)
+- Zwraca obraz w formacie zwróconym przez Gemini (PNG, JPEG lub WebP), base64
 
 ## Uwagi
 

@@ -81,7 +81,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 - "Mój plan" — trwała lista do 50 przepisów (Free: do 3, PS-65), powiązana z listą zakupów
 - Lista zakupów — pozycje z przepisów (znormalizowane składniki) + ręczne wpisy
 - Import przepisu z Markdown (bez LLM, wszyscy zalogowani) oraz asystowane dodawanie z AI (tekst/obraz → formularz). API draftu rozlicza kredyty `draft` (także rola `user`); ekran asysty w UI nadal tylko `premium`/`admin`
-- Generowanie zdjęć AI (**premium/admin**, pula kredytów `image`) — model `gpt-image-1.5`; tryb z referencją (Gemini); możliwe przed pierwszym zapisem przepisu
+- Generowanie zdjęć AI (**premium/admin**, pula kredytów `image`) — model Gemini `gemini-3-pro-image-preview` (bez referencji i z referencją); możliwe przed pierwszym zapisem przepisu
 - Publiczny portal: landing z wyszukiwaniem, katalog `/explore` z chipami filtrów (Termorobot, Grill, dieta, dla zalogowanych flagi PS-95), kanoniczne URL ze slugiem
 - Publiczny cennik `/pricing` (Free vs Premium, ceny statyczne) i zapowiedź płatności na `/checkout`; sprzedaż subskrypcji jeszcze nie działa
 - Kredyty AI per użytkownik: Free dożywotnie, Premium miesięcznie, admin bez limitu; podgląd w ustawieniach i korekta w panelu admina
@@ -141,7 +141,7 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-031 | Przepisy kolekcji bez paginacji | Jednorazowe ładowanie (limit techniczny 500). |
 | US-032 | Ikonka widoczności na liście | Ikona Prywatny/Współdzielony/Publiczny z tooltipem, tylko dla autora. |
 | US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz wraz z porcjami, czasami, klasyfikacją i flagami. Metadane są normalizowane tolerancyjnie. Rozliczenie kredytów `draft` (`402` przy wyczerpaniu). Trasa UI `/recipes/new/assist` — `premium`/`admin`; endpoint przyjmuje też rolę `user`. |
-| US-037 | Generowanie zdjęcia AI | Przycisk AI w edycji/kreatorze, podgląd, akceptacja, `gpt-image-1.5`, 1024x1024 webp. `premium`/`admin` plus pula kredytów `image`. Możliwe przed zapisem przepisu. |
+| US-037 | Generowanie zdjęcia AI | Przycisk AI w edycji/kreatorze, podgląd, akceptacja, Gemini `gemini-3-pro-image-preview`. `premium`/`admin` plus pula kredytów `image`. Możliwe przed zapisem przepisu. |
 | PS-64 | Kredyty AI | Osobne pule draft i zdjęcie. Free: limit dożywotni; Premium: miesięczny (reset cron); admin: bez limitu. Wskaźnik, dialog wyczerpania, sekcja w `/settings`, korekta w panelu admina. |
 | US-038 | Dodanie do "Mojego planu" | Przycisk na szczegółach, limit 50 (Free: 3 — PS-65, dialog z CTA do `/pricing`), stany: dodaj/spinner/zobacz listę. |
 | PS-65 | Limit planu dla Free | Rola `user`: max 3 pozycje (`PLAN_LIMIT_FREE`), `422 PLAN_LIMIT_EXCEEDED_FREE`, dialog, licznik w drawerze. Premium/admin: 50. Bez usuwania nadmiarowych pozycji. |
@@ -213,8 +213,8 @@ Historyjki monetyzacji `PREM-001` … (entitlements, checkout płatności) są w
 
 ### AI (zewnętrzne API)
 
-- **OpenAI** — draft przepisu, normalizacja składników, generowanie zdjęcia (`gpt-image-1.5`)
-- **Gemini** — generowanie zdjęcia z obrazem referencyjnym
+- **OpenAI** — draft przepisu, normalizacja składników
+- **Gemini** — generowanie zdjęcia (`gemini-3-pro-image-preview`), bez referencji i z obrazem referencyjnym
 
 ---
 

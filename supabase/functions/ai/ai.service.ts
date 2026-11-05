@@ -24,6 +24,7 @@ import {
     AiRecipeDraftErrorResponseSchema,
     AiRecipeDraftLlmResponseSchema,
     AiRecipeDraftResponseDto,
+    AiRecipeImageResponseMimeType,
     AiRecipeImageStyleContract,
     GenerateNormalizedIngredientsParams,
     GenerateRecipeDraftParams,
@@ -1306,23 +1307,12 @@ export async function generateRecipeDraft(
 
 // #region --- Recipe Image Generation ---
 
-/** OpenAI Images API endpoint */
-const IMAGES_API_URL = "https://api.openai.com/v1/images/generations";
-
-/** Image generation model to use (gpt-image-1 for webp output support) */
-const IMAGE_MODEL = "gpt-image-1.5";
-
-/** Timeout for Image API calls in milliseconds */
-const IMAGE_API_TIMEOUT_MS = 60_000;
-
 // #region --- Gemini API Constants ---
 
-/** Gemini API endpoint (for image-to-image generation) */
+/** Gemini API endpoint for recipe image generation (text-to-image and image-to-image) */
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-/** Gemini image generation model (image-to-image with reference) */
-// Note: Use latest stable model from Gemini documentation
-// const GEMINI_IMAGE_MODEL = "gemini-2.0-flash-exp";
+/** Model for both recipe_only and with_reference image generation */
 const GEMINI_IMAGE_MODEL = "gemini-3-pro-image-preview";
 
 
@@ -1627,126 +1617,17 @@ Generate the new photograph now based on the reference image and these instructi
 }
 
 /**
- * Calls OpenAI Images API to generate an image.
- * Uses gpt-image-1 model with webp output format (MVP configuration).
+ * Calls Gemini image generation (`gemini-3-pro-image-preview`).
+ * With a reference image the call is image-to-image; without it, text-to-image.
  *
  * @param prompt - The image generation prompt
- * @returns Base64 encoded webp image data
- * @throws ApplicationError on API or processing errors
- */
-async function callImageAPI(prompt: string): Promise<string> {
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
-
-    if (!apiKey) {
-        logger.error("OpenAI API key not configured");
-        throw new ApplicationError(
-            "INTERNAL_ERROR",
-            "AI image service is not configured",
-        );
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), IMAGE_API_TIMEOUT_MS);
-
-    try {
-        const response = await fetch(IMAGES_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: IMAGE_MODEL,
-                prompt: prompt,
-                n: 1,
-                size: "1024x1024",
-                output_format: "webp",
-                background: "auto",
-                quality: "auto",
-            }),
-            signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            logger.error("Image API error", {
-                status: response.status,
-                body: errorBody.substring(0, 500),
-            });
-
-            if (response.status === 429) {
-                throw new ApplicationError(
-                    "TOO_MANY_REQUESTS",
-                    "AI image service rate limit exceeded. Please try again later.",
-                );
-            }
-
-            if (response.status === 400) {
-                // Content policy violation or bad request
-                throw new ApplicationError(
-                    "VALIDATION_ERROR",
-                    "Image generation request was rejected. The recipe content may violate content policies.",
-                );
-            }
-
-            throw new ApplicationError(
-                "INTERNAL_ERROR",
-                "AI image service temporarily unavailable",
-            );
-        }
-
-        const data = await response.json();
-        // gpt-image-1 returns b64_json in data[0].b64_json
-        const imageData = data.data?.[0]?.b64_json;
-
-        if (!imageData) {
-            logger.error("Empty image response from Image API", { data });
-            throw new ApplicationError(
-                "INTERNAL_ERROR",
-                "AI image service returned empty response",
-            );
-        }
-
-        return imageData;
-    } catch (error) {
-        clearTimeout(timeoutId);
-
-        if (error instanceof ApplicationError) {
-            throw error;
-        }
-
-        if (error instanceof Error && error.name === "AbortError") {
-            logger.error("Image API timeout");
-            throw new ApplicationError(
-                "INTERNAL_ERROR",
-                "AI image service request timed out",
-            );
-        }
-
-        logger.error("Image API request failed", {
-            error: error instanceof Error ? error.message : "Unknown error",
-        });
-        throw new ApplicationError(
-            "INTERNAL_ERROR",
-            "Failed to connect to AI image service",
-        );
-    }
-}
-
-/**
- * Calls Gemini API for image-to-image generation.
- * Takes a prompt and a reference image, returns a newly generated image.
- *
- * @param prompt - The image generation prompt
- * @param referenceImage - Reference image data (bytes + mimeType)
+ * @param referenceImage - Optional reference image (bytes + mimeType)
  * @returns Base64 encoded image data and mime type
  * @throws ApplicationError on API or processing errors
  */
 async function callGeminiImageAPI(
     prompt: string,
-    referenceImage: ReferenceImageData,
+    referenceImage?: ReferenceImageData,
 ): Promise<{ imageBase64: string; mimeType: string }> {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
@@ -1758,29 +1639,30 @@ async function callGeminiImageAPI(
         );
     }
 
-    // Convert image bytes to base64
-    const CHUNK_SIZE = 8192;
-    let binaryString = "";
-    for (let i = 0; i < referenceImage.bytes.length; i += CHUNK_SIZE) {
-        const chunk = referenceImage.bytes.slice(i, i + CHUNK_SIZE);
-        binaryString += String.fromCharCode(...chunk);
-    }
-    const imageBase64 = btoa(binaryString);
+    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
+        { text: prompt },
+    ];
 
-    // Build Gemini API payload (image-to-image format)
-    // Note: Gemini REST API uses camelCase for field names
+    if (referenceImage) {
+        const CHUNK_SIZE = 8192;
+        let binaryString = "";
+        for (let i = 0; i < referenceImage.bytes.length; i += CHUNK_SIZE) {
+            const chunk = referenceImage.bytes.slice(i, i + CHUNK_SIZE);
+            binaryString += String.fromCharCode(...chunk);
+        }
+
+        parts.push({
+            inlineData: {
+                mimeType: referenceImage.mimeType,
+                data: btoa(binaryString),
+            },
+        });
+    }
+
     const geminiPayload = {
         contents: [
             {
-                parts: [
-                    { text: prompt },
-                    {
-                        inlineData: {
-                            mimeType: referenceImage.mimeType,
-                            data: imageBase64,
-                        },
-                    },
-                ],
+                parts,
             },
         ],
         generationConfig: {
@@ -1789,10 +1671,11 @@ async function callGeminiImageAPI(
     };
 
     logger.info("Calling Gemini image API", {
+        model: GEMINI_IMAGE_MODEL,
         promptLength: prompt.length,
-        referenceMimeType: referenceImage.mimeType,
-        referenceSizeBytes: referenceImage.bytes.length,
-        hasInlineImageData: true,
+        hasReferenceImage: !!referenceImage,
+        referenceMimeType: referenceImage?.mimeType,
+        referenceSizeBytes: referenceImage?.bytes.length,
     });
 
     const controller = new AbortController();
@@ -1900,9 +1783,9 @@ async function callGeminiImageAPI(
  * This is a premium feature that creates a photorealistic image
  * of the dish described by the recipe data.
  *
- * Supports two modes:
+ * Both modes use Gemini (`gemini-3-pro-image-preview`):
  * - recipe_only: Generate from recipe text only (rustic style)
- * - with_reference: Generate with optional reference image (elegant style, no-copy constraint)
+ * - with_reference: Generate from recipe text and a reference image (elegant style, no-copy constraint)
  *
  * @param params - Generation parameters including recipe data, mode, and optional reference image
  * @returns ImageGenerationResult with either success data or failure reasons
@@ -1939,31 +1822,17 @@ export async function generateRecipeImage(
         };
     }
 
-    // Step 2: Generate image based on mode
-    let imageBase64: string;
-    let imageMimeType: string;
+    // Step 2: Build the mode-specific prompt, then generate with Gemini
+    let prompt: string;
 
     if (resolvedMode === 'recipe_only') {
-        // Recipe-only mode: use OpenAI Images API
-        const prompt = buildImagePromptRecipeOnly(recipe, promptHint, language);
-        logger.debug("Built recipe_only prompt", {
+        prompt = buildImagePromptRecipeOnly(recipe, promptHint, language);
+        logger.debug("Built recipe_only prompt for Gemini", {
             userId,
             recipeId: recipe.id,
             promptLength: prompt.length,
         });
-
-        // Call OpenAI Images API
-        imageBase64 = await callImageAPI(prompt);
-        imageMimeType = "image/webp";
-
-        logger.info("Recipe image generated successfully (OpenAI)", {
-            userId,
-            recipeId: recipe.id,
-            mode: resolvedMode,
-            imageSize: imageBase64.length,
-        });
     } else {
-        // with_reference mode: use Gemini API for image-to-image generation
         if (!referenceImage) {
             logger.error("with_reference mode requires a reference image", {
                 userId,
@@ -1975,58 +1844,61 @@ export async function generateRecipeImage(
             };
         }
 
-        // Build prompt for Gemini (image is passed directly)
-        const prompt = buildImagePromptWithReferenceGemini(recipe, promptHint, language);
-
+        prompt = buildImagePromptWithReferenceGemini(recipe, promptHint, language);
         logger.debug("Built with_reference prompt for Gemini", {
             userId,
             recipeId: recipe.id,
             promptLength: prompt.length,
         });
-
-        // Call Gemini API with both prompt and reference image
-        logger.info("Generating image with Gemini (image-to-image)", {
-            userId,
-            recipeId: recipe.id,
-            referenceImageSize: referenceImage.bytes.length,
-        });
-
-        const geminiResult = await callGeminiImageAPI(prompt, referenceImage);
-        imageBase64 = geminiResult.imageBase64;
-        imageMimeType = geminiResult.mimeType;
-
-        logger.info("Recipe image generated successfully (Gemini)", {
-            userId,
-            recipeId: recipe.id,
-            mode: resolvedMode,
-            imageSize: imageBase64.length,
-            mimeType: imageMimeType,
-        });
     }
+
+    const geminiResult = await callGeminiImageAPI(prompt, referenceImage);
+    const imageBase64 = geminiResult.imageBase64;
+    const imageMimeType = geminiResult.mimeType;
+
+    logger.info("Recipe image generated successfully (Gemini)", {
+        userId,
+        recipeId: recipe.id,
+        mode: resolvedMode,
+        model: GEMINI_IMAGE_MODEL,
+        imageSize: imageBase64.length,
+        mimeType: imageMimeType,
+    });
 
     // Step 3: Get style contract for the mode
     const styleContract = getStyleContract(resolvedMode);
 
-    // Step 4: Determine output mime type (normalize if needed)
-    // Gemini may return different formats, but we prefer webp
-    const outputMimeType = imageMimeType === "image/webp" ? "image/webp" : "image/webp";
+    // Step 4: Pass through the MIME type Gemini actually returned
+    const outputMimeType = toResponseImageMimeType(imageMimeType);
 
     // Step 5: Return successful result
     return {
         success: true,
         data: {
             image: {
-                mime_type: outputMimeType,
+                mime_type: outputMimeType.mimeType,
                 data_base64: imageBase64,
             },
             meta: {
                 mode: resolvedMode,
                 style_contract: styleContract,
-                warnings: imageMimeType !== "image/webp"
-                    ? [`Original format was ${imageMimeType}, served as webp`]
-                    : [],
+                warnings: outputMimeType.warning ? [outputMimeType.warning] : [],
             },
         },
+    };
+}
+
+function toResponseImageMimeType(mimeType: string): {
+    mimeType: AiRecipeImageResponseMimeType;
+    warning?: string;
+} {
+    if (mimeType === "image/webp" || mimeType === "image/png" || mimeType === "image/jpeg") {
+        return { mimeType };
+    }
+
+    return {
+        mimeType: "image/png",
+        warning: `Unexpected image format ${mimeType}, served as image/png`,
     };
 }
 

@@ -2,14 +2,13 @@
 
 ## Przegląd
 
-Aplikacja wykorzystuje **Gemini API** (Google) do generowania obrazów przepisów w trybie **"z referencją zdjęcia"** (image-to-image). Gdy przepis ma już istniejące zdjęcie, system używa Gemini zamiast OpenAI, aby wygenerować nowy obraz na podstawie referencji.
+Aplikacja wykorzystuje **Gemini API** (Google) do generowania obrazów przepisów w obu trybach: bez referencji (`recipe_only`, text-to-image) i z referencją (`with_reference`, image-to-image).
 
 **Model:** `gemini-3-pro-image-preview`
-**Tryb:** `with_reference` (image-to-image)
 
 OpenAI nadal obsługuje:
 - Generowanie draftów przepisów (GPT-4o-mini)
-- Generowanie obrazów bez referencji – tryb `recipe_only` (GPT-Image-1.5)
+- Normalizację składników
 
 ---
 
@@ -172,7 +171,6 @@ Nie powinno być:
 | Usługa | Koszt |
 |--------|-------|
 | GPT-4o-mini (draft generation) | ~$0.15 / 1M tokenów IN, $0.60 / 1M tokenów OUT |
-| GPT-Image-1.5 (image generation) | ~$0.04 / obraz 1024×1024 WebP |
 
 **Zalecenia:**
 - Ustaw limity budżetowe w [OpenAI Dashboard](https://platform.openai.com/settings/organization/billing/limits)
