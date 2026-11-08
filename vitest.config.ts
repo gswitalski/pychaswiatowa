@@ -9,7 +9,11 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['test-setup.ts'],
         environmentMatchGlobs: [['**/*.spec.ts', 'jsdom']],
-        include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+        include: [
+            'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            // Czysta logika współdzielona Edge Functions (bez zależności od Deno/npm: specifiers)
+            'supabase/functions/_shared/**/*.spec.ts',
+        ],
         exclude: ['node_modules', 'dist', '.angular', 'e2e'],
         coverage: {
             provider: 'v8',

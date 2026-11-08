@@ -1,0 +1,45 @@
+<section class="personal-note" aria-labelledby="personal-note-heading">
+    <h2 id="personal-note-heading" class="personal-note__title">Moja notatka</h2>
+    <p class="personal-note__hint">Widoczne tylko dla Ciebie.</p>
+
+    <mat-form-field appearance="outline" class="personal-note__field">
+        <mat-label>Twoje uwagi do przepisu</mat-label>
+        <textarea
+            matInput
+            rows="4"
+            [attr.maxlength]="maxLength"
+            [disabled]="isUnavailable()"
+            [value]="draft()"
+            (input)="draft.set($any($event.target).value)"
+            placeholder="Zamienniki, czas w Twojej kuchni, uwagi na następny raz…"
+        ></textarea>
+        <mat-hint align="end"
+            >{{ draft().length }} / {{ maxLength }}</mat-hint
+        >
+        @if (isTooLong()) {
+            <mat-error>Notatka może mieć co najwyżej {{ maxLength }} znaków</mat-error>
+        }
+    </mat-form-field>
+
+    @if (isUnavailable()) {
+        <p class="personal-note__unavailable" role="alert">
+            Nie udało się wczytać Twojej notatki. Edycja jest zablokowana, aby nie
+            nadpisać zapisanej treści. Odśwież stronę, aby spróbować ponownie.
+        </p>
+    }
+
+    <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        [disabled]="!canSave()"
+        [attr.aria-busy]="saving()"
+        (click)="saveNote()"
+    >
+        @if (saving()) {
+            Zapisywanie…
+        } @else {
+            Zapisz
+        }
+    </button>
+</section>

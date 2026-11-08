@@ -1,0 +1,194 @@
+{
+  "id": "LOCAL-recipe-private-note",
+  "type": "story",
+  "stage": "ready_for_review",
+  "status": "in_progress",
+  "artifacts": {
+    "story": "docs/results/workflows/LOCAL-recipe-private-note/user-story.md",
+    "api": "docs/results/workflows/LOCAL-recipe-private-note/api-plan.md",
+    "ui": "docs/results/workflows/LOCAL-recipe-private-note/ui-plan.md",
+    "deployment": "docs/results/workflows/LOCAL-recipe-private-note/manual-deployment-plan.md",
+    "api_implementation_plan": "docs/results/workflows/LOCAL-recipe-private-note/api-implementation-plan.md",
+    "ui_implementation_plan": "docs/results/workflows/LOCAL-recipe-private-note/ui-implementation-plan.md",
+    "qa": "docs/results/workflows/LOCAL-recipe-private-note/qa-report.md",
+    "code_review": "docs/results/workflows/LOCAL-recipe-private-note/code-review.md",
+    "rls_review": "docs/results/workflows/LOCAL-recipe-private-note/rls-review.md",
+    "summary": "docs/results/workflows/LOCAL-recipe-private-note/summary-change.md"
+  },
+  "history": [
+    {
+      "from": "story",
+      "to": "design",
+      "at": "2026-11-08T20:42:37.189Z"
+    },
+    {
+      "from": "design",
+      "to": "api_plan",
+      "at": "2026-11-08T20:55:55.434Z"
+    },
+    {
+      "from": "api_plan",
+      "to": "ui_plan",
+      "at": "2026-11-08T20:55:55.616Z"
+    },
+    {
+      "from": "ui_plan",
+      "to": "api_impl",
+      "at": "2026-11-08T21:05:40.505Z"
+    },
+    {
+      "from": "api_impl",
+      "to": "ui_impl",
+      "at": "2026-11-08T21:05:40.926Z"
+    },
+    {
+      "from": "ui_impl",
+      "to": "qa",
+      "at": "2026-11-08T21:05:41.482Z"
+    },
+    {
+      "from": "qa",
+      "to": "summary",
+      "at": "2026-11-08T21:05:41.831Z"
+    },
+    {
+      "from": "summary",
+      "to": "ready_for_review",
+      "at": "2026-11-08T21:05:41.976Z"
+    }
+  ],
+  "approvals": {
+    "requirements": true,
+    "plan": true,
+    "release": false
+  },
+  "validation": {
+    "note": "Wpisy build i vitest_ps31 byly reczne i czesciowe (przed bramkami v2); autorytatywne wyniki sa w qualityGates (quality.cjs). Status: zaimplementowane lokalnie, nie wdrozone.",
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "passed": true,
+      "at": "2026-11-08T21:16:40.459Z",
+      "supersededBy": "qualityGates.angularBuild"
+    },
+    "vitest_ps31": {
+      "command": "npm run test:run -- src/app/core/services/recipe-note.service.spec.ts",
+      "exitCode": 0,
+      "testsPassed": 4,
+      "passed": true,
+      "at": "2026-11-08T21:16:56.000Z",
+      "supersededBy": "qualityGates.vitest"
+    },
+    "qualityGatesClosure": {
+      "at": "2026-11-08T22:51:36.150Z",
+      "validate": {
+        "valid": true,
+        "mergeReady": true
+      },
+      "vitest": {
+        "testFiles": 60,
+        "tests": 371,
+        "componentSpecTests": 29,
+        "sharedBackendSpecTests": 10
+      },
+      "localApi": {
+        "scenarios": 3,
+        "assertions": 47,
+        "failedSteps": 0
+      },
+      "localMigrations": [
+        "20261108120000",
+        "20261108130000"
+      ],
+      "fixes": [
+        "20261108130000_revoke_anon_execute_set_recipe_note.sql: revoke EXECUTE od anon na set_recipe_note",
+        "Major #1: recipe-personal-note.component.spec.ts (24 testy)",
+        "Major #2 (WCAG 2.5.3): usuniete rozjechane aria-label z textarea i przycisku",
+        "Major #3: blad odczytu notatki != brak notatki (RecipeNoteLookup ok/unavailable, my_note_unavailable w DTO, blokada zapisu w UI, testy Vitest + smoke)"
+      ],
+      "review": {
+        "round": 3,
+        "critical": 0,
+        "major": 0,
+        "minorOpen": 12,
+        "details": "docs/results/workflows/LOCAL-recipe-private-note/qa-report.md"
+      },
+      "followUps": [
+        "test zywego API/Deno wymuszajacy blad select odczytu notatki (Minor)"
+      ]
+    }
+  },
+  "createdAt": "2026-11-08T20:37:34.750Z",
+  "schemaVersion": 2,
+  "qualityGates": {
+    "localMigration": {
+      "status": "passed",
+      "at": "2026-11-08T22:48:42.089Z",
+      "exitCode": 0,
+      "signal": null,
+      "command": "supabase migration up --local",
+      "log": "docs/results/workflows/LOCAL-recipe-private-note/quality-logs/localMigration.log",
+      "fingerprint": "07554e0352fd6a1125f69c20c33a0ef338c332d60347eabb5521dc06a4b169d3",
+      "error": null
+    },
+    "angularBuild": {
+      "status": "passed",
+      "at": "2026-11-08T22:49:00.568Z",
+      "exitCode": 0,
+      "signal": null,
+      "command": "npm run build -- --configuration production",
+      "log": "docs/results/workflows/LOCAL-recipe-private-note/quality-logs/angularBuild.log",
+      "fingerprint": "07554e0352fd6a1125f69c20c33a0ef338c332d60347eabb5521dc06a4b169d3",
+      "error": null
+    },
+    "vitest": {
+      "status": "passed",
+      "at": "2026-11-08T22:49:38.510Z",
+      "exitCode": 0,
+      "signal": null,
+      "command": "npm run test:run",
+      "log": "docs/results/workflows/LOCAL-recipe-private-note/quality-logs/vitest.log",
+      "fingerprint": "07554e0352fd6a1125f69c20c33a0ef338c332d60347eabb5521dc06a4b169d3",
+      "error": null
+    },
+    "localApi": {
+      "status": "passed",
+      "at": "2026-11-08T22:49:45.622Z",
+      "exitCode": 0,
+      "signal": null,
+      "command": "node .cursor/scripts/local-api-smoke.cjs",
+      "log": "docs/results/workflows/LOCAL-recipe-private-note/quality-logs/localApi.log",
+      "fingerprint": "07554e0352fd6a1125f69c20c33a0ef338c332d60347eabb5521dc06a4b169d3",
+      "error": null
+    },
+    "codeReview": {
+      "status": "passed",
+      "method": "review-attestation",
+      "report": "docs/results/workflows/LOCAL-recipe-private-note/code-review.md",
+      "at": "2026-11-08T22:50:55.086Z",
+      "fingerprint": "07554e0352fd6a1125f69c20c33a0ef338c332d60347eabb5521dc06a4b169d3"
+    },
+    "rlsReview": {
+      "status": "passed",
+      "method": "review-attestation",
+      "report": "docs/results/workflows/LOCAL-recipe-private-note/rls-review.md",
+      "at": "2026-11-08T22:50:55.447Z",
+      "fingerprint": "07554e0352fd6a1125f69c20c33a0ef338c332d60347eabb5521dc06a4b169d3"
+    }
+  },
+  "requirements": {
+    "databaseChanged": true,
+    "backendChanged": true
+  },
+  "scope": {
+    "baseRef": "f870b94d2ccaad617477f726d75be2c5b34c5b5c",
+    "baseSetAt": "2026-11-08T22:05:39.135Z",
+    "paths": [
+      "src/",
+      "shared/",
+      "supabase/",
+      "vitest.config.ts",
+      "tsconfig.spec.json"
+    ]
+  }
+}

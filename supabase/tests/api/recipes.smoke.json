@@ -1,0 +1,84 @@
+{
+    "function": "recipes",
+    "description": "PUT /recipes/{id}/note - prywatna notatka (auth, walidacja, własność/RLS, usuwanie)",
+    "steps": [
+        {
+            "name": "bez tokenu: PUT note zwraca 401",
+            "as": "anon",
+            "method": "PUT",
+            "path": "/1/note",
+            "body": { "note": "x" },
+            "expect": { "status": 401 }
+        },
+        {
+            "name": "owner tworzy prywatny przepis",
+            "as": "owner",
+            "method": "POST",
+            "path": "",
+            "body": {
+                "name": "localapi-smoke-{rand}",
+                "ingredients_raw": "1 szt. jajko",
+                "steps_raw": "Ugotuj jajko",
+                "visibility": "PRIVATE"
+            },
+            "expect": { "status": 201, "json": { "id": { "$exists": true } } },
+            "save": { "recipeId": "id" }
+        },
+        {
+            "name": "owner zapisuje notatkę",
+            "as": "owner",
+            "method": "PUT",
+            "path": "/{recipeId}/note",
+            "body": { "note": "Moja prywatna notatka" },
+            "expect": { "status": 200, "json": { "recipe_id": "{recipeId}", "my_note": "Moja prywatna notatka" } }
+        },
+        {
+            "name": "owner widzi notatkę w szczegółach przepisu",
+            "as": "owner",
+            "method": "GET",
+            "path": "/{recipeId}",
+            "expect": { "status": 200, "json": { "my_note": "Moja prywatna notatka", "my_note_unavailable": { "$absent": true } } }
+        },
+        {
+            "name": "notatka dłuższa niż 2000 znaków zwraca 400",
+            "as": "owner",
+            "method": "PUT",
+            "path": "/{recipeId}/note",
+            "body": { "note": { "$repeat": { "char": "a", "count": 2001 } } },
+            "expect": { "status": 400 }
+        },
+        {
+            "name": "dodatkowe pole w body zwraca 400 (schema strict)",
+            "as": "owner",
+            "method": "PUT",
+            "path": "/{recipeId}/note",
+            "body": { "note": "x", "extra": 1 },
+            "expect": { "status": 400 }
+        },
+        {
+            "name": "inny użytkownik nie może dodać notatki do cudzego PRIVATE przepisu (404)",
+            "as": "other",
+            "method": "PUT",
+            "path": "/{recipeId}/note",
+            "body": { "note": "cudza notatka" },
+            "expect": { "status": 404 }
+        },
+        {
+            "name": "owner usuwa notatkę (null)",
+            "as": "owner",
+            "method": "PUT",
+            "path": "/{recipeId}/note",
+            "body": { "note": null },
+            "expect": { "status": 200, "json": { "my_note": { "$type": "null" }, "my_note_unavailable": { "$absent": true } } }
+        }
+    ],
+    "cleanup": [
+        {
+            "name": "owner usuwa przepis testowy",
+            "as": "owner",
+            "method": "DELETE",
+            "path": "/{recipeId}",
+            "expect": { "status": [200, 204] }
+        }
+    ]
+}

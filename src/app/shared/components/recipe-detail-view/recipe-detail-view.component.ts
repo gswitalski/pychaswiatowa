@@ -10,6 +10,7 @@ import {
     RecipeDetailDto,
     RecipeFlagsDto,
     RecipeRatingDto,
+    RecipeNoteDto,
 } from '../../../../../shared/contracts/types';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,6 +23,7 @@ import { RecipeImageComponent } from '../../../pages/recipes/recipe-detail/compo
 import { RecipeContentListComponent } from '../../../pages/recipes/recipe-detail/components/recipe-content-list/recipe-content-list.component';
 import { RecipeFlagTogglesComponent } from '../recipe-flag-toggles/recipe-flag-toggles.component';
 import { RecipeRatingComponent } from '../recipe-rating/recipe-rating.component';
+import { RecipePersonalNoteComponent } from '../recipe-personal-note/recipe-personal-note.component';
 
 export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
 
@@ -40,6 +42,7 @@ export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions
         RecipeContentListComponent,
         RecipeFlagTogglesComponent,
         RecipeRatingComponent,
+        RecipePersonalNoteComponent,
     ],
     templateUrl: './recipe-detail-view.component.html',
     styleUrl: './recipe-detail-view.component.scss',
@@ -72,6 +75,8 @@ export class RecipeDetailViewComponent {
     readonly flagsSessionExpired = output<void>();
     readonly ratingChange = output<RecipeRatingDto>();
     readonly ratingSessionExpired = output<void>();
+    readonly noteChange = output<RecipeNoteDto>();
+    readonly noteSessionExpired = output<void>();
 
     readonly hasRecipe = computed(() => this.recipe() !== null);
     protected readonly showRating = computed(() => {
