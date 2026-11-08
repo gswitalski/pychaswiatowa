@@ -1,4 +1,8 @@
 ---
+description: Reguły backendu Supabase Edge Functions, PostgreSQL, RLS i TypeScript
+globs:
+  - "supabase/functions/**/*.ts"
+  - "supabase/migrations/**/*.sql"
 alwaysApply: false
 ---
 # Zasady implementacji REST API w Supabase z użyciem TypeScript
@@ -339,8 +343,7 @@ Backend jest odpowiedzialny za **WSZYSTKIE** operacje związane z danymi:
 -   Uruchamiaj funkcje lokalnie: `supabase functions serve nazwa-funkcji`
 -   Testuj endpoint pod adresem: `http://localhost:54331/functions/v1/nazwa-funkcji`
 -   Używaj nagłówka `Authorization: Bearer TOKEN` dla endpointów wymagających uwierzytelnienia
--   Użyj nastepującyh danych logowania użytkownika testowego na lokalnym srodowisku:
-    user:
-    test@pychaswiatowa.pl
-    hasło:
-    554G5rjnbdAanGR
+-   Dane logowania użytkownika testowego NIE są przechowywane w repozytorium (ani w regułach, skillach, dokumentach i logach).
+    Lokalny test API używa lokalnych zmiennych środowiskowych (poza Git): `LOCAL_API_USER_EMAIL`, `LOCAL_API_USER_PASSWORD`,
+    `LOCAL_API_OTHER_EMAIL`, `LOCAL_API_OTHER_PASSWORD`. Gdy ich brak, `.cursor/scripts/local-api-smoke.cjs` tworzy efemerycznych użytkowników w LOKALNYM GoTrue i usuwa ich po teście.
+-   Gate lokalnego API: `node .cursor/scripts/quality.cjs run <ID> localApi` (scenariusze w `supabase/tests/api/<funkcja>.smoke.json`; brak scenariusza dla zmienionej funkcji = błąd).

@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+# Zasady workflow PychaŚwiatowa
+- Gdy użytkownik zleca nową funkcjonalność, uruchom skill `feature-workflow`.
+- Czytaj stan wyłącznie z `docs/results/workflows/<ID>/workflow.json` i wynikowe artefakty z manifestu; nie stosuj wpisanych na sztywno ścieżek z dawnych promptów.
+- Nie przypisuj automatycznie numerów Jira `PS-*` bez weryfikacji w repo/Jira; ID nadaje użytkownik lub stosuj `LOCAL-*`.
+- Na etapach wymagających pytań i akceptacji zatrzymaj proces i przedstaw rekomendacje. Akceptacji nie można domniemywać.
+- Oddziel plan od wdrożenia. Nie oznaczaj funkcji jako wdrożonej na podstawie samego DTO albo planu.
+- Nie wykonuj produkcyjnych migracji, zdalnego deployu, push/merge do main bez osobnej jawnej zgody użytkownika.
+- Nie przechowuj sekretów w dokumentach ani regułach. Nie odczytuj plików .env i tokenów, jeśli nie jest to konieczne.
+- Preferuj lokalny branch `feature/<ID>-...`; żadnych destrukcyjnych komend Git bez zgody.
+- Pisz dokumenty i komunikaty w języku polskim; nazwy kodu zgodnie z repo.
+- v2: obowiązuje `.cursor/rules/quality-policy.mdc`, a `workflow.cjs validate` sprawdza strukturę dokumentów; `quality.cjs validate` sprawdza wymagane Quality Gates. Samo `valid: true` dla design NIE oznacza gotowości kodu.
+- Testy Playwright/E2E są wyłączone na życzenie użytkownika. Build Angular, Vitest oraz lokalny Supabase mają pierwszeństwo.

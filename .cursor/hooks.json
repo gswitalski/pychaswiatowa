@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {"command": "node .cursor/scripts/guard-shell.cjs", "failClosed": true, "timeout": 10}
+    ],
+    "beforeMCPExecution": [
+      {"command": "node .cursor/scripts/guard-mcp.cjs", "failClosed": true, "timeout": 10}
+    ]
+  }
+}
