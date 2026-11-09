@@ -1,74 +1,296 @@
 name: Deploy to Production
 
+# Wdrożenie produkcyjne uruchamiane WYŁĄCZNIE ręcznie (workflow_dispatch).
+# Brak wyzwalacza push/pull_request: merge do main nigdy nie wdraża produkcji.
+# Opis procedury i postępowania przy częściowym błędzie:
+#   docs/deployment/production-deployment-runbook.md
+
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Pełny lub skrócony (min. 7 znaków) SHA commita z main, który ma zostać wdrożony. Musi być równy aktualnemu HEAD main.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
-  # Job 1: Testy jednostkowe
-  test:
-    name: 🧪 Run Unit Tests
-    runs-on: ubuntu-latest
+  # Job 1: wszystkie bramki PRZED jakąkolwiek zmianą na produkcji.
+  preflight:
+    name: Preflight (ref, SHA, CI, sekrety)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm run test:run
-
-  # Job 2: Wdrożenie backendu (Supabase)
-  deploy-backend:
-    name: 🚀 Deploy Backend (Supabase)
-    runs-on: ubuntu-latest
-    needs: [test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Link Supabase project
+      - name: Wymagaj uruchomienia z main, zgodnego SHA i aktualnego HEAD main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          set -euo pipefail
+
+          fail() {
+            echo "::error::$1"
+            exit 1
+          }
+
+          [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] \
+            || fail "Wdrożenie produkcyjne może być uruchomione tylko ręcznie (workflow_dispatch)."
+          [ "${GITHUB_REF}" = "refs/heads/main" ] \
+            || fail "Wdrożenie dozwolone wyłącznie z brancha main (uruchomiono z ${GITHUB_REF})."
+          [[ "${EXPECTED_SHA}" =~ ^[0-9a-f]{7,40}$ ]] \
+            || fail "expected_sha musi być szesnastkowym SHA (7-40 znaków, małe litery)."
+          [[ "${GITHUB_SHA}" == "${EXPECTED_SHA}"* ]] \
+            || fail "expected_sha (${EXPECTED_SHA}) nie pasuje do commita workflow (${GITHUB_SHA})."
+
+          main_head="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq '.sha')"
+          [ "${main_head}" = "${GITHUB_SHA}" ] \
+            || fail "Commit ${GITHUB_SHA} nie jest aktualnym HEAD main (${main_head}). Uruchom wdrożenie ponownie z aktualnego main."
+
+          successful_ci_runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${GITHUB_SHA}&branch=main&event=push&status=success" --jq '.total_count')"
+          [ "${successful_ci_runs}" -ge 1 ] \
+            || fail "Brak zakończonego sukcesem workflow CI dla push na main z commita ${GITHUB_SHA}. Poczekaj na zielone CI."
+
+          {
+            echo "## Wdrażany commit"
+            echo ""
+            echo "- SHA: \`${GITHUB_SHA}\`"
+            echo "- Uruchomił: \`${GITHUB_ACTOR}\`"
+            echo "- Kolejność: migracje, Edge Functions, Firebase Hosting"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Sprawdź sekrety (niepuste, poprawny format, bez wypisywania wartości)
+        shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Push database migrations
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          APP_PUBLIC_URL: ${{ secrets.APP_PUBLIC_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PYCHASWIATOWA_PROD }}
+          AI_DRAFT_CREDITS_FREE: ${{ secrets.AI_DRAFT_CREDITS_FREE }}
+          AI_DRAFT_CREDITS_PREMIUM: ${{ secrets.AI_DRAFT_CREDITS_PREMIUM }}
+          AI_IMAGE_CREDITS_PREMIUM: ${{ secrets.AI_IMAGE_CREDITS_PREMIUM }}
+          AI_CREDITS_WARN_THRESHOLD_PERCENT: ${{ secrets.AI_CREDITS_WARN_THRESHOLD_PERCENT }}
+          AI_CREDITS_CRON_SECRET: ${{ secrets.AI_CREDITS_CRON_SECRET }}
         run: |
-          supabase db push --remote --yes
+          set -euo pipefail
+
+          fail() {
+            echo "::error::$1"
+            exit 1
+          }
+
+          required=(
+            SUPABASE_ACCESS_TOKEN
+            SUPABASE_PROJECT_ID
+            SUPABASE_DB_PASSWORD
+            SUPABASE_URL
+            SUPABASE_ANON_KEY
+            APP_PUBLIC_URL
+            OPENAI_API_KEY
+            GEMINI_API_KEY
+            FIREBASE_SERVICE_ACCOUNT
+          )
+
+          missing=()
+          for name in "${required[@]}"; do
+            value="${!name-}"
+            if [ -z "${value//[[:space:]]/}" ]; then
+              missing+=("${name}")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            fail "Puste lub nieustawione wymagane sekrety: ${missing[*]}"
+          fi
+
+          [[ "${SUPABASE_PROJECT_ID}" =~ ^[a-z]{20}$ ]] \
+            || fail "SUPABASE_PROJECT_ID musi mieć 20 małych liter (Reference ID projektu)."
+          [[ "${SUPABASE_URL}" =~ ^https://[A-Za-z0-9.-]+$ ]] \
+            || fail "SUPABASE_URL musi mieć postać https://<host> (bez ścieżki i końcowego ukośnika)."
+          [[ "${APP_PUBLIC_URL}" =~ ^https://[^[:space:]]+$ ]] \
+            || fail "APP_PUBLIC_URL musi zaczynać się od https:// i nie zawierać białych znaków."
+          printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" \
+            | jq -e '.type == "service_account" and .project_id == "pychaswiatowa"' > /dev/null 2>&1 \
+            || fail "FIREBASE_SERVICE_ACCOUNT_PYCHASWIATOWA_PROD nie jest kluczem service account projektu pychaswiatowa (JSON)."
+
+          # Liczba całkowita 0..max zapisana cyframi (10# chroni przed interpretacją ósemkową).
+          is_uint_within() {
+            [[ "$1" =~ ^[0-9]{1,5}$ ]] && (( 10#$1 <= $2 ))
+          }
+
+          # Sekrety opcjonalne: puste są pomijane (nie nadpisują wartości w Supabase),
+          # ale jeśli są ustawione, muszą mieć poprawny format.
+          for name in AI_DRAFT_CREDITS_FREE AI_DRAFT_CREDITS_PREMIUM AI_IMAGE_CREDITS_PREMIUM; do
+            value="${!name-}"
+            if [ -n "${value//[[:space:]]/}" ] && ! is_uint_within "${value}" 32767; then
+              fail "${name} musi być liczbą całkowitą 0-32767."
+            fi
+          done
+          threshold="${AI_CREDITS_WARN_THRESHOLD_PERCENT-}"
+          if [ -n "${threshold//[[:space:]]/}" ] && ! is_uint_within "${threshold}" 100; then
+            fail "AI_CREDITS_WARN_THRESHOLD_PERCENT musi być liczbą całkowitą 0-100."
+          fi
+
+          echo "Sekrety wymagane: OK. Wartości nie są wypisywane."
+
+  # Job 2: te same kontrole co w CI (build produkcyjny + Vitest + walidacja migracji), bez sekretów.
+  ci:
+    name: Build i testy (CI)
+    needs: [preflight]
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  # Job 3: backend. Kolejność: migracje, potem Edge Functions.
+  deploy-backend:
+    name: Deploy Backend (Supabase)
+    needs: [preflight, ci]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (dokładnie wdrażany commit)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Ponowna weryfikacja HEAD main tuż przed zmianami na produkcji
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          main_head="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq '.sha')"
+          if [ "${main_head}" != "${GITHUB_SHA}" ]; then
+            echo "::error::main zmienił się w trakcie przygotowań (HEAD main: ${main_head}, wdrażany: ${GITHUB_SHA}). Nic nie zmieniono na produkcji."
+            exit 1
+          fi
+
+      - name: Setup Supabase CLI 3.1.0
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 3.1.0
+
+      - name: Link Supabase project
+        shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-
-      - name: Set Edge Function secrets
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
-          supabase secrets set --yes \
-            APP_PUBLIC_URL=${{ secrets.APP_PUBLIC_URL }} \
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
-            AI_DRAFT_CREDITS_FREE=${{ secrets.AI_DRAFT_CREDITS_FREE }} \
-            AI_DRAFT_CREDITS_PREMIUM=${{ secrets.AI_DRAFT_CREDITS_PREMIUM }} \
-            AI_IMAGE_CREDITS_PREMIUM=${{ secrets.AI_IMAGE_CREDITS_PREMIUM }} \
-            AI_CREDITS_WARN_THRESHOLD_PERCENT=${{ secrets.AI_CREDITS_WARN_THRESHOLD_PERCENT }} \
-            AI_CREDITS_CRON_SECRET=${{ secrets.AI_CREDITS_CRON_SECRET }}
+          set -euo pipefail
+          supabase link "${SUPABASE_PROJECT_ID}"
+
+      - name: Lista migracji (lokalne vs zdalne, tylko odczyt)
+        shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          log="${RUNNER_TEMP}/migration-list.log"
+          supabase migration list --remote 2>&1 | tee "${log}"
+          {
+            echo "### Historia migracji (lokalne vs zdalne)"
+            echo '```'
+            cat "${log}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Dry-run migracji (nic nie jest stosowane)
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          log="${RUNNER_TEMP}/db-push-dry-run.log"
+          supabase db push --remote --dry-run 2>&1 | tee "${log}"
+          {
+            echo "### Dry-run migracji (nic nie zastosowano)"
+            echo '```'
+            cat "${log}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Zastosuj migracje bazy danych
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          supabase db push --remote --yes
+          echo "- [x] Migracje zastosowane" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Ustaw sekrety Edge Functions
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          APP_PUBLIC_URL: ${{ secrets.APP_PUBLIC_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AI_DRAFT_CREDITS_FREE: ${{ secrets.AI_DRAFT_CREDITS_FREE }}
+          AI_DRAFT_CREDITS_PREMIUM: ${{ secrets.AI_DRAFT_CREDITS_PREMIUM }}
+          AI_IMAGE_CREDITS_PREMIUM: ${{ secrets.AI_IMAGE_CREDITS_PREMIUM }}
+          AI_CREDITS_WARN_THRESHOLD_PERCENT: ${{ secrets.AI_CREDITS_WARN_THRESHOLD_PERCENT }}
+          AI_CREDITS_CRON_SECRET: ${{ secrets.AI_CREDITS_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          # Wymagane (niepuste zweryfikowano w preflight; tu zabezpieczenie przed pustym nadpisaniem).
+          for name in APP_PUBLIC_URL OPENAI_API_KEY GEMINI_API_KEY; do
+            value="${!name-}"
+            if [ -z "${value//[[:space:]]/}" ]; then
+              echo "::error::Sekret ${name} jest pusty. Przerywam przed nadpisaniem wartości w Supabase."
+              exit 1
+            fi
+          done
+
+          secret_args=(
+            "APP_PUBLIC_URL=${APP_PUBLIC_URL}"
+            "OPENAI_API_KEY=${OPENAI_API_KEY}"
+            "GEMINI_API_KEY=${GEMINI_API_KEY}"
+          )
+
+          # Opcjonalne: puste są pomijane, więc nie kasują istniejących wartości w Supabase.
+          for name in \
+            AI_DRAFT_CREDITS_FREE \
+            AI_DRAFT_CREDITS_PREMIUM \
+            AI_IMAGE_CREDITS_PREMIUM \
+            AI_CREDITS_WARN_THRESHOLD_PERCENT \
+            AI_CREDITS_CRON_SECRET; do
+            value="${!name-}"
+            if [ -n "${value//[[:space:]]/}" ]; then
+              secret_args+=("${name}=${value}")
+            else
+              echo "::notice::${name} nie jest ustawiony w GitHub Secrets. Pomijam (bez nadpisywania w Supabase)."
+            fi
+          done
+
+          supabase secrets set --yes "${secret_args[@]}"
+          echo "- [x] Sekrety Edge Functions ustawione" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Deploy Edge Functions
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
+          set -euo pipefail
           # Public/anon endpoints must skip JWT verification
           supabase functions deploy --yes explore --no-verify-jwt
           supabase functions deploy --yes public --no-verify-jwt
@@ -86,46 +308,69 @@ jobs:
           # Internal worker uses custom auth (not JWT) - must skip Supabase JWT verification
           supabase functions deploy --yes internal --no-verify-jwt
           supabase functions deploy --yes shopping-list
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          echo "- [x] Edge Functions wdrożone" >> "${GITHUB_STEP_SUMMARY}"
 
-  # Job 3: Wdrożenie frontendu (Firebase)
+      - name: Podsumowanie częściowego błędu
+        if: failure() || cancelled()
+        shell: bash
+        run: |
+          {
+            echo "## Wdrożenie backendu przerwane"
+            echo ""
+            echo "Zaznaczone powyżej etapy [x] zostały już wykonane na produkcji i NIE są cofane automatycznie."
+            echo "Migracji bazy nie wolno zakładać, że da się automatycznie cofnąć."
+            echo "Nie uruchamiaj ponownie wdrożenia bez analizy. Postępuj wg docs/deployment/production-deployment-runbook.md."
+            echo "Frontend (Firebase) nie został wdrożony."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  # Job 4: frontend. Dopiero po poprawnym wdrożeniu backendu.
   deploy-frontend:
-    name: 🌐 Deploy Frontend (Firebase)
-    runs-on: ubuntu-latest
+    name: Deploy Frontend (Firebase)
     needs: [deploy-backend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout (dokładnie wdrażany commit)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '20'
-          cache: 'npm'
+          persist-credentials: false
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Configure production environment
-        run: |
-          cat > src/environments/environment.production.ts << EOF
-          export const environment = {
-              production: true,
-              supabase: {
-                  url: '${{ secrets.SUPABASE_URL }}',
-                  anonKey: '${{ secrets.SUPABASE_ANON_KEY }}'
-              }
-          };
-          EOF
+      - name: Konfiguracja produkcyjnego environment.production.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node .github/scripts/write-production-environment.cjs
 
-      - name: Build Angular app
-        run: npm run build
+      - name: Angular production build
+        run: npm run build -- --configuration production
 
       - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0.11.0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PYCHASWIATOWA_PROD }}'
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PYCHASWIATOWA_PROD }}
           channelId: live
           projectId: pychaswiatowa
+          firebaseToolsVersion: 15.35.0
+
+      - name: Podsumowanie częściowego błędu
+        if: failure() || cancelled()
+        shell: bash
+        run: |
+          {
+            echo "## Wdrożenie frontendu nie powiodło się"
+            echo ""
+            echo "Backend (migracje, sekrety, Edge Functions) został już wdrożony i NIE jest cofany automatycznie."
+            echo "Frontend na produkcji nadal może działać na poprzedniej wersji. Sprawdź Firebase Console, Hosting, Release history."
+            echo "Postępuj wg docs/deployment/production-deployment-runbook.md."
+          } >> "${GITHUB_STEP_SUMMARY}"

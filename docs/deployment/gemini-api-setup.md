@@ -34,30 +34,31 @@ OpenAI nadal obsługuje:
 
 > Szczegóły zarządzania sekretami: [secrets-management.md](./secrets-management.md)
 
-### Krok 3: Zaktualizuj workflow (jeśli jeszcze nie zaktualizowany)
+### Krok 3: Sprawdź workflow (jeśli jeszcze nie zaktualizowany)
 
-W pliku `.github/workflows/main-deploy.yml` upewnij się, że krok "Set Edge Function secrets" zawiera `GEMINI_API_KEY`:
+W pliku `.github/workflows/main-deploy.yml` krok „Ustaw sekrety Edge Functions" musi przekazywać `GEMINI_API_KEY`. Sekrety przekazuj wyłącznie przez `env:` i używaj zmiennych powłoki. Nie wstawiaj `${{ secrets.* }}` bezpośrednio do treści `run:`:
 
 ```yaml
-- name: Set Edge Function secrets
-  run: |
-    supabase secrets set \
-      APP_PUBLIC_URL=${{ secrets.APP_PUBLIC_URL }} \
-      OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-      GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+- name: Ustaw sekrety Edge Functions
+  shell: bash
   env:
     SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    APP_PUBLIC_URL: ${{ secrets.APP_PUBLIC_URL }}
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  run: |
+    set -euo pipefail
+    supabase secrets set --yes \
+      "APP_PUBLIC_URL=${APP_PUBLIC_URL}" \
+      "OPENAI_API_KEY=${OPENAI_API_KEY}" \
+      "GEMINI_API_KEY=${GEMINI_API_KEY}"
 ```
 
-### Krok 4: Commit i push
+To jest skrócony przykład. Pełna wersja (z pozostałymi sekretami i zabezpieczeniami) jest w `main-deploy.yml`.
 
-```bash
-git add .github/workflows/main-deploy.yml
-git commit -m "ci: add Gemini API key to deployment workflow"
-git push origin main
-```
+### Krok 4: Wdrożenie
 
-Pipeline automatycznie wdroży zmiany i ustawi sekret w Supabase.
+Zmiana trafia do `main` przez Pull Request. Merge **nie wdraża** produkcji i nie ustawia sekretu w Supabase. Po zielonym CI na `main` uruchom ręcznie workflow **Deploy to Production** (`workflow_dispatch`) z SHA aktualnego HEAD `main`. Procedura: [production-deployment-runbook.md](./production-deployment-runbook.md).
 
 ---
 
@@ -246,7 +247,7 @@ Nie powinno być:
 
 **Powiązane dokumenty:**
 - [Zarządzanie sekretami](./secrets-management.md) – pełna lista sekretów
-- [CI/CD Pipeline](./ci-cd-pipeline.md) – jak działa automatyczne wdrożenie
+- [CI/CD Pipeline](./ci-cd-pipeline.md) – jak działa CI i ręczne wdrożenie produkcyjne
 - [Konfiguracja środowiska](../configuration/environment-setup.md) – konfiguracja zmiennych środowiskowych lokalnie
 
 ---

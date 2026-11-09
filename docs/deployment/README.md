@@ -7,7 +7,7 @@
 | Frontend | Firebase Hosting | `pychaswiatowa.web.app` |
 | Backend (Edge Functions) | Supabase Edge Functions (Deno) | Supabase Cloud |
 | Baza danych | PostgreSQL (Supabase) | Supabase Cloud |
-| CI/CD | GitHub Actions | `main-deploy.yml` |
+| CI/CD | GitHub Actions | `ci.yml` (CI), `main-deploy.yml` (ręczne wdrożenie) |
 | AI – generowanie draftów/obrazów | OpenAI API | Edge Function `ai` |
 | AI – obrazy z referencją | Gemini API | Edge Function `ai` |
 | Worker – normalizacja składników | Supabase Cron + Edge Function `internal` | Supabase Cloud |
@@ -20,7 +20,9 @@
 
 | Dokument | Opis |
 |----------|------|
-| [CI/CD Pipeline](./ci-cd-pipeline.md) | Opis automatycznego procesu wdrożenia (GitHub Actions → Supabase → Firebase) |
+| [CI/CD Pipeline](./ci-cd-pipeline.md) | Rozdzielone CI (`ci.yml`) i ręczne wdrożenie produkcyjne (`main-deploy.yml`: GitHub Actions → Supabase → Firebase) |
+| [Runbook wdrożenia produkcyjnego](./production-deployment-runbook.md) | Jak uruchomić wdrożenie i co robić przy częściowym błędzie (bez automatycznego rollbacku bazy) |
+| [GitHub – ustawienia bezpieczeństwa](./github-security-settings.md) | Ocena branch protection i Environment `production` (bez zmian w ustawieniach) |
 | [Zarządzanie sekretami](./secrets-management.md) | Kompletna lista sekretów, jak je dodawać i aktualizować |
 
 ### Konfiguracja funkcji
@@ -46,7 +48,7 @@
 
 | Element | Status | Uwagi |
 |---------|--------|-------|
-| CI/CD Pipeline | ✅ Aktywny | Auto-deploy po push do `main` |
+| CI/CD Pipeline | ✅ CI na push/PR, wdrożenie wyłącznie ręczne | Brak auto-deploy po push do `main` (patrz [CI/CD Pipeline](./ci-cd-pipeline.md)) |
 | Gemini API | ✅ Skonfigurowany | Klucz w GitHub Secrets |
 | OpenAI API | ✅ Skonfigurowany | Klucz w GitHub Secrets |
 | Worker NI | ✅ Aktywny | Cron co minutę |
