@@ -557,7 +557,7 @@ W razie problemów:
 
 **Powiązane dokumenty:**
 - [Zarządzanie sekretami](./secrets-management.md) – konfiguracja `INTERNAL_WORKER_SECRET` i `OPENAI_API_KEY`
-- [CI/CD Pipeline](./ci-cd-pipeline.md) – automatyczne wdrożenie Edge Functions
+- [CI/CD Pipeline](./ci-cd-pipeline.md) – CI i ręczne wdrożenie Edge Functions
 
 ---
 

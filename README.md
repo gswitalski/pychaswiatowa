@@ -72,21 +72,28 @@ npm run test:e2e:debug    # Debug mode for E2E tests
 
 ## Deployment
 
-The application uses automated CI/CD pipeline with GitHub Actions. Each push to `main` branch automatically deploys:
-1. Backend (Supabase Edge Functions + Database migrations)
-2. Frontend (Firebase Hosting)
+The application uses GitHub Actions with a **separate CI and a manual production deployment**. A push or merge to `main` runs only CI (build + tests) and **never deploys to production**.
+
+Production deployment is started manually (`workflow_dispatch`) from `main` and, after the preflight checks (exact SHA, current `main` HEAD, green CI), runs in this order:
+1. Database migrations (Supabase)
+2. Edge Functions (Supabase)
+3. Frontend (Firebase Hosting)
 
 ### Quick Start Deployment
 
 ```bash
-# Push to main branch
-git push origin main
+# 1. Merge changes to main via Pull Request and wait for green CI
 
-# Monitor deployment progress
+# 2. Start the deployment manually (SHA must equal the current HEAD of main)
+gh workflow run main-deploy.yml --ref main -f expected_sha=<SHA>
+
+# 3. Monitor progress
 # GitHub → Actions → "Deploy to Production"
 ```
 
-**Deployment time:** ~10-15 minutes (automated)
+Full procedure and partial-failure handling: [Production deployment runbook](docs/deployment/production-deployment-runbook.md).
+
+**Deployment time:** ~10-15 minutes
 
 ### Configuration & Documentation
 

@@ -2,163 +2,110 @@
 
 ## Przegląd
 
-Aplikacja wykorzystuje automatyczny proces CI/CD oparty na **GitHub Actions**. Wdrożenie na produkcję odbywa się automatycznie po każdym `push` do gałęzi `main`.
+CI i CD są rozdzielone na dwa workflow GitHub Actions:
 
-**Plik workflow:** `.github/workflows/main-deploy.yml`
+| Workflow | Plik | Wyzwalacze | Co robi |
+|----------|------|-----------|---------|
+| **CI** | `.github/workflows/ci.yml` | `push` na `main` i `feature/**`, `pull_request` do `main`, `workflow_call` | Tylko weryfikacja kodu. Bez sekretów i bez wdrożeń. |
+| **Deploy to Production** | `.github/workflows/main-deploy.yml` | **wyłącznie** `workflow_dispatch` | Ręczne wdrożenie aktualnego HEAD `main`: migracje → Edge Functions → Firebase. |
+
+**Push ani merge do `main` nie wdraża produkcji.** Wdrożenie wymaga ręcznego uruchomienia (patrz [Runbook wdrożenia](./production-deployment-runbook.md)).
 
 ---
 
-## Architektura pipeline
+## CI (`ci.yml`)
+
+Node 24, runner `ubuntu-24.04`, uprawnienia `contents: read`, brak sekretów.
+
+Kolejność kroków:
+1. Lint polityki workflow (`.github/scripts/lint-workflows.cjs`): akcje przypięte do SHA, brak `latest`, brak `pull_request_target`, brak sekretów w `ci.yml`, `main-deploy.yml` tylko z `workflow_dispatch`.
+2. Walidacja struktury migracji (`.github/scripts/validate-migrations.cjs`): wzorzec nazwy, poprawna data, brak duplikatów wersji, brak pustych plików.
+3. `npm ci`
+4. Testowy `src/environments/environment.production.ts` z atrapami (`https://ci.invalid`), generowany przez `.github/scripts/write-production-environment.cjs`. Plik jest w `.gitignore`.
+5. Angular production build (`npm run build -- --configuration production`)
+6. Vitest, wszystkie testy jednostkowe (`npm run test:run`)
+7. Smoke testy konfiguracji workflow `tests/*.cjs`, **jeśli istnieją w danym branchu** (na `main` obecnie ich nie ma, więc krok jest pomijany z komunikatem)
+
+Nie uruchamiamy Playwright/E2E ani testów Deno. CI nie łączy się z żadną bazą Supabase.
+
+Anulowanie: nowszy push na branchu `feature/**` lub nowa aktualizacja PR anuluje poprzedni bieg. Biegi na `main` nie są anulowane.
+
+---
+
+## Deploy to Production (`main-deploy.yml`)
 
 ```
-push do main
+workflow_dispatch (ręcznie, wymaga expected_sha)
     │
     ▼
-┌─────────────────────────┐
-│  Job 1: Run Unit Tests  │  ~2-3 min
-│  (Angular tests)        │
-└───────────┬─────────────┘
-            │ ✅ (needs: test)
-            ▼
-┌─────────────────────────┐
-│  Job 2: Deploy Backend  │  ~3-5 min
-│  (Supabase)             │
-└───────────┬─────────────┘
-            │ ✅ (needs: deploy-backend)
-            ▼
-┌─────────────────────────┐
-│  Job 3: Deploy Frontend │  ~5-7 min
-│  (Firebase Hosting)     │
-└─────────────────────────┘
+┌──────────────────────────────┐
+│ preflight                    │  ref = main, SHA = HEAD main, zielone CI,
+│ (bez zmian na produkcji)     │  sekrety niepuste i poprawne
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ ci (workflow_call → ci.yml)  │  migracje (struktura), build, Vitest
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ deploy-backend               │  ponowna kontrola HEAD → link → lista migracji
+│ (Supabase)                   │  → DRY-RUN → db push → sekrety → Edge Functions
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ deploy-frontend              │  build z produkcyjnym środowiskiem
+│ (Firebase Hosting, live)     │  → Firebase deploy
+└──────────────────────────────┘
 ```
 
-Joby wykonują się **sekwencyjnie** – każdy następny czeka na pomyślne zakończenie poprzedniego. Dzięki temu frontend jest wdrażany dopiero po poprawnym wdrożeniu backendu, co zapewnia spójność środowiska.
+### Zabezpieczenia
 
-**Całkowity czas wdrożenia:** ~10-15 minut
-
----
-
-## Job 1: Run Unit Tests
-
-- Instalacja zależności (`npm ci`)
-- Uruchomienie testów Angular (`ng test --watch=false`)
-- Jeśli testy nie przejdą → pipeline przerywa się, brak wdrożenia
-
----
-
-## Job 2: Deploy Backend (Supabase)
-
-Kroki:
-1. **Setup Supabase CLI** – instalacja narzędzia CLI
-2. **Link Supabase project** – połączenie z projektem produkcyjnym
-3. **Push database migrations** – zastosowanie migracji SQL
-4. **Set Edge Function secrets** – ustawienie zmiennych środowiskowych (patrz [Zarządzanie sekretami](./secrets-management.md))
-5. **Deploy Edge Functions** – wdrożenie wszystkich funkcji (ai, categories, collections, internal, ...)
-
----
-
-## Job 3: Deploy Frontend (Firebase)
-
-Kroki:
-1. **Install dependencies** – `npm ci`
-2. **Replace environment variables** – dynamiczna podmiana kluczy deweloperskich na produkcyjne w `src/environments/environment.prod.ts` (na podstawie GitHub Secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`)
-3. **Build Angular app** – budowanie aplikacji (`npm run build` w trybie produkcyjnym)
-4. **Deploy to Firebase Hosting** – wdrożenie plików statycznych
+- **Tylko HEAD `main`:** `preflight` odrzuca uruchomienie z innego brancha, z innym SHA niż `expected_sha` oraz z commita, który nie jest aktualnym HEAD `main`. `deploy-backend` powtarza kontrolę tuż przed pierwszą zmianą na produkcji.
+- **`concurrency: production-deploy`** (`cancel-in-progress: false`): nigdy dwa wdrożenia naraz i żadne nie jest przerywane w połowie.
+- **Bramki przed migracją:** poprawny build produkcyjny i Vitest muszą przejść przed jakąkolwiek zmianą bazy.
+- **Dry-run:** `supabase db push --remote --dry-run` i `supabase migration list --remote` (tylko odczyt) są zapisywane w Summary.
+- **Sekrety:** przekazywane przez `env:` na poziomie kroku. Brak interpolacji `${{ secrets.* }}` w skryptach. Wymagane sekrety są sprawdzane (niepuste, format) **przed** pierwszą zmianą. Puste sekrety opcjonalne są pomijane i nie kasują wartości w Supabase.
+- **Przypięte wersje:** akcje po SHA commita (`checkout` v7.0.1, `setup-node` v7.1.0, `supabase/setup-cli` v3.2.0, `action-hosting-deploy` v0.11.0), Supabase CLI `3.1.0`, `firebase-tools` `15.35.0`, Node `24`.
+- **Uprawnienia:** `contents: read` na poziomie workflow. `actions: read` tylko w `preflight` (odczyt wyniku CI). Firebase deploy nie dostaje `GITHUB_TOKEN`.
+- **Brak `environment:`** w workflow do czasu świadomego skonfigurowania GitHub Environment `production` (patrz [GitHub – ustawienia bezpieczeństwa](./github-security-settings.md)).
 
 ### Hosting SPA
 
-Firebase Hosting jest skonfigurowany do obsługi aplikacji jednostronicowej (SPA) – wszystkie ścieżki (np. `/recipes/123`) są przekierowywane do `index.html`, a routingiem zajmuje się Angular w przeglądarce.
+Firebase Hosting obsługuje aplikację jednostronicową: wszystkie ścieżki (np. `/recipes/123`) są przekierowywane do `index.html`, a routingiem zajmuje się Angular.
 
 ### CORS
 
-Komunikacja między frontendem (domena Firebase) a backendem (domena Supabase) wymaga CORS. Każda Edge Function automatycznie:
-- Dołącza nagłówki `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`
-- Obsługuje żądania `OPTIONS` (preflight requests)
+Komunikacja między frontendem (domena Firebase) a backendem (domena Supabase) wymaga CORS. Każda Edge Function dołącza nagłówki `Access-Control-Allow-*` i obsługuje `OPTIONS` (preflight).
 
 ---
 
-## Monitorowanie wdrożenia
+## Monitorowanie
 
-### Przez GitHub
-
-1. Przejdź do repozytorium → zakładka **Actions**
-2. Znajdź najnowszy workflow **"Deploy to Production"**
-3. Kliknij, aby zobaczyć szczegóły poszczególnych jobów i kroków
-
-### Oczekiwany sukces
-
-```
-✅ Unit tests passed
-✅ Database migrations applied
-✅ Edge Functions deployed
-✅ Frontend deployed to Firebase
-```
-
----
-
-## Ręczne uruchomienie workflow
-
-Jeśli workflow nie uruchomił się automatycznie:
-
-1. GitHub → **Actions** → wybierz workflow
-2. Kliknij **"Run workflow"**
-3. Wybierz gałąź `main`
-4. Kliknij **"Run workflow"**
+1. GitHub → **Actions** → **CI** (kontrola commitów/PR) lub **Deploy to Production** (wdrożenia).
+2. W uruchomieniu wdrożenia otwórz **Summary**: SHA, historia i dry-run migracji, lista wykonanych etapów.
 
 ---
 
 ## Troubleshooting
 
-### Workflow się nie uruchomił
+### Preflight odrzuca wdrożenie
 
-**Przyczyny:**
-- Push nie był do gałęzi `main` – sprawdź: `git branch`
-- Workflow jest zablokowany – sprawdź: Settings → Actions → General → "Allow all actions"
-- Plik workflow ma błąd składni YAML
+| Komunikat | Przyczyna | Rozwiązanie |
+|-----------|-----------|-------------|
+| `Wdrożenie dozwolone wyłącznie z brancha main` | Wybrano inny branch w „Run workflow” | Wybierz `main`. |
+| `expected_sha ... nie pasuje` | SHA wpisane z błędem lub z innego commita | Skopiuj `git rev-parse origin/main`. |
+| `nie jest aktualnym HEAD main` | `main` zmienił się po uruchomieniu | Uruchom ponownie z nowym SHA. |
+| `Brak zakończonego sukcesem workflow CI` | CI jeszcze trwa lub zawiodło | Poczekaj na zielone CI dla tego commita. |
+| `Puste lub nieustawione wymagane sekrety` | Brak sekretu w GitHub Secrets | Dodaj sekret (patrz [Zarządzanie sekretami](./secrets-management.md)). |
 
-**Rozwiązanie:**
-```bash
-# Sprawdź gałąź
-git branch  # Powinna być * main
+### Błąd na etapie wdrożenia
 
-# Uruchom ręcznie
-GitHub → Actions → "Run workflow"
-```
-
-### Krok "Set Edge Function secrets" failed
-
-**Przyczyny:**
-- `SUPABASE_ACCESS_TOKEN` wygasł lub jest niepoprawny
-- Błąd w składni komendy `supabase secrets set`
-- Supabase CLI nie zainstalowało się w poprzednim kroku
-
-**Rozwiązanie:**
-1. Sprawdź czy `SUPABASE_ACCESS_TOKEN` jest aktualny w GitHub Secrets
-2. Wygeneruj nowy token: Supabase Dashboard → Account → Access Tokens
-3. Zaktualizuj wartość w GitHub Secrets
+Patrz [Runbook wdrożenia, sekcja „Postępowanie przy częściowym błędzie”](./production-deployment-runbook.md#5-postępowanie-przy-częściowym-błędzie). Migracje nie są cofane automatycznie.
 
 ### Frontend wdrożony, ale zmiany nie widoczne
 
-**Przyczyny:**
-- Cache przeglądarki
-- CDN Firebase nie odświeżył się
-
-**Rozwiązanie:**
-1. Wyczyść cache przeglądarki (Ctrl+Shift+Del)
-2. Otwórz w trybie incognito
-3. Sprawdź Firebase Console → Hosting → Release history
-4. (Fallback) Re-run job "Deploy Frontend" w GitHub Actions
-
-### Migracje bazy danych failed
-
-**Przyczyny:**
-- Konflikt z istniejącą migracją
-- Nieprawidłowa składnia SQL
-
-**Rozwiązanie:**
-1. Sprawdź logi kroku "Push database migrations"
-2. Porównaj status migracji: `supabase db remote list`
-3. Napraw SQL i push ponownie
+1. Wyczyść cache przeglądarki lub otwórz w trybie incognito.
+2. Sprawdź Firebase Console → Hosting → Release history.
 
 ---
 
@@ -178,14 +125,14 @@ GitHub → Actions → "Run workflow"
 | Spark (darmowy) | 10 GB / miesiąc (360 MB/dzień) |
 | Blaze (pay-as-you-go) | $0.15 / GB powyżej limitu |
 
-Aplikacja Angular po zbudowaniu (~2-5 MB) mieści się w darmowym limicie dla małego/średniego ruchu.
-
 ---
 
 **Powiązane dokumenty:**
-- [Zarządzanie sekretami](./secrets-management.md) – konfiguracja sekretów dla pipeline
-- [Gemini API Setup](./gemini-api-setup.md) – dodanie nowego klucza API do workflow
+- [Runbook wdrożenia produkcyjnego](./production-deployment-runbook.md)
+- [GitHub – ustawienia bezpieczeństwa](./github-security-settings.md)
+- [Zarządzanie sekretami](./secrets-management.md)
+- [Gemini API Setup](./gemini-api-setup.md)
 
 ---
 
-**Ostatnia aktualizacja:** 2026-07-21
+**Ostatnia aktualizacja:** 2026-11-09

@@ -1,0 +1,77 @@
+name: CI
+
+# Continuous Integration: wyłącznie weryfikacja kodu.
+# Bez sekretów, bez dostępu do Supabase, Firebase i bez wdrożeń.
+# Wdrożenie produkcyjne: osobny, ręcznie uruchamiany workflow main-deploy.yml.
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+  # Pozwala workflow wdrożeniowemu użyć dokładnie tych samych kontroli.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # event_name w kluczu: kontrola wywołana z wdrożenia nie jest anulowana przez zwykły push.
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  ci:
+    name: Build i testy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Lint polityki workflow GitHub Actions
+        run: node .github/scripts/lint-workflows.cjs
+
+      - name: Walidacja struktury migracji Supabase
+        run: node .github/scripts/validate-migrations.cjs supabase/migrations
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Testowa konfiguracja environment.production.ts (atrapy, bez sekretów)
+        env:
+          SUPABASE_URL: https://ci.invalid
+          SUPABASE_ANON_KEY: ci-placeholder-anon-key-not-a-secret
+        run: node .github/scripts/write-production-environment.cjs
+
+      - name: Angular production build
+        run: npm run build -- --configuration production
+
+      - name: Vitest (wszystkie testy jednostkowe)
+        run: npm run test:run
+
+      - name: Smoke testy konfiguracji workflow (jeśli istnieją w tym branchu)
+        shell: bash
+        run: |
+          shopt -s nullglob
+          smoke_tests=(tests/*.cjs)
+          if [ "${#smoke_tests[@]}" -eq 0 ]; then
+            echo "::notice::Brak tests/*.cjs w tym branchu. Pomijam smoke testy konfiguracji workflow."
+            exit 0
+          fi
+          for smoke_test in "${smoke_tests[@]}"; do
+            echo "::group::node ${smoke_test}"
+            node "${smoke_test}"
+            echo "::endgroup::"
+          done

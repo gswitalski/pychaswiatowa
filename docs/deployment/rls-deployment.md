@@ -352,7 +352,7 @@ RESET request.jwt.claims;
 **Powiązane dokumenty:**
 - [RLS – Rollback i monitoring](./rls-rollback-and-monitoring.md) – procedury awaryjne i monitoring
 - [Skrypt SQL](./enable_rls_for_production.sql) – wykonywalny skrypt
-- [CI/CD Pipeline](./ci-cd-pipeline.md) – automatyczne wdrożenie migracji
+- [CI/CD Pipeline](./ci-cd-pipeline.md) – CI i ręczne wdrożenie migracji
 
 ---
 

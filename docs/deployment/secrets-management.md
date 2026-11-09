@@ -24,7 +24,7 @@
 
 | Nazwa | Gdzie użyty | Jak uzyskać | Wymagany |
 |-------|-------------|-------------|----------|
-| `INTERNAL_WORKER_SECRET` | Edge Function `internal` + Cron | Wygenerowany losowo (patrz niżej) | ✅ |
+| `INTERNAL_WORKER_SECRET` | Edge Function `internal` + Cron | Wygenerowany losowo (patrz niżej) | ✅ (ustawiany ręcznie w Supabase; workflow go nie ustawia) |
 | `NORMALIZED_INGREDIENTS_WORKER_BATCH_SIZE` | Edge Function `internal` | Wartość liczbowa (domyślnie `10`) | Opcjonalny |
 
 ### Sekrety Firebase (Frontend)
@@ -135,31 +135,19 @@ openssl rand -base64 32
 
 ## Konfiguracja w workflow (GitHub Actions)
 
-Krok "Set Edge Function secrets" w `.github/workflows/main-deploy.yml`:
+Krok "Ustaw sekrety Edge Functions" w `.github/workflows/main-deploy.yml` (uruchamiany wyłącznie ręcznie, patrz [Runbook](./production-deployment-runbook.md)).
 
-```yaml
-- name: Set Edge Function secrets
-  run: |
-    supabase secrets set \
-      APP_PUBLIC_URL=${{ secrets.APP_PUBLIC_URL }} \
-      OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-      GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-  env:
-    SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-```
+Zasady:
+- Sekrety są przekazywane przez `env:` na poziomie kroku i używane jako zmienne powłoki (`"NAZWA=${NAZWA}"`). **Nigdy** nie wstawiaj `${{ secrets.* }}` bezpośrednio w treść `run:`. `ci.yml` w ogóle nie używa sekretów.
+- Sekrety **wymagane** (`APP_PUBLIC_URL`, `OPENAI_API_KEY`, `GEMINI_API_KEY`) muszą być niepuste, inaczej wdrożenie zatrzymuje się przed zmianą produkcji.
+- Sekrety **opcjonalne** (`AI_DRAFT_CREDITS_FREE`, `AI_DRAFT_CREDITS_PREMIUM`, `AI_IMAGE_CREDITS_PREMIUM`, `AI_CREDITS_WARN_THRESHOLD_PERCENT`, `AI_CREDITS_CRON_SECRET`) są pomijane, gdy są puste. Nie nadpisują wtedy wartości w Supabase.
 
 ### Dodanie nowego sekretu do workflow
 
 1. Dodaj sekret do GitHub Secrets (patrz wyżej)
-2. Dodaj zmienną do komendy `supabase secrets set` w workflow:
-   ```yaml
-   supabase secrets set \
-     APP_PUBLIC_URL=${{ secrets.APP_PUBLIC_URL }} \
-     OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-     GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
-     NOWY_SEKRET=${{ secrets.NOWY_SEKRET }}
-   ```
-3. Commit i push zmiany workflow
+2. W `main-deploy.yml` dodaj go do `env:` kroku `Sprawdź sekrety` (jeśli wymagany) oraz do `env:` kroku `Ustaw sekrety Edge Functions`.
+3. Dopisz go do tablicy `secret_args` (wymagany) lub do pętli sekretów opcjonalnych.
+4. Zmianę wprowadź przez PR. CI sprawdzi politykę workflow (`lint-workflows.cjs`).
 
 ---
 
@@ -167,9 +155,9 @@ Krok "Set Edge Function secrets" w `.github/workflows/main-deploy.yml`:
 
 ### Nadpisywanie sekretów
 
-⚠️ Krok `supabase secrets set` w workflow **nadpisuje** wartości przy każdym wdrożeniu. Jeśli sekret istnieje w Supabase ale **nie jest** w GitHub Secrets, workflow ustawi go na pustą wartość.
+⚠️ Krok `supabase secrets set` w workflow **nadpisuje** wartości przy każdym wdrożeniu. Sekrety wymagane, których brak w GitHub Secrets, zatrzymują wdrożenie przed zmianą produkcji. Sekrety opcjonalne bez wartości w GitHub Secrets są pomijane (nie są kasowane w Supabase).
 
-**Zasada:** Każdy sekret wymagany przez Edge Functions **musi** być również w GitHub Secrets.
+**Zasada:** Każdy sekret wymagany przez Edge Functions **musi** być również w GitHub Secrets. Workflow nie zarządza sekretami spoza swojej listy (np. `STRIPE_*`, `RESEND_API_KEY`, `INTERNAL_WORKER_SECRET`). Te ustawiasz ręcznie w Supabase.
 
 ### Sprawdzanie przed pierwszym wdrożeniem
 
@@ -186,7 +174,7 @@ Jeśli widzisz sekret (np. `OPENAI_API_KEY`) którego nie ma w GitHub Secrets �
 
 Przy rotacji klucza API:
 1. Zaktualizuj wartość w GitHub Secrets
-2. Uruchom workflow (push lub ręcznie) — nowa wartość zostanie automatycznie ustawiona w Supabase
+2. Uruchom ręcznie workflow `Deploy to Production` (push do `main` już nie wdraża) — nowa wartość zostanie ustawiona w Supabase
 3. Zweryfikuj: `supabase secrets list`
 
 ---
