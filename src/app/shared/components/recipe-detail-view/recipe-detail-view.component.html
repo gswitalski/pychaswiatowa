@@ -209,6 +209,16 @@
                         [isNumbered]="false"
                     />
                 }
+
+                @if (isAuthenticated()) {
+                    <pych-recipe-personal-note
+                        [recipeId]="recipe()!.id!"
+                        [myNote]="recipe()!.my_note"
+                        [noteUnavailable]="recipe()!.my_note_unavailable === true"
+                        (noteChange)="noteChange.emit($event)"
+                        (sessionExpired)="noteSessionExpired.emit()"
+                    />
+                }
             </div>
 
             @if (showGuestCta() && headerMode() === 'guest') {

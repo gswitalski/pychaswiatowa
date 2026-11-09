@@ -1,0 +1,69 @@
+{
+    "function": "explore",
+    "description": "GET /explore/recipes/{id} - pole my_note tylko dla zalogowanego, izolacja między użytkownikami",
+    "steps": [
+        {
+            "name": "owner tworzy publiczny przepis (funkcja recipes)",
+            "function": "recipes",
+            "as": "owner",
+            "method": "POST",
+            "path": "",
+            "body": {
+                "name": "localapi-smoke-explore-{rand}",
+                "ingredients_raw": "1 szt. jajko",
+                "steps_raw": "Ugotuj jajko",
+                "visibility": "PUBLIC"
+            },
+            "expect": { "status": 201, "json": { "id": { "$exists": true } } },
+            "save": { "recipeId": "id" }
+        },
+        {
+            "name": "anonim: szczegóły przepisu bez pola my_note",
+            "as": "anon",
+            "method": "GET",
+            "path": "/recipes/{recipeId}",
+            "expect": { "status": 200, "json": { "id": "{recipeId}", "my_note": { "$absent": true }, "my_note_unavailable": { "$absent": true } } }
+        },
+        {
+            "name": "inny użytkownik zapisuje notatkę do publicznego przepisu (funkcja recipes)",
+            "function": "recipes",
+            "as": "other",
+            "method": "PUT",
+            "path": "/{recipeId}/note",
+            "body": { "note": "Notatka innego użytkownika" },
+            "expect": { "status": 200, "json": { "my_note": "Notatka innego użytkownika", "my_note_unavailable": { "$absent": true } } }
+        },
+        {
+            "name": "inny użytkownik widzi swoją notatkę w explore",
+            "as": "other",
+            "method": "GET",
+            "path": "/recipes/{recipeId}",
+            "expect": { "status": 200, "json": { "my_note": "Notatka innego użytkownika", "my_note_unavailable": { "$absent": true } } }
+        },
+        {
+            "name": "owner NIE widzi cudzej notatki w explore",
+            "as": "owner",
+            "method": "GET",
+            "path": "/recipes/{recipeId}",
+            "expect": { "status": 200, "json": { "my_note": { "$type": "null" }, "my_note_unavailable": { "$absent": true } } }
+        },
+        {
+            "name": "nieobsługiwana metoda zwraca 405",
+            "as": "anon",
+            "method": "POST",
+            "path": "/recipes/{recipeId}",
+            "body": {},
+            "expect": { "status": 405 }
+        }
+    ],
+    "cleanup": [
+        {
+            "name": "owner usuwa przepis testowy (funkcja recipes)",
+            "function": "recipes",
+            "as": "owner",
+            "method": "DELETE",
+            "path": "/{recipeId}",
+            "expect": { "status": [200, 204] }
+        }
+    ]
+}

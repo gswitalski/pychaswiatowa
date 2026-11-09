@@ -22,6 +22,7 @@ import {
     ApiError,
     RecipeFlagsDto,
     RecipeRatingDto,
+    RecipeNoteDto,
 } from '../../../../../shared/contracts/types';
 import { PlanChangeEvent } from '../../../core/services/my-plan.service';
 
@@ -403,6 +404,15 @@ export class RecipeDetailPageComponent implements OnInit {
                     average_rating: rating.average_rating,
                     ratings_count: rating.ratings_count,
                 }
+                : null,
+        }));
+    }
+
+    onNoteChange(note: RecipeNoteDto): void {
+        this.state.update((state) => ({
+            ...state,
+            recipe: state.recipe
+                ? { ...state.recipe, my_note: note.my_note }
                 : null,
         }));
     }

@@ -1,0 +1,75 @@
+{
+    "function": "public",
+    "description": "GET /public/recipes - lista, walidacja zapytania, pole my_note tylko dla zalogowanego",
+    "steps": [
+        {
+            "name": "anonim: lista publicznych przepisów (200, tablica data)",
+            "as": "anon",
+            "method": "GET",
+            "path": "/recipes?limit=1",
+            "expect": { "status": 200, "json": { "data": { "$type": "array" } } }
+        },
+        {
+            "name": "zbyt krótkie zapytanie wyszukiwania zwraca 400",
+            "as": "anon",
+            "method": "GET",
+            "path": "/recipes?q=ab",
+            "expect": { "status": 400 }
+        },
+        {
+            "name": "owner tworzy publiczny przepis (funkcja recipes)",
+            "function": "recipes",
+            "as": "owner",
+            "method": "POST",
+            "path": "",
+            "body": {
+                "name": "localapi-smoke-public-{rand}",
+                "ingredients_raw": "1 szt. jajko",
+                "steps_raw": "Ugotuj jajko",
+                "visibility": "PUBLIC"
+            },
+            "expect": { "status": 201, "json": { "id": { "$exists": true } } },
+            "save": { "recipeId": "id" }
+        },
+        {
+            "name": "anonim: szczegóły przepisu bez pola my_note",
+            "as": "anon",
+            "method": "GET",
+            "path": "/recipes/{recipeId}",
+            "expect": { "status": 200, "json": { "id": "{recipeId}", "my_note": { "$absent": true }, "my_note_unavailable": { "$absent": true } } }
+        },
+        {
+            "name": "inny użytkownik zapisuje notatkę (funkcja recipes)",
+            "function": "recipes",
+            "as": "other",
+            "method": "PUT",
+            "path": "/{recipeId}/note",
+            "body": { "note": "Notatka z public" },
+            "expect": { "status": 200 }
+        },
+        {
+            "name": "zalogowany widzi własną notatkę w public",
+            "as": "other",
+            "method": "GET",
+            "path": "/recipes/{recipeId}",
+            "expect": { "status": 200, "json": { "my_note": "Notatka z public", "my_note_unavailable": { "$absent": true } } }
+        },
+        {
+            "name": "owner nie widzi cudzej notatki w public",
+            "as": "owner",
+            "method": "GET",
+            "path": "/recipes/{recipeId}",
+            "expect": { "status": 200, "json": { "my_note": { "$type": "null" }, "my_note_unavailable": { "$absent": true } } }
+        }
+    ],
+    "cleanup": [
+        {
+            "name": "owner usuwa przepis testowy (funkcja recipes)",
+            "function": "recipes",
+            "as": "owner",
+            "method": "DELETE",
+            "path": "/{recipeId}",
+            "expect": { "status": [200, 204] }
+        }
+    ]
+}

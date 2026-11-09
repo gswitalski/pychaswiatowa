@@ -257,6 +257,17 @@ export interface PublicRecipeDetailDto {
     ratings_count: number;
     /** Authenticated user's rating, omitted for anonymous responses. */
     my_rating?: number | null;
+    /**
+     * Authenticated user's private note, omitted for anonymous responses.
+     * `null` = the user has no note. The key is omitted (and `my_note_unavailable` is set)
+     * when reading the note failed.
+     */
+    my_note?: string | null;
+    /**
+     * True only when reading the authenticated user's note failed; the real state is unknown
+     * (NOT "no note"), so clients must not allow saving over it.
+     */
+    my_note_unavailable?: true;
 }
 
 /**
@@ -328,6 +339,17 @@ export type RecipeDetailDto = Omit<
     ratings_count: number | null;
     /** Authenticated user's rating, omitted for anonymous responses. */
     my_rating?: number | null;
+    /**
+     * Authenticated user's private note, omitted for anonymous responses.
+     * `null` = the user has no note. The key is omitted (and `my_note_unavailable` is set)
+     * when reading the note failed.
+     */
+    my_note?: string | null;
+    /**
+     * True only when reading the authenticated user's note failed; the real state is unknown
+     * (NOT "no note"), so clients must not allow saving over it.
+     */
+    my_note_unavailable?: true;
 };
 
 /** State of the authenticated user's personal flags for a recipe. */
@@ -354,6 +376,17 @@ export interface RecipeRatingDto {
 /** Command model for PUT /recipes/{id}/rating. Null removes the rating. */
 export interface UpdateRecipeRatingCommand {
     rating: number | null;
+}
+
+/** Response for PUT /recipes/{id}/note */
+export interface RecipeNoteDto {
+    recipe_id: number;
+    my_note: string | null;
+}
+
+/** Command model for PUT /recipes/{id}/note */
+export interface UpdateRecipeNoteCommand {
+    note: string | null;
 }
 
 /**

@@ -52,6 +52,9 @@ Testing and Documentation:
 
 - ./src/app/**/*.spec.ts - Unit test files alongside their respective components/services
 - ./e2e/ - End-to-end test files and configuration
+- ./tests/ - Smoke testy konfiguracji Cursor Workflow v2 (Node, `node tests/<plik>.cjs`): hooks, quality gates, runner localApi
+- ./supabase/tests/api/ - Scenariusze lokalnego smoke testu API (`<funkcja>.smoke.json`) dla gate `localApi`
+- ./.cursor/scripts/ - Skrypty workflow v2 (`workflow.cjs`, `quality.cjs`, `local-api-smoke.cjs`, hooks guard); `lib/` - wspólne moduły (uruchamianie poleceń, weryfikacja lokalnego Supabase)
 - ./docs/ - Project documentation and architectural decisions
 - ./.github/ - GitHub workflows, issue templates, and CI/CD configurations
 

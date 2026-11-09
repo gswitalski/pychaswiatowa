@@ -16,6 +16,12 @@ import {
     buildRatingFields,
     getMyRatingsMap,
 } from '../_shared/recipe-ratings.ts';
+import {
+    buildNoteFields,
+    getRecipeNoteForUser,
+    type RecipeNoteDto,
+    type RecipeNoteLookup,
+} from '../_shared/recipe-notes.ts';
 import type { RecipeRatingDto } from '../_shared/recipe-ratings.ts';
 import {
     decodeCursor,
@@ -206,6 +212,9 @@ export interface RecipeDetailDto {
     average_rating: number | null;
     ratings_count: number | null;
     my_rating?: number | null;
+    my_note?: string | null;
+    /** True only when reading the note failed (my_note omitted; unknown != no note). */
+    my_note_unavailable?: true;
 }
 
 /**
@@ -920,19 +929,22 @@ export async function getRecipeById(
             recipeName: data.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap] = await Promise.all([
-            getRecipeIdsInPlan(client, [id], requesterUserId),
-            getCollectionIdsForRecipe(client, id, requesterUserId),
-            getRecipeFlagsMap(client, [id], requesterUserId),
-            getMyRatingsMap(client, [id], requesterUserId),
-        ]);
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote] =
+            await Promise.all([
+                getRecipeIdsInPlan(client, [id], requesterUserId),
+                getCollectionIdsForRecipe(client, id, requesterUserId),
+                getRecipeFlagsMap(client, [id], requesterUserId),
+                getMyRatingsMap(client, [id], requesterUserId),
+                getRecipeNoteForUser(client, id, requesterUserId),
+            ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
             data,
             inMyPlan,
             collectionIds,
             flagsMap.get(id),
-            ratingsMap.get(id)
+            ratingsMap.get(id),
+            myNote
         );
     }
 
@@ -1014,19 +1026,22 @@ export async function getRecipeById(
             recipeName: publicRecipe.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap] = await Promise.all([
-            getRecipeIdsInPlan(client, [id], requesterUserId),
-            getCollectionIdsForRecipe(client, id, requesterUserId),
-            getRecipeFlagsMap(client, [id], requesterUserId),
-            getMyRatingsMap(client, [id], requesterUserId),
-        ]);
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote] =
+            await Promise.all([
+                getRecipeIdsInPlan(client, [id], requesterUserId),
+                getCollectionIdsForRecipe(client, id, requesterUserId),
+                getRecipeFlagsMap(client, [id], requesterUserId),
+                getMyRatingsMap(client, [id], requesterUserId),
+                getRecipeNoteForUser(client, id, requesterUserId),
+            ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
             publicRecipe,
             inMyPlan,
             collectionIds,
             flagsMap.get(id),
-            ratingsMap.get(id)
+            ratingsMap.get(id),
+            myNote
         );
     }
 
@@ -1048,7 +1063,8 @@ function mapToRecipeDetailDto(
     inMyPlan: boolean,
     collectionIds: number[],
     flags?: RecipeFlagsState,
-    myRating?: number
+    myRating?: number,
+    myNote?: RecipeNoteLookup
 ): RecipeDetailDto {
     return {
         id: data.id!,
@@ -1080,6 +1096,7 @@ function mapToRecipeDetailDto(
         normalized_ingredients_status: (data.normalized_ingredients_status as NormalizedIngredientsStatus) ?? 'PENDING',
         normalized_ingredients_updated_at: data.normalized_ingredients_updated_at ?? null,
         ...buildRatingFields(data, myRating, true),
+        ...buildNoteFields(myNote, true),
     };
 }
 
@@ -1254,6 +1271,62 @@ export async function setRecipeFlags(
         recipe_id: Number(row.out_recipe_id),
         is_favorite: row.out_is_favorite,
         is_want_to_try: row.out_is_want_to_try,
+    };
+}
+
+export interface SetRecipeNoteInput {
+    recipeId: number;
+    note: string | null;
+}
+
+/**
+ * Sets the authenticated user's private recipe note using the database RPC.
+ */
+export async function setRecipeNote(
+    client: TypedSupabaseClient,
+    input: SetRecipeNoteInput
+): Promise<RecipeNoteDto> {
+    const { data, error } = await client.rpc('set_recipe_note', {
+        p_recipe_id: input.recipeId,
+        p_note: input.note,
+    });
+
+    if (error) {
+        if (error.code === 'P0002') {
+            throw new ApplicationError('NOT_FOUND', 'Recipe not found');
+        }
+
+        if (error.code === '22023') {
+            throw new ApplicationError(
+                'UNPROCESSABLE_ENTITY',
+                'Note must be at most 2000 characters'
+            );
+        }
+
+        if (error.code === '42501') {
+            throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+        }
+
+        logger.error('Error setting recipe note', {
+            errorCode: error.code,
+            errorMessage: error.message,
+            recipeId: input.recipeId,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to set recipe note');
+    }
+
+    const row = data?.[0];
+
+    if (!row) {
+        logger.error('Recipe note RPC returned no data', {
+            recipeId: input.recipeId,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to set recipe note');
+    }
+
+    return {
+        recipe_id: Number(row.out_recipe_id),
+        my_note: row.out_my_note ?? null,
     };
 }
 

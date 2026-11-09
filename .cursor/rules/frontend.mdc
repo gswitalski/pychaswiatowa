@@ -1,4 +1,9 @@
 ---
+description: Standardy Angular 21 i komunikacji Edge Functions
+globs:
+  - "src/**/*.ts"
+  - "src/**/*.html"
+  - "src/**/*.scss"
 alwaysApply: false
 ---
 ## FRONTEND
@@ -8,7 +13,7 @@ alwaysApply: false
 #### ANGULAR_CODING_STANDARDS
 
 - Use standalone components, directives, and pipes instead of NgModules
-- Implement signals for state management instead of traditional RxJS-based approaches
+- Prefer Signals for local/UI state and RxJS for streams, HTTP orchestration and cancellation; do not replace working RxJS code indiscriminately
 - Use the new inject function instead of constructor injection
 - Implement control flow with @if, @for, and @switch instead of *ngIf, *ngFor, etc.
 - Leverage functional guards and resolvers instead of class-based ones
@@ -21,7 +26,7 @@ alwaysApply: false
 
 #### ANGULAR_MATERIAL
 
-- Create a dedicated module for Angular Material imports to keep the app module clean
+- Prefer standalone Angular Material imports directly in standalone components; do not add an NgModule solely for Material imports
 - Use theme mixins to customize component styles instead of overriding CSS
 - Implement OnPush change detection for performance critical components
 - Leverage the CDK (Component Development Kit) for custom component behaviors
@@ -33,7 +38,7 @@ alwaysApply: false
 - Use Angular Material's built-in a11y features like focus indicators and keyboard navigation
 - For colors use Angular Materials SCSS variables eg. --mat-sys-background instead of custom colors when it is possible and reasonable
 
-#### NGRX
+#### NGRX (tylko jeśli NgRx już istnieje w danym obszarze; nie dodawaj go dla prostego stanu)
 
 - Use the createFeature and createReducer functions to simplify reducer creation
 - Implement the facade pattern to abstract NgRx implementation details from components
@@ -112,12 +117,7 @@ export class RecipesService {
 ```
 
 ##### Testowanie ręczne
--   Użyj nastepującyh danych logowania użytkownika testowego na lokalnym srodowisku:
-    user:
-    test@pychaswiatowa.pl
-    hasło:
-    554G5rjnbdAanGR
-
+- Korzystaj wyłącznie z poświadczeń w prywatnym, lokalnym menedżerze sekretów; nigdy nie umieszczaj haseł w rules, promptach, logach lub repozytorium.
 
 ##### Wyjątki (Bardzo Rzadkie):
 

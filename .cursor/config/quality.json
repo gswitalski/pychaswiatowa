@@ -1,0 +1,12 @@
+{
+    "commands": {
+        "angularBuild": ["npm", "run", "build", "--", "--configuration", "production"],
+        "vitest": ["npm", "run", "test:run"],
+        "localApi": ["node", ".cursor/scripts/local-api-smoke.cjs"]
+    },
+    "required": {
+        "localMigration": false,
+        "localApi": false,
+        "rlsReview": false
+    }
+}

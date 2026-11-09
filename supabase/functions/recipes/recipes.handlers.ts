@@ -31,6 +31,8 @@ import {
     setRecipeFlags,
     SetRecipeFlagsInput,
     setRecipeRating,
+    setRecipeNote,
+    type SetRecipeNoteInput,
     SetRecipeRatingInput,
 } from './recipes.service.ts';
 
@@ -467,6 +469,19 @@ const setRecipeRatingSchema = z
             .int('rating must be an integer')
             .min(1, 'rating must be at least 1')
             .max(5, 'rating must be at most 5')
+            .nullable(),
+    })
+    .strict();
+
+/** Schema for PUT /recipes/{id}/note. Null removes the caller's note. */
+const setRecipeNoteSchema = z
+    .object({
+        note: z
+            .string({
+                required_error: 'note is required',
+                invalid_type_error: 'note must be a string or null',
+            })
+            .max(2000, 'note must be at most 2000 characters')
             .nullable(),
     })
     .strict();
@@ -1328,6 +1343,59 @@ export async function handleSetRecipeRating(
 }
 
 /**
+ * Handles PUT /recipes/{id}/note.
+ * Sets or removes the authenticated user's private note for an accessible recipe.
+ */
+export async function handleSetRecipeNote(
+    req: Request,
+    recipeIdParam: string
+): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user } = await getAuthenticatedContext(req);
+
+        let requestBody: unknown;
+        try {
+            requestBody = await req.json();
+        } catch {
+            throw new ApplicationError('VALIDATION_ERROR', 'Invalid JSON in request body');
+        }
+
+        const validationResult = setRecipeNoteSchema.safeParse(requestBody);
+        if (!validationResult.success) {
+            const errorDetails = validationResult.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+            logger.warn('Invalid request body for PUT /recipes/{id}/note', {
+                recipeId,
+                errors: errorDetails,
+            });
+            throw new ApplicationError('VALIDATION_ERROR', `Invalid input: ${errorDetails}`);
+        }
+
+        let note = validationResult.data.note;
+        if (typeof note === 'string') {
+            const trimmed = note.trim();
+            note = trimmed.length === 0 ? null : trimmed;
+        }
+
+        const result = await setRecipeNote(client, {
+            recipeId,
+            note,
+        } satisfies SetRecipeNoteInput);
+
+        logger.info('PUT /recipes/{id}/note completed successfully', {
+            userId: user.id,
+            recipeId,
+            noteLength: result.my_note?.length ?? 0,
+        });
+        return createSuccessResponse(result);
+    } catch (error) {
+        return handleError(error);
+    }
+}
+
+/**
  * Handles POST /recipes/{id}/image request.
  * Uploads or replaces a recipe image for the authenticated user.
  * Accepts multipart/form-data with a 'file' field containing the image.
@@ -1524,6 +1592,17 @@ function extractRecipeIdFromRatingPath(url: URL): string | null {
 
     if (ratingPathMatch && ratingPathMatch[1]) {
         return ratingPathMatch[1];
+    }
+
+    return null;
+}
+
+/** Extracts the recipe ID from /recipes/{id}/note. */
+function extractRecipeIdFromNotePath(url: URL): string | null {
+    const notePathMatch = url.pathname.match(/\/recipes\/([^/]+)\/note\/?$/);
+
+    if (notePathMatch && notePathMatch[1]) {
+        return notePathMatch[1];
     }
 
     return null;
@@ -1874,6 +1953,8 @@ export async function recipesRouter(req: Request): Promise<Response> {
     // Check for /recipes/{id}/rating path (must be checked before extracting simple recipe ID)
     const ratingRecipeId = extractRecipeIdFromRatingPath(url);
 
+    const noteRecipeId = extractRecipeIdFromNotePath(url);
+
     // Check for /recipes/{id}/image path (must be checked before extracting simple recipe ID)
     const imageRecipeId = extractRecipeIdFromImagePath(url);
 
@@ -1921,6 +2002,26 @@ export async function recipesRouter(req: Request): Promise<Response> {
             JSON.stringify({
                 code: 'METHOD_NOT_ALLOWED',
                 message: `Method ${method} not allowed for /recipes/{id}/rating. Use PUT.`,
+            }),
+            {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Allow': 'PUT, OPTIONS',
+                },
+            }
+        );
+    }
+
+    if (noteRecipeId) {
+        if (method === 'PUT') {
+            return handleSetRecipeNote(req, noteRecipeId);
+        }
+
+        return new Response(
+            JSON.stringify({
+                code: 'METHOD_NOT_ALLOWED',
+                message: `Method ${method} not allowed for /recipes/{id}/note. Use PUT.`,
             }),
             {
                 status: 405,

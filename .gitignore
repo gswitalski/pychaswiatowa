@@ -57,3 +57,6 @@ src/environments/environment.production.ts
 /.nyc_output
 /coverage
 *.lcov
+
+# Logi Quality Gates (workflow v2) - mogą zawierać wyjście poleceń
+quality-logs/

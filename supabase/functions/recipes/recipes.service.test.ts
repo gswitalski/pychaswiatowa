@@ -2,7 +2,12 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals
 import { assertRejects } from 'https://deno.land/std@0.224.0/assert/assert_rejects.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import type { TypedSupabaseClient } from '../_shared/supabase-client.ts';
-import { deleteRecipe, setRecipeFlags, setRecipeRating } from './recipes.service.ts';
+import {
+    deleteRecipe,
+    setRecipeFlags,
+    setRecipeNote,
+    setRecipeRating,
+} from './recipes.service.ts';
 
 const USER_ID = '5fb3646f-8980-4afb-aeb1-8a4e5fa58212';
 
@@ -174,4 +179,72 @@ Deno.test('setRecipeRating: mapuje błąd autora na FORBIDDEN', async () => {
     );
 
     assertEquals(error.code, 'FORBIDDEN');
+});
+
+Deno.test('setRecipeNote: upsertuje notatkę przez RPC', async () => {
+    let calledFunction: string | undefined;
+    let calledArgs: unknown;
+
+    const client = {
+        rpc: (functionName: string, args: unknown) => {
+            calledFunction = functionName;
+            calledArgs = args;
+            return Promise.resolve({
+                data: [{
+                    out_recipe_id: 42,
+                    out_my_note: 'Na maśle z pieprzem',
+                }],
+                error: null,
+            });
+        },
+    } as unknown as TypedSupabaseClient;
+
+    const result = await setRecipeNote(client, {
+        recipeId: 42,
+        note: 'Na maśle z pieprzem',
+    });
+
+    assertEquals(calledFunction, 'set_recipe_note');
+    assertEquals(calledArgs, {
+        p_recipe_id: 42,
+        p_note: 'Na maśle z pieprzem',
+    });
+    assertEquals(result, {
+        recipe_id: 42,
+        my_note: 'Na maśle z pieprzem',
+    });
+});
+
+Deno.test('setRecipeNote: mapuje P0002 na NOT_FOUND', async () => {
+    const error = await assertRejects(
+        () => setRecipeNote({
+            rpc: () => Promise.resolve({
+                data: null,
+                error: { code: 'P0002', message: 'Recipe not found' },
+            }),
+        } as unknown as TypedSupabaseClient, {
+            recipeId: 99,
+            note: 'test',
+        }),
+        ApplicationError
+    );
+
+    assertEquals(error.code, 'NOT_FOUND');
+});
+
+Deno.test('setRecipeNote: mapuje 22023 na UNPROCESSABLE_ENTITY', async () => {
+    const error = await assertRejects(
+        () => setRecipeNote({
+            rpc: () => Promise.resolve({
+                data: null,
+                error: { code: '22023', message: 'Note too long' },
+            }),
+        } as unknown as TypedSupabaseClient, {
+            recipeId: 42,
+            note: 'x'.repeat(2001),
+        }),
+        ApplicationError
+    );
+
+    assertEquals(error.code, 'UNPROCESSABLE_ENTITY');
 });

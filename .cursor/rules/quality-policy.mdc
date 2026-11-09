@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+# Niezbywalne Quality Gates — PychaŚwiatowa v2
+- Zakończenie implementacji wymaga rzeczywiście wykonanego BUILD Angulara, pełnego Vitest, niezależnego code review i – zależnie od zmian – lokalnej migracji Supabase, lokalnego API smoke test oraz oceny RLS. Raport agenta NIE jest dowodem PASS.
+- Uruchamiaj komendy przez `node .cursor/scripts/quality.cjs run <ID> angularBuild|vitest|localApi` i `migrate-local <ID>`. Gate zapisuje log, exitCode i fingerprint kodu.
+- Po zmianie kodu uruchom ponownie wszystkie wymagane kontrole, również review (ich fingerprint traci ważność).
+- Gdy zmieniają się pliki `supabase/migrations/*.sql`, wymagana migracja WYŁĄCZNIE na lokalnej bazie, bez resetu, i review RLS. Nie stosuj `db reset`, `db push`, `--linked`, `--db-url`, nie uruchamiaj zdalnych migracji.
+- Gdy zmieniają się `supabase/functions/`, wymagany lokalny test API: `node .cursor/scripts/quality.cjs run <ID> localApi` uruchamia `.cursor/scripts/local-api-smoke.cjs`. Każda zmieniona funkcja musi mieć scenariusz `supabase/tests/api/<funkcja>.smoke.json`; brak scenariusza albo 0 asercji = błąd gate'u, nigdy sukces. Nie pozoruj wyniku.
+- Supabase CLI: używaj istniejącego globalnego CLI (nie modyfikuj `package.json`). `migrate-local` najpierw potwierdza, że celem jest lokalny Supabase TEGO projektu (host loopback, porty z `supabase/config.toml`, kontener `supabase_db_<project_id>`); do weryfikacji bez zmian w bazie służy `node .cursor/scripts/quality.cjs preflight-local`.
+- Zakres zmian gate'ów jest liczony względem `scope.baseRef` zapisanego w manifeście (ustawianego przy `workflow.cjs init`), a nie względem HEAD — commit nie powoduje pominięcia wymaganych gate'ów. Starsze manifesty: `quality.cjs scope <ID> set-base <sha>`.
+- Dane testowe API pochodzą wyłącznie z lokalnych zmiennych środowiskowych (`LOCAL_API_*`) albo z kont efemerycznych; nie zapisuj haseł ani kluczy w rules, skills, dokumentach i logach.
+- W tej iteracji NIE uruchamiaj Playwright/E2E, nawet gdy istnieją w repo. Tylko testy jednostkowe Vitest plus kontrola kompilacji i lokalnego backendu. Testy Deno (`supabase/functions/**/*.test.ts`) są opcjonalne i nie blokują workflow.
+- Jeżeli testy nie przejdą, napraw błąd i ponawiaj je; po trzech nieudanych podejściach przedstaw blokadę. Nie aktualizuj summary jako 'wdrożone produkcyjnie' — tylko 'zaimplementowane lokalnie'.
+- Nigdy nie wymuszaj `ready_for_review`, gdy `quality.cjs validate <ID>` nie przechodzi.

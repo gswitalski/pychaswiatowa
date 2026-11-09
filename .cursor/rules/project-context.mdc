@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+# PychaŚwiatowa — kontekst bazowy
+- Referencyjne źródło produktu: `docs/results/project-summary.md` — sprawdź aktualność względem kodu.
+- Angular 21, standalone, Material/CDK, Signals + RxJS, Sass; selektory `pych-*`.
+- Supabase Edge Functions Deno + PostgreSQL RLS + Storage + Auth; frontend nigdy nie używa `.from()` / `.rpc()` do dostępu do danych.
+- Kontrakt współdzielony: `shared/contracts/types.ts`; typy bazy w `shared/types/database.types.ts` (potwierdź rzeczywistą ścieżkę w repo).
+- Vitest i Playwright, GitHub Actions, Firebase Hosting + Supabase Cloud.
+- Istniejące public/private API, role JWT `user|premium|admin`, limity AI: wprowadzaj zmiany zgodnie z aktualnym kodem i testami.
+- Sekcja Billing w DTO może wyprzedzać implementację; nie wnioskuj ze zdefiniowania interfejsu, że płatności działają.
