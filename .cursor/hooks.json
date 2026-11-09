@@ -1,0 +1,27 @@
+{
+    "version": 1,
+    "hooks": {
+        "beforeShellExecution": [
+            {
+                "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/guard-shell.ps1",
+                "failClosed": true,
+                "timeout": 10
+            }
+        ],
+        "preToolUse": [
+            {
+                "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/guard-paths.ps1",
+                "matcher": "Write|StrReplace|Delete",
+                "timeout": 10
+            }
+        ],
+        "subagentStop": [
+            {
+                "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/verify-implementation.ps1",
+                "matcher": "ps-api-implementer|ps-view-implementer",
+                "timeout": 600,
+                "loop_limit": 2
+            }
+        ]
+    }
+}

@@ -1,4 +1,6 @@
 ---
+description: Standardy Supabase Edge Functions, migracji, RLS i kontraktów API w projekcie PychaŚwiatowa
+globs: supabase/**
 alwaysApply: false
 ---
 # Zasady implementacji REST API w Supabase z użyciem TypeScript
@@ -130,7 +132,7 @@ Dla endpointów typu `/recipes/{id}/collections/{collectionId}` lub `/recipes/{i
 
 Współdzielone narzędzia i funkcje pomocnicze (np. obsługa błędów, klient Supabase, logger) trzymaj w katalogu `functions/_shared/`.
 
-## Specyfika Projektu PychaŚwiatowa
+## Specyfika projektu PychaŚwiatowa
 
 ### Struktura Bazy Danych
 
@@ -341,6 +343,13 @@ Backend jest odpowiedzialny za **WSZYSTKIE** operacje związane z danymi:
 -   Używaj nagłówka `Authorization: Bearer TOKEN` dla endpointów wymagających uwierzytelnienia
 -   Użyj nastepującyh danych logowania użytkownika testowego na lokalnym srodowisku:
     user:
-    test@pychaswiatowa.pl
-    hasło:
-    554G5rjnbdAanGR
+    TEST_USER_EMAIL / TEST_USER_PASSWORD z lokalnego `.env.local`
+    (nie zapisuj sekretów w regułach, dokumentacji ani kodzie).
+
+## Zasady aktualne
+
+Lista tabel i limitów domenowych jest utrzymywana w migracjach oraz
+`docs/results/project-summary.md`. Ta reguła opisuje wyłącznie standardy
+implementacji. Wszystkie nowe funkcje muszą rozdzielać `index.ts`, handlery
+i serwisy, używać walidacji Zod, filtrować soft-delete oraz zwracać ujednolicony
+format błędu `{ code, message, details }`.

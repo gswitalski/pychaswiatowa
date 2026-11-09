@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: Standardy GitHub Actions dla Angular 21 i Supabase
+globs: .github/workflows/**
 alwaysApply: false
 ---
 
@@ -75,8 +75,9 @@ Write-Output $actionYml
 - `actions/cache@v4` - caching npm dependencies
 - `actions/upload-artifact@v4` - uploading build artifacts
 - `docker://supabase/cli:latest` - Supabase CLI for migrations
-- `microsoft/playwright-github-action@v1` - Playwright browser installation
-- `digitalocean/action-doctl@v2` - DigitalOcean CLI for deployment
+- `npx playwright install --with-deps` - Playwright browser installation
+- Firebase CLI/action zgodna z aktualną konfiguracją hostingu, jeśli workflow
+  obejmuje wdrożenie
 
 ### Przykładowe non-interactive commands dla CI/CD
 

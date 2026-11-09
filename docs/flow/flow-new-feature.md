@@ -1,5 +1,31 @@
 # Nowa funkcjonalność
 
+Proces jest obsługiwany przez skille Cursora. Dla pojedynczej historyjki użyj:
+
+```
+/ps-new-feature PS-{N} [opis wymagania]
+```
+
+Orkiestrator odczytuje etap na podstawie istniejących artefaktów, więc polecenie
+można powtórzyć po przerwie. Ścieżki i nazewnictwo są zdefiniowane w
+`.cursor/skills/ps-feature-conventions/SKILL.md`.
+
+## Aktualny przebieg
+
+1. Analityk tworzy historyjkę i zadaje pytania przez `AskQuestion`.
+2. Planer zapisuje plan API, UI i wdrożenia.
+3. Plany implementacji API i widoków powstają równolegle.
+4. Implementer API dodaje funkcję, migracje, RPC, kontrakty i testy; hook uruchamia
+   weryfikację, a niezależny reviewer może zażądać maksymalnie dwóch rund poprawek.
+5. Implementer widoków działa po akceptacji API, po czym przechodzi weryfikację
+   i review.
+6. Updater zapisuje zwięzłą aktualizację `project-summary.md`.
+
+Po każdym etapie orkiestrator zatrzymuje się na akceptację użytkownika. Nie
+uruchamia deployu ani testów E2E. Czynności ręczne z `deployment-plan.md` są
+pokazywane na końcu; commit wykonuje użytkownik. Poniższy opis promptów jest
+archiwalnym opisem poprzedniego procesu.
+
 Aby zaplanować, zaimplementować i wdrożyć nową funkcjonalność, wybierz jedną z dwóch ścieżek:
 
 - **Funkcjonalność złożona - epic** (oparta na więcej niż jednej historyjce użytkownika): wykonaj [analizę funkcjonalności](#analiza-funkcjonalności), a następnie [generowanie historyjek użytkownika](#user-stories).

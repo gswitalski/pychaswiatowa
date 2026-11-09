@@ -1,3 +1,8 @@
+---
+description: Standardy testów Playwright dla projektu PychaŚwiatowa
+globs: e2e/**
+alwaysApply: false
+---
 ## TESTING
 
 ### Guidelines for E2E

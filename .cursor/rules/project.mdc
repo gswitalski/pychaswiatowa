@@ -1,19 +1,25 @@
 ---
+description: Stałe zasady architektury i organizacji projektu PychaŚwiatowa
 alwaysApply: true
 ---
 
 # AI Rules for PychaŚwiatowa
 
-PychaŚwiatowa to responsywna aplikacja webowa zaprojektowana dla pasjonatów gotowania, służąca jako centralna, cyfrowa książka kucharska. Jej głównym celem jest umożliwienie użytkownikom łatwego gromadzenia, organizowania i przeszukiwania własnych przepisów kulinarnych w jednym miejscu. Wersja MVP (Minimum Viable Product) skupia się na podstawowych funkcjonalnościach zarządzania przepisami, kategoryzacji, tworzenia kolekcji i wyszukiwania. Aplikacja jest projektowana w podejściu "desktop-first", zapewniając optymalne doświadczenie na większych ekranach, jednocześnie zachowując pełną funkcjonalność na urządzeniach mobilnych.
+PychaŚwiatowa to responsywna cyfrowa książka kucharska dla pasjonatów gotowania.
+Aplikacja rozwija funkcje zarządzania przepisami, kolekcjami, wyszukiwania,
+ocen, kredytów AI, płatności i panelu administracyjnego.
 
 ## Tech Stack
 
-- Angular 21
-- Angular Material
+- Angular 21 i Angular Material
+- Supabase: PostgreSQL, Auth, Storage oraz Edge Functions/Deno
+- Vitest do testów jednostkowych oraz OpenAI/Gemini dla funkcji AI
 
 ## Project Structure
 
-When introducing changes to the project, always follow the directory structure below:
+When introducing changes to the project, always follow the directory structure below.
+Konwencje dokumentów i numeracji historyjek są zdefiniowane w skillu
+`ps-feature-conventions`.
 
 
 Root Level:
@@ -40,13 +46,14 @@ Application Structure:
 
 - ./src/app/layout/ - Layout components eg. default-layout, admin-panel-layout
 
-- ./src/app/shared/ - Reusable components, directives, pipes used across features
-
 - ./src/app/pages/ - Page-level components for routing
 - ./src/app/pages/{page-name}/ - {page-name} page and its specific functionality
 - ./src/app/pages/{page-name}/components/ - {page-name}-specific UI components
 - ./src/app/pages/{page-name}/services/ - {page-name}-specific business logic services
-- ./src/app/pages/dashboard/{page-name}/ - {page-name}-specific interfaces and data types
+- ./supabase/functions/ - Supabase Edge Functions
+- ./supabase/migrations/ - migracje PostgreSQL i RLS
+- ./shared/contracts/ - współdzielone kontrakty DTO
+- ./docs/results/ - wyniki analiz, planów i podsumowanie projektu
 
 Testing and Documentation:
 

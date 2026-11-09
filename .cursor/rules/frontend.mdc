@@ -1,4 +1,6 @@
 ---
+description: Standardy Angular 21, standalone components i komunikacji z API w PychaŚwiatowa
+globs: src/**
 alwaysApply: false
 ---
 ## FRONTEND
@@ -32,19 +34,6 @@ alwaysApply: false
 - Implement proper typography hierarchy using the Material typography system
 - Use Angular Material's built-in a11y features like focus indicators and keyboard navigation
 - For colors use Angular Materials SCSS variables eg. --mat-sys-background instead of custom colors when it is possible and reasonable
-
-#### NGRX
-
-- Use the createFeature and createReducer functions to simplify reducer creation
-- Implement the facade pattern to abstract NgRx implementation details from components
-- Use entity adapter for collections to standardize CRUD operations
-- Leverage selectors with memoization to efficiently derive state and prevent unnecessary calculations
-- Implement @ngrx/effects for handling side effects like API calls
-- Use action creators with typed payloads to ensure type safety throughout the application
-- Implement @ngrx/component-store for local state management in complex components
-- Use @ngrx/router-store to connect the router to the store
-- Leverage @ngrx/entity-data for simplified entity management
-- Implement the concatLatestFrom operator for effects that need state with actions
 
 #### LOADING_STATES_AND_SORTING
 
@@ -114,9 +103,8 @@ export class RecipesService {
 ##### Testowanie ręczne
 -   Użyj nastepującyh danych logowania użytkownika testowego na lokalnym srodowisku:
     user:
-    test@pychaswiatowa.pl
-    hasło:
-    554G5rjnbdAanGR
+    TEST_USER_EMAIL / TEST_USER_PASSWORD z lokalnego `.env.local`
+    (sekrety nie mogą być przechowywane w regułach ani kodzie).
 
 
 ##### Wyjątki (Bardzo Rzadkie):

@@ -1,3 +1,8 @@
+---
+description: Standardy testów jednostkowych Angular i Vitest
+globs: **/*.spec.ts, **/*.test.ts
+alwaysApply: false
+---
 ## TESTING
 
 ### Guidelines for UNIT

@@ -9,7 +9,9 @@
 
 ## 0. Stan realizacji (październik 2026)
 
-MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting, backend: Supabase Cloud). Eksport Jira (59 zgłoszeń): **48 Gotowe**, **7 Do zrobienia**, **1 W toku**, **3 nie będzie realizowane**.
+Produkt jest wdrożony i rozwijany iteracyjnie (frontend: Firebase Hosting,
+backend: Supabase Cloud). Status zgłoszeń jest utrzymywany w Jirze, a nie jako
+migawka w tym dokumencie.
 
 **Google OAuth (logowanie / rejestracja):** implementacja warstwy API (`GET /profile/username-available`, rozszerzenie flow profilu) oraz widoków (przycisk Google, callback, `/auth/complete-profile`, guardy) — **zakończona** zgodnie z planami implementacji.
 
@@ -60,7 +62,11 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | PS-38 | Gemini przy generowaniu zdjęcia **bez** referencji |
 | PS-59 | Drag & drop obrazka do asysty AI |
 
-**W toku:** PS-62 Plan biznesowy (freemium / Premium — analiza w `docs/analizaf0funkcjonalnosci-premium-v02.md`, historyjki `PREM-*` w `docs/historyjki-premium.md`). Widok cennika, stub checkout i pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płatności **nie są zaimplementowane**.
+**W toku:** PS-62 Plan biznesowy (freemium / Premium — analiza w
+`docs/results/new-features/epics/premium-users/analiza-funkcjonalnosci-premium-users.md`,
+historyjki w `premium-users-user-stories.md`). Widok cennika, stub checkout i
+pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płatności
+**nie są zaimplementowane**.
 
 **Nie będzie realizowane (Jira):** PS-17 (filtr wyszukiwarki o rodzaj/termorobot — osobny ticket), PS-20 (przebudowa wyszukiwarek), PS-26 (stary ticket listy zakupów; funkcja jest jako PS-42).
 
@@ -174,7 +180,11 @@ MVP produktu jest wdrożone i rozwijane iteracyjnie (frontend: Firebase Hosting,
 | US-ADM-003 | Admin: lista użytkowników | `/admin/users`: paginacja, sortowanie, dane kont (PS-54). |
 | US-ADM-004 | Admin: zmiana roli | Dialog „Edytuj rolę”; zakaz zmiany własnej roli i obniżenia ostatniego admina. JWT docelowego użytkownika odświeża się po ponownym logowaniu. Zmiana na `user`/`premium` ustawia pulę kredytów AI; w tym samym dialogu jest korekta puli. |
 
-Historyjki monetyzacji `PREM-001` … (entitlements, checkout płatności) są w `docs/historyjki-premium.md` i **nie zastępują** powyższych story MVP. Publiczny widok `/pricing`, stub `/checkout` oraz kredyty AI (PS-64) są już w aplikacji. Sprzedaż subskrypcji i pakietów kredytów nie jest.
+Historyjki monetyzacji `PREM-001` … (entitlements, checkout płatności) są w
+`docs/results/new-features/epics/premium-users/premium-users-user-stories.md` i
+**nie zastępują** powyższych story MVP. Publiczny widok `/pricing`, stub
+`/checkout` oraz kredyty AI (PS-64) są już w aplikacji. Sprzedaż subskrypcji i
+pakietów kredytów nie jest.
 
 ---
 
@@ -205,7 +215,7 @@ Historyjki monetyzacji `PREM-001` … (entitlements, checkout płatności) są w
 ### Testowanie
 
 - **Vitest** — testy jednostkowe i integracyjne
-- **Playwright** — testy E2E (Chromium, Firefox, WebKit)
+- **Playwright** — testy E2E (Chromium)
 
 ### CI/CD
 
@@ -546,7 +556,7 @@ Piramida testów: solidna baza jednostkowych, uzupełniona integracjami i E2E.
 |---|---|---|
 | **Jednostkowe** | Vitest | Komponenty, serwisy, walidacja, guardy ról. |
 | **Integracyjne** | Vitest | Współpraca komponent+serwis. Mockowany backend. |
-| **E2E** | Playwright | Scenariusze w przeglądarce (Chromium, Firefox, WebKit). |
+| **E2E** | Playwright | Scenariusze w przeglądarce Chromium. |
 | **UI/Responsywność** | Ręcznie + Playwright | Layout, Angular Material, Bottom Bar. |
 | **Bezpieczeństwo** | Ręcznie | AuthGuard, role guards, RLS, JWT, XSS, endpointy admin. |
 

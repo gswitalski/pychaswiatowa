@@ -1,4 +1,12 @@
-# Supabase Angular Initialization - PychaŚwiatowa
+---
+description: Archiwalny przewodnik inicjalizacji Angular + Supabase; nie stosować do nowych funkcji
+globs: none
+alwaysApply: false
+---
+# Archiwum — Supabase Angular Initialization
+
+Dla nowych zmian obowiązują `project.mdc`, `frontend.mdc`, `backend.mdc` oraz
+skille `ps-*`. Ten przewodnik zachowano wyłącznie jako historię bootstrapu.
 
 Ten dokument zawiera przewodnik do utworzenia struktury plików niezbędnej do integracji Supabase z projektem Angular dla aplikacji PychaŚwiatowa (cyfrowa książka kucharska).
 
