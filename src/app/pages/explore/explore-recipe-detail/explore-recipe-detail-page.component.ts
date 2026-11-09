@@ -23,6 +23,7 @@ import {
     ApiError,
     RecipeFlagsDto,
     RecipeRatingDto,
+    RecipeNoteResponseDto,
 } from '../../../../../shared/contracts/types';
 import { PlanChangeEvent } from '../../../core/services/my-plan.service';
 
@@ -407,6 +408,15 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
                 }
                 : null,
         }));
+    }
+
+    onNoteChange(note: RecipeNoteResponseDto): void {
+        this.state.update((state) => {
+            if (!state.recipe || state.recipe.id !== note.recipe_id) {
+                return state;
+            }
+            return { ...state, recipe: { ...state.recipe, my_note: note.note } };
+        });
     }
 
     /**

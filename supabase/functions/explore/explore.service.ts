@@ -9,6 +9,7 @@ import { logger } from '../_shared/logger.ts';
 import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 import { buildRatingFields, getMyRatingsMap } from '../_shared/recipe-ratings.ts';
+import { getMyRecipeNote } from '../_shared/recipe-notes.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -113,6 +114,7 @@ export interface RecipeDetailDto {
     average_rating: number | null;
     ratings_count: number | null;
     my_rating?: number | null;
+    my_note?: string | null;
 }
 
 /**
@@ -290,10 +292,11 @@ export async function getExploreRecipeById(params: {
         logger.info('Recipe is PUBLIC - access granted', { recipeId });
         
         // Check if recipe is in user's plan
-        const [recipeIdsInPlan, flagsMap, ratingsMap] = await Promise.all([
+        const [recipeIdsInPlan, flagsMap, ratingsMap, myNote] = await Promise.all([
             getRecipeIdsInPlan(client, [recipeId], requesterUserId),
             getRecipeFlagsMap(client, [recipeId], requesterUserId),
             getMyRatingsMap(client, [recipeId], requesterUserId),
+            getMyRecipeNote(client, recipeId, requesterUserId),
         ]);
         const inMyPlan = recipeIdsInPlan.has(recipeId);
         
@@ -308,7 +311,8 @@ export async function getExploreRecipeById(params: {
             collectionIds,
             flagsMap.get(recipeId),
             ratingsMap.get(recipeId),
-            requesterUserId !== null
+            requesterUserId !== null,
+            myNote
         );
     }
 
@@ -341,10 +345,11 @@ export async function getExploreRecipeById(params: {
     });
 
     // Check if recipe is in user's plan
-    const [recipeIdsInPlan, flagsMap, ratingsMap] = await Promise.all([
+    const [recipeIdsInPlan, flagsMap, ratingsMap, myNote] = await Promise.all([
         getRecipeIdsInPlan(client, [recipeId], requesterUserId),
         getRecipeFlagsMap(client, [recipeId], requesterUserId),
         getMyRatingsMap(client, [recipeId], requesterUserId),
+        getMyRecipeNote(client, recipeId, requesterUserId),
     ]);
     const inMyPlan = recipeIdsInPlan.has(recipeId);
 
@@ -359,7 +364,8 @@ export async function getExploreRecipeById(params: {
         collectionIds,
         flagsMap.get(recipeId),
         ratingsMap.get(recipeId),
-        true
+        true,
+        myNote
     );
 }
 
@@ -378,7 +384,8 @@ function mapToDto(
     collectionIds: number[],
     flags?: { is_favorite: boolean; is_want_to_try: boolean },
     myRating?: number,
-    isAuthenticated = false
+    isAuthenticated = false,
+    myNote?: string | null
 ): RecipeDetailDto {
     return {
         id: recipe.id,
@@ -411,5 +418,6 @@ function mapToDto(
             is_want_to_try: flags.is_want_to_try,
         }),
         ...buildRatingFields(recipe, myRating, isAuthenticated),
+        ...(myNote !== undefined && { my_note: myNote }),
     };
 }

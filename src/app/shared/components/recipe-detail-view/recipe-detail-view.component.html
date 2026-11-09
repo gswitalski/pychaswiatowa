@@ -211,6 +211,15 @@
                 }
             </div>
 
+            @if (showNote()) {
+                <pych-recipe-note
+                    [recipeId]="recipe()!.id!"
+                    [note]="recipe()!.my_note ?? null"
+                    (noteChange)="noteChange.emit($event)"
+                    (sessionExpired)="noteSessionExpired.emit()"
+                />
+            }
+
             @if (showGuestCta() && headerMode() === 'guest') {
                 <div class="bottom-cta-section">
                     <mat-card class="cta-card">

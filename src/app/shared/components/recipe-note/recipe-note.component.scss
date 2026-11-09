@@ -1,0 +1,88 @@
+:host {
+    display: block;
+}
+
+.recipe-note {
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: var(--mat-sys-corner-medium);
+    background: var(--mat-sys-surface-container-low);
+}
+
+.note-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.note-title {
+    margin: 0;
+    font: var(--mat-sys-title-large);
+    color: var(--mat-sys-on-surface);
+}
+
+.note-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+
+    mat-icon {
+        width: 16px;
+        height: 16px;
+        font-size: 16px;
+    }
+}
+
+.note-text {
+    margin: 0 0 1rem;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    color: var(--mat-sys-on-surface);
+}
+
+.note-field {
+    width: 100%;
+}
+
+.note-counter {
+    margin: 0.25rem 0 0.75rem;
+    text-align: right;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+
+    &.over-limit {
+        color: var(--mat-sys-error);
+    }
+}
+
+.note-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+    .recipe-note {
+        padding: 1rem;
+    }
+
+    .note-actions {
+        flex-direction: column;
+
+        button {
+            width: 100%;
+            min-height: 44px;
+        }
+    }
+}
+
+@media print {
+    :host {
+        display: none;
+    }
+}

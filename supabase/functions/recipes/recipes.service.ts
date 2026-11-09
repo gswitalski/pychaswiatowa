@@ -17,6 +17,8 @@ import {
     getMyRatingsMap,
 } from '../_shared/recipe-ratings.ts';
 import type { RecipeRatingDto } from '../_shared/recipe-ratings.ts';
+import { getMyRecipeNote } from '../_shared/recipe-notes.ts';
+import type { RecipeNoteResponseDto } from '../_shared/recipe-notes.ts';
 import {
     decodeCursor,
     buildFiltersHash,
@@ -206,6 +208,7 @@ export interface RecipeDetailDto {
     average_rating: number | null;
     ratings_count: number | null;
     my_rating?: number | null;
+    my_note?: string | null;
 }
 
 /**
@@ -920,11 +923,12 @@ export async function getRecipeById(
             recipeName: data.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap] = await Promise.all([
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote] = await Promise.all([
             getRecipeIdsInPlan(client, [id], requesterUserId),
             getCollectionIdsForRecipe(client, id, requesterUserId),
             getRecipeFlagsMap(client, [id], requesterUserId),
             getMyRatingsMap(client, [id], requesterUserId),
+            getMyRecipeNote(client, id, requesterUserId),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
@@ -932,7 +936,8 @@ export async function getRecipeById(
             inMyPlan,
             collectionIds,
             flagsMap.get(id),
-            ratingsMap.get(id)
+            ratingsMap.get(id),
+            myNote
         );
     }
 
@@ -1014,11 +1019,12 @@ export async function getRecipeById(
             recipeName: publicRecipe.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap] = await Promise.all([
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote] = await Promise.all([
             getRecipeIdsInPlan(client, [id], requesterUserId),
             getCollectionIdsForRecipe(client, id, requesterUserId),
             getRecipeFlagsMap(client, [id], requesterUserId),
             getMyRatingsMap(client, [id], requesterUserId),
+            getMyRecipeNote(client, id, requesterUserId),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
@@ -1026,7 +1032,8 @@ export async function getRecipeById(
             inMyPlan,
             collectionIds,
             flagsMap.get(id),
-            ratingsMap.get(id)
+            ratingsMap.get(id),
+            myNote
         );
     }
 
@@ -1048,7 +1055,8 @@ function mapToRecipeDetailDto(
     inMyPlan: boolean,
     collectionIds: number[],
     flags?: RecipeFlagsState,
-    myRating?: number
+    myRating?: number,
+    myNote?: string | null
 ): RecipeDetailDto {
     return {
         id: data.id!,
@@ -1080,6 +1088,7 @@ function mapToRecipeDetailDto(
         normalized_ingredients_status: (data.normalized_ingredients_status as NormalizedIngredientsStatus) ?? 'PENDING',
         normalized_ingredients_updated_at: data.normalized_ingredients_updated_at ?? null,
         ...buildRatingFields(data, myRating, true),
+        ...(myNote !== undefined && { my_note: myNote }),
     };
 }
 
@@ -1254,6 +1263,54 @@ export async function setRecipeFlags(
         recipe_id: Number(row.out_recipe_id),
         is_favorite: row.out_is_favorite,
         is_want_to_try: row.out_is_want_to_try,
+    };
+}
+
+export interface SetRecipeNoteInput {
+    recipeId: number;
+    note: string | null;
+}
+
+export async function setRecipeNote(
+    client: TypedSupabaseClient,
+    input: SetRecipeNoteInput
+): Promise<RecipeNoteResponseDto> {
+    const { data, error } = await client.rpc('set_recipe_note', {
+        p_recipe_id: input.recipeId,
+        p_note: input.note ?? undefined,
+    });
+
+    if (error) {
+        if (error.code === 'P0002') {
+            throw new ApplicationError('NOT_FOUND', 'Recipe not found');
+        }
+        if (error.code === '22023') {
+            throw new ApplicationError(
+                'VALIDATION_ERROR',
+                'Recipe note must be at most 2000 characters'
+            );
+        }
+        if (error.code === '42501') {
+            throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+        }
+        logger.error('Error setting recipe note', {
+            errorCode: error.code,
+            errorMessage: error.message,
+            recipeId: input.recipeId,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to set recipe note');
+    }
+
+    const row = data?.[0];
+    if (!row) {
+        logger.error('Recipe note RPC returned no data', { recipeId: input.recipeId });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to set recipe note');
+    }
+
+    return {
+        recipe_id: Number(row.out_recipe_id),
+        note: row.out_note ?? null,
+        updated_at: row.out_updated_at ?? null,
     };
 }
 

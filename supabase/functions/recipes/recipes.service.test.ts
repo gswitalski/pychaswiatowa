@@ -2,7 +2,12 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals
 import { assertRejects } from 'https://deno.land/std@0.224.0/assert/assert_rejects.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import type { TypedSupabaseClient } from '../_shared/supabase-client.ts';
-import { deleteRecipe, setRecipeFlags, setRecipeRating } from './recipes.service.ts';
+import {
+    deleteRecipe,
+    setRecipeFlags,
+    setRecipeNote,
+    setRecipeRating,
+} from './recipes.service.ts';
 
 const USER_ID = '5fb3646f-8980-4afb-aeb1-8a4e5fa58212';
 
@@ -175,3 +180,43 @@ Deno.test('setRecipeRating: mapuje błąd autora na FORBIDDEN', async () => {
 
     assertEquals(error.code, 'FORBIDDEN');
 });
+
+Deno.test('setRecipeNote: pomija p_note dla null i mapuje odpowiedź RPC', async () => {
+    let calledFunction: string | undefined;
+    let calledArgs: unknown;
+    const result = await setRecipeNote({
+        rpc: (functionName: string, args: unknown) => {
+            calledFunction = functionName;
+            calledArgs = args;
+            return Promise.resolve({
+                data: [{ out_recipe_id: 348, out_note: null, out_updated_at: null }],
+                error: null,
+            });
+        },
+    } as unknown as TypedSupabaseClient, { recipeId: 348, note: null });
+
+    assertEquals(calledFunction, 'set_recipe_note');
+    assertEquals(calledArgs, { p_recipe_id: 348, p_note: undefined });
+    assertEquals(result, { recipe_id: 348, note: null, updated_at: null });
+});
+
+for (const [rpcCode, applicationCode] of [
+    ['P0002', 'NOT_FOUND'],
+    ['22023', 'VALIDATION_ERROR'],
+    ['42501', 'UNAUTHORIZED'],
+    ['XX000', 'INTERNAL_ERROR'],
+] as const) {
+    Deno.test(`setRecipeNote: mapuje ${rpcCode}`, async () => {
+        const error = await assertRejects(
+            () => setRecipeNote({
+                rpc: () => Promise.resolve({
+                    data: null,
+                    error: { code: rpcCode, message: 'database error' },
+                }),
+            } as unknown as TypedSupabaseClient, { recipeId: 348, note: 'x' }),
+            ApplicationError
+        );
+
+        assertEquals(error.code, applicationCode);
+    });
+}

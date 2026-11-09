@@ -7,6 +7,7 @@ import { guestOnlyMatchGuard } from './core/guards/guest-only-match.guard';
 import { oauthCompleteProfileGuard } from './core/guards/oauth-complete-profile.guard';
 import { usernameCompleteMatchGuard } from './core/guards/username-complete-match.guard';
 import { checkoutAccessGuard } from './core/guards/checkout-access.guard';
+import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { sanitizeNextUrl } from './core/utils/post-auth-redirect.util';
 import {
     exploreRecipeIdSlugMatcher,
@@ -121,6 +122,7 @@ export const routes: Routes = [
                     import('./pages/explore/explore-recipe-detail/explore-recipe-detail-page.component').then(
                         (m) => m.ExploreRecipeDetailPageComponent,
                     ),
+                canDeactivate: [unsavedChangesGuard],
                 data: { urlPrefix: 'explore/recipes' },
             },
             // Legacy URL - explore/recipes/:id (normalizacja do formatu kanonicznego)

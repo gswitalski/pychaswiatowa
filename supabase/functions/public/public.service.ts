@@ -16,6 +16,7 @@ import {
 import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 import { buildRatingFields, getMyRatingsMap } from '../_shared/recipe-ratings.ts';
+import { getMyRecipeNote } from '../_shared/recipe-notes.ts';
 
 /**
  * Returns recipe IDs matching the requested personal flags.
@@ -213,6 +214,7 @@ export interface PublicRecipeDetailDto {
     average_rating: number | null;
     ratings_count: number;
     my_rating?: number | null;
+    my_note?: string | null;
 }
 
 /**
@@ -1113,16 +1115,19 @@ export async function getPublicRecipeById(
     let collectionIds: number[] = [];
     let flags: { is_favorite: boolean; is_want_to_try: boolean } | undefined;
     let myRating: number | undefined;
+    let myNote: string | null | undefined;
 
     if (userId !== null) {
-        const [recipeIdsInPlan, recipeFlagsMap, ratingsMap] = await Promise.all([
+        const [recipeIdsInPlan, recipeFlagsMap, ratingsMap, fetchedNote] = await Promise.all([
             getRecipeIdsInPlan(client, [params.id], userId),
             getRecipeFlagsMap(client, [params.id], userId),
             getMyRatingsMap(client, [params.id], userId),
+            getMyRecipeNote(client, params.id, userId),
         ]);
         inMyPlan = recipeIdsInPlan.has(params.id);
         flags = recipeFlagsMap.get(params.id);
         myRating = ratingsMap.get(params.id);
+        myNote = fetchedNote;
 
         // Get collection IDs that contain this recipe (owned by user)
         collectionIds = await getCollectionIdsForRecipe(client, params.id, userId);
@@ -1163,6 +1168,7 @@ export async function getPublicRecipeById(
             is_want_to_try: flags?.is_want_to_try ?? false,
         }),
         ...buildRatingFields(recipe, myRating, userId !== null),
+        ...(myNote !== undefined && { my_note: myNote }),
     };
 
     logger.info('Public recipe fetched successfully', {

@@ -97,6 +97,10 @@
  * Sets an authenticated user's rating (1-5) for a public recipe by another author.
  * Use `{ "rating": null }` to remove the caller's rating.
  *
+ * PUT /functions/v1/recipes/{id}/note
+ * Sets or removes the authenticated user's private note for an accessible recipe.
+ * Use `{ "note": null }` (or an empty/whitespace-only note) to remove it.
+ *
  * DELETE /functions/v1/recipes/{id}
  * Soft-deletes an existing recipe for the authenticated user.
  * Sets the deleted_at timestamp; the recipe remains in the database but is no longer accessible.

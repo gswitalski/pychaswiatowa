@@ -9,6 +9,7 @@ import {
     ApiError,
     RecipeDetailDto,
     RecipeFlagsDto,
+    RecipeNoteResponseDto,
     RecipeRatingDto,
 } from '../../../../../shared/contracts/types';
 import { MatCardModule } from '@angular/material/card';
@@ -22,6 +23,7 @@ import { RecipeImageComponent } from '../../../pages/recipes/recipe-detail/compo
 import { RecipeContentListComponent } from '../../../pages/recipes/recipe-detail/components/recipe-content-list/recipe-content-list.component';
 import { RecipeFlagTogglesComponent } from '../recipe-flag-toggles/recipe-flag-toggles.component';
 import { RecipeRatingComponent } from '../recipe-rating/recipe-rating.component';
+import { RecipeNoteComponent } from '../recipe-note/recipe-note.component';
 
 export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions';
 
@@ -40,6 +42,7 @@ export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions
         RecipeContentListComponent,
         RecipeFlagTogglesComponent,
         RecipeRatingComponent,
+        RecipeNoteComponent,
     ],
     templateUrl: './recipe-detail-view.component.html',
     styleUrl: './recipe-detail-view.component.scss',
@@ -72,6 +75,8 @@ export class RecipeDetailViewComponent {
     readonly flagsSessionExpired = output<void>();
     readonly ratingChange = output<RecipeRatingDto>();
     readonly ratingSessionExpired = output<void>();
+    readonly noteChange = output<RecipeNoteResponseDto>();
+    readonly noteSessionExpired = output<void>();
 
     readonly hasRecipe = computed(() => this.recipe() !== null);
     protected readonly showRating = computed(() => {
@@ -86,6 +91,13 @@ export class RecipeDetailViewComponent {
         }
 
         return recipe.ratings_count !== null && recipe.ratings_count !== undefined;
+    });
+    protected readonly showNote = computed(() => {
+        const recipe = this.recipe();
+        if (!this.isAuthenticated() || recipe === null || recipe.id === null) {
+            return false;
+        }
+        return recipe.my_note !== undefined;
     });
 
     onAddToCollection(): void {

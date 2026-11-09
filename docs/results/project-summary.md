@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 31 października 2026 — analiza jednego przepisu AI z wielu zdjęć PS-100, wcześniej: oceny przepisów PS-99 (API i widoki), filtry katalogu Odkrywaj PS-96, osobiste flagi przepisów PS-95 oraz metadane draftu AI PS-91.
+> **Aktualizacja:** 9 listopada 2026 — prywatna notatka użytkownika przy przepisie PS-31, wcześniej: analiza jednego przepisu AI z wielu zdjęć PS-100, oceny przepisów PS-99 (API i widoki), filtry katalogu Odkrywaj PS-96, osobiste flagi przepisów PS-95 oraz metadane draftu AI PS-91.
 
 ---
 
@@ -33,6 +33,8 @@ migawka w tym dokumencie.
 
 **Oceny przepisów (PS-99):** implementacja warstwy API i widoków — **zakończona**. `PUT /recipes/{id}/rating` atomowo ustawia ocenę 1–5 albo usuwa ją przez `null`; autor nie może ocenić własnego przepisu, a cudzy niepubliczny przepis zwraca `404`. Baza: `recipe_ratings` z RLS, agregaty w `recipe_details` i RPC `set_recipe_rating`. Szczegóły `/recipes/{id}`, `/explore/recipes/{id}` i `/public/recipes/{id}` zwracają średnią i liczbę ocen; `my_rating` jest dostępne wyłącznie dla zalogowanego użytkownika. UI: `RecipeRatingService` i `RecipeRatingComponent` na `/recipes/:id-:slug` oraz `/explore/recipes/:id-:slug`, z optimistic update, rollbackiem i obsługą gościa/autora.
 
+**Notatka użytkownika przy przepisie (PS-31):** implementacja warstwy API i widoków — **zakończona**. `PUT /recipes/{id}/note` atomowo ustawia notatkę (1–2000 znaków po normalizacji) albo usuwa ją przez `null`/pusty tekst; notatka jest wyłącznie prywatna — autor ani inni użytkownicy jej nie widzą. Notatkę można dodać do własnego przepisu oraz do cudzego `PUBLIC`; cudzy niepubliczny lub usunięty przepis zwraca `404`. Baza: `user_recipe_notes` (migracja `20261109120000_create_user_recipe_notes.sql`), RLS, RPC `set_recipe_note`; współdzielony moduł `_shared/recipe-notes.ts`. `my_note` jest zwracane w szczegółach `/recipes/{id}`, `/explore/recipes/{id}` i `/public/recipes/{id}` wyłącznie zalogowanemu (gość bez pola w JSON). UI: `RecipeNoteService` i `RecipeNoteComponent` w `RecipeDetailViewComponent` na `/recipes/:id-:slug` oraz `/explore/recipes/:id-:slug` (dodaj / edytuj / usuń z potwierdzeniem, licznik znaków, Ctrl+Enter, snackbar, obsługa `401`). Niezapisana notatka jest chroniona przez `unsavedChangesGuard` (`canDeactivate` na obu trasach szczegółów) i `UnsavedChangesService`. Notatki nie są wyszukiwane ani pokazywane na listach.
+
 ### Dostarczone poza pierwotnym szkicem summary
 
 - **Google OAuth** (Supabase Auth, PKCE): wspólny przycisk na `/login` i `/register`, callback z rozgałęzieniem e-mail vs OAuth, ekran `/auth/complete-profile` (walidacja async username, `PUT /profile`), guardy `oauthCompleteProfileGuard` / `usernameCompleteMatchGuard` + `ProfileCompletionService`; obsługa błędów OAuth na `/login?error=…`
@@ -49,13 +51,13 @@ migawka w tym dokumencie.
 - **Wklej ze schowka (PS-92):** `ClipboardImageService` + przycisk „Wklej ze schowka” w uploadzie zdjęcia przepisu i w asyście AI (tryb obrazu); walidacja MIME/rozmiaru i mapowanie błędów schowka; testy jednostkowe serwisu i komponentów
 - **Osobiste flagi przepisów (PS-95):** przełączniki „Ulubiony” / „Chcę wypróbować” w nagłówku szczegółów; wskaźnik serduszka na `RecipeCardComponent`; wszystkie role zalogowane; prywatność flag względem autora i innych użytkowników
 - **Filtry Odkrywaj (PS-96):** chipy Termorobot, Grill, dieta (Wszystkie / Wegetariańskie+ / Tylko wegańskie), dla zalogowanych Ulubione i Chcę wypróbować; query params w URL; filtrowanie przez `GET /public/recipes/feed`
+- **Notatka przy przepisie (PS-31):** prywatna notatka (do 2000 znaków) w szczegółach własnych i publicznych cudzych przepisów; edycja inline, usuwanie z potwierdzeniem, dialog „Niezapisane zmiany” przy opuszczeniu strony
 
 ### Backlog produktowy (Jira — Do zrobienia)
 
 | ID | Temat |
 |---|---|
 | PS-15 | Autor przepisu na widoku szczegółowym |
-| PS-31 | Notatka użytkownika przy przepisie |
 | PS-34 | Poprawa generowania opisu przez AI |
 | PS-35 | Poprawa generowania zdjęcia przez AI |
 | PS-37 | Nazwa użytkownika obok ikony w nawigacji |
@@ -93,6 +95,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 - Kredyty AI per użytkownik: Free dożywotnie, Premium miesięcznie, admin bez limitu; podgląd w ustawieniach i korekta w panelu admina
 - Asynchroniczna normalizacja składników (worker cron + retry)
 - Osobiste flagi przepisu (PS-95): „Ulubiony” i „Chcę wypróbować” na własnych i widocznych cudzych przepisach; tylko zalogowany; serduszko na kafelkach list
+- Prywatna notatka przy przepisie (PS-31): jedna notatka na użytkownika i przepis (własny lub cudzy `PUBLIC`), do 2000 znaków; widoczna tylko dla jej autora, edytowana na szczegółach; ochrona przed utratą niezapisanej treści przy opuszczeniu strony
 - Zgodność: regulamin, polityka prywatności i regulamin subskrypcji, zgoda marketingowa, menedżer zgód cookies
 
 ### Granice (poza zakresem / zaplanowane później)
@@ -100,7 +103,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 - Import z linków URL, automatyczne planowanie posiłków, zamienniki AI, konto rodzinne — plan Premium (`PREM-*`), nie w kodzie
 - Zarządzanie spiżarnią
 - Funkcje społecznościowe (znajomi, komentarze i tekstowe recenzje)
-- Zaawansowane wartości odżywcze, historia zmian, notatki użytkownika przy cudzym przepisie
+- Zaawansowane wartości odżywcze, historia zmian
 - Filtrowanie po flagach na listach prywatnych (np. „Moje przepisy”, kolekcje); w katalogu `/explore` filtry flag są wdrożone (PS-96)
 - Subskrypcja i płatności (strona `/pricing` oraz stub `/checkout` są; brak endpointu planów i bramki płatności). Pule kredytów AI są wdrożone; dokupienie pakietu nie jest
 - Tworzenie/usuwanie kont z panelu admina, audyt zmian ról, masowa zmiana ról
@@ -139,6 +142,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 | US-027 | Szybka zmiana zdjęcia (paste/drop) | Strefa zdjęcia: Ctrl+V, drag&drop, wybór pliku, auto-upload, Undo. PS-92: dedykowany przycisk „Wklej ze schowka” (Clipboard API). |
 | PS-92 | Wklej ze schowka (przycisk) | Odczyt obrazu przez `navigator.clipboard.read()` bez wymogu fokusu na strefie paste. Formularz przepisu i asysta AI (obraz). Te same formaty i limit 10 MB co upload; błędy inline. |
 | PS-95 | Osobiste flagi przepisu | Toggle „Ulubiony” i „Chcę wypróbować” na szczegółach (`/recipes/…`, `/explore/recipes/…`); serduszko na kafelkach list; prywatne, wszystkie role; `PUT /recipes/{id}/flags`. |
+| PS-31 | Notatka użytkownika przy przepisie | Prywatna notatka (1–2000 znaków) na szczegółach `/recipes/…` i `/explore/recipes/…`; dodaj/edytuj/usuń; `PUT /recipes/{id}/note`; `my_note` tylko dla zalogowanego; guard niezapisanych zmian. |
 | PS-96 | Filtry w katalogu Odkrywaj | `/explore`: chipy filtrów (Termorobot, Grill, dieta vege_plus/vegan, Ulubione/Chcę wypróbować dla zalogowanych); sync z URL; `GET /public/recipes/feed` z parametrami `diet`, `favorite`, `want_to_try`; reset paginacji przy zmianie filtrów; empty state „Wyczyść filtry”. |
 | PS-99 | Oceny przepisów | Ocena 1–5 na szczegółach publicznych przepisów; agregat dostępny dla gościa, zapis dla zalogowanego nie-autora, optimistic update i rollback. |
 | US-028 | Liczba porcji | Opcjonalne pole 1-99, wyświetlane pod tytułem z odmianą. |
@@ -300,10 +304,15 @@ Bez zmian koncepcyjnych względem MVP: tagi i kolekcje per `user_id`, nazwy unik
 | `shopping_list_recipe_contributions` | `user_id`, `recipe_id`, `name`, `unit`, `amount` | Wkład składników z planu |
 | `user_ai_credits` | `user_id` UNIQUE, pule `draft_*` / `image_*`, `limit_type`, `next_reset_at` | Saldo kredytów AI (1:1 z użytkownikiem) |
 | `user_recipe_flags` | `user_id`, `recipe_id`, `is_favorite`, `is_want_to_try` | Prywatne flagi przepisu użytkownika (PK złożony, RLS) |
+| `user_recipe_notes` | `user_id`, `recipe_id`, `note`, `created_at`, `updated_at` | Prywatna notatka użytkownika do przepisu (PK złożony, `note` 1–2000 znaków, kaskadowe usuwanie, trigger `updated_at`) |
 
 #### `user_ai_credits`
 
 Jedna pula na draft przepisu i jedna na zdjęcie. `limit_type`: `lifetime` (Free) albo `monthly` (Premium). Wartość `unlimited` występuje tylko w odpowiedziach API dla admina — nie ma jej w enumie bazy. Wiersz powstaje leniwie przy pierwszym wywołaniu AI, z domyślną pulą Free. Zapis wyłącznie przez service role; użytkownik może odczytać własne saldo (RLS). Indeks częściowy po `next_reset_at` dla resetu miesięcznego.
+
+#### `user_recipe_notes`
+
+Jedna notatka na parę (użytkownik, przepis). Brak notatki = brak wiersza; pusty tekst po normalizacji usuwa wiersz. RPC `set_recipe_note(p_recipe_id, p_note)` (`security invoker`, tylko `authenticated`) normalizuje tekst, sprawdza długość (`22023`) i dostępność przepisu (własny albo `PUBLIC`, nieusunięty; w przeciwnym razie `P0002`), a następnie idempotentnie zapisuje lub usuwa notatkę. Odczyt `my_note` nie jest częścią widoków `recipe_details` — jest dociągany osobno po `user_id` z JWT.
 
 Widok `recipe_details` agreguje przepis + autora + kolekcje na potrzeby API.
 
@@ -314,9 +323,11 @@ auth.users 1:1 profiles
 auth.users 1:1 user_ai_credits
 auth.users 1:N recipes, tags, collections, plan_recipes, shopping_list_items, jobs
 auth.users 1:N user_recipe_flags
+auth.users 1:N user_recipe_notes
 categories 1:N recipes
 recipes N:M tags (via recipe_tags)
 recipes N:M collections (via recipe_collections)
+recipes 1:N user_recipe_notes
 recipes 1:1 recipe_normalized_ingredients
 recipes 1:N normalized_ingredients_jobs
 recipes N:M users w planie (via plan_recipes)
@@ -348,6 +359,7 @@ recipes N:M users w planie (via plan_recipes)
 - Operacje admina na rolach: RPC z kontekstem service role, nie przez RLS na `auth.users`
 - `user_ai_credits`: SELECT własnego wiersza; INSERT/UPDATE/DELETE tylko service role
 - `user_recipe_flags`: użytkownik odczytuje i modyfikuje wyłącznie własne flagi; zapis wymaga widocznego, nieusuniętego przepisu
+- `user_recipe_notes`: brak dostępu dla `anon`; użytkownik odczytuje i usuwa wyłącznie własne notatki, a INSERT/UPDATE wymaga własnego wiersza oraz przepisu nieusuniętego, który jest własny lub `PUBLIC`
 
 ---
 
@@ -373,8 +385,8 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 |---|---|---|
 | `GET` | `/public/recipes` | Lista publicznych (offset). Filtry: `q`, `filter[termorobot]`, `filter[grill]`, `filter[diet_type]` (backward compat), `filter[cuisine]`, `filter[difficulty]`, **`diet`** (`vege_plus` / `vegan`, priorytet nad `filter[diet_type]`), **`favorite`** / **`want_to_try`** (`true` — tylko z JWT, bez tokenu ignorowane). Relevance. Dla auth: `is_favorite` w elementach; żądania z JWT: `Cache-Control: no-store`. |
 | `GET` | `/public/recipes/feed` | Lista publicznych (cursor, load more po 12). Te same filtry co `/public/recipes` (w tym PS-96: `diet`, `favorite`, `want_to_try`); hash cursora uwzględnia filtry flag i dietę. Dla auth: `is_favorite` w elementach. |
-| `GET` | `/public/recipes/{id}` | Szczegóły. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`; odpowiedź auth bez cache publicznego (`no-store`). |
-| `GET` | `/explore/recipes/{id}` | Wariant katalogu Explore (ten sam kontrakt co publiczne szczegóły, w tym flagi dla auth). |
+| `GET` | `/public/recipes/{id}` | Szczegóły. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`, `my_note` (`string \| null`; gość bez pola); odpowiedź auth bez cache publicznego (`no-store`). |
+| `GET` | `/explore/recipes/{id}` | Wariant katalogu Explore (ten sam kontrakt co publiczne szczegóły, w tym flagi i `my_note` dla auth). |
 
 ### Przepisy (prywatne, auth required)
 
@@ -384,8 +396,9 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | `GET` | `/recipes/feed` | Lista (cursor, load more). Elementy: `is_favorite`. |
 | `POST` | `/recipes` | Tworzenie. Parsowanie `ingredients_raw`, `steps_raw`, `tips_raw`. Job normalizacji. |
 | `POST` | `/recipes/import` | Import Markdown. Zwraca nowy przepis. |
-| `GET` | `/recipes/{id}` | Szczegóły. Helpery: `is_owner`, `in_my_collections`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`. |
+| `GET` | `/recipes/{id}` | Szczegóły. Helpery: `is_owner`, `in_my_collections`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`, `my_note`. |
 | `PUT` | `/recipes/{id}/flags` | Częściowe, idempotentne ustawienie flag `is_favorite` / `is_want_to_try`; zwraca pełny stan obu flag. |
+| `PUT` | `/recipes/{id}/note` | Body `{ note: string \| null }`; ustawia prywatną notatkę (po normalizacji 1–2000 znaków) albo usuwa ją przy `null`/pustym tekście. Własny lub cudzy `PUBLIC` przepis; inaczej `404`. Zwraca `{ recipe_id, note, updated_at }`, `Cache-Control: no-store`. |
 | `PUT` | `/recipes/{id}` | Aktualizacja. Job normalizacji. |
 | `DELETE` | `/recipes/{id}` | Soft-delete. `204`. |
 | `POST` | `/recipes/{id}/image` | Upload zdjęcia (multipart). PNG/JPG/WebP, max 10 MB. |
@@ -490,7 +503,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 |---|---|---|
 | Landing Page | `/` | Wyszukiwarka publicznych przepisów, sekcje, CTA logowanie/rejestracja. Zalogowany: nawigacja konta, bez CTA logowania, serduszko na kafelkach sekcji (PS-95). Logo widoczne także dla gościa. Dla gościa i roli `user`: blok promo Premium z linkiem do cennika. |
 | Katalog Explore | `/explore` | Publiczne przepisy: pole wyszukiwania (debounce 350 ms, min 3 zn.), **pasek filtrów chipów** (PS-96: Termorobot, Grill, dieta, dla zalogowanych Ulubione/Chcę wypróbować), sync filtrów i `q` z query URL, load more 12. Badge "Twój przepis". Zalogowany: wskaźnik serduszka na kafelku (PS-95). Empty state z „Wyczyść filtry” przy aktywnych filtrach bez wyników. |
-| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania i podgląd ocen PS-99. Zalogowany: flagi PS-95, ocena PS-99, kolekcja/plan. Autor: pełne akcje bez możliwości oceniania własnego przepisu. |
+| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania i podgląd ocen PS-99. Zalogowany: flagi PS-95, ocena PS-99, prywatna notatka PS-31, kolekcja/plan; `unsavedChangesGuard`. Autor: pełne akcje bez możliwości oceniania własnego przepisu. |
 | Logowanie | `/login` | Email+hasło + **Zaloguj się przez Google** (`OauthGoogleButtonComponent`); komunikaty po błędach OAuth z `?error=`. |
 | Rejestracja | `/register` | Username, email, hasło, zgoda marketingowa + **Zarejestruj się przez Google** (ten sam flow OAuth). |
 | Wysłano link | `/register/verify-sent` | Komunikat + ponowna wysyłka (cooldown 60s). |
@@ -513,7 +526,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Admin - Dashboard | `/admin`, `/admin/dashboard` | Placeholder metryk („Wkrótce”) + nawigacja admina (sidebar). |
 | Admin - Użytkownicy | `/admin/users` | Tabela, paginacja, sortowanie, dialog zmiany roli. |
 | Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Własne + publiczne z kolekcji. Filtry, load more 12. Kafelki: serduszko ulubionego (PS-95). |
-| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. Zalogowany: przełączniki flag PS-95 oraz ocena PS-99 dla publicznego przepisu. |
+| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. Zalogowany: przełączniki flag PS-95 oraz ocena PS-99 dla publicznego przepisu, a także prywatna notatka PS-31 (własne i cudze publiczne przepisy); `unsavedChangesGuard` pyta o potwierdzenie przy niezapisanej notatce. |
 | Kreator - wybór trybu | `/recipes/new/start` | Pusty formularz (wszyscy) lub AI (premium/admin; badge). Kafelek AI nadal zablokowany dla roli `user`. |
 | Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. Wskaźnik kredytów `draft`, baner i blokada przycisku przy wyczerpaniu, dialog przy `402`. Tryb obrazu: „Wklej ze schowka” (PS-92) obok paste Ctrl+V i wyboru pliku. |
 | Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (`RecipeImageUploadComponent`: paste/drop/file, przycisk „Wklej ze schowka” PS-92, generowanie AI). Sticky Zapisz. Przy zdjęciu AI: kompaktowy wskaźnik kredytów `image` i blokada przycisku przy wyczerpaniu. |
@@ -542,6 +555,8 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Schowek obrazu (PS-92) | `ClipboardImageService`: detekcja API, odczyt pliku, komunikaty błędów; konsumowane przez upload zdjęcia przepisu i asystę AI. |
 | Flagi przepisu (PS-95) | `RecipeFlagsService` + `RecipeFlagTogglesComponent` w `RecipeDetailViewComponent`; wskaźnik `.favorite-indicator` na `RecipeCardComponent`. |
 | Oceny przepisu (PS-99) | `RecipeRatingService` + `RecipeRatingComponent` w `RecipeDetailViewComponent`; średnia i liczba ocen dla gościa, interaktywna ocena dla zalogowanego nie-autora. |
+| Notatka przepisu (PS-31) | `RecipeNoteService` + `RecipeNoteComponent` (`pych-recipe-note`) w `RecipeDetailViewComponent`, widoczny gdy `my_note` jest w odpowiedzi (zalogowany). Tryby: pusty / podgląd / edycja; walidacja 2000 znaków, Ctrl+Enter, usuwanie z potwierdzeniem, rollback i snackbar przy błędzie, `401` → `sessionExpired`. |
+| Guard niezapisanych zmian (PS-31) | `unsavedChangesGuard` (`canDeactivate` na trasach szczegółów `/recipes/:id-:slug` i `/explore/recipes/:id-:slug`) + `UnsavedChangesService` (rejestr „brudnych” komponentów); dialog „Niezapisane zmiany” (Opuść / Zostań). |
 | Filtry Explore (PS-96) | `ExploreRecipeFiltersComponent` + `ExploreFilterStateService` (URL ↔ API); stan i ładowanie feedu w `ExplorePageComponent`; rozszerzenie `PublicRecipesService.getPublicRecipesFeed`. |
 
 ---

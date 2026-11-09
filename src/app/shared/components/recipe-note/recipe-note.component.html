@@ -1,0 +1,93 @@
+<section
+    class="recipe-note"
+    aria-labelledby="recipe-note-title"
+    [attr.aria-busy]="pending()"
+    data-testid="recipe-note"
+>
+    <header class="note-header">
+        <h2 id="recipe-note-title" class="note-title">Moja notatka</h2>
+        <p id="recipe-note-hint" class="note-hint">
+            <mat-icon aria-hidden="true">lock</mat-icon>
+            Widoczna tylko dla Ciebie.
+        </p>
+    </header>
+
+    @if (editing()) {
+        <mat-form-field appearance="outline" class="note-field" subscriptSizing="dynamic">
+            <textarea
+                #noteField
+                matInput
+                [formControl]="control"
+                [readonly]="pending()"
+                aria-label="Moja notatka"
+                aria-describedby="recipe-note-hint recipe-note-counter"
+                placeholder="Twoje prywatne uwagi do tego przepisu…"
+                cdkTextareaAutosize
+                cdkAutosizeMinRows="3"
+                cdkAutosizeMaxRows="12"
+                (keydown.control.enter)="onShortcutSave($event)"
+                (keydown.meta.enter)="onShortcutSave($event)"
+            ></textarea>
+            @if (overLimit()) {
+                <mat-error>Notatka może mieć maksymalnie {{ maxLength }} znaków.</mat-error>
+            }
+        </mat-form-field>
+
+        <p
+            id="recipe-note-counter"
+            class="note-counter"
+            [class.over-limit]="overLimit()"
+            aria-live="polite"
+            data-testid="note-counter"
+        >{{ charCount() }} / {{ maxLength }}</p>
+
+        <div class="note-actions">
+            <button mat-flat-button type="button" [disabled]="!canSave()" (click)="save()">
+                @if (pending()) {
+                    <mat-spinner diameter="18" />
+                }
+                Zapisz
+            </button>
+            <button mat-button type="button" [disabled]="pending()" (click)="cancel()">Anuluj</button>
+            @if (saved() !== null) {
+                <button
+                    mat-button
+                    type="button"
+                    color="warn"
+                    aria-label="Usuń notatkę"
+                    data-testid="note-remove"
+                    [disabled]="pending()"
+                    (click)="remove()"
+                >Usuń</button>
+            }
+        </div>
+    } @else if (saved() !== null) {
+        <p class="note-text" data-testid="note-text">{{ saved() }}</p>
+        <div class="note-actions">
+            <button
+                #editButton
+                mat-stroked-button
+                type="button"
+                [disabled]="pending()"
+                (click)="startEdit()"
+            >
+                <mat-icon aria-hidden="true">edit</mat-icon> Edytuj
+            </button>
+            <button
+                mat-button
+                type="button"
+                color="warn"
+                aria-label="Usuń notatkę"
+                data-testid="note-remove"
+                [disabled]="pending()"
+                (click)="remove()"
+            >Usuń</button>
+        </div>
+    } @else {
+        <div class="note-actions">
+            <button #addButton mat-stroked-button type="button" (click)="startEdit()">
+                <mat-icon aria-hidden="true">note_add</mat-icon> Dodaj notatkę
+            </button>
+        </div>
+    }
+</section>

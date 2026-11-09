@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { recipeIdSlugMatcher, recipeIdOnlyMatcher } from '../../core/routing/recipe-url.matchers';
+import { unsavedChangesGuard } from '../../core/guards/unsaved-changes.guard';
 
 export const recipesRoutes: Routes = [
     {
@@ -53,6 +54,7 @@ export const recipesRoutes: Routes = [
             import('./recipe-detail/recipe-detail-page.component').then(
                 (m) => m.RecipeDetailPageComponent
             ),
+        canDeactivate: [unsavedChangesGuard],
         data: { breadcrumb: 'Szczegóły', urlPrefix: 'recipes' },
     },
     // Legacy URL - tylko :id (normalizacja do formatu kanonicznego)

@@ -257,6 +257,8 @@ export interface PublicRecipeDetailDto {
     ratings_count: number;
     /** Authenticated user's rating, omitted for anonymous responses. */
     my_rating?: number | null;
+    /** Authenticated user's private recipe note, omitted for anonymous responses. */
+    my_note?: string | null;
 }
 
 /**
@@ -328,7 +330,21 @@ export type RecipeDetailDto = Omit<
     ratings_count: number | null;
     /** Authenticated user's rating, omitted for anonymous responses. */
     my_rating?: number | null;
+    /** Authenticated user's private recipe note, omitted for anonymous responses. */
+    my_note?: string | null;
 };
+
+/** Request body for PUT /recipes/{id}/note. */
+export interface SetRecipeNoteRequestDto {
+    note: string | null;
+}
+
+/** Response body for PUT /recipes/{id}/note. */
+export interface RecipeNoteResponseDto {
+    recipe_id: number;
+    note: string | null;
+    updated_at: string | null;
+}
 
 /** State of the authenticated user's personal flags for a recipe. */
 export interface RecipeFlagsDto {
