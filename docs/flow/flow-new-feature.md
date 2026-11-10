@@ -21,10 +21,17 @@ można powtórzyć po przerwie. Ścieżki i nazewnictwo są zdefiniowane w
    i review.
 6. Updater zapisuje zwięzłą aktualizację `project-summary.md`.
 
-Po każdym etapie orkiestrator zatrzymuje się na akceptację użytkownika. Nie
-uruchamia deployu ani testów E2E. Czynności ręczne z `deployment-plan.md` są
-pokazywane na końcu; commit wykonuje użytkownik. Poniższy opis promptów jest
-archiwalnym opisem poprzedniego procesu.
+Po każdym etapie orkiestrator zatrzymuje się na akceptację użytkownika. Przed
+implementacją API wykonuje preflight Deno/Supabase/Docker i sprawdza porty z
+`supabase/config.toml`. Po implementacji wykonywany jest pełny check, test,
+migracja lokalna i smoke test workera. Brak któregokolwiek z nich ma status
+`WYMAGA_WERYFIKACJI`, nie `PASS`.
+
+Review jest dzielony na `api-db`, `api-code`, `api-tests` i `views`. Po jednym
+aborcie tego samego zakresu orkiestrator zmienia strategię; nie powtarza
+wywołania w pętli. Każdy review zapisuje artefakt, a pominięcie zapisuje
+`BEZ_REVIEW` z powodem. Nie uruchamia deployu ani testów E2E. Czynności ręczne z
+`deployment-plan.md` są pokazywane na końcu; commit wykonuje użytkownik.
 
 Aby zaplanować, zaimplementować i wdrożyć nową funkcjonalność, wybierz jedną z dwóch ścieżek:
 

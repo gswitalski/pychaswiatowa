@@ -106,3 +106,35 @@ supabase secrets list
 - Nie commituj plików z rzeczywistymi kluczami API
 - Dla testów lokalnych możesz użyć konta testowego z bazy danych development
 - Dla CI/CD użyj GitHub Secrets do przechowywania tych wartości
+
+## Lokalna weryfikacja Supabase
+
+Porty projektu są niestandardowe i wynikają z `supabase/config.toml`:
+
+- API: `54331`
+- PostgreSQL: `54332`
+- Studio: `54333`
+- Mailpit: `54334`
+
+Przed implementacją backendu sprawdź:
+
+```powershell
+deno --version
+supabase --version
+docker version
+supabase status
+```
+
+Do sprawdzania migracji lokalnych używaj `supabase migration list --local`;
+bez `--local` CLI może odpytać zdalny projekt. Po problemach z uruchomieniem
+Docker Desktop zatrzymaj nieużywane stacki Supabase. Logi Edge Functions
+czytaj przede wszystkim poleceniem:
+
+```powershell
+docker logs supabase_edge_runtime_pychaswiatowa
+```
+
+Smoke test funkcji powinien wywołać
+`http://localhost:54331/functions/v1/{funkcja}`. Oczekiwane `401` lub inne
+`4xx` z kodu funkcji oznacza, że worker wystartował; `500`,
+`InvalidWorkerResponse` albo brak odpowiedzi oznacza błąd.
