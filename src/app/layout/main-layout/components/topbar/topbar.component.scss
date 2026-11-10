@@ -9,6 +9,7 @@
     padding: 0 16px;
     background-color: var(--mat-sys-surface);
     border-bottom: 1px solid var(--mat-sys-outline-variant);
+    --topbar-username-max-width: 160px;
 
     &__left {
         display: flex;
@@ -84,12 +85,14 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        flex-shrink: 0;
+        min-width: 0;
+        flex-shrink: 1;
     }
 
     &__pricing-link {
         color: var(--mat-sys-primary);
         font-weight: 500;
+        flex-shrink: 0;
     }
 
     &__dashboard-link {
@@ -106,6 +109,59 @@
             width: 28px;
             height: 28px;
         }
+    }
+
+    &__user-button {
+        min-width: 0;
+        max-width: 100%;
+        flex-shrink: 1;
+    }
+
+    &__username {
+        display: block;
+        min-width: 0;
+        max-width: var(--topbar-username-max-width);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--mat-sys-on-surface);
+        font: var(--mat-sys-label-large);
+        line-height: 1.5;
+    }
+
+    &__menu-header {
+        max-width: min(280px, calc(100vw - 32px));
+        padding: 12px 16px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        color: var(--mat-sys-on-surface-variant);
+        font: var(--mat-sys-body-medium);
+    }
+
+    &__menu-username {
+        color: var(--mat-sys-on-surface);
+        font-weight: 600;
+    }
+
+    &__user-button--named {
+        @media (min-width: 600px) {
+            --mat-icon-button-container-shape: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: auto;
+            padding: 0 8px 0 12px;
+
+            mat-icon {
+                flex-shrink: 0;
+            }
+        }
+    }
+}
+
+@media (min-width: 960px) {
+    .topbar {
+        --topbar-username-max-width: clamp(72px, calc(50vw - 392px), 160px);
     }
 }
 
@@ -146,5 +202,15 @@
         &__logo-link {
             margin-left: 4px;
         }
+
+        &__username {
+            display: none;
+        }
+    }
+}
+
+@media (min-width: 481px) and (max-width: 599.98px) {
+    .topbar__username {
+        display: none;
     }
 }

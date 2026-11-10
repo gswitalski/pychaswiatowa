@@ -4,11 +4,14 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDividerModule } from '@angular/material/divider';
 import { LayoutService } from '../../../../core/services/layout.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { OmniboxComponent } from '../../../../shared/components/omnibox/omnibox.component';
 import { MainNavigationComponent } from '../../../../shared/components/main-navigation/main-navigation.component';
 import { MainNavigationItem, MAIN_NAVIGATION_ITEMS } from '../../../../shared/models/ui.models';
+import { CurrentUserStateService } from '../../../../core/services/current-user-state.service';
 
 /**
  * Top bar component containing breadcrumbs, global search, and user menu.
@@ -22,6 +25,8 @@ import { MainNavigationItem, MAIN_NAVIGATION_ITEMS } from '../../../../shared/mo
         MatButtonModule,
         MatIconModule,
         MatMenuModule,
+        MatTooltipModule,
+        MatDividerModule,
         OmniboxComponent,
         MainNavigationComponent,
     ],
@@ -33,6 +38,7 @@ export class TopbarComponent {
     private readonly layoutService = inject(LayoutService);
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
+    private readonly currentUserState = inject(CurrentUserStateService);
 
     /** Determines if sidebar should be visible (passed from MainLayout) */
     readonly shouldShowSidebar = input.required<boolean>();
@@ -48,6 +54,12 @@ export class TopbarComponent {
 
     /** Pricing is relevant only for authenticated users on the Free plan. */
     readonly shouldShowPricingLink = computed(() => this.authService.appRole() === 'user');
+
+    readonly displayName = this.currentUserState.displayName;
+    readonly userGreeting = computed(() => {
+        const name = this.displayName();
+        return name ? `Zalogowano jako ${name}` : null;
+    });
 
     /** Topbar navigation items with conditional Admin entry */
     readonly mainNavItems = computed<MainNavigationItem[]>(() => {

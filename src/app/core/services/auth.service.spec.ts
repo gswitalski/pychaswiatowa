@@ -13,7 +13,8 @@ import { MeDto, SignUpRequestDto } from '../../../../shared/contracts/types';
 import { AiCreditsService } from './ai-credits.service';
 import { MeApiService } from './me-api.service';
 import { SubscriptionStateService } from './subscription-state.service';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
+import { CurrentUserStateService } from './current-user-state.service';
 
 interface MockSupabaseService {
     auth: {
@@ -41,6 +42,10 @@ describe('AuthService', () => {
     let mockSubscriptionStateService: {
         applyMe: ReturnType<typeof vi.fn>;
         reset: ReturnType<typeof vi.fn>;
+    };
+    let mockCurrentUserStateService: {
+        switchUser: ReturnType<typeof vi.fn>;
+        applyMe: ReturnType<typeof vi.fn>;
     };
 
     // Inicjalizacja środowiska testowego Angular
@@ -74,6 +79,10 @@ describe('AuthService', () => {
             applyMe: vi.fn(),
             reset: vi.fn(),
         };
+        mockCurrentUserStateService = {
+            switchUser: vi.fn(),
+            applyMe: vi.fn(),
+        };
 
         // Konfiguracja TestBed
         await TestBed.configureTestingModule({
@@ -85,6 +94,10 @@ describe('AuthService', () => {
                 {
                     provide: SubscriptionStateService,
                     useValue: mockSubscriptionStateService,
+                },
+                {
+                    provide: CurrentUserStateService,
+                    useValue: mockCurrentUserStateService,
                 },
             ],
         }).compileComponents();
@@ -344,6 +357,8 @@ describe('AuthService', () => {
             expect(service.appRole()).toBe('premium');
             expect(mockSubscriptionStateService.reset).toHaveBeenCalledTimes(1);
             expect(mockSubscriptionStateService.applyMe).toHaveBeenCalledWith(me);
+            expect(mockCurrentUserStateService.switchUser).toHaveBeenCalledWith('user-1');
+            expect(mockCurrentUserStateService.applyMe).toHaveBeenCalledWith(me);
             expect(mockAiCreditsService.bootstrapFromMeResponse).toHaveBeenLastCalledWith(
                 me.ai_credits,
             );
@@ -385,6 +400,91 @@ describe('AuthService', () => {
                 scope: 'local',
             });
             expect(mockMeApiService.getMe).not.toHaveBeenCalled();
+            expect(mockCurrentUserStateService.switchUser).toHaveBeenCalledWith(null);
+            expect(mockCurrentUserStateService.applyMe).not.toHaveBeenCalled();
+        });
+
+        it('nie czyści nazwy ani nie stosuje odpowiedzi po błędzie GET /me', async () => {
+            const session = {
+                access_token: 'header.e30=.signature',
+                user: { id: 'user-1' },
+            } as Session;
+            mockSupabaseService.auth.getSession.mockResolvedValue({
+                data: { session },
+                error: null,
+            });
+            mockSupabaseService.auth.getUser.mockResolvedValue({
+                data: { user: session.user },
+                error: null,
+            });
+            mockSupabaseService.auth.onAuthStateChange.mockReturnValue({
+                data: { subscription: { unsubscribe: vi.fn() } },
+            });
+            mockMeApiService.getMe.mockReturnValue(
+                throwError(() => ({ status: 500, message: 'GET /me failed' })),
+            );
+            const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            await service.initAuthState();
+
+            expect(mockCurrentUserStateService.switchUser).toHaveBeenCalledWith('user-1');
+            expect(mockCurrentUserStateService.applyMe).not.toHaveBeenCalled();
+            expect(consoleError).toHaveBeenCalled();
+            consoleError.mockRestore();
+        });
+
+        it('przy zmianie użytkownika ignoruje spóźnioną odpowiedź poprzedniego GET /me', async () => {
+            const responseA = new Subject<MeDto>();
+            const responseB = new Subject<MeDto>();
+            const sessionA = {
+                access_token: 'header.e30=.signature',
+                user: { id: 'user-a' },
+            } as Session;
+            const sessionB = {
+                access_token: 'header.e30=.signature',
+                user: { id: 'user-b' },
+            } as Session;
+            const meA: MeDto = {
+                id: 'user-a',
+                username: 'A',
+                app_role: 'user',
+                ai_credits: null,
+                subscription_status: 'none',
+                subscription_plan_id: null,
+                current_period_end: null,
+                auto_renew: false,
+                trial_ends_at: null,
+            };
+            const meB: MeDto = { ...meA, id: 'user-b', username: 'B' };
+
+            mockSupabaseService.auth.getSession.mockResolvedValue({
+                data: { session: null },
+                error: null,
+            });
+            mockSupabaseService.auth.onAuthStateChange.mockReturnValue({
+                data: { subscription: { unsubscribe: vi.fn() } },
+            });
+            mockMeApiService.getMe
+                .mockReturnValueOnce(responseA)
+                .mockReturnValueOnce(responseB);
+
+            await service.initAuthState();
+            const authChangeCallback =
+                mockSupabaseService.auth.onAuthStateChange.mock.calls[0][0] as (
+                    event: string,
+                    currentSession: Session | null,
+                ) => void;
+
+            authChangeCallback('SIGNED_IN', sessionA);
+            authChangeCallback('SIGNED_IN', sessionB);
+            responseB.next(meB);
+            responseB.complete();
+            responseA.next(meA);
+            responseA.complete();
+            await Promise.resolve();
+
+            expect(mockCurrentUserStateService.applyMe).toHaveBeenCalledTimes(1);
+            expect(mockCurrentUserStateService.applyMe).toHaveBeenCalledWith(meB);
         });
     });
 });

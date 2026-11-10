@@ -8,6 +8,7 @@ import {
     UpdateProfileSettingsCommand,
 } from '../../../../../shared/contracts/types';
 import { ProfileSettingsApiService } from '../../../core/services/profile-settings-api.service';
+import { CurrentUserStateService } from '../../../core/services/current-user-state.service';
 
 export interface ProfileSettingsFormValue {
     email: string;
@@ -18,6 +19,7 @@ export interface ProfileSettingsFormValue {
 @Injectable()
 export class ProfileSettingsFacade {
     private readonly profileSettingsApi = inject(ProfileSettingsApiService);
+    private readonly currentUserState = inject(CurrentUserStateService);
 
     readonly profile = signal<ProfileSettingsDto | null>(null);
     readonly isInitialLoading = signal<boolean>(true);
@@ -81,6 +83,7 @@ export class ProfileSettingsFacade {
             .subscribe({
                 next: (profile) => {
                     this.profile.set(this.normalizeProfile(profile));
+                    this.currentUserState.applyProfile(profile);
                     this.lastSuccessMessage.set('Zmiany profilu zostały zapisane.');
                 },
                 error: (error) => {

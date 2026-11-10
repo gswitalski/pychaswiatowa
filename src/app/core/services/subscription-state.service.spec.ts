@@ -11,10 +11,13 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MeDto } from '../../../../shared/contracts/types';
 import { MeApiService } from './me-api.service';
 import { SubscriptionStateService } from './subscription-state.service';
+import { CurrentUserStateService } from './current-user-state.service';
 
 describe('SubscriptionStateService', () => {
     const getMe = vi.fn();
     let service: SubscriptionStateService;
+    let currentUserState: CurrentUserStateService;
+    let applyMeSpy: ReturnType<typeof vi.spyOn>;
 
     const me: MeDto = {
         id: 'user-1',
@@ -39,6 +42,9 @@ describe('SubscriptionStateService', () => {
             providers: [SubscriptionStateService, { provide: MeApiService, useValue: { getMe } }],
         });
         service = TestBed.inject(SubscriptionStateService);
+        currentUserState = TestBed.inject(CurrentUserStateService);
+        currentUserState.switchUser('user-1');
+        applyMeSpy = vi.spyOn(currentUserState, 'applyMe');
     });
 
     it('powinien zmapować odpowiedź /me na sygnały subskrypcji', () => {
@@ -87,5 +93,50 @@ describe('SubscriptionStateService', () => {
 
         await expect(service.refresh()).resolves.toEqual(me);
         expect(service.hasActiveSubscription()).toBe(false);
+        expect(applyMeSpy).toHaveBeenCalledWith(me);
+    });
+
+    it('przekazuje /me do stanu użytkownika po udanym ensureLoaded', async () => {
+        getMe.mockReturnValue(of(me));
+
+        await service.ensureLoaded();
+
+        expect(applyMeSpy).toHaveBeenCalledTimes(1);
+        expect(applyMeSpy).toHaveBeenCalledWith(me);
+    });
+
+    it('nie przekazuje nazwy po błędzie ensureLoaded ani refresh', async () => {
+        getMe.mockReturnValue(throwError(() => ({ status: 500 })));
+
+        await service.ensureLoaded();
+        await service.refresh();
+
+        expect(applyMeSpy).not.toHaveBeenCalled();
+    });
+
+    it('nie przekazuje spóźnionej odpowiedzi po reset podczas ensureLoaded i refresh', async () => {
+        const ensureResponse = new Subject<MeDto>();
+        getMe.mockReturnValueOnce(ensureResponse);
+        const ensurePromise = service.ensureLoaded();
+        service.reset();
+        ensureResponse.next(me);
+        ensureResponse.complete();
+        await ensurePromise;
+
+        const refreshResponse = new Subject<MeDto>();
+        getMe.mockReturnValueOnce(refreshResponse);
+        const refreshPromise = service.refresh();
+        service.reset();
+        refreshResponse.next(me);
+        refreshResponse.complete();
+        await refreshPromise;
+
+        expect(applyMeSpy).not.toHaveBeenCalled();
+    });
+
+    it('nie przekazuje nazwy przy publicznym applyMe serwisu subskrypcji', () => {
+        service.applyMe(me);
+
+        expect(applyMeSpy).not.toHaveBeenCalled();
     });
 });

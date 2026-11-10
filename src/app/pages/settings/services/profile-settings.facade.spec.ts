@@ -14,6 +14,7 @@ import {
     ProfileSettingsDto,
     UpdateProfileSettingsCommand,
 } from '../../../../../shared/contracts/types';
+import { CurrentUserStateService } from '../../../core/services/current-user-state.service';
 
 describe('ProfileSettingsFacade', () => {
     const profileDto: ProfileSettingsDto = {
@@ -50,6 +51,9 @@ describe('ProfileSettingsFacade', () => {
                 { provide: ProfileSettingsApiService, useValue: apiMock },
             ],
         });
+        const currentUserState = TestBed.inject(CurrentUserStateService);
+        currentUserState.switchUser(null);
+        currentUserState.switchUser(profileDto.id);
     });
 
     it('powinien załadować profil i wyłączyć loading', () => {
@@ -69,6 +73,8 @@ describe('ProfileSettingsFacade', () => {
 
     it('powinien mapować błąd 409 podczas zapisu', () => {
         const facade = TestBed.inject(ProfileSettingsFacade);
+        const currentUserState = TestBed.inject(CurrentUserStateService);
+        const applyProfile = vi.spyOn(currentUserState, 'applyProfile');
         const command: UpdateProfileSettingsCommand = {
             username: 'taken',
             marketing_consent: true,
@@ -88,6 +94,48 @@ describe('ProfileSettingsFacade', () => {
             message: 'Ta nazwa użytkownika jest już zajęta.',
             status: 409,
         });
+        expect(currentUserState.displayName()).toBeNull();
+        expect(applyProfile).not.toHaveBeenCalled();
+    });
+
+    it('stosuje profil po udanym zapisie bez dodatkowego GET profilu', () => {
+        const facade = TestBed.inject(ProfileSettingsFacade);
+        const savedProfile: ProfileSettingsDto = {
+            ...profileDto,
+            username: '  Jan Kowalski  ',
+        };
+        apiMock.updateProfileSettings.mockReturnValue(of(savedProfile));
+        const currentUserState = TestBed.inject(CurrentUserStateService);
+        const applyProfile = vi.spyOn(currentUserState, 'applyProfile');
+        const command: UpdateProfileSettingsCommand = {
+            username: 'Jan Kowalski',
+            marketing_consent: false,
+            marketing_consent_text_version: null,
+        };
+
+        facade.saveProfile(command);
+
+        expect(applyProfile).toHaveBeenCalledWith(savedProfile);
+        expect(currentUserState.displayName()).toBe('Jan Kowalski');
+        expect(apiMock.getProfileSettings).not.toHaveBeenCalled();
+    });
+
+    it('nie stosuje profilu po błędzie 500', () => {
+        const facade = TestBed.inject(ProfileSettingsFacade);
+        const currentUserState = TestBed.inject(CurrentUserStateService);
+        const applyProfile = vi.spyOn(currentUserState, 'applyProfile');
+        apiMock.updateProfileSettings.mockReturnValue(
+            throwError(() => ({ message: 'Server error', status: 500 })),
+        );
+
+        facade.saveProfile({
+            username: 'new-name',
+            marketing_consent: false,
+            marketing_consent_text_version: null,
+        });
+
+        expect(applyProfile).not.toHaveBeenCalled();
+        expect(currentUserState.displayName()).toBeNull();
     });
 
     it('powinien mapować błąd 422 przy zmianie hasła', async () => {

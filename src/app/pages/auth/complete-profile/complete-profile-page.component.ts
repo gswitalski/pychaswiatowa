@@ -12,6 +12,7 @@ import { PostAuthRedirectService } from '../../../core/services/post-auth-redire
 import { ProfileSettingsApiService } from '../../../core/services/profile-settings-api.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { CompleteProfileFormComponent } from './components/complete-profile-form/complete-profile-form.component';
+import { CurrentUserStateService } from '../../../core/services/current-user-state.service';
 
 interface CompleteProfileState {
     isLoadingSession: boolean;
@@ -41,6 +42,7 @@ export class CompleteProfilePageComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly snackBar = inject(MatSnackBar);
     private readonly postAuthRedirect = inject(PostAuthRedirectService);
+    private readonly currentUserState = inject(CurrentUserStateService);
 
     public readonly state = signal<CompleteProfileState>({
         isLoadingSession: true,
@@ -66,13 +68,14 @@ export class CompleteProfilePageComponent implements OnInit {
         }));
 
         try {
-            await firstValueFrom(
+            const profile = await firstValueFrom(
                 this.profileSettingsApi.updateProfileSettings({
                     username: normalizedUsername,
                     marketing_consent: false,
                     marketing_consent_text_version: MARKETING_CONSENT_TEXT_VERSION,
                 }),
             );
+            this.currentUserState.applyProfile(profile);
             this.profileCompletion.markComplete();
             await this.router.navigateByUrl(this.postAuthRedirect.consume() ?? '/dashboard');
         } catch (error) {

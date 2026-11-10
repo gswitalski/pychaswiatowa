@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 9 listopada 2026 — prywatna notatka użytkownika przy przepisie PS-31, wcześniej: analiza jednego przepisu AI z wielu zdjęć PS-100, oceny przepisów PS-99 (API i widoki), filtry katalogu Odkrywaj PS-96, osobiste flagi przepisów PS-95 oraz metadane draftu AI PS-91.
+> **Aktualizacja:** 10 listopada 2026 — nazwa użytkownika w topbarze PS-37 (zaimplementowane, niezweryfikowane), wcześniej: prywatna notatka użytkownika przy przepisie PS-31, analiza jednego przepisu AI z wielu zdjęć PS-100, oceny przepisów PS-99 (API i widoki), filtry katalogu Odkrywaj PS-96, osobiste flagi przepisów PS-95 oraz metadane draftu AI PS-91.
 
 ---
 
@@ -35,6 +35,8 @@ migawka w tym dokumencie.
 
 **Notatka użytkownika przy przepisie (PS-31):** implementacja warstwy API i widoków — **zakończona**. `PUT /recipes/{id}/note` atomowo ustawia notatkę (1–2000 znaków po normalizacji) albo usuwa ją przez `null`/pusty tekst; notatka jest wyłącznie prywatna — autor ani inni użytkownicy jej nie widzą. Notatkę można dodać do własnego przepisu oraz do cudzego `PUBLIC`; cudzy niepubliczny lub usunięty przepis zwraca `404`. Baza: `user_recipe_notes` (migracja `20261109120000_create_user_recipe_notes.sql`), RLS, RPC `set_recipe_note`; współdzielony moduł `_shared/recipe-notes.ts`. `my_note` jest zwracane w szczegółach `/recipes/{id}`, `/explore/recipes/{id}` i `/public/recipes/{id}` wyłącznie zalogowanemu (gość bez pola w JSON). UI: `RecipeNoteService` i `RecipeNoteComponent` w `RecipeDetailViewComponent` na `/recipes/:id-:slug` oraz `/explore/recipes/:id-:slug` (dodaj / edytuj / usuń z potwierdzeniem, licznik znaków, Ctrl+Enter, snackbar, obsługa `401`). Niezapisana notatka jest chroniona przez `unsavedChangesGuard` (`canDeactivate` na obu trasach szczegółów) i `UnsavedChangesService`. Notatki nie są wyszukiwane ani pokazywane na listach.
 
+**Nazwa użytkownika w topbarze (PS-37):** status — **zaimplementowane, niezweryfikowane**. Tylko frontend, bez zmian API, migracji i kontraktów (`MeDto.username` i `ProfileSettingsDto.username` już istniały). Nowy `CurrentUserStateService` (root) trzyma `username` / `displayName` aktywnego użytkownika; zasilają go `AuthService` (`GET /me` przy bootstrapie, `switchUser` przy zmianie/wylogowaniu), `SubscriptionStateService` (`ensureLoaded`/`refresh`), `ProfileSettingsFacade` (po `PUT /profile`) i `CompleteProfilePageComponent`; obce `id` i błędy są ignorowane. `TopbarComponent` pokazuje nazwę obok ikony konta (od 600 px, `ellipsis`, `clamp()` od 960 px; poniżej 600 px tylko ikona), tooltip i `aria-label` „Zalogowano jako …” oraz nagłówek w menu użytkownika. Weryfikacja PS-37: API review — BEZ_REVIEW (brak zmian w `supabase/`, `shared/contracts/`, `.github/`); widoki review — r1 ZMIANY_WYMAGANE (luki w testach), r2 AKCEPTACJA, ale wykonane w głównym czacie (`ps-code-reviewer` dwukrotnie przerwany), więc bez niezależnego reviewera; migracje — NIE_WYKONANO (nie dotyczy, brak migracji); Deno — NIE_WYKONANO (brak lokalnego `deno`, bramka CI `validate-backend`); smoke test API S1–S9 — NIE_WYKONANO (brak `.env.local` z użytkownikiem testowym); `npm run test:run` PASS (62 pliki, 361 testów), `npm run lint` PASS, `npm run build` PASS; testy ręczne w przeglądarce (kalibracja `clamp()`, breakpointy <600 / 600–959 / 960+, tooltip, czytnik ekranu, odświeżenie po zmianie nazwy w Ustawieniach) — NIE_WYKONANO.
+
 ### Dostarczone poza pierwotnym szkicem summary
 
 - **Google OAuth** (Supabase Auth, PKCE): wspólny przycisk na `/login` i `/register`, callback z rozgałęzieniem e-mail vs OAuth, ekran `/auth/complete-profile` (walidacja async username, `PUT /profile`), guardy `oauthCompleteProfileGuard` / `usernameCompleteMatchGuard` + `ProfileCompletionService`; obsługa błędów OAuth na `/login?error=…`
@@ -52,6 +54,7 @@ migawka w tym dokumencie.
 - **Osobiste flagi przepisów (PS-95):** przełączniki „Ulubiony” / „Chcę wypróbować” w nagłówku szczegółów; wskaźnik serduszka na `RecipeCardComponent`; wszystkie role zalogowane; prywatność flag względem autora i innych użytkowników
 - **Filtry Odkrywaj (PS-96):** chipy Termorobot, Grill, dieta (Wszystkie / Wegetariańskie+ / Tylko wegańskie), dla zalogowanych Ulubione i Chcę wypróbować; query params w URL; filtrowanie przez `GET /public/recipes/feed`
 - **Notatka przy przepisie (PS-31):** prywatna notatka (do 2000 znaków) w szczegółach własnych i publicznych cudzych przepisów; edycja inline, usuwanie z potwierdzeniem, dialog „Niezapisane zmiany” przy opuszczeniu strony
+- **Nazwa użytkownika w topbarze (PS-37, zaimplementowane, niezweryfikowane):** `CurrentUserStateService` + nazwa obok ikony konta w `TopbarComponent` (responsywnie, tooltip, nagłówek menu); odświeżanie po zmianie nazwy w Ustawieniach i po uzupełnieniu profilu
 
 ### Backlog produktowy (Jira — Do zrobienia)
 
@@ -60,7 +63,6 @@ migawka w tym dokumencie.
 | PS-15 | Autor przepisu na widoku szczegółowym |
 | PS-34 | Poprawa generowania opisu przez AI |
 | PS-35 | Poprawa generowania zdjęcia przez AI |
-| PS-37 | Nazwa użytkownika obok ikony w nawigacji |
 | PS-38 | Gemini przy generowaniu zdjęcia **bez** referencji |
 | PS-59 | Drag & drop obrazka do asysty AI |
 
@@ -143,6 +145,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 | PS-92 | Wklej ze schowka (przycisk) | Odczyt obrazu przez `navigator.clipboard.read()` bez wymogu fokusu na strefie paste. Formularz przepisu i asysta AI (obraz). Te same formaty i limit 10 MB co upload; błędy inline. |
 | PS-95 | Osobiste flagi przepisu | Toggle „Ulubiony” i „Chcę wypróbować” na szczegółach (`/recipes/…`, `/explore/recipes/…`); serduszko na kafelkach list; prywatne, wszystkie role; `PUT /recipes/{id}/flags`. |
 | PS-31 | Notatka użytkownika przy przepisie | Prywatna notatka (1–2000 znaków) na szczegółach `/recipes/…` i `/explore/recipes/…`; dodaj/edytuj/usuń; `PUT /recipes/{id}/note`; `my_note` tylko dla zalogowanego; guard niezapisanych zmian. |
+| PS-37 | Nazwa użytkownika w topbarze | Zalogowany: nazwa obok ikony konta (od 600 px, obcięcie `ellipsis`; poniżej 600 px tylko ikona), tooltip/`aria-label` „Zalogowano jako …”, nagłówek w menu użytkownika; odświeżenie po zmianie w `/settings`. Status: zaimplementowane, niezweryfikowane (brak testów ręcznych). |
 | PS-96 | Filtry w katalogu Odkrywaj | `/explore`: chipy filtrów (Termorobot, Grill, dieta vege_plus/vegan, Ulubione/Chcę wypróbować dla zalogowanych); sync z URL; `GET /public/recipes/feed` z parametrami `diet`, `favorite`, `want_to_try`; reset paginacji przy zmianie filtrów; empty state „Wyczyść filtry”. |
 | PS-99 | Oceny przepisów | Ocena 1–5 na szczegółach publicznych przepisów; agregat dostępny dla gościa, zapis dla zalogowanego nie-autora, optimistic update i rollback. |
 | US-028 | Liczba porcji | Opcjonalne pole 1-99, wyświetlane pod tytułem z odmianą. |
@@ -495,7 +498,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 
 ## 6. Widoki UI (streszczenie High-Level UI Plan)
 
-Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-first, Bottom Bar na mobile/tablet (<960px). Trasy zalogowane: `authenticatedMatchGuard`; prywatne wymagające pełnego profilu — dodatkowo `usernameCompleteMatchGuard` (brak `username` → `/auth/complete-profile`, cache w `ProfileCompletionService`). `/auth/complete-profile`: `oauthCompleteProfileGuard`. `/admin/*`: dodatkowo `adminRoleMatchGuard`. Stan kredytów AI: skrót z `GET /me` przy bootstrapie sesji, pełne saldo z `GET /ai/credits`.
+Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-first, Bottom Bar na mobile/tablet (<960px). Trasy zalogowane: `authenticatedMatchGuard`; prywatne wymagające pełnego profilu — dodatkowo `usernameCompleteMatchGuard` (brak `username` → `/auth/complete-profile`, cache w `ProfileCompletionService`). `/auth/complete-profile`: `oauthCompleteProfileGuard`. `/admin/*`: dodatkowo `adminRoleMatchGuard`. Stan kredytów AI: skrót z `GET /me` przy bootstrapie sesji, pełne saldo z `GET /ai/credits`. Nazwa zalogowanego użytkownika (PS-37): `CurrentUserStateService` (`username`, `displayName`), zasilany z `GET /me`, `PUT /profile` (Ustawienia, `/auth/complete-profile`) i czyszczony przy zmianie/wylogowaniu użytkownika.
 
 ### Widoki publiczne
 
@@ -556,6 +559,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Flagi przepisu (PS-95) | `RecipeFlagsService` + `RecipeFlagTogglesComponent` w `RecipeDetailViewComponent`; wskaźnik `.favorite-indicator` na `RecipeCardComponent`. |
 | Oceny przepisu (PS-99) | `RecipeRatingService` + `RecipeRatingComponent` w `RecipeDetailViewComponent`; średnia i liczba ocen dla gościa, interaktywna ocena dla zalogowanego nie-autora. |
 | Notatka przepisu (PS-31) | `RecipeNoteService` + `RecipeNoteComponent` (`pych-recipe-note`) w `RecipeDetailViewComponent`, widoczny gdy `my_note` jest w odpowiedzi (zalogowany). Tryby: pusty / podgląd / edycja; walidacja 2000 znaków, Ctrl+Enter, usuwanie z potwierdzeniem, rollback i snackbar przy błędzie, `401` → `sessionExpired`. |
+| Topbar — nazwa użytkownika (PS-37) | `TopbarComponent` czyta `displayName` z `CurrentUserStateService`: przycisk menu z nazwą obok ikony (≥600 px; `--topbar-username-max-width`, `clamp()` od 960 px), `matTooltip` i `aria-label` „Zalogowano jako …”, nagłówek „Zalogowano jako …” w menu; bez nazwy — sama ikona i `aria-label` „Menu użytkownika”. Zaimplementowane, niezweryfikowane ręcznie. |
 | Guard niezapisanych zmian (PS-31) | `unsavedChangesGuard` (`canDeactivate` na trasach szczegółów `/recipes/:id-:slug` i `/explore/recipes/:id-:slug`) + `UnsavedChangesService` (rejestr „brudnych” komponentów); dialog „Niezapisane zmiany” (Opuść / Zostań). |
 | Filtry Explore (PS-96) | `ExploreRecipeFiltersComponent` + `ExploreFilterStateService` (URL ↔ API); stan i ładowanie feedu w `ExplorePageComponent`; rozszerzenie `PublicRecipesService.getPublicRecipesFeed`. |
 

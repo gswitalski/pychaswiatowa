@@ -42,14 +42,29 @@
         }
         <button
             mat-icon-button
+            type="button"
             [matMenuTriggerFor]="userMenu"
-            aria-label="Menu użytkownika"
-            class="topbar__avatar"
+            class="topbar__avatar topbar__user-button"
+            [class.topbar__user-button--named]="displayName() !== null"
+            [attr.aria-label]="userGreeting() ?? 'Menu użytkownika'"
+            [matTooltip]="userGreeting() ?? ''"
+            [matTooltipDisabled]="displayName() === null"
+            #userTooltip="matTooltip"
+            (menuOpened)="userTooltip.hide(0)"
         >
-            <mat-icon>account_circle</mat-icon>
+            @if (displayName(); as name) {
+                <span class="topbar__username" aria-hidden="true">{{ name }}</span>
+            }
+            <mat-icon aria-hidden="true">account_circle</mat-icon>
         </button>
 
         <mat-menu #userMenu="matMenu" xPosition="before">
+            @if (displayName(); as name) {
+                <div class="topbar__menu-header" role="presentation">
+                    Zalogowano jako <span class="topbar__menu-username">{{ name }}</span>
+                </div>
+                <mat-divider></mat-divider>
+            }
             <a mat-menu-item routerLink="/settings">
                 <mat-icon>settings</mat-icon>
                 <span>Ustawienia</span>

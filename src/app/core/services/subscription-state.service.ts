@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import type { MeDto } from '../../../../shared/contracts/types';
 import type { SubscriptionSnapshot } from '../models/subscription.model';
 import { MeApiService } from './me-api.service';
+import { CurrentUserStateService } from './current-user-state.service';
 
 interface SubscriptionLoadingRequest {
     generation: number;
@@ -15,6 +16,7 @@ interface SubscriptionLoadingRequest {
 })
 export class SubscriptionStateService {
     private readonly meApi = inject(MeApiService);
+    private readonly currentUserState = inject(CurrentUserStateService);
     private readonly snapshotState = signal<SubscriptionSnapshot | null>(null);
     private readonly refreshErrorStatusState = signal<number | null>(null);
     private loadingRequest: SubscriptionLoadingRequest | null = null;
@@ -50,6 +52,7 @@ export class SubscriptionStateService {
             .then((me) => {
                 if (this.generation === requestGeneration) {
                     this.applyMe(me);
+                    this.currentUserState.applyMe(me);
                 }
             })
             .catch((error: unknown) => {
@@ -84,6 +87,7 @@ export class SubscriptionStateService {
 
             if (this.generation === requestGeneration) {
                 this.applyMe(me);
+                this.currentUserState.applyMe(me);
             }
 
             return me;

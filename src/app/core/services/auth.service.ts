@@ -7,6 +7,7 @@ import { SignUpRequestDto, AppRole } from '../../../../shared/contracts/types';
 import { extractAppRoleFromJwt } from '../utils/jwt.utils';
 import { MeApiService } from './me-api.service';
 import { SubscriptionStateService } from './subscription-state.service';
+import { CurrentUserStateService } from './current-user-state.service';
 
 /** Cooldown w sekundach dla ponownego wysłania linku weryfikacyjnego */
 export const RESEND_COOLDOWN_SECONDS = 60;
@@ -39,6 +40,7 @@ export class AuthService {
     private readonly aiCreditsService = inject(AiCreditsService);
     private readonly meApi = inject(MeApiService);
     private readonly subscriptionState = inject(SubscriptionStateService);
+    private readonly currentUserState = inject(CurrentUserStateService);
 
     /** Signal indicating if user is authenticated */
     readonly isAuthenticated = signal<boolean>(false);
@@ -245,6 +247,7 @@ export class AuthService {
             // User is not authenticated
             this.isAuthenticated.set(false);
             this.userId.set(null);
+            this.currentUserState.switchUser(null);
             this.appRole.set('user'); // Safe fallback
             this.aiCreditsService.bootstrapFromMeResponse(null);
             this.subscriptionState.reset();
@@ -258,6 +261,7 @@ export class AuthService {
 
         this.isAuthenticated.set(true);
         this.userId.set(userId);
+        this.currentUserState.switchUser(userId);
         this.appRole.set(roleResult.appRole);
 
         if (userChanged) {
@@ -285,6 +289,7 @@ export class AuthService {
             }
 
             this.subscriptionState.applyMe(me);
+            this.currentUserState.applyMe(me);
             this.aiCreditsService.bootstrapFromMeResponse(me.ai_credits);
             this.aiCreditsService.refreshCredits();
         } catch (error) {
