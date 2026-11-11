@@ -44,16 +44,37 @@ dla Edge Functions. Nie planuj, nie pisz i nie uruchamiaj testów E2E
 Subagent w trybie `pytania` niczego nie zapisuje. Orkiestrator przekazuje mu
 numer rundy `R` oraz pełną historię wcześniejszych pytań i odpowiedzi. Subagent
 zwraca jeden z wyników:
-- `STATUS: PYTANIA` — 3–7 pytań; każde z krótkim uzasadnieniem, czego dotyczy
-  luka, opcjami odpowiedzi i oznaczoną rekomendacją,
+- `STATUS: PYTANIA` — 3–7 pytań w formacie opisanym niżej,
 - `STATUS: BRAK_PYTAŃ` — wymagania są jednoznaczne.
+
+Każde pytanie musi być zrozumiałe bez otwierania historyjki, planów ani kodu.
+Użytkownik zna produkt, ale nie śledził analizy. Pytanie zawiera:
+1. **Tytuł** — jedno zdanie w języku funkcjonalności, nie nazwa symbolu.
+2. **Kontekst** — 2–4 zdania: jak system działa dziś (fakt z kodu) i czego
+   historyjka nie rozstrzyga; na czym polega problem lub sprzeczność.
+3. **Dlaczego to ważne** — co zobaczy użytkownik aplikacji albo co się zepsuje
+   (bezpieczeństwo, dane, testy, koszt), jeśli wybór będzie zły.
+4. **Opcje** — każda opisana pełnym zdaniem: co konkretnie się stanie, plus
+   jej koszt lub wada. Opcje techniczne tłumacz na skutek widoczny dla
+   użytkownika lub zespołu (np. „link do przefiltrowanej listy da się wysłać
+   innemu adminowi” zamiast „stan w query params”).
+5. **Rekomendacja** — która opcja i dlaczego, jednym zdaniem.
+
+Nie używaj w pytaniach skrótów i identyfikatorów z artefaktów (`API-1`, `G4`,
+`F3.2`, numery scenariuszy, nazwy subagentów jak „explore”) bez rozwinięcia.
+Nazwę funkcji, pliku lub parametru podawaj tylko wtedy, gdy jest niezbędna,
+i zawsze z wyjaśnieniem jej roli w jednym zdaniu.
 
 W obu przypadkach dołącza listy `Założenia` i `Otwarte kwestie`. Runda `R > 1`
 musi wynikać z dotychczasowych odpowiedzi: doprecyzuj odpowiedzi „Inna”,
 rozstrzygnij sprzeczności między odpowiedziami, dopytaj o konsekwencje podjętych
 decyzji (przypadki brzegowe, uprawnienia, błędy, dane) i nie powtarzaj pytań już
 rozstrzygniętych. Orkiestrator zadaje pytania jednej rundy w jednej sesji
-`AskQuestion`. Limit rund podaje skill etapu; po jego wyczerpaniu pozostałe
+`AskQuestion` i nie skraca treści otrzymanej od subagenta: w `prompt` umieszcza
+tytuł, kontekst, „Dlaczego to ważne” i rekomendację, a w etykietach opcji
+pełny opis skutku i wady. Gdy pytanie nie mieści się czytelnie w `prompt`,
+przed wywołaniem `AskQuestion` wypisuje w czacie kontekst wszystkich pytań
+rundy, z tą samą numeracją. Limit rund podaje skill etapu; po jego wyczerpaniu pozostałe
 otwarte kwestie trafiają jako założenia na bramkę akceptacji.
 
 ## Bramka akceptacji

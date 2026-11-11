@@ -13,7 +13,8 @@ Wywołanie: `/ps-new-feature PS-{N} [opis]`.
    Brak narzędzia oznacza `WYMAGA_WERYFIKACJI` przed implementacją.
 2. Uruchamiaj subagentów w świeżym kontekście, przekazując tylko ID, tryb, rundę
    i pełną historię pytań oraz odpowiedzi użytkownika.
-3. Pytania subagentów zadawaj według sekcji „Rundy pytań” z konwencji, a po
+3. Pytania subagentów zadawaj według sekcji „Rundy pytań” z konwencji, bez
+   skracania ich kontekstu i opisów opcji do haseł, a po
    każdym etapie zatrzymuj się na „Bramce akceptacji”. Awarie narzędzi nie są
    osobną bramką: zastosuj procedurę awaryjną i pytaj dopiero po jej wyczerpaniu.
 4. Proces obejmuje wyłącznie testy jednostkowe; nie zlecaj ani nie uruchamiaj E2E.
