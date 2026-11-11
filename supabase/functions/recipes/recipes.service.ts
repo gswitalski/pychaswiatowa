@@ -209,6 +209,7 @@ export interface RecipeDetailDto {
     ratings_count: number | null;
     my_rating?: number | null;
     my_note?: string | null;
+    author: { id: string; username: string };
 }
 
 /**
@@ -325,6 +326,39 @@ export async function getCollectionIdsForRecipe(
             error: err instanceof Error ? err.message : 'Unknown error',
         });
         return [];
+    }
+}
+
+/**
+ * Fetches the author's profile and falls back to the user ID if it is unavailable.
+ * The client is supplied by the caller so PUBLIC recipes can use the service-role client.
+ */
+async function fetchAuthorProfile(
+    client: TypedSupabaseClient,
+    userId: string
+): Promise<{ id: string; username: string }> {
+    try {
+        const { data, error } = await client
+            .from('profiles')
+            .select('id, username')
+            .eq('id', userId)
+            .single();
+
+        if (error || !data) {
+            logger.warn('Author profile not found, using fallback', {
+                userId,
+                errorCode: error?.code,
+            });
+            return { id: userId, username: userId };
+        }
+
+        return { id: data.id, username: data.username };
+    } catch (err) {
+        logger.warn('Unexpected error fetching author profile, using fallback', {
+            userId,
+            error: err instanceof Error ? err.message : 'Unknown error',
+        });
+        return { id: userId, username: userId };
     }
 }
 
@@ -923,18 +957,20 @@ export async function getRecipeById(
             recipeName: data.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote] = await Promise.all([
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote, author] = await Promise.all([
             getRecipeIdsInPlan(client, [id], requesterUserId),
             getCollectionIdsForRecipe(client, id, requesterUserId),
             getRecipeFlagsMap(client, [id], requesterUserId),
             getMyRatingsMap(client, [id], requesterUserId),
             getMyRecipeNote(client, id, requesterUserId),
+            fetchAuthorProfile(client, data.user_id),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
             data,
             inMyPlan,
             collectionIds,
+            author,
             flagsMap.get(id),
             ratingsMap.get(id),
             myNote
@@ -1019,18 +1055,20 @@ export async function getRecipeById(
             recipeName: publicRecipe.name,
         });
 
-        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote] = await Promise.all([
+        const [recipeIdsInPlan, collectionIds, flagsMap, ratingsMap, myNote, author] = await Promise.all([
             getRecipeIdsInPlan(client, [id], requesterUserId),
             getCollectionIdsForRecipe(client, id, requesterUserId),
             getRecipeFlagsMap(client, [id], requesterUserId),
             getMyRatingsMap(client, [id], requesterUserId),
             getMyRecipeNote(client, id, requesterUserId),
+            fetchAuthorProfile(serviceClient, publicRecipe.user_id),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
             publicRecipe,
             inMyPlan,
             collectionIds,
+            author,
             flagsMap.get(id),
             ratingsMap.get(id),
             myNote
@@ -1054,6 +1092,7 @@ function mapToRecipeDetailDto(
     data: any,
     inMyPlan: boolean,
     collectionIds: number[],
+    author: { id: string; username: string },
     flags?: RecipeFlagsState,
     myRating?: number,
     myNote?: string | null
@@ -1089,6 +1128,7 @@ function mapToRecipeDetailDto(
         normalized_ingredients_updated_at: data.normalized_ingredients_updated_at ?? null,
         ...buildRatingFields(data, myRating, true),
         ...(myNote !== undefined && { my_note: myNote }),
+        author,
     };
 }
 

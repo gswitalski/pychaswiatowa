@@ -294,6 +294,8 @@ export type RecipeDetailDto = Omit<
     steps: RecipeContent;
     /** Structured tips/hints list (can be empty). */
     tips: RecipeContent;
+    /** Recipe author profile. */
+    author: ProfileDto;
     /** Array of tags associated with the recipe. */
     tags: TagDto[];
     /** Recipe visibility setting. */

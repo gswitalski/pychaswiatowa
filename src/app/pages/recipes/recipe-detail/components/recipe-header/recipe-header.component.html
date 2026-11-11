@@ -6,6 +6,13 @@
         <p class="recipe-servings">{{ servingsLabel() }}</p>
     }
 
+    @if (authorLabel()) {
+        <div class="recipe-author">
+            <mat-icon aria-label="Autor">person</mat-icon>
+            <span>{{ authorLabel() }}</span>
+        </div>
+    }
+
     @if (recipe().description) {
         <p class="recipe-description">{{ recipe().description }}</p>
     }

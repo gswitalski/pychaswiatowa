@@ -12,3 +12,8 @@ brzegowych, zamiast przyjmować ciche założenia. Przed sformułowaniem opcji
 sprawdź aktualny kod, migracje i RLS; jeśli dwie opcje są równoważne
 w rzeczywistym systemie, połącz je albo wyjaśnij tę równoważność. Nie
 przedstawiaj założeń jako faktów.
+
+W trybie `pytania` zwróć **pełną treść** dla orkiestratora: `STATUS`, każde
+pytanie z uzasadnieniem, listą opcji (z rekomendacją), oraz sekcje `Założenia`
+i `Otwarte kwestie`. Nie kończ odpowiedzi samym podsumowaniem — orkiestrator
+przekazuje pytania użytkownikowi przez `AskQuestion`.

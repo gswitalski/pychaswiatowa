@@ -160,6 +160,19 @@ export class RecipeHeaderComponent {
     });
 
     /**
+     * Computed signal generujący etykietę autora przepisu.
+     * Zwraca 'Autor: {username}' lub null, gdy brak autora lub nazwy użytkownika.
+     * Obsługuje oba typy przepisu (RecipeDetailDto i PublicRecipeDetailDto).
+     */
+    readonly authorLabel = computed(() => {
+        const username = this.recipe().author?.username?.trim();
+        if (!username) {
+            return null;
+        }
+        return `Autor: ${username}`;
+    });
+
+    /**
      * Zwraca odpowiednią odmianę słowa "porcja" dla polskiego języka.
      * - 1 → porcja
      * - 2-4 → porcje (z wyjątkiem 12-14)

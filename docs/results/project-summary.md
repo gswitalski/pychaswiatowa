@@ -3,7 +3,7 @@
 > Dokument referencyjny dla programistów i analityków planujących nowe funkcjonalności.
 > Zawiera streszczenie PRD, tech stack, strukturę bazy danych, listę endpointów API, widoki UI oraz plan testów.
 >
-> **Aktualizacja:** 10 listopada 2026 — nazwa użytkownika w topbarze PS-37 (zaimplementowane, niezweryfikowane), wcześniej: prywatna notatka użytkownika przy przepisie PS-31, analiza jednego przepisu AI z wielu zdjęć PS-100, oceny przepisów PS-99 (API i widoki), filtry katalogu Odkrywaj PS-96, osobiste flagi przepisów PS-95 oraz metadane draftu AI PS-91.
+> **Aktualizacja:** 11 listopada 2026 — autor przepisu na szczegółach PS-15 (zaimplementowane, niezweryfikowane), wcześniej: nazwa użytkownika w topbarze PS-37, prywatna notatka przy przepisie PS-31, wiele zdjęć draftu AI PS-100, oceny PS-99, filtry Odkrywaj PS-96, flagi PS-95 oraz metadane draftu AI PS-91.
 
 ---
 
@@ -35,6 +35,8 @@ migawka w tym dokumencie.
 
 **Notatka użytkownika przy przepisie (PS-31):** implementacja warstwy API i widoków — **zakończona**. `PUT /recipes/{id}/note` atomowo ustawia notatkę (1–2000 znaków po normalizacji) albo usuwa ją przez `null`/pusty tekst; notatka jest wyłącznie prywatna — autor ani inni użytkownicy jej nie widzą. Notatkę można dodać do własnego przepisu oraz do cudzego `PUBLIC`; cudzy niepubliczny lub usunięty przepis zwraca `404`. Baza: `user_recipe_notes` (migracja `20261109120000_create_user_recipe_notes.sql`), RLS, RPC `set_recipe_note`; współdzielony moduł `_shared/recipe-notes.ts`. `my_note` jest zwracane w szczegółach `/recipes/{id}`, `/explore/recipes/{id}` i `/public/recipes/{id}` wyłącznie zalogowanemu (gość bez pola w JSON). UI: `RecipeNoteService` i `RecipeNoteComponent` w `RecipeDetailViewComponent` na `/recipes/:id-:slug` oraz `/explore/recipes/:id-:slug` (dodaj / edytuj / usuń z potwierdzeniem, licznik znaków, Ctrl+Enter, snackbar, obsługa `401`). Niezapisana notatka jest chroniona przez `unsavedChangesGuard` (`canDeactivate` na obu trasach szczegółów) i `UnsavedChangesService`. Notatki nie są wyszukiwane ani pokazywane na listach.
 
+**Autor przepisu na widoku szczegółowym (PS-15):** status — **zaimplementowane, niezweryfikowane**. Warstwa API i kontrakt: wymagane `author: ProfileDto` w `RecipeDetailDto` (`shared/contracts/types.ts`); `GET /recipes/{id}` i `GET /explore/recipes/{id}` zwracają profil autora przez `fetchAuthorProfile` w `recipes.service.ts` (klient JWT dla własnego przepisu, `serviceClient` dla cudzego `PUBLIC`) oraz w `explore.service.ts` (service-role, fallback `{ id: userId, username: userId }` przy braku profilu). Dodatkowo naprawiono brak pola `tips` w odpowiedzi explore (SELECT + mapowanie DTO). Brak migracji SQL, RLS i RPC. UI: `RecipeHeaderComponent` na `/recipes/:id-:slug` i `/explore/recipes/:id-:slug` — sekcja „Autor: {username}” (ikona, tekst bez linku) między porcjami a opisem; ukryta, gdy `author.username` jest `null`, pusty lub same spacje (przy fallbacku API z `username` równym UUID sekcja nadal się pojawi). Weryfikacja PS-15: API review r1 — ZMIANY_WYMAGANE (brak testów Deno G1–G4 w `explore.service.test.ts` / rozszerzenia `recipes.service.test.ts`); widoki review r1 — AKCEPTACJA (10 testów Vitest w `recipe-header.component.spec.ts`); migracje — NIE_DOTYCZY; Deno `check`/`test` — NIE_WYKONANO; `npm run build` PASS, `npm run test:run` PASS, `npm run lint` PASS; smoke test API i testy ręczne w przeglądarce — NIE_WYKONANO.
+
 **Nazwa użytkownika w topbarze (PS-37):** status — **zaimplementowane, niezweryfikowane**. Tylko frontend, bez zmian API, migracji i kontraktów (`MeDto.username` i `ProfileSettingsDto.username` już istniały). Nowy `CurrentUserStateService` (root) trzyma `username` / `displayName` aktywnego użytkownika; zasilają go `AuthService` (`GET /me` przy bootstrapie, `switchUser` przy zmianie/wylogowaniu), `SubscriptionStateService` (`ensureLoaded`/`refresh`), `ProfileSettingsFacade` (po `PUT /profile`) i `CompleteProfilePageComponent`; obce `id` i błędy są ignorowane. `TopbarComponent` pokazuje nazwę obok ikony konta (od 600 px, `ellipsis`, `clamp()` od 960 px; poniżej 600 px tylko ikona), tooltip i `aria-label` „Zalogowano jako …” oraz nagłówek w menu użytkownika. Weryfikacja PS-37: API review — BEZ_REVIEW (brak zmian w `supabase/`, `shared/contracts/`, `.github/`); widoki review — r1 ZMIANY_WYMAGANE (luki w testach), r2 AKCEPTACJA, ale wykonane w głównym czacie (`ps-code-reviewer` dwukrotnie przerwany), więc bez niezależnego reviewera; migracje — NIE_WYKONANO (nie dotyczy, brak migracji); Deno — NIE_WYKONANO (brak lokalnego `deno`, bramka CI `validate-backend`); smoke test API S1–S9 — NIE_WYKONANO (brak `.env.local` z użytkownikiem testowym); `npm run test:run` PASS (62 pliki, 361 testów), `npm run lint` PASS, `npm run build` PASS; testy ręczne w przeglądarce (kalibracja `clamp()`, breakpointy <600 / 600–959 / 960+, tooltip, czytnik ekranu, odświeżenie po zmianie nazwy w Ustawieniach) — NIE_WYKONANO.
 
 ### Dostarczone poza pierwotnym szkicem summary
@@ -55,12 +57,12 @@ migawka w tym dokumencie.
 - **Filtry Odkrywaj (PS-96):** chipy Termorobot, Grill, dieta (Wszystkie / Wegetariańskie+ / Tylko wegańskie), dla zalogowanych Ulubione i Chcę wypróbować; query params w URL; filtrowanie przez `GET /public/recipes/feed`
 - **Notatka przy przepisie (PS-31):** prywatna notatka (do 2000 znaków) w szczegółach własnych i publicznych cudzych przepisów; edycja inline, usuwanie z potwierdzeniem, dialog „Niezapisane zmiany” przy opuszczeniu strony
 - **Nazwa użytkownika w topbarze (PS-37, zaimplementowane, niezweryfikowane):** `CurrentUserStateService` + nazwa obok ikony konta w `TopbarComponent` (responsywnie, tooltip, nagłówek menu); odświeżanie po zmianie nazwy w Ustawieniach i po uzupełnieniu profilu
+- **Autor na szczegółach przepisu (PS-15, zaimplementowane, niezweryfikowane):** `author` w `RecipeDetailDto` na obu trasach szczegółów; sekcja autora w `RecipeHeaderComponent`; przywrócone `tips` w API explore
 
 ### Backlog produktowy (Jira — Do zrobienia)
 
 | ID | Temat |
 |---|---|
-| PS-15 | Autor przepisu na widoku szczegółowym |
 | PS-34 | Poprawa generowania opisu przez AI |
 | PS-35 | Poprawa generowania zdjęcia przez AI |
 | PS-38 | Gemini przy generowaniu zdjęcia **bez** referencji |
@@ -98,6 +100,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 - Asynchroniczna normalizacja składników (worker cron + retry)
 - Osobiste flagi przepisu (PS-95): „Ulubiony” i „Chcę wypróbować” na własnych i widocznych cudzych przepisach; tylko zalogowany; serduszko na kafelkach list
 - Prywatna notatka przy przepisie (PS-31): jedna notatka na użytkownika i przepis (własny lub cudzy `PUBLIC`), do 2000 znaków; widoczna tylko dla jej autora, edytowana na szczegółach; ochrona przed utratą niezapisanej treści przy opuszczeniu strony
+- Autor przepisu na szczegółach (PS-15): nazwa użytkownika autora pod tytułem/porcjami na `/recipes/…` i `/explore/recipes/…` (tekst, bez linku do profilu); wskazówki kulinarne na trasie explore zgodne z prywatnym API
 - Zgodność: regulamin, polityka prywatności i regulamin subskrypcji, zgoda marketingowa, menedżer zgód cookies
 
 ### Granice (poza zakresem / zaplanowane później)
@@ -145,6 +148,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 | PS-92 | Wklej ze schowka (przycisk) | Odczyt obrazu przez `navigator.clipboard.read()` bez wymogu fokusu na strefie paste. Formularz przepisu i asysta AI (obraz). Te same formaty i limit 10 MB co upload; błędy inline. |
 | PS-95 | Osobiste flagi przepisu | Toggle „Ulubiony” i „Chcę wypróbować” na szczegółach (`/recipes/…`, `/explore/recipes/…`); serduszko na kafelkach list; prywatne, wszystkie role; `PUT /recipes/{id}/flags`. |
 | PS-31 | Notatka użytkownika przy przepisie | Prywatna notatka (1–2000 znaków) na szczegółach `/recipes/…` i `/explore/recipes/…`; dodaj/edytuj/usuń; `PUT /recipes/{id}/note`; `my_note` tylko dla zalogowanego; guard niezapisanych zmian. |
+| PS-15 | Autor przepisu na szczegółach | `author: ProfileDto` w `GET /recipes/{id}` i `GET /explore/recipes/{id}`; UI w `RecipeHeaderComponent` (Autor: username, bez linku). Status: zaimplementowane, niezweryfikowane (brak testów Deno API). |
 | PS-37 | Nazwa użytkownika w topbarze | Zalogowany: nazwa obok ikony konta (od 600 px, obcięcie `ellipsis`; poniżej 600 px tylko ikona), tooltip/`aria-label` „Zalogowano jako …”, nagłówek w menu użytkownika; odświeżenie po zmianie w `/settings`. Status: zaimplementowane, niezweryfikowane (brak testów ręcznych). |
 | PS-96 | Filtry w katalogu Odkrywaj | `/explore`: chipy filtrów (Termorobot, Grill, dieta vege_plus/vegan, Ulubione/Chcę wypróbować dla zalogowanych); sync z URL; `GET /public/recipes/feed` z parametrami `diet`, `favorite`, `want_to_try`; reset paginacji przy zmianie filtrów; empty state „Wyczyść filtry”. |
 | PS-99 | Oceny przepisów | Ocena 1–5 na szczegółach publicznych przepisów; agregat dostępny dla gościa, zapis dla zalogowanego nie-autora, optimistic update i rollback. |
@@ -388,8 +392,8 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 |---|---|---|
 | `GET` | `/public/recipes` | Lista publicznych (offset). Filtry: `q`, `filter[termorobot]`, `filter[grill]`, `filter[diet_type]` (backward compat), `filter[cuisine]`, `filter[difficulty]`, **`diet`** (`vege_plus` / `vegan`, priorytet nad `filter[diet_type]`), **`favorite`** / **`want_to_try`** (`true` — tylko z JWT, bez tokenu ignorowane). Relevance. Dla auth: `is_favorite` w elementach; żądania z JWT: `Cache-Control: no-store`. |
 | `GET` | `/public/recipes/feed` | Lista publicznych (cursor, load more po 12). Te same filtry co `/public/recipes` (w tym PS-96: `diet`, `favorite`, `want_to_try`); hash cursora uwzględnia filtry flag i dietę. Dla auth: `is_favorite` w elementach. |
-| `GET` | `/public/recipes/{id}` | Szczegóły. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`, `my_note` (`string \| null`; gość bez pola); odpowiedź auth bez cache publicznego (`no-store`). |
-| `GET` | `/explore/recipes/{id}` | Wariant katalogu Explore (ten sam kontrakt co publiczne szczegóły, w tym flagi i `my_note` dla auth). |
+| `GET` | `/public/recipes/{id}` | Szczegóły. Zawsze: `author: ProfileDto`, `tips`. Dla auth: `is_owner`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`, `my_note` (`string \| null`; gość bez pola); odpowiedź auth bez cache publicznego (`no-store`). |
+| `GET` | `/explore/recipes/{id}` | Wariant katalogu Explore (ten sam kontrakt co publiczne szczegóły, w tym `author`, `tips`, flagi i `my_note` dla auth). PS-15: uzupełnione `tips` i `author` w mapowaniu explore. |
 
 ### Przepisy (prywatne, auth required)
 
@@ -399,7 +403,7 @@ Warstwa HTTP to **Supabase Edge Functions** (ścieżki poniżej w konwencji apli
 | `GET` | `/recipes/feed` | Lista (cursor, load more). Elementy: `is_favorite`. |
 | `POST` | `/recipes` | Tworzenie. Parsowanie `ingredients_raw`, `steps_raw`, `tips_raw`. Job normalizacji. |
 | `POST` | `/recipes/import` | Import Markdown. Zwraca nowy przepis. |
-| `GET` | `/recipes/{id}` | Szczegóły. Helpery: `is_owner`, `in_my_collections`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`, `my_note`. |
+| `GET` | `/recipes/{id}` | Szczegóły. Zawsze: `author: ProfileDto`, `tips`. Helpery: `is_owner`, `in_my_collections`, `in_my_plan`, `collection_ids`, `is_favorite`, `is_want_to_try`, `my_note`. PS-15: profil autora przez `fetchAuthorProfile` (JWT lub service role dla cudzego `PUBLIC`). |
 | `PUT` | `/recipes/{id}/flags` | Częściowe, idempotentne ustawienie flag `is_favorite` / `is_want_to_try`; zwraca pełny stan obu flag. |
 | `PUT` | `/recipes/{id}/note` | Body `{ note: string \| null }`; ustawia prywatną notatkę (po normalizacji 1–2000 znaków) albo usuwa ją przy `null`/pustym tekście. Własny lub cudzy `PUBLIC` przepis; inaczej `404`. Zwraca `{ recipe_id, note, updated_at }`, `Cache-Control: no-store`. |
 | `PUT` | `/recipes/{id}` | Aktualizacja. Job normalizacji. |
@@ -506,7 +510,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 |---|---|---|
 | Landing Page | `/` | Wyszukiwarka publicznych przepisów, sekcje, CTA logowanie/rejestracja. Zalogowany: nawigacja konta, bez CTA logowania, serduszko na kafelkach sekcji (PS-95). Logo widoczne także dla gościa. Dla gościa i roli `user`: blok promo Premium z linkiem do cennika. |
 | Katalog Explore | `/explore` | Publiczne przepisy: pole wyszukiwania (debounce 350 ms, min 3 zn.), **pasek filtrów chipów** (PS-96: Termorobot, Grill, dieta, dla zalogowanych Ulubione/Chcę wypróbować), sync filtrów i `q` z query URL, load more 12. Badge "Twój przepis". Zalogowany: wskaźnik serduszka na kafelku (PS-95). Empty state z „Wyczyść filtry” przy aktywnych filtrach bez wyników. |
-| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Gość: CTA logowania i podgląd ocen PS-99. Zalogowany: flagi PS-95, ocena PS-99, prywatna notatka PS-31, kolekcja/plan; `unsavedChangesGuard`. Autor: pełne akcje bez możliwości oceniania własnego przepisu. |
+| Szczegóły (publiczny) | `/explore/recipes/:id-:slug` | Bez Sidebara. Nagłówek: autor PS-15 („Autor: …”, bez linku). Gość: CTA logowania i podgląd ocen PS-99. Zalogowany: flagi PS-95, ocena PS-99, prywatna notatka PS-31, kolekcja/plan; `unsavedChangesGuard`. Autor: pełne akcje bez możliwości oceniania własnego przepisu. |
 | Logowanie | `/login` | Email+hasło + **Zaloguj się przez Google** (`OauthGoogleButtonComponent`); komunikaty po błędach OAuth z `?error=`. |
 | Rejestracja | `/register` | Username, email, hasło, zgoda marketingowa + **Zarejestruj się przez Google** (ten sam flow OAuth). |
 | Wysłano link | `/register/verify-sent` | Komunikat + ponowna wysyłka (cooldown 60s). |
@@ -529,7 +533,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Admin - Dashboard | `/admin`, `/admin/dashboard` | Placeholder metryk („Wkrótce”) + nawigacja admina (sidebar). |
 | Admin - Użytkownicy | `/admin/users` | Tabela, paginacja, sortowanie, dialog zmiany roli. |
 | Moje Przepisy | `/my-recipies` (alias `/my-recipes`) | Własne + publiczne z kolekcji. Filtry, load more 12. Kafelki: serduszko ulubionego (PS-95). |
-| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. Zalogowany: przełączniki flag PS-95 oraz ocena PS-99 dla publicznego przepisu, a także prywatna notatka PS-31 (własne i cudze publiczne przepisy); `unsavedChangesGuard` pyta o potwierdzenie przy niezapisanej notatce. |
+| Szczegóły (prywatny) | `/recipes/:id-:slug` | Z Sidebarem. Normalizacja URL. Nagłówek: autor PS-15. Zalogowany: przełączniki flag PS-95 oraz ocena PS-99 dla publicznego przepisu, a także prywatna notatka PS-31 (własne i cudze publiczne przepisy); `unsavedChangesGuard` pyta o potwierdzenie przy niezapisanej notatce. |
 | Kreator - wybór trybu | `/recipes/new/start` | Pusty formularz (wszyscy) lub AI (premium/admin; badge). Kafelek AI nadal zablokowany dla roli `user`. |
 | Kreator - AI | `/recipes/new/assist` | Tekst/obraz → AI. Guard `premiumRoleMatchGuard`. Wskaźnik kredytów `draft`, baner i blokada przycisku przy wyczerpaniu, dialog przy `402`. Tryb obrazu: „Wklej ze schowka” (PS-92) obok paste Ctrl+V i wyboru pliku. |
 | Formularz przepisu | `/recipes/new`, `/recipes/:id/edit` | CRUD + zdjęcie (`RecipeImageUploadComponent`: paste/drop/file, przycisk „Wklej ze schowka” PS-92, generowanie AI). Sticky Zapisz. Przy zdjęciu AI: kompaktowy wskaźnik kredytów `image` i blokada przycisku przy wyczerpaniu. |
@@ -560,6 +564,7 @@ Architektura: **App Shell** z Sidebar + Topbar + Page Header + Footer. Desktop-f
 | Oceny przepisu (PS-99) | `RecipeRatingService` + `RecipeRatingComponent` w `RecipeDetailViewComponent`; średnia i liczba ocen dla gościa, interaktywna ocena dla zalogowanego nie-autora. |
 | Notatka przepisu (PS-31) | `RecipeNoteService` + `RecipeNoteComponent` (`pych-recipe-note`) w `RecipeDetailViewComponent`, widoczny gdy `my_note` jest w odpowiedzi (zalogowany). Tryby: pusty / podgląd / edycja; walidacja 2000 znaków, Ctrl+Enter, usuwanie z potwierdzeniem, rollback i snackbar przy błędzie, `401` → `sessionExpired`. |
 | Topbar — nazwa użytkownika (PS-37) | `TopbarComponent` czyta `displayName` z `CurrentUserStateService`: przycisk menu z nazwą obok ikony (≥600 px; `--topbar-username-max-width`, `clamp()` od 960 px), `matTooltip` i `aria-label` „Zalogowano jako …”, nagłówek „Zalogowano jako …” w menu; bez nazwy — sama ikona i `aria-label` „Menu użytkownika”. Zaimplementowane, niezweryfikowane ręcznie. |
+| Autor przepisu (PS-15) | `RecipeHeaderComponent`: computed `authorLabel`, sekcja `.recipe-author` między porcjami a opisem; bez `<a>`; ukryta przy pustym `username`. Vitest w `recipe-header.component.spec.ts`. Zaimplementowane, niezweryfikowane (Deno API, smoke). |
 | Guard niezapisanych zmian (PS-31) | `unsavedChangesGuard` (`canDeactivate` na trasach szczegółów `/recipes/:id-:slug` i `/explore/recipes/:id-:slug`) + `UnsavedChangesService` (rejestr „brudnych” komponentów); dialog „Niezapisane zmiany” (Opuść / Zostań). |
 | Filtry Explore (PS-96) | `ExploreRecipeFiltersComponent` + `ExploreFilterStateService` (URL ↔ API); stan i ładowanie feedu w `ExplorePageComponent`; rozszerzenie `PublicRecipesService.getPublicRecipesFeed`. |
 
@@ -593,6 +598,7 @@ Piramida testów: solidna baza jednostkowych, uzupełniona integracjami i E2E.
 10. Wklej ze schowka (PS-92): happy path PNG/JPG/WebP na formularzu i w asyście (obraz); pusty schowek / zły format / >10 MB / odmowa uprawnień → komunikat inline; brak Clipboard API → przycisk disabled + tooltip; Ctrl+V i DnD nadal działają
 11. Flagi przepisów (PS-95): toggle ulubiony i „Chcę wypróbować” na szczegółach, stan po odświeżeniu; serduszko na liście po powrocie; klik w serduszko na kafelku nawiguje do szczegółów; gość bez ikon flag i bez serduszka; błąd zapisu → rollback i snackbar; `401` → login
 12. Filtry Explore (PS-96): toggle Termorobot/Grill i dieta; zalogowany — Ulubione/Chcę wypróbować; URL z bookmarku aktywuje chipy; kombinacje filtrów + `q`; load more z zachowanymi filtrami; reset paginacji po zmianie filtra; gość bez chipów flag, `favorite=true` w URL bez efektu; empty state i „Wyczyść filtry”; regresja landingu bez filtrów Explore
+13. Autor na szczegółach (PS-15): własny i cudzy publiczny przepis na `/recipes/…` i `/explore/recipes/…` — widoczny „Autor: {username}”; brak linku; brak sekcji przy `username` null; wskazówki (`tips`) widoczne na explore po odświeżeniu; regresja nagłówka (porcje, opis, flagi)
 
 Przewodniki: `docs/testing/`.
 

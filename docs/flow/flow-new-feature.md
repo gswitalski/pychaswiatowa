@@ -38,6 +38,12 @@ implementacją API wykonuje preflight Deno/Supabase/Docker i sprawdza porty z
 migracja lokalna i smoke test workera. Brak któregokolwiek z nich ma status
 `WYMAGA_WERYFIKACJI`, nie `PASS`.
 
+Gdy lokalnie **nie ma Deno**, weryfikacja API (`deno check` / `deno test`) nie
+może zostać pominięta: uruchom workflow CI **`validate-backend`** na branchu
+(jeśli dostępny) albo oznacz testy Deno jako `FAIL`/`WYMAGA_WERYFIKACJI` w
+artefakcie `verification` i **nie akceptuj** review API bez przejścia CI lub
+ręcznego `deno test` na maszynie z Deno.
+
 Review jest dzielony na `api-db`, `api-code`, `api-tests` i `views`. Po jednym
 aborcie tego samego zakresu orkiestrator zmienia strategię; nie powtarza
 wywołania w pętli. Każdy review zapisuje artefakt, a pominięcie zapisuje

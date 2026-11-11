@@ -94,6 +94,7 @@ export interface RecipeDetailDto {
     visibility: 'PUBLIC' | 'SHARED' | 'PRIVATE';
     ingredients: RecipeContent;
     steps: RecipeContent;
+    tips: RecipeContent;
     tags: TagDto[];
     servings: number | null;
     prep_time_minutes: number | null;
@@ -115,6 +116,7 @@ export interface RecipeDetailDto {
     ratings_count: number | null;
     my_rating?: number | null;
     my_note?: string | null;
+    author: { id: string; username: string };
 }
 
 /**
@@ -131,6 +133,7 @@ interface RecipeDetailFullRow {
     category_name: string | null;
     ingredients: RecipeContent;
     steps: RecipeContent;
+    tips: RecipeContent;
     tags: Array<{ id: number; name: string }> | null;
     servings: number | null;
     prep_time_minutes: number | null;
@@ -148,7 +151,7 @@ interface RecipeDetailFullRow {
  */
 const RECIPE_DETAIL_SELECT_COLUMNS =
     'id, user_id, name, description, image_path, visibility, category_id, category_name, ' +
-    'ingredients, steps, tags, servings, prep_time_minutes, total_time_minutes, is_termorobot, diet_type, cuisine, difficulty, is_grill, created_at, updated_at, deleted_at, ratings_count, average_rating';
+    'ingredients, steps, tips, tags, servings, prep_time_minutes, total_time_minutes, is_termorobot, diet_type, cuisine, difficulty, is_grill, created_at, updated_at, deleted_at, ratings_count, average_rating';
 
 /**
  * Checks which recipes from the given list are in the authenticated user's plan.
@@ -210,6 +213,39 @@ async function getRecipeIdsInPlan(
         });
         // Non-blocking: return empty set
         return new Set<number>();
+    }
+}
+
+/**
+ * Fetches the author's public profile data.
+ * Falls back to the user ID when the profile cannot be read.
+ */
+async function fetchAuthorProfile(
+    client: TypedSupabaseClient,
+    userId: string
+): Promise<{ id: string; username: string }> {
+    try {
+        const { data, error } = await client
+            .from('profiles')
+            .select('id, username')
+            .eq('id', userId)
+            .single();
+
+        if (error || !data) {
+            logger.warn('Author profile not found, using fallback', {
+                userId,
+                errorCode: error?.code,
+            });
+            return { id: userId, username: userId };
+        }
+
+        return { id: data.id, username: data.username };
+    } catch (err) {
+        logger.warn('Unexpected error fetching author profile, using fallback', {
+            userId,
+            error: err instanceof Error ? err.message : 'Unknown error',
+        });
+        return { id: userId, username: userId };
     }
 }
 
@@ -292,11 +328,12 @@ export async function getExploreRecipeById(params: {
         logger.info('Recipe is PUBLIC - access granted', { recipeId });
         
         // Check if recipe is in user's plan
-        const [recipeIdsInPlan, flagsMap, ratingsMap, myNote] = await Promise.all([
+        const [recipeIdsInPlan, flagsMap, ratingsMap, myNote, author] = await Promise.all([
             getRecipeIdsInPlan(client, [recipeId], requesterUserId),
             getRecipeFlagsMap(client, [recipeId], requesterUserId),
             getMyRatingsMap(client, [recipeId], requesterUserId),
             getMyRecipeNote(client, recipeId, requesterUserId),
+            fetchAuthorProfile(client, recipe.user_id),
         ]);
         const inMyPlan = recipeIdsInPlan.has(recipeId);
         
@@ -309,6 +346,7 @@ export async function getExploreRecipeById(params: {
             recipe,
             inMyPlan,
             collectionIds,
+            author,
             flagsMap.get(recipeId),
             ratingsMap.get(recipeId),
             requesterUserId !== null,
@@ -345,11 +383,12 @@ export async function getExploreRecipeById(params: {
     });
 
     // Check if recipe is in user's plan
-    const [recipeIdsInPlan, flagsMap, ratingsMap, myNote] = await Promise.all([
+    const [recipeIdsInPlan, flagsMap, ratingsMap, myNote, author] = await Promise.all([
         getRecipeIdsInPlan(client, [recipeId], requesterUserId),
         getRecipeFlagsMap(client, [recipeId], requesterUserId),
         getMyRatingsMap(client, [recipeId], requesterUserId),
         getMyRecipeNote(client, recipeId, requesterUserId),
+        fetchAuthorProfile(client, recipe.user_id),
     ]);
     const inMyPlan = recipeIdsInPlan.has(recipeId);
 
@@ -362,6 +401,7 @@ export async function getExploreRecipeById(params: {
         recipe,
         inMyPlan,
         collectionIds,
+        author,
         flagsMap.get(recipeId),
         ratingsMap.get(recipeId),
         true,
@@ -382,6 +422,7 @@ function mapToDto(
     recipe: RecipeDetailFullRow,
     inMyPlan: boolean,
     collectionIds: number[],
+    author: { id: string; username: string },
     flags?: { is_favorite: boolean; is_want_to_try: boolean },
     myRating?: number,
     isAuthenticated = false,
@@ -398,6 +439,7 @@ function mapToDto(
         visibility: recipe.visibility as 'PUBLIC' | 'SHARED' | 'PRIVATE',
         ingredients: recipe.ingredients,
         steps: recipe.steps,
+        tips: recipe.tips ?? [],
         tags: recipe.tags
             ? recipe.tags.map((tag) => ({ id: tag.id, name: tag.name }))
             : [],
@@ -419,5 +461,6 @@ function mapToDto(
         }),
         ...buildRatingFields(recipe, myRating, isAuthenticated),
         ...(myNote !== undefined && { my_note: myNote }),
+        author,
     };
 }

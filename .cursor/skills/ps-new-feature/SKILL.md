@@ -46,8 +46,11 @@ Wywołanie: `/ps-new-feature PS-{N} [opis]`.
 
 ## Review i poprawki
 - Review uruchamiaj z listą plików z diffu. Przy `Subagent was aborted` wykonaj
-  najwyżej jedną powtórkę; następnie zmień strategię (mniejszy zakres, inny
-  agent/model albo review w głównym czacie).
+  najwyżej jedną powtórkę na **tym samym** zakresie plików; po drugim aborcie
+  **zmniejsz zakres** (np. jeden plik lub tylko `api-code` bez `api-tests`) i
+  ewentualnie zmień model; trzecia próba pełnego diffu — tylko po jawnej decyzji
+  użytkownika na bramce. Dalej: review w głównym czacie lub artefakt
+  `BEZ_REVIEW` z `WYMAGA_WERYFIKACJI`.
 - Każdy review zapisz jako artefakt. Gdy review jest niemożliwe, zapisz
   `BEZ_REVIEW` z powodem i `WYMAGA_WERYFIKACJI`; nie oznaczaj funkcji jako gotowej.
 - Po poprawkach implementer wykonuje pełną weryfikację i czyta cały diff.
