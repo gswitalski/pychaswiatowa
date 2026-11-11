@@ -21,6 +21,16 @@ projektu, testy jednostkowe i odstępstwa. Nie wymagaj ani nie uruchamiaj E2E.
 Możesz uruchomić wyłącznie lekkie, deterministyczne sprawdzenia wskazanego
 zakresu, jeśli środowisko je wspiera.
 
+Limit to maksymalnie dwie rundy poprawek na zakres. Jeśli po drugiej rundzie
+zostają uwagi krytyczne lub ważne, orkiestrator pyta użytkownika: dodatkowa runda
+ograniczona do tych uwag z obowiązkowym re-review tego samego zakresu albo
+przyjęcie długu. `BEZ_REVIEW` po dodatkowej rundzie wymaga jawnej decyzji
+użytkownika i powodu w artefakcie.
+
+Testy wyścigów i uprawnień oceniaj po dowodzie weryfikacji mutacyjnej (test pada
+po usunięciu zabezpieczenia), a pokrycie testów po tabeli względem sekcji testów
+planu.
+
 Zapisz raport pod ścieżką z konwencji:
 `PS-{N}-{slug}-review-{api|views}-r{R}.md`. Raport musi zawierać:
 `Werdykt: AKCEPTACJA`, `Werdykt: ZMIANY_WYMAGANE` albo `Werdykt: BEZ_REVIEW`

@@ -102,6 +102,69 @@ Content-Type: application/json
 }
 
 ###############################################################################
+### GET /admin/recipes
+###############################################################################
+
+### RECIPES-1. SUCCESS: Default query
+GET {{baseUrl}}/admin/recipes
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-2. SUCCESS: Name sorting
+GET {{baseUrl}}/admin/recipes?page=1&page_size=100&sort_by=name&sort_dir=asc
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-3. SUCCESS: Author sorting
+GET {{baseUrl}}/admin/recipes?sort_by=author&sort_dir=desc
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-4. SUCCESS: Category sorting
+GET {{baseUrl}}/admin/recipes?sort_by=category&sort_dir=asc
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-5. SUCCESS: Created-at sorting
+GET {{baseUrl}}/admin/recipes?sort_by=created_at&sort_dir=desc
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-6. SUCCESS: Average rating sorting
+GET {{baseUrl}}/admin/recipes?sort_by=average_rating&sort_dir=asc
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-7. SUCCESS: Ratings count sorting
+GET {{baseUrl}}/admin/recipes?sort_by=ratings_count&sort_dir=desc
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-8. SUCCESS: Out-of-range page
+GET {{baseUrl}}/admin/recipes?page=3000000000
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-9. BAD REQUEST: Unsafe page
+GET {{baseUrl}}/admin/recipes?page=9007199254740992
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-10. BAD REQUEST: Invalid page size
+GET {{baseUrl}}/admin/recipes?page_size=101
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-11. BAD REQUEST: Invalid sort_by
+GET {{baseUrl}}/admin/recipes?sort_by=updated_at
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-12. NOT FOUND: Recipe child path
+GET {{baseUrl}}/admin/recipes/1
+Authorization: Bearer {{adminToken}}
+
+### RECIPES-13. UNAUTHORIZED: Missing token
+GET {{baseUrl}}/admin/recipes
+
+### RECIPES-14. FORBIDDEN: Non-admin token
+GET {{baseUrl}}/admin/recipes
+Authorization: Bearer {{userToken}}
+
+### RECIPES-15. METHOD NOT ALLOWED
+POST {{baseUrl}}/admin/recipes
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
 ### PATCH /admin/users/{userId}/role
 ###############################################################################
 

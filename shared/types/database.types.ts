@@ -755,6 +755,28 @@ export type Database = {
         Args: { p_recipe_id: number }
         Returns: Json
       }
+      admin_get_recipes_page: {
+        Args: {
+          p_page_number?: number
+          p_page_size?: number
+          p_sort_by?: string
+          p_sort_dir?: string
+        }
+        Returns: {
+          author_email: string
+          author_id: string
+          author_username: string
+          average_rating: number
+          category_name: string
+          created_at: string
+          id: number
+          is_grill: boolean
+          is_termorobot: boolean
+          name: string
+          ratings_count: number
+          total_items: number
+        }[]
+      }
       admin_get_users_page: {
         Args: {
           p_page_number?: number

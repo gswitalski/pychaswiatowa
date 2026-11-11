@@ -9,7 +9,11 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { firstValueFrom } from 'rxjs';
 import { AdminApiService } from './admin-api.service';
 import { SupabaseService } from './supabase.service';
-import { GetAdminUsersResponseDto, UpdateAdminUserRoleResponseDto } from '../../../../shared/contracts/types';
+import {
+    GetAdminRecipesResponseDto,
+    GetAdminUsersResponseDto,
+    UpdateAdminUserRoleResponseDto,
+} from '../../../../shared/contracts/types';
 
 interface MockSupabaseService {
     functions: {
@@ -117,6 +121,107 @@ describe('AdminApiService', () => {
                     })
                 )
             ).rejects.toThrow('Nie udało się pobrać listy użytkowników');
+        });
+    });
+
+    describe('getRecipes()', () => {
+        const response: GetAdminRecipesResponseDto = {
+            data: [],
+            pagination: { currentPage: 1, pageSize: 25, totalPages: 0, totalItems: 0 },
+            sorting: { sort_by: 'created_at', sort_dir: 'desc' },
+        };
+
+        it('powinien wysłać parametry sortowania i paginacji', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({ data: response, error: null });
+
+            await expect(
+                firstValueFrom(
+                    service.getRecipes({
+                        page: 1,
+                        page_size: 25,
+                        sort_by: 'created_at',
+                        sort_dir: 'desc',
+                    })
+                )
+            ).resolves.toEqual(response);
+            expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith(
+                'admin/recipes?page=1&page_size=25&sort_by=created_at&sort_dir=desc',
+                { method: 'GET' }
+            );
+        });
+
+        it('powinien wysłać pojedynczy parametr page', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({ data: response, error: null });
+            await firstValueFrom(service.getRecipes({ page: 2 }));
+            expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith('admin/recipes?page=2', {
+                method: 'GET',
+            });
+        });
+
+        it('powinien wysłać pojedynczy parametr sort_by', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({ data: response, error: null });
+            await firstValueFrom(service.getRecipes({ sort_by: 'name' }));
+            expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith('admin/recipes?sort_by=name', {
+                method: 'GET',
+            });
+        });
+
+        it('powinien wysłać pusty query bez parametrów', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({ data: response, error: null });
+            await firstValueFrom(service.getRecipes({}));
+            expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith('admin/recipes', {
+                method: 'GET',
+            });
+        });
+
+        it('powinien wysłać pojedynczy page_size i sort_dir', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({ data: response, error: null });
+            await firstValueFrom(service.getRecipes({ page_size: 50 }));
+            expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith(
+                'admin/recipes?page_size=50',
+                { method: 'GET' }
+            );
+            mockSupabaseService.functions.invoke.mockResolvedValue({ data: response, error: null });
+            await firstValueFrom(service.getRecipes({ sort_dir: 'asc' }));
+            expect(mockSupabaseService.functions.invoke).toHaveBeenCalledWith(
+                'admin/recipes?sort_dir=asc',
+                { method: 'GET' }
+            );
+        });
+
+        it('powinien zgłosić błąd przy braku data', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({ data: null, error: null });
+            await expect(firstValueFrom(service.getRecipes({}))).rejects.toThrow(
+                'Nie udało się pobrać listy przepisów publicznych'
+            );
+        });
+
+        it('powinien użyć domyślnego komunikatu błędu', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({
+                data: null,
+                error: { message: '' },
+            });
+            await expect(firstValueFrom(service.getRecipes({}))).rejects.toMatchObject({
+                message: 'Błąd pobierania listy przepisów publicznych',
+                status: 500,
+            });
+        });
+
+        it('powinien przenieść status błędu API także z context', async () => {
+            mockSupabaseService.functions.invoke.mockResolvedValue({
+                data: null,
+                error: { message: 'Forbidden', context: { status: 403 } },
+            });
+            await expect(firstValueFrom(service.getRecipes({}))).rejects.toMatchObject({
+                status: 403,
+            });
+            mockSupabaseService.functions.invoke.mockResolvedValue({
+                data: null,
+                error: { message: 'Server error' },
+            });
+            await expect(firstValueFrom(service.getRecipes({}))).rejects.toMatchObject({
+                status: 500,
+            });
         });
     });
 

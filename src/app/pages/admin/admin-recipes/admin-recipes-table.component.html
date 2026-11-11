@@ -1,0 +1,122 @@
+<section class="admin-recipes-table" [class.admin-recipes-table--refreshing]="state().isRefreshing">
+    @if (state().isInitialLoading) {
+    <div class="admin-recipes-table__status-block">
+        <mat-spinner diameter="24" />
+        <p>Ładowanie listy przepisów publicznych...</p>
+    </div>
+    } @else if (state().hasError && !hasRows()) {
+    <div class="admin-recipes-table__status-block">
+        <p>{{ state().errorMessage }}</p>
+        <button mat-stroked-button type="button" (click)="onRetryClick()">Spróbuj ponownie</button>
+    </div>
+    } @else if (state().isEmpty) {
+    <div class="admin-recipes-table__status-block">
+        <p>Brak przepisów publicznych do wyświetlenia.</p>
+    </div>
+    } @else {
+    @if (state().hasError && hasRows()) {
+    <div class="admin-recipes-table__inline-error">
+        <p>{{ state().errorMessage }}</p>
+        <button mat-stroked-button type="button" (click)="onRetryClick()">Spróbuj ponownie</button>
+    </div>
+    }
+
+    @if (hasRows()) {
+    <div class="admin-recipes-table__scroll">
+        <table
+            mat-table
+            [dataSource]="rows()"
+            [trackBy]="trackByRowId"
+            matSort
+            matSortDisableClear
+            [matSortActive]="activeSortColumn()"
+            [matSortDirection]="sorting().sort_dir"
+            (matSortChange)="onMatSortChange($event)">
+            <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+            </ng-container>
+            <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Nazwa</th>
+                <td mat-cell *matCellDef="let row" class="admin-recipes-table__cell--wrap" [attr.title]="row.name">
+                    {{ row.name }}
+                </td>
+            </ng-container>
+            <ng-container matColumnDef="author">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Autor</th>
+                <td mat-cell *matCellDef="let row" class="admin-recipes-table__cell--wrap">
+                    <span class="admin-recipes-table__author-primary" [attr.title]="row.authorId">
+                        {{ row.authorPrimaryLabel }}
+                    </span>
+                    @if (row.authorSecondaryLabel) {
+                    <span class="admin-recipes-table__author-secondary" [attr.title]="row.authorSecondaryLabel">
+                        {{ row.authorSecondaryLabel }}
+                    </span>
+                    }
+                </td>
+            </ng-container>
+            <ng-container matColumnDef="category">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Kategoria</th>
+                <td mat-cell *matCellDef="let row" [attr.title]="row.categoryLabel">{{ row.categoryLabel }}</td>
+            </ng-container>
+            <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Data utworzenia</th>
+                <td mat-cell *matCellDef="let row">{{ row.createdAtLabel }}</td>
+            </ng-container>
+            <ng-container matColumnDef="averageRating">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Średnia ocena</th>
+                <td mat-cell *matCellDef="let row" class="admin-recipes-table__cell--number">{{ row.averageRatingLabel }}</td>
+            </ng-container>
+            <ng-container matColumnDef="ratingsCount">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Liczba ocen</th>
+                <td mat-cell *matCellDef="let row" class="admin-recipes-table__cell--number">{{ row.ratingsCount }}</td>
+            </ng-container>
+            <ng-container matColumnDef="flags">
+                <th mat-header-cell *matHeaderCellDef>Znaczniki</th>
+                <td mat-cell *matCellDef="let row">
+                    @if (row.isGrill || row.isTermorobot) {
+                    <div class="admin-recipes-table__flags">
+                        @if (row.isGrill) {
+                        <span class="admin-recipes-table__flag admin-recipes-table__flag--grill">
+                            <mat-icon aria-hidden="true">outdoor_grill</mat-icon>Grill
+                        </span>
+                        }
+                        @if (row.isTermorobot) {
+                        <span class="admin-recipes-table__flag admin-recipes-table__flag--termorobot">
+                            <mat-icon aria-hidden="true">blender</mat-icon>Termorobot
+                        </span>
+                        }
+                    </div>
+                    }
+                </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Akcja</th>
+                <td mat-cell *matCellDef="let row">
+                    <a mat-stroked-button class="admin-recipes-table__open-link" [attr.href]="row.recipeUrl"
+                        target="_blank" rel="noopener" [attr.aria-label]="row.openAriaLabel">
+                        Otwórz przepis
+                        <mat-icon iconPositionEnd aria-hidden="true">open_in_new</mat-icon>
+                    </a>
+                </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns()"></tr>
+        </table>
+    </div>
+    } @else if (state().hasNoRowsOnPage) {
+    <p class="admin-recipes-table__no-results">Brak wyników na tej stronie.</p>
+    }
+
+    <mat-paginator
+        [length]="pagination().totalItems"
+        [pageSize]="pagination().pageSize"
+        [pageIndex]="paginatorPageIndex()"
+        [pageSizeOptions]="pageSizeOptions"
+        [hidePageSize]="false"
+        showFirstLastButtons
+        (page)="onMatPageChange($event)"
+        aria-label="Paginacja listy przepisów publicznych">
+    </mat-paginator>
+    }
+</section>

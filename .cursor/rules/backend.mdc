@@ -346,6 +346,17 @@ Backend jest odpowiedzialny za **WSZYSTKIE** operacje związane z danymi:
     TEST_USER_EMAIL / TEST_USER_PASSWORD z lokalnego `.env.local`
     (nie zapisuj sekretów w regułach, dokumentacji ani kodzie).
 
+## Uprawnienia funkcji RPC (`security definer`)
+
+-   Każda nowa lub przebudowana funkcja `security definer` w migracji ma
+    `revoke all … from public, anon, authenticated` i jawny `grant` tylko dla ról,
+    które jej potrzebują (zwykle `service_role`).
+-   Migracja samodzielnie sprawdza uprawnienia (`has_function_privilege`) i kończy
+    się błędem, gdy `anon` lub `authenticated` mogą wywołać funkcję.
+-   Przy przebudowie funkcji (`create or replace`) powtórz `revoke`/`grant`.
+-   Nie usuwaj w migracji obiektów spoza repozytorium (`drop function` przeciążeń
+    z lokalnej bazy).
+
 ## Zasady aktualne
 
 Lista tabel i limitów domenowych jest utrzymywana w migracjach oraz

@@ -197,7 +197,7 @@ export async function parseAndValidateAdminUserAiCreditsBody(
     return validationResult.data;
 }
 
-const PositiveIntegerQueryStringSchema = z.string()
+export const PositiveIntegerQueryStringSchema = z.string()
     .trim()
     .regex(/^\d+$/, 'Expected a positive integer')
     .transform((value) => Number(value))

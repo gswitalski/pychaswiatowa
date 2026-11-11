@@ -396,6 +396,14 @@ export const routes: Routes = [
                 pathMatch: 'full',
             },
             {
+                path: 'admin/recipes',
+                redirectTo: () => {
+                    // Redirect guests to login with return URL
+                    return '/login?returnUrl=%2Fadmin%2Frecipes';
+                },
+                pathMatch: 'full',
+            },
+            {
                 path: 'recipes/:id',
                 redirectTo: (route) => {
                     // Przekierowanie ze starej ścieżki /recipes/:id na /explore/recipes/:id dla gości

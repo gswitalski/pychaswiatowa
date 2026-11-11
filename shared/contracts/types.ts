@@ -812,6 +812,49 @@ export interface GetAdminUsersResponseDto {
     };
 }
 
+export type AdminRecipesSortBy =
+    | 'name'
+    | 'author'
+    | 'category'
+    | 'created_at'
+    | 'average_rating'
+    | 'ratings_count';
+
+export interface GetAdminRecipesQueryDto {
+    page?: number;
+    page_size?: number;
+    sort_by?: AdminRecipesSortBy;
+    sort_dir?: SortDirection;
+}
+
+export interface AdminRecipeListItemDto {
+    id: number;
+    name: string;
+    author_id: string;
+    author_username: string | null;
+    author_email: string | null;
+    category_name: string | null;
+    created_at: string;
+    average_rating: number | null;
+    ratings_count: number;
+    is_grill: boolean;
+    is_termorobot: boolean;
+}
+
+export interface GetAdminRecipesResponseDto {
+    data: AdminRecipeListItemDto[];
+    pagination: {
+        currentPage: number;
+        pageSize: number;
+        totalPages: number;
+        totalItems: number;
+    };
+    sorting: {
+        sort_by: AdminRecipesSortBy;
+        sort_dir: SortDirection;
+    };
+}
+
 /**
  * Command model for PATCH /admin/users/{userId}/role.
  */

@@ -10,6 +10,7 @@ import {
     handleGetAdminUserAiCredits,
     handlePatchAdminUserAiCredits,
 } from './admin-ai-credits.handlers.ts';
+import { handleGetAdminRecipes } from './admin-recipes.handlers.ts';
 import {
     getAdminSummary,
     getAdminHealth,
@@ -173,6 +174,13 @@ export async function adminRouter(req: Request): Promise<Response> {
     if (subPath === '/users') {
         if (method === 'GET') {
             return handleGetAdminUsers(req);
+        }
+        return createMethodNotAllowedResponse(method, 'GET, OPTIONS');
+    }
+
+    if (subPath === '/recipes') {
+        if (method === 'GET') {
+            return handleGetAdminRecipes(req);
         }
         return createMethodNotAllowedResponse(method, 'GET, OPTIONS');
     }

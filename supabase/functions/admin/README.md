@@ -88,6 +88,47 @@ Zwraca paginowana liste uzytkownikow dla panelu administracyjnego.
 }
 ```
 
+### `GET /admin/recipes`
+Zwraca paginowaną listę publicznych, nieusuniętych przepisów dla administratora.
+
+Parametry opcjonalne: `page` (domyślnie `1`), `page_size` (`1..100`, domyślnie `25`),
+`sort_by` (`name | author | category | created_at | average_rating | ratings_count`,
+domyślnie `created_at`) oraz `sort_dir` (`asc | desc`, domyślnie `desc`).
+Strona poza zakresem zwraca `200` z pustym `data`, ale poprawnymi licznikami.
+Sortowanie tekstowe używa polskiej kolejności bez rozróżniania wielkości liter;
+remisy rozstrzyga rosnące ID przepisu. Endpoint zwraca także e-maile autorów,
+dlatego jest dostępny wyłącznie po autoryzacji administratora.
+
+| Kod | Znaczenie |
+|---|---|
+| `200` | poprawna odpowiedź, także pusta strona |
+| `400` | nieprawidłowe parametry paginacji lub sortowania |
+| `401` | brak albo nieprawidłowy token |
+| `403` | token użytkownika bez roli administratora |
+| `404` | nieistniejąca ścieżka, np. `/admin/recipes/1` |
+| `405` | metoda inna niż `GET` |
+| `500` | błąd wewnętrzny/RPC |
+
+```json
+{
+  "data": [{
+    "id": 42,
+    "name": "Szarlotka",
+    "author_id": "1a2b3c4d-0000-0000-0000-000000000000",
+    "author_username": "Kasia_Gotuje",
+    "author_email": "kasia@example.com",
+    "category_name": "Deser",
+    "created_at": "2026-05-03T10:15:00Z",
+    "average_rating": 4.5,
+    "ratings_count": 12,
+    "is_grill": true,
+    "is_termorobot": false
+  }],
+  "pagination": { "currentPage": 1, "pageSize": 25, "totalPages": 1, "totalItems": 1 },
+  "sorting": { "sort_by": "created_at", "sort_dir": "desc" }
+}
+```
+
 ### `PATCH /admin/users/{userId}/role`
 Zmienia role `app_role` wybranego uzytkownika (admin only).
 
@@ -157,6 +198,7 @@ admin/
 ├── admin.service.ts      # logika biznesowa (MVP: stuby)
 ├── admin.types.ts        # typy i walidacja query parametrow
 ├── admin.types.test.ts   # testy walidacji schematow admin
+├── admin-recipes.*.ts     # endpoint GET /admin/recipes i testy
 ├── test-requests.http    # przypadki testowe REST Client
 └── README.md             # dokumentacja funkcji
 ```

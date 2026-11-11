@@ -30,7 +30,9 @@ Wywołanie: `/ps-new-feature PS-{N} [opis]`.
 3. **Plany implementacji.** Uruchom równolegle oba planery w trybie `pytania`
    (jedna runda, tylko nowe luki) i zadaj ich pytania w jednej sesji. Poprawki
    historyjki wynikające z odpowiedzi nanieś sam, z wpisem do „Historii zmian”,
-   a następnie uruchom oba planery w trybie `zapis`. Bramka.
+   a następnie uruchom oba planery w trybie `zapis`. Sprawdź też, czy
+   `.env.local` ma konta admina i użytkownika do smoke testów; jeśli nie, zapytaj,
+   czy użytkownik je przygotuje, czy akceptuje `WYMAGA_WERYFIKACJI`. Bramka.
 4. **Implementacja API.** Hook `subagentStop` uruchamia weryfikację i dopisuje
    wynik do artefaktu `verification`; jeśli wpisu brakuje, uzupełnij go
    z raportu implementera. Następnie review `api-db`, `api-code`, `api-tests`.

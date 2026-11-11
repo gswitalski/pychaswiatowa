@@ -1,0 +1,107 @@
+.admin-recipes-table {
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 1rem;
+    padding: 1rem;
+    background: var(--mat-sys-surface);
+}
+
+.admin-recipes-table--refreshing {
+    opacity: 0.5;
+}
+
+.admin-recipes-table__status-block,
+.admin-recipes-table__inline-error {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.admin-recipes-table__status-block p,
+.admin-recipes-table__inline-error p {
+    margin: 0;
+}
+
+.admin-recipes-table__status-block p {
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.admin-recipes-table__inline-error {
+    margin-bottom: 0.75rem;
+}
+
+.admin-recipes-table__inline-error p {
+    color: var(--mat-sys-error);
+}
+
+.admin-recipes-table__scroll {
+    overflow-x: auto;
+}
+
+.admin-recipes-table__scroll table {
+    min-width: 1320px;
+    width: 100%;
+}
+
+.admin-recipes-table__cell--wrap {
+    max-width: 22rem;
+    overflow-wrap: anywhere;
+}
+
+.admin-recipes-table__author-primary,
+.admin-recipes-table__author-secondary {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.admin-recipes-table__author-secondary {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.8125rem;
+}
+
+.admin-recipes-table__cell--number {
+    text-align: right;
+}
+
+.admin-recipes-table__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.admin-recipes-table__flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.admin-recipes-table__flag mat-icon {
+    width: 1rem;
+    height: 1rem;
+    font-size: 1rem;
+}
+
+.admin-recipes-table__flag--grill {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+}
+
+.admin-recipes-table__flag--termorobot {
+    background: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+}
+
+.admin-recipes-table__no-results {
+    color: var(--mat-sys-on-surface-variant);
+}
+
+@media (max-width: 960px) {
+    .admin-recipes-table__status-block,
+    .admin-recipes-table__inline-error {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

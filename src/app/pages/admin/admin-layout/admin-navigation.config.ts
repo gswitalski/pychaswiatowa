@@ -17,4 +17,12 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItemVm[] = [
         matchingRoutes: ['/admin/users'],
         ariaLabel: 'Przejdź do sekcji użytkowników',
     },
+    {
+        label: 'Przepisy publiczne',
+        route: '/admin/recipes',
+        icon: 'menu_book',
+        matchMode: 'exact',
+        matchingRoutes: ['/admin/recipes'],
+        ariaLabel: 'Przejdź do sekcji przepisów publicznych',
+    },
 ];

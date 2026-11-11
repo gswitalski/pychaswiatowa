@@ -18,11 +18,18 @@ można powtórzyć po przerwie. Ścieżki i nazewnictwo są zdefiniowane w
 2. Planer funkcjonalny przeprowadza do trzech rund pytań o luki w historyjce,
    poprawia ją (sekcja „Historia zmian”) i zapisuje plan API, UI i wdrożenia.
 3. Planery implementacji API i widoków zadają jedną wspólną rundę pytań o nowe
-   luki, po czym równolegle zapisują plany.
+   luki, po czym równolegle zapisują plany. Orkiestrator sprawdza też, czy
+   `.env.local` ma konta admina i zwykłego użytkownika do smoke testów; jeśli
+   nie, pyta, czy użytkownik je przygotuje, czy akceptuje `WYMAGA_WERYFIKACJI`.
 4. Implementer API dodaje funkcję, migracje, RPC, kontrakty i testy jednostkowe.
    Hook uruchamia `deno check`/`deno test` (oraz lint, testy i build przy zmianie
    kontraktów) i zapisuje artefakt `verification`. Niezależny reviewer może
-   zażądać maksymalnie dwóch rund poprawek.
+   zażądać maksymalnie dwóch rund poprawek. Po drugiej rundzie z uwagami
+   krytycznymi lub ważnymi bramka oferuje dodatkową rundę ograniczoną do tych
+   uwag z obowiązkowym re-review albo przyjęcie długu. Implementer dołącza tabelę
+   pokrycia sekcji testów planu, a testy wyścigów i uprawnień potwierdza
+   weryfikacją mutacyjną. Hook uruchamia `deno test` tylko dla zmienionych
+   funkcji (dla `_shared` — wszystkich) i zapisuje ostatnie linie wyjścia przy `FAIL`.
 5. Implementer widoków działa po akceptacji API. Hook uruchamia lint, testy
    Vitest i build, po czym następuje review.
 6. Updater zapisuje zwięzłą aktualizację `project-summary.md`.

@@ -27,6 +27,13 @@ export const adminRoutes: Routes = [
                         (m) => m.AdminUsersPageComponent
                     ),
             },
+            {
+                path: 'recipes',
+                loadComponent: () =>
+                    import('./admin-recipes/admin-recipes-page.component').then(
+                        (m) => m.AdminRecipesPageComponent
+                    ),
+            },
         ],
     },
 ];

@@ -14,6 +14,14 @@ migracje, wynik weryfikacji i odstępstwa. Raportuj w formacie:
 | `deno check` / `deno test` | TAK/NIE | PASS/FAIL | ... |
 | Smoke test workera | TAK/NIE | PASS/FAIL | ... |
 
+Przed zakończeniem porównaj testy z sekcją testów planu i dołącz tabelę
+pokrycia (`pokryte` / `częściowo` / `brak` z powodem); luka bez uzasadnienia
+oznacza pracę niedokończoną. Dla testów uprawnień (ACL) wykonaj weryfikację
+mutacyjną: test musi paść po tymczasowym usunięciu zabezpieczenia (np. `revoke`);
+przywróć zmianę i potwierdź to w `git diff`. Przed `migration up`/`db reset`
+i przed smoke testem wykonaj kroki z `ps-implement-api` (dryf migracji, kopia
+danych, konta testowe).
+
 Na końcu podaj checklistę planu: każdy punkt jako `ZROBIONE`,
 `POMINIĘTE — powód` albo `WYMAGA_WERYFIKACJI`. Status implementacji jest
 `PASS` tylko wtedy, gdy weryfikacja uruchomieniowa zakończyła się powodzeniem.
