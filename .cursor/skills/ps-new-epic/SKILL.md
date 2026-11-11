@@ -4,7 +4,9 @@ description: Orkiestruje analizę epiku, review i generowanie historyjek.
 disable-model-invocation: true
 ---
 # Nowy epic
-Wywołanie `/ps-new-epic {obszar} [opis]`. Uruchom analityka, zapisz analizę,
-niezależny review, zatrzymaj się na decyzję użytkownika, nanieś zaakceptowane
-uwagi, a następnie wygeneruj historyjki z identyfikatorami `PS-{N}`. Każdą
-historyjkę przekaż później do `/ps-new-feature PS-{N}`.
+Wywołanie `/ps-new-epic {obszar} [opis]`. Przeprowadź rundy pytań analityka
+(sekcja „Rundy pytań” w konwencjach), zapisz analizę, wykonaj niezależny review,
+zatrzymaj się na bramce akceptacji z konwencji, nanieś zaakceptowane uwagi,
+a następnie przeprowadź rundy pytań i wygeneruj historyjki z identyfikatorami
+`PS-{N}`. Po historyjkach ponownie zatrzymaj się na bramce. Każdą historyjkę
+przekaż później do `/ps-new-feature PS-{N}`.

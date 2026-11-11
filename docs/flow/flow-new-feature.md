@@ -12,16 +12,27 @@ można powtórzyć po przerwie. Ścieżki i nazewnictwo są zdefiniowane w
 
 ## Aktualny przebieg
 
-1. Analityk tworzy historyjkę i zadaje pytania przez `AskQuestion`.
-2. Planer zapisuje plan API, UI i wdrożenia.
-3. Plany implementacji API i widoków powstają równolegle.
-4. Implementer API dodaje funkcję, migracje, RPC, kontrakty i testy; hook uruchamia
-   weryfikację, a niezależny reviewer może zażądać maksymalnie dwóch rund poprawek.
-5. Implementer widoków działa po akceptacji API, po czym przechodzi weryfikację
-   i review.
+1. Analityk przeprowadza do trzech rund pytań przez `AskQuestion`. Każda runda
+   wynika z poprzednich odpowiedzi, a proces kończy się, gdy nie ma otwartych
+   kwestii. Następnie analityk zapisuje historyjkę.
+2. Planer funkcjonalny przeprowadza do trzech rund pytań o luki w historyjce,
+   poprawia ją (sekcja „Historia zmian”) i zapisuje plan API, UI i wdrożenia.
+3. Planery implementacji API i widoków zadają jedną wspólną rundę pytań o nowe
+   luki, po czym równolegle zapisują plany.
+4. Implementer API dodaje funkcję, migracje, RPC, kontrakty i testy jednostkowe.
+   Hook uruchamia `deno check`/`deno test` (oraz lint, testy i build przy zmianie
+   kontraktów) i zapisuje artefakt `verification`. Niezależny reviewer może
+   zażądać maksymalnie dwóch rund poprawek.
+5. Implementer widoków działa po akceptacji API. Hook uruchamia lint, testy
+   Vitest i build, po czym następuje review.
 6. Updater zapisuje zwięzłą aktualizację `project-summary.md`.
+7. Orkiestrator wykonuje retrospektywę (artefakt `retrospective`) i pyta, które
+   propozycje zmian w procesie wdrożyć.
 
-Po każdym etapie orkiestrator zatrzymuje się na akceptację użytkownika. Przed
+Proces obejmuje wyłącznie testy jednostkowe (Vitest, `deno test`), bez E2E.
+
+Po każdym etapie orkiestrator pyta przez `AskQuestion`: `Kontynuuj`,
+`Zatrzymaj się` albo `Inna` (własna instrukcja). Przed
 implementacją API wykonuje preflight Deno/Supabase/Docker i sprawdza porty z
 `supabase/config.toml`. Po implementacji wykonywany jest pełny check, test,
 migracja lokalna i smoke test workera. Brak któregokolwiek z nich ma status

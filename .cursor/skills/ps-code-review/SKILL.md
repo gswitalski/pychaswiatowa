@@ -15,8 +15,9 @@ Zakresy:
 - `api-tests`: testy backendowe oraz pokrycie kryteriów,
 - `views`: komponenty, serwisy, routing i testy Angular.
 
-Przeczytaj historyjkę i odpowiedni plan. Oceń kryteria Given-When-Then,
-bezpieczeństwo, reguły projektu, testy i odstępstwa. Nie uruchamiaj E2E.
+Przeczytaj historyjkę (z „Historią zmian”), odpowiedni plan i artefakt
+weryfikacji z hooka. Oceń kryteria Given-When-Then, bezpieczeństwo, reguły
+projektu, testy jednostkowe i odstępstwa. Nie wymagaj ani nie uruchamiaj E2E.
 Możesz uruchomić wyłącznie lekkie, deterministyczne sprawdzenia wskazanego
 zakresu, jeśli środowisko je wspiera.
 

@@ -19,7 +19,7 @@
             {
                 "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/verify-implementation.ps1",
                 "matcher": "ps-api-implementer|ps-view-implementer",
-                "timeout": 600,
+                "timeout": 900,
                 "loop_limit": 2
             }
         ]

@@ -18,7 +18,9 @@ jest niedostępne, zatrzymaj implementację i zgłoś `WYMAGA_WERYFIKACJI` przed
 zmianami albo uzyskaj zgodę na pracę statyczną.
 
 Wykonaj zaakceptowany plan implementacji API. Zmieniaj tylko backend, migracje,
-`shared/contracts/types.ts` i testy backendu. Po każdej rundzie poprawek
+`shared/contracts/types.ts` i testy jednostkowe backendu; nie twórz testów E2E.
+Po zakończeniu hook `subagentStop` uruchamia `deno check`/`deno test`, a przy
+zmianie kontraktów także lint, testy Vitest i build frontendu. Po każdej rundzie poprawek
 przeczytaj pełny diff, a nie tylko wskazane linie. Dla planu przejdź checklistę
 punkt po punkcie, w tym `return` w ścieżkach RPC, RLS, migracje, kontrakty,
 testy i wszystkie scenariusze historyjki.
