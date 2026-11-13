@@ -6,115 +6,63 @@ Proces jest obsługiwany przez skille Cursora. Dla pojedynczej historyjki użyj:
 /ps-new-feature PS-{N} [opis wymagania]
 ```
 
-Orkiestrator odczytuje etap na podstawie istniejących artefaktów, więc polecenie
-można powtórzyć po przerwie. Ścieżki i nazewnictwo są zdefiniowane w
-`.cursor/skills/ps-feature-conventions/SKILL.md`.
+Etap ustala skrypt `.cursor/hooks/feature-stage.ps1 -Id PS-{N}` na podstawie
+artefaktów, więc polecenie można powtórzyć po przerwie. Ścieżki i nazewnictwo
+są w `.cursor/skills/ps-feature-conventions/SKILL.md`.
 
-## Aktualny przebieg
+## Przebieg
 
-1. Analityk przeprowadza do trzech rund pytań przez `AskQuestion`. Każda runda
-   wynika z poprzednich odpowiedzi, a proces kończy się, gdy nie ma otwartych
-   kwestii. Następnie analityk zapisuje historyjkę.
-2. Planer funkcjonalny przeprowadza do trzech rund pytań o luki w historyjce,
-   poprawia ją (sekcja „Historia zmian”) i zapisuje plan API, UI i wdrożenia.
-3. Planery implementacji API i widoków zadają jedną wspólną rundę pytań o nowe
-   luki, po czym równolegle zapisują plany. Orkiestrator sprawdza też, czy
-   `.env.local` ma konta admina i zwykłego użytkownika do smoke testów; jeśli
-   nie, pyta, czy użytkownik je przygotuje, czy akceptuje `WYMAGA_WERYFIKACJI`.
-4. Implementer API dodaje funkcję, migracje, RPC, kontrakty i testy jednostkowe.
-   Hook uruchamia `deno check`/`deno test` (oraz lint, testy i build przy zmianie
-   kontraktów) i zapisuje artefakt `verification`. Niezależny reviewer może
-   zażądać maksymalnie dwóch rund poprawek. Po drugiej rundzie z uwagami
-   krytycznymi lub ważnymi bramka oferuje dodatkową rundę ograniczoną do tych
-   uwag z obowiązkowym re-review albo przyjęcie długu. Implementer dołącza tabelę
-   pokrycia sekcji testów planu, a testy wyścigów i uprawnień potwierdza
-   weryfikacją mutacyjną. Hook uruchamia `deno test` tylko dla zmienionych
-   funkcji (dla `_shared` — wszystkich) i zapisuje ostatnie linie wyjścia przy `FAIL`.
-5. Implementer widoków działa po akceptacji API. Hook uruchamia lint, testy
-   Vitest i build, po czym następuje review.
-6. Updater zapisuje zwięzłą aktualizację `project-summary.md`.
-7. Orkiestrator wykonuje retrospektywę (artefakt `retrospective`) i pyta, które
-   propozycje zmian w procesie wdrożyć.
+```text
+1. Historyjka        ps-story-analyst   pytania: max 2 rundy        → bramka 1
+2. Plany impl.       ps-impl-planner    plan API + plan widoków     → bramka 2
+                                        (pytania tylko o blokery)
+3. Implementacja API ps-api-implementer + hook (deno, migracje)
+4. Widoki            ps-view-implementer + hook (lint, Vitest, build)
+5. Summary           orkiestrator (bez subagenta)                   → bramka 3
+```
+
+1. **Historyjka.** Analityk zadaje najwyżej dwie rundy pytań przez `AskQuestion`
+   (max 5 pytań na rundę, w zwartym formacie), potem zapisuje historyjkę z sekcją
+   „Decyzje i założenia”. Luki, które nie wymagają decyzji, stają się założeniami
+   z rekomendacją.
+2. **Plany implementacji.** Jeden planer czyta historyjkę i `docs/results/project-brief.md`
+   i zapisuje dwa dokumenty (API: `docs/results/impl-plans/endpoints/`, widoki:
+   `docs/results/impl-plans/views/`). Jeśli znajdzie blokery, zwraca pytania
+   (jedna runda) zamiast zapisu. Plan API zawiera sekcję „Czynności ręczne”
+   (sekrety, usługi zewnętrzne, migracje produkcyjne) pokazywaną na końcu.
+   Warstwa bez zmian dostaje plik „Nie dotyczy: powód”.
+3. **Implementacja API.** Preflight `.cursor/hooks/preflight.ps1 -Stage api -Migrations`
+   (Deno, Supabase CLI, Docker, porty, dryf migracji, konta testowe). Hook po
+   implementerze uruchamia `deno check`/`deno test` (przy zmianie kontraktów też
+   szybki typecheck frontendu) i zapisuje artefakt `verification`. Gdy wynik nie
+   blokuje, proces przechodzi do widoków bez bramki.
+4. **Implementacja widoków.** Hook uruchamia lint, Vitest i build.
+5. **Summary.** Orkiestrator uruchamia `.cursor/hooks/generate-reference.ps1`
+   (odświeża `project-reference.md` z kodu) i dopisuje jeden wiersz do tabeli
+   w `project-summary.md` (status i braki weryfikacji). `project-brief.md`
+   zmienia tylko przy zmianie architektury. Potem bramka końcowa z listą
+   czynności ręcznych.
+
+Dokumentacja projektu (`docs/results/`): `project-summary.md` (rejestr),
+`project-brief.md` (skrót dla planerów), `project-reference.md` (generowany),
+`project-prd.md` (PRD, stabilny).
 
 Proces obejmuje wyłącznie testy jednostkowe (Vitest, `deno test`), bez E2E.
+Bramki: `Kontynuuj`, `Zatrzymaj się`, `Inna`. Awarie narzędzi nie są bramką: dostają
+status `FAIL`/`WYMAGA_WERYFIKACJI`. Jedyne pytania poza analizą dotyczą bezpieczeństwa
+danych (dryf migracji lokalnych, `supabase db reset`). Brak Deno lokalnie: uruchom
+workflow CI `validate-backend` albo zapisz `WYMAGA_WERYFIKACJI`.
 
-Po każdym etapie orkiestrator pyta przez `AskQuestion`: `Kontynuuj`,
-`Zatrzymaj się` albo `Inna` (własna instrukcja). Przed
-implementacją API wykonuje preflight Deno/Supabase/Docker i sprawdza porty z
-`supabase/config.toml`. Po implementacji wykonywany jest pełny check, test,
-migracja lokalna i smoke test workera. Brak któregokolwiek z nich ma status
-`WYMAGA_WERYFIKACJI`, nie `PASS`.
+## Poza procesem (tylko na żądanie)
 
-Gdy lokalnie **nie ma Deno**, weryfikacja API (`deno check` / `deno test`) nie
-może zostać pominięta: uruchom workflow CI **`validate-backend`** na branchu
-(jeśli dostępny) albo oznacz testy Deno jako `FAIL`/`WYMAGA_WERYFIKACJI` w
-artefakcie `verification` i **nie akceptuj** review API bez przejścia CI lub
-ręcznego `deno test` na maszynie z Deno.
+- **Review kodu:** subagent `ps-code-reviewer` (zakresy `api-db`, `api-code`,
+  `api-tests`, `views`). Orkiestrator go nie uruchamia.
+- **Review analizy epiku:** `ps-analysis-reviewer`.
+- **Retrospektywa:** `/ps-retrospective PS-{N}`.
+- Nie ma wdrożeń zdalnych; commit wykonuje użytkownik.
 
-Review jest dzielony na `api-db`, `api-code`, `api-tests` i `views`. Po jednym
-aborcie tego samego zakresu orkiestrator zmienia strategię; nie powtarza
-wywołania w pętli. Każdy review zapisuje artefakt, a pominięcie zapisuje
-`BEZ_REVIEW` z powodem. Nie uruchamia deployu ani testów E2E. Czynności ręczne z
-`deployment-plan.md` są pokazywane na końcu; commit wykonuje użytkownik.
+## Epic (funkcjonalność złożona)
 
-Aby zaplanować, zaimplementować i wdrożyć nową funkcjonalność, wybierz jedną z dwóch ścieżek:
-
-- **Funkcjonalność złożona - epic** (oparta na więcej niż jednej historyjce użytkownika): wykonaj [analizę funkcjonalności](#analiza-funkcjonalności), a następnie [generowanie historyjek użytkownika](#user-stories).
-- **Funkcjonalność prosta - user story** (jedna historyjka użytkownika): wykonaj [generowanie pojedynczej historyjki użytkownika](#pojedyncza-historyjka-użytkownika) i przejdź do [planu implementacji](#plan-implementacji).
-
-# Zbiór historyjek - Epic
-
-## Analiza
-
-- Wykonaj prompt `043 Prompt - New features analysis`.
-- Zrewiduj dokument za pomocą prompta `044 Prompt - New features analysis review` i **innego modelu**.
-- W razie potrzeby skoryguj dokument, kontynuując konwersację z modelem.
-
-
-
-## Generowanie user stories
-
-- Wygeneruj historyjki użytkownika za pomocą prompta `045 Prompt - New features - user stories`.
-- dla każdej historyjki przejdz do punku **Plan implementacji** i kontynuuj
-
-
-
-# Pojedyncze User Story
-
-
-
-## Generownie pojedynczej historyjki
-
-- Wykonaj prompt `046 Prompt - New feature - user story`.
-- Zrewiduj treść historyjki i w razie potrzeby ją popraw.
-- Przejdź do punktu [Plan implementacji](#plan-implementacji).
-
-
-
-## Plan implementacji
-
-- Rozpisz wymagania dotyczące API, widoków i planu wdrożenia za pomocą prompta `047 Prompt - User story plan`.
-- Wynikowe dokumenty wykorzystaj w kolejnych krokach.
-
-
-
-## Implementacja API
-
-- Wykorzystaj prompt `048 Prompt - API Implementation Plan`, aby stworzyć plan implementacji API.
-- Zrewiduj plan i w razie potrzeby go skoryguj.
-- Wykorzystaj prompt `015 Prompt - Endpoint Implementation` do zaimplementowania API.
-
-
-
-## Implementacja widoków
-
-- Wykorzystaj prompt `049 Prompt - View Implementation plan` do stworzenia planu implementacji widoku.
-- Zrewiduj plan i w razie potrzeby go skoryguj.
-- Wdróż implementację za pomocą prompta `020 Prompt - View Implementation`.
-
-
-
-## Aktualizacja project summary
-
-- Zaktualizuj `project-summary` za pomocą prompta `050 Prompt - Project summary update`.
-
+`/ps-new-epic {obszar}`: analiza (max 2 rundy pytań), bramka, historyjki
+`PS-{N}` (max 2 rundy pytań), bramka. Każdą historyjkę realizuje się później przez
+`/ps-new-feature PS-{N}`.

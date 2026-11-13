@@ -49,10 +49,18 @@ if ($files -match '^supabase/functions/') {
     }
 }
 
+$agent = [regex]::Match($payloadText, 'ps-(api|view)-implementer').Value
+
 if ($files -match '^(src|shared)/') {
-    Invoke-Check 'npm run lint' { npm run lint }
-    Invoke-Check 'npm run test:run' { npm run test:run }
-    Invoke-Check 'npm run build' { npm run build }
+    if ($agent -eq 'ps-api-implementer') {
+        # Etap API: zmieniły się tylko kontrakty/typy. Wystarczy szybki typecheck;
+        # pełny lint, Vitest i build wykonuje hook po etapie widoków.
+        Invoke-Check 'tsc (typecheck frontendu)' { npx tsc -p tsconfig.app.json --noEmit }
+    } else {
+        Invoke-Check 'npm run lint' { npm run lint }
+        Invoke-Check 'npm run test:run' { npm run test:run }
+        Invoke-Check 'npm run build' { npm run build }
+    }
 }
 
 $storyId = [regex]::Match($payloadText, 'PS-\d+')
@@ -62,7 +70,6 @@ if ($storyId.Success -and $results.Count -gt 0) {
         Select-Object -First 1
     if ($story) {
         $prefix = $story.Name -replace '-user-story\.md$', ''
-        $agent = [regex]::Match($payloadText, 'ps-(api|view)-implementer').Value
         $lines = @('', "## $(Get-Date -Format 'yyyy-MM-dd HH:mm') $agent", '', '| Weryfikacja | Wynik |', '|---|---|')
         $lines += $results | ForEach-Object { "| $($_.Name) | $($_.Status) |" }
         foreach ($detail in $failureDetails) {

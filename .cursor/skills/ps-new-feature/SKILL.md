@@ -1,60 +1,67 @@
 ---
 name: ps-new-feature
-description: Orkiestruje pełny proces historyjki PS-N i wznawia go na podstawie istniejących artefaktów.
+description: Orkiestruje proces historyjki PS-N (historyjka, plany implementacji, API, widoki, summary) i wznawia go na podstawie artefaktów.
 disable-model-invocation: true
 ---
 # Nowa funkcjonalność
 
 Wywołanie: `/ps-new-feature PS-{N} [opis]`.
 
+Proces: **historyjka → plany implementacji (API + widoki) → implementacja API →
+implementacja widoków → summary**. Bramki akceptacji są trzy (po historyjce,
+po planach, na końcu).
+
 ## Zasady
-1. Przeczytaj `ps-feature-conventions`, ustal etap i wykonaj preflight środowiska.
-   Dla etapu API sprawdź Deno, Supabase CLI, Docker i porty z `supabase/config.toml`.
-   Brak narzędzia oznacza `WYMAGA_WERYFIKACJI` przed implementacją.
-2. Uruchamiaj subagentów w świeżym kontekście, przekazując tylko ID, tryb, rundę
-   i pełną historię pytań oraz odpowiedzi użytkownika.
-3. Pytania subagentów zadawaj według sekcji „Rundy pytań” z konwencji, bez
-   skracania ich kontekstu i opisów opcji do haseł, a po
-   każdym etapie zatrzymuj się na „Bramce akceptacji”. Awarie narzędzi nie są
-   osobną bramką: zastosuj procedurę awaryjną i pytaj dopiero po jej wyczerpaniu.
-4. Proces obejmuje wyłącznie testy jednostkowe; nie zlecaj ani nie uruchamiaj E2E.
+1. Przeczytaj `ps-feature-conventions` i uruchom
+   `powershell -NoProfile -File .cursor/hooks/feature-stage.ps1 -Id PS-{N}`.
+   Etap, slug i ścieżki bierz z jego wyniku; wznów od wskazanego etapu.
+2. Subagentów uruchamiaj w świeżym kontekście. Przekazuj ID, slug, ścieżki
+   artefaktów, tryb i (jeśli były) pytania z odpowiedziami. Nie wklejaj treści
+   plików, które subagent może przeczytać sam.
+3. Pytania zadajesz wyłącznie w etapie 1 (max 2 rundy) i opcjonalnie w etapie 2
+   (jedna runda, tylko blokery). Wszędzie indziej wybieraj wariant
+   rekomendowany i zapisuj go jako „Założenie”. Jedyny wyjątek to bezpieczeństwo
+   danych: dryf migracji lokalnych i `supabase db reset` (zob. etap 3).
+4. Tylko testy jednostkowe; nie zlecaj ani nie uruchamiaj E2E.
+5. Reviewer (`ps-code-reviewer`, `ps-analysis-reviewer`) nie należy do procesu:
+   nie uruchamiaj go i nie proponuj. Użytkownik wywoła go ręcznie, gdy zechce.
 
 ## Etapy
-1. **Historyjka.** Rundy `pytania` z `ps-story-analyst` (najwyżej 3, do
-   `STATUS: BRAK_PYTAŃ`), potem tryb `zapis`. Bramka.
-2. **Plan funkcjonalny.** Rundy `pytania` z `ps-feature-planner` (najwyżej 3),
-   potem `zapis`: poprawki historyjki z wpisem do „Historii zmian” i trzy plany.
-   Uruchom kontrolę spójności historyjka ↔ API ↔ UI; nie twórz planów
-   implementacji, dopóki sprzeczności nie zostaną rozwiązane. Na bramce pokaż
-   zmiany naniesione na historyjkę.
-3. **Plany implementacji.** Uruchom równolegle oba planery w trybie `pytania`
-   (jedna runda, tylko nowe luki) i zadaj ich pytania w jednej sesji. Poprawki
-   historyjki wynikające z odpowiedzi nanieś sam, z wpisem do „Historii zmian”,
-   a następnie uruchom oba planery w trybie `zapis`. Sprawdź też, czy
-   `.env.local` ma konta admina i użytkownika do smoke testów; jeśli nie, zapytaj,
-   czy użytkownik je przygotuje, czy akceptuje `WYMAGA_WERYFIKACJI`. Bramka.
-4. **Implementacja API.** Hook `subagentStop` uruchamia weryfikację i dopisuje
-   wynik do artefaktu `verification`; jeśli wpisu brakuje, uzupełnij go
-   z raportu implementera. Następnie review `api-db`, `api-code`, `api-tests`.
-   Bramka.
-5. **Implementacja widoków** dopiero po akceptacji API i kontraktów; hook
-   (lint, testy Vitest, build), review `views`. Bramka.
-6. **Summary.** Updater działa dopiero po akceptacji implementacji i review albo
-   jawnej decyzji użytkownika. W summary umieść statusy review, Deno, migracji
-   i smoke testu; nie wyciągaj wniosków z samego braku kodu. Bramka.
-7. **Retrospektywa.** Wykonaj ją sam według `ps-retrospective` i zapytaj, które
-   propozycje wdrożyć.
-8. Na końcu pokaż checklistę planu wdrożenia i statusy weryfikacji. Nie wdrażaj
-   zdalnie; commit wykonuje użytkownik.
+1. **Historyjka.** Rundy `pytania` z `ps-story-analyst` (najwyżej 2, do
+   `STATUS: BRAK_PYTAŃ`), potem tryb `zapis`. **Bramka 1.**
+2. **Plany implementacji.** Jedno wywołanie `ps-impl-planner` w trybie `plan`.
+   Gdy planer znajdzie blokery, zwraca `STATUS: PYTANIA` bez zapisu: zadaj
+   pytania jedną sesją i wywołaj go ponownie z odpowiedziami (musi wtedy
+   zapisać oba plany). Poprawki historyjki wynikające z odpowiedzi planer nanosi
+   sam, z wpisem w „Historii zmian”. Na bramce pokaż założenia planów, zmiany
+   w historyjce i „Czynności ręczne” z planu API. **Bramka 2.**
+3. **Implementacja API** (pomiń, gdy `apiSkipped`).
+   - `powershell -NoProfile -File .cursor/hooks/preflight.ps1 -Stage api -Migrations`.
+     Brak Deno, Supabase CLI lub Dockera: zatrzymaj etap bez pytań i podaj, czego
+     brakuje (wznowisz tym samym poleceniem). Dryf migracji: zapytaj użytkownika
+     (nie usuwaj obiektów spoza repo). Brak kont testowych w `.env.local` nie blokuje:
+     smoke test z kontami dostaje `WYMAGA_WERYFIKACJI`.
+   - Uruchom `ps-api-implementer`. Hook `subagentStop` weryfikuje i dopisuje wynik
+     do artefaktu `verification`; jeśli wpisu brakuje, uzupełnij go z raportu
+     implementera.
+   - Wynik **blokuje**, gdy `FAIL` lub `NIE_WYKONANO` dotyczy migracji lokalnej,
+     `deno check`/`deno test` albo smoke testu workera (odpowiedź 4xx z kodu
+     funkcji). W takim razie zatrzymaj się na bramce z opisem problemu. W przeciwnym
+     razie przejdź do etapu 4 bez bramki.
+4. **Implementacja widoków** (pomiń, gdy `viewSkipped`): `preflight.ps1 -Stage views`,
+   potem `ps-view-implementer`. Hook uruchamia lint, Vitest i build. `FAIL` lub
+   `NIE_WYKONANO` blokuje: zatrzymaj się na bramce; w przeciwnym razie przejdź
+   do summary.
+5. **Summary.** Wykonaj `ps-summary-update` sam (bez subagenta). Potem
+   **Bramka 3** z krótkim podsumowaniem: artefakty, statusy weryfikacji,
+   założenia, „Czynności ręczne” z planu API. Nie wdrażaj zdalnie; commit
+   wykonuje użytkownik.
 
-## Review i poprawki
-- Review uruchamiaj z listą plików z diffu. Przy `Subagent was aborted` wykonaj
-  najwyżej jedną powtórkę na **tym samym** zakresie plików; po drugim aborcie
-  **zmniejsz zakres** (np. jeden plik lub tylko `api-code` bez `api-tests`) i
-  ewentualnie zmień model; trzecia próba pełnego diffu — tylko po jawnej decyzji
-  użytkownika na bramce. Dalej: review w głównym czacie lub artefakt
-  `BEZ_REVIEW` z `WYMAGA_WERYFIKACJI`.
-- Każdy review zapisz jako artefakt. Gdy review jest niemożliwe, zapisz
-  `BEZ_REVIEW` z powodem i `WYMAGA_WERYFIKACJI`; nie oznaczaj funkcji jako gotowej.
-- Po poprawkach implementer wykonuje pełną weryfikację i czyta cały diff.
-  Maksymalnie dwie rundy poprawek na zakres.
+Retrospektywa i review nie są częścią procesu. Użytkownik uruchamia je na
+żądanie (`/ps-retrospective PS-{N}`, `ps-code-reviewer`).
+
+## Awarie
+Awarie narzędzi nie są bramką ani pytaniem: zastosuj procedurę (np. `FAIL`/
+`WYMAGA_WERYFIKACJI` w artefakcie), a pytaj dopiero na bramce, gdy etap jest
+zablokowany. Gdy Deno brakuje lokalnie, uruchom workflow CI `validate-backend`
+na branchu (jeśli dostępny) albo zapisz `WYMAGA_WERYFIKACJI`.

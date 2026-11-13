@@ -60,6 +60,12 @@ Testing and Documentation:
 - ./src/app/**/*.spec.ts - Unit test files alongside their respective components/services
 - ./e2e/ - End-to-end test files and configuration
 - ./docs/ - Project documentation and architectural decisions
+- ./docs/archive/ - Archiwalne przewodniki (nieużywane w nowych funkcjach)
+- ./docs/results/project-summary.md - Rejestr zrealizowanych historyjek (jeden wiersz na PS-N)
+- ./docs/results/project-brief.md - Zwięzły skrót projektu dla planerów
+- ./docs/results/project-reference.md - Referencja generowana z kodu (nie edytować ręcznie)
+- ./docs/results/project-prd.md - PRD i stan produktu (stabilny)
+- ./.cursor/hooks/ - Skrypty hooków i etapów procesu (guard, verify, preflight, feature-stage)
 - ./.github/ - GitHub workflows, issue templates, and CI/CD configurations
 
 `./public` - public assets

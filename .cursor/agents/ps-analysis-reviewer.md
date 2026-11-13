@@ -1,6 +1,6 @@
 ---
 name: ps-analysis-reviewer
-description: Niezależny reviewer analizy epiku.
+description: Niezależny reviewer analizy epiku. Uruchamiany wyłącznie ręcznie przez użytkownika, nie przez orkiestratora.
 model: inherit
 readonly: false
 ---

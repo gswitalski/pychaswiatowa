@@ -3,364 +3,79 @@ description: Standardy Supabase Edge Functions, migracji, RLS i kontraktów API 
 globs: supabase/**
 alwaysApply: false
 ---
-# Zasady implementacji REST API w Supabase z użyciem TypeScript
-
-Ten dokument określa najlepsze praktyki i standardy tworzenia backendu w architekturze "Backend as a Service" z wykorzystaniem Supabase i TypeScript. Celem jest zapewnienie spójności, bezpieczeństwa i wysokiej jakości kodu.
-
-## Architektura i Struktura Edge Functions
-
-Ta sekcja opisuje zarówno wymaganą przez Supabase strukturę plików, jak i zalecaną, modularną architekturę wewnętrzną dla każdej funkcji, która zapewnia skalowalność i łatwość utrzymania kodu.
-
-**ZALECANE: Stosuj poniższą modularną strukturę dla KAŻDEJ Edge Function, niezależnie od jej początkowej złożoności.**
-
-### Podstawowe Zasady Supabase
-
-**KRYTYCZNE: Supabase rozpoznaje funkcje TYLKO na pierwszym poziomie katalogu `supabase/functions/`**
-
--   **Struktura katalogu funkcji:** Każda funkcja musi znajdować się w osobnym katalogu wewnątrz `supabase/functions/`.
--   **Nazwa endpointa:** Nazwa katalogu funkcji staje się bezpośrednio nazwą endpointa (np. katalog `me` tworzy endpoint `/functions/v1/me`).
--   **Plik wejściowy:** Każda funkcja musi zawierać plik `index.ts`, który jest punktem wejściowym i obsługuje przychodzące żądania.
--   **Nazewnictwo:** Nazwy katalogów funkcji powinny być w formacie `kebab-case`.
-
-### Rekomendowana Architektura Modularna
-
-Każda funkcja powinna być zorganizowana według wzorca separacji odpowiedzialności, aby oddzielić routing, obsługę żądań i logikę biznesową.
-
-1.  **`index.ts`** - Tylko routing i obsługa błędów na najwyższym poziomie.
-2.  **`*.handlers.ts`** - Handlery dla poszczególnych endpointów/zasobów (walidacja, formatowanie odpowiedzi).
-3.  **`*.service.ts`** - Czysta logika biznesowa i operacje na danych.
-4.  **`*.types.ts`** - Typy specyficzne dla danego zasobu (opcjonalnie).
-
-### Przykładowe Struktury Katalogów
-
-Poniższe przykłady pokazują, jak skalować architekturę w zależności od złożoności funkcji.
-
-#### Mała funkcja (1-2 endpointy)
-```
-supabase/functions/categories/
-  ├── index.ts                 # routing
-  ├── categories.handlers.ts   # handler GET (read-only)
-  └── categories.service.ts    # logika biznesowa
-```
-
-#### Średnia funkcja (3-5 endpointów)
-Dla logicznie powiązanych endpointów, użyj jednej funkcji z wewnętrznym routingiem.
-
-```
-supabase/functions/recipes/
-  ├── index.ts                  # główny router
-  ├── recipes.handlers.ts       # handlery CRUD dla przepisów
-  ├── recipes.service.ts        # logika przepisów
-  ├── search.handlers.ts        # handlery dla wyszukiwania
-  └── search.service.ts         # logika wyszukiwania
-```
-
-#### Duża funkcja (6+ endpointów)
-```
-supabase/functions/recipes/
-  ├── index.ts                      # główny router
-  ├── handlers/
-  │   ├── recipes.handlers.ts       # CRUD dla przepisów
-  │   ├── tags.handlers.ts          # zarządzanie tagami
-  │   └── collections.handlers.ts   # zarządzanie kolekcjami
-  ├── services/
-  │   ├── recipes.service.ts        # operacje na przepisach
-  │   ├── tags.service.ts           # logika tagów
-  │   └── collections.service.ts    # logika kolekcji
-  └── types/
-      └── recipes.types.ts          # typy specyficzne dla przepisów
-```
-
-### Wzorzec implementacji - index.ts (Router)
-
-**Rola**: Przyjmowanie requestów, routing do właściwych handlerów, obsługa błędów na najwyższym poziomie.
-
-**Kluczowe zasady dla `index.ts`**:
-- ❌ NIGDY nie umieszczaj logiki biznesowej bezpośrednio w `index.ts`
-- ❌ NIGDY nie wykonuj zapytań do bazy danych w `index.ts`
-- ✅ TYLKO routing, autoryzacja na wysokim poziomie i obsługa błędów
-- ✅ Import routerów z plików `*.handlers.ts`
-
-### Wzorzec implementacji - *.handlers.ts (Handlers + Router)
-
-**Rola**: Obsługa konkretnych endpointów, walidacja requestów, wywołanie serwisów, formatowanie odpowiedzi.
-
-**Kluczowe zasady dla `*.handlers.ts`**:
-- ✅ Eksportuj osobne funkcje dla każdego handlera (np. `handleGetProfile`, `handleUpdateProfile`)
-- ✅ Eksportuj funkcję router (np. `profileRouter`) do użycia w `index.ts`
-- ✅ Handlery odpowiadają za walidację requestu i formatowanie response
-- ✅ Handlery delegują logikę biznesową do plików `*.service.ts`
-- ❌ Handlery NIE wykonują złożonych operacji na danych - to rola serwisów
-- ✅ Każdy handler loguje operację (info level minimum)
-
-### Wzorzec implementacji dla zagnieżdżonych ścieżek
-
-Dla endpointów typu `/recipes/{id}/collections/{collectionId}` lub `/recipes/{id}/tags/{tagId}`:
-
-**Kluczowe zasady dla routerów z regex**:
-- ✅ Sprawdzaj NAJPIERW dłuższe/bardziej specyficzne ścieżki
-- ✅ Używaj capture groups `([^/]+)` do wyciągania parametrów z URL
-- ✅ Zwracaj `null` gdy ścieżka nie pasuje (pozwala na próbę innych routerów)
-- ✅ Waliduj HTTP method osobno dla każdej ścieżki
-- ✅ Parametry URL przekazuj jako argumenty do handlerów
-
-### Wzorzec implementacji - *.service.ts (Business Logic)
-
-**Rola**: Logika biznesowa, operacje na danych, zapytania do bazy.
-
-**Kluczowe zasady dla `*.service.ts`**:
-- ✅ Eksportuj funkcje z prefiksem akcji (np. `get`, `update`, `create`, `delete`)
-- ✅ Przyjmuj parametry jako obiekt z nazwanymi właściwościami
-- ✅ Definiuj stałe dla kolumn SELECT na początku pliku
-- ✅ Wykonuj walidację logiki biznesowej (długość, format, relacje)
-- ✅ Rzucaj ApplicationError dla błędów biznesowych
-- ✅ Loguj operacje na poziomie error i warn
-- ✅ Zwracaj typy DTO, nie raw types z bazy
-- ❌ Serwisy NIE formatują HTTP response - to rola handlerów
-
-### Konwencje nazewnictwa plików modularnych
-
-| Typ pliku | Nazwa | Przykład | Opis |
-|-----------|-------|----------|------|
-| Router główny | `index.ts` | `index.ts` | Zawsze w głównym katalogu funkcji |
-| Handlery | `{zasób}.handlers.ts` | `recipes.handlers.ts` | Handlery HTTP dla zasobu |
-| Serwisy | `{zasób}.service.ts` | `recipes.service.ts` | Logika biznesowa |
-| Typy | `{zasób}.types.ts` | `recipes.types.ts` | Typy specyficzne dla zasobu |
-| Utilities | `{zasób}.utils.ts` | `validation.utils.ts` | Funkcje pomocnicze |
-
-## Współdzielony Kod
-
-Współdzielone narzędzia i funkcje pomocnicze (np. obsługa błędów, klient Supabase, logger) trzymaj w katalogu `functions/_shared/`.
-
-## Specyfika projektu PychaŚwiatowa
-
-### Struktura Bazy Danych
-
-Aplikacja operuje na następujących głównych encjach:
-
-#### Tabele główne:
-- **`profiles`** - Rozszerzone dane profilu użytkownika (powiązane z `auth.users`)
-- **`recipes`** - Przepisy kulinarne z polami `ingredients` i `steps` w formacie JSONB
-- **`categories`** - Słownik predefiniowanych kategorii (np. "Obiad", "Deser", "Zupa")
-- **`tags`** - Tagi definiowane przez użytkowników (unikalne per użytkownik)
-- **`collections`** - Zbiory przepisów tworzone przez użytkowników (np. "Dania na święta")
-
-#### Tabele łączące (Junction Tables):
-- **`recipe_tags`** - Relacja wiele-do-wielu między przepisami a tagami
-- **`recipe_collections`** - Relacja wiele-do-wielu między przepisami a kolekcjami
-
-### Kluczowe Koncepcje Biznesowe
-
-#### Soft Delete dla przepisów
-- Tabela `recipes` używa kolumny `deleted_at` do miękkiego usuwania
-- **KRYTYCZNE**: Wszystkie zapytania SELECT muszą filtrować `WHERE deleted_at IS NULL`
-- Operacja DELETE powinna ustawiać `deleted_at = now()`, nie usuwać fizycznie rekordu
-
-#### Format JSONB dla składników i kroków
-Kolumny `ingredients` i `steps` przechowują dane w formacie:
-```json
-[
-  { "type": "header", "content": "Nagłówek sekcji" },
-  { "type": "item", "content": "Element listy (składnik lub krok)" }
-]
-```
-- Użyj funkcji pomocniczej `parse_text_to_jsonb(text)` do konwersji surowego tekstu na JSONB
-- Linie rozpoczynające się od `#` są traktowane jako nagłówki sekcji
-
-#### Dostępne widoki i funkcje bazodanowe
-- **`recipe_details`** - Widok agregujący dane przepisów z kategoriami, tagami i kolekcjami (zapobiega problemowi N+1)
-- **`parse_text_to_jsonb(text)`** - Funkcja PostgreSQL do parsowania tekstu na JSONB
-- **Trigger `updated_at`** - Automatyczna aktualizacja `updated_at` na tabelach `profiles`, `recipes`, `collections`
-
-#### Obsługa obrazów (Supabase Storage)
-- Obrazy przepisów są przechowywane w Supabase Storage
-- Tabela `recipes` zawiera tylko ścieżkę do pliku w kolumnie `image_path`
-- Bucket storage wymaga osobnych polityk RLS
-
-### Row Level Security (RLS)
-
-**KRYTYCZNE**: Wszystkie tabele mają włączone RLS:
-- Użytkownik może operować TYLKO na własnych danych (`auth.uid() = user_id`)
-- Tabela `categories` jest read-only dla użytkowników (słownik systemowy)
-- Junction tables (`recipe_tags`, `recipe_collections`) wymagają własności zarówno przepisu jak i tagu/kolekcji
-
-### Rekomendowane Struktury Edge Functions
-
-#### Dla MVP sugerowana struktura:
-
-```
-supabase/functions/
-  ├── _shared/
-  │   ├── supabase-client.ts      # Klient Supabase
-  │   ├── errors.ts               # ApplicationError i obsługa błędów
-  │   ├── logger.ts               # Logger
-  │   └── auth.ts                 # Utility do weryfikacji JWT
-  ├── recipes/
-  │   ├── index.ts                # Router główny
-  │   ├── recipes.handlers.ts     # CRUD dla przepisów
-  │   ├── recipes.service.ts      # Logika biznesowa przepisów
-  │   └── recipes.types.ts        # DTO i typy dla przepisów
-  ├── collections/
-  │   ├── index.ts                # Router główny
-  │   ├── collections.handlers.ts # CRUD dla kolekcji
-  │   └── collections.service.ts  # Logika biznesowa kolekcji
-  ├── tags/
-  │   ├── index.ts                # Router główny
-  │   ├── tags.handlers.ts        # CRUD dla tagów
-  │   └── tags.service.ts         # Logika biznesowa tagów
-  └── profile/
-      ├── index.ts                # Router główny
-      ├── profile.handlers.ts     # GET, PUT dla profilu
-      └── profile.service.ts      # Logika biznesowa profilu
-```
-
-### Walidacja Specyficzna dla Domeny
-
-Przy tworzeniu schematów Zod uwzględnij następujące limity:
-
-#### Recipes:
-- `name`: 1-150 znaków, wymagane
-- `description`: opcjonalne
-- `ingredients`: wymagane, minimum 1 element
-- `steps`: wymagane, minimum 1 element
-- `category_id`: opcjonalne (referencja do `categories`)
-
-#### Tags:
-- `name`: 1-50 znaków, wymagane
-- Automatyczna normalizacja do lowercase podczas zapisu (UNIQUE constraint: `user_id, lower(name)`)
-
-#### Collections:
-- `name`: 1-100 znaków, wymagane
-- `description`: opcjonalne
-- Unique constraint: `user_id, name` (case-sensitive)
-
-### Wyszukiwanie Pełnotekstowe
-
-- Tabela `recipes` ma indeks GIN na wektorze `tsvector` dla kolumn `name` i `ingredients`
-- Użyj widoku `recipe_details` lub zapytań RPC dla efektywnego wyszukiwania
-- Wyszukiwanie powinno obejmować: nazwę przepisu, składniki i tagi
-
-### Najlepsze Praktyki dla Tego Projektu
-
-1. **Używaj widoku `recipe_details`** zamiast ręcznych JOIN-ów gdzie to możliwe
-2. **Zawsze filtruj `deleted_at IS NULL`** dla przepisów
-3. **Weryfikuj własność zasobów** przed operacjami UPDATE/DELETE (choć RLS to zabezpiecza)
-4. **Używaj transakcji** przy operacjach na wielu tabelach (np. tworzenie przepisu z tagami)
-5. **Loguj operacje na zasobach** dla łatwiejszego debugowania
-6. **Zwracaj szczegółowe błędy walidacji** (np. "Przepis musi mieć przynajmniej jeden składnik")
-
-## Odpowiedzialność Backendu vs Frontendu
-
-**KRYTYCZNE: Backend jest JEDYNYM miejscem dostępu do danych i logiki biznesowej**
-
-### Odpowiedzialność Backendu (Edge Functions)
-
-Backend jest odpowiedzialny za **WSZYSTKIE** operacje związane z danymi:
-
-✅ **Backend MUSI obsługiwać:**
-
-1. **Dostęp do Danych**
-   - Wszystkie operacje CRUD (Create, Read, Update, Delete)
-   - Zapytania SELECT z filtrami, sortowaniem, paginacją
-   - JOIN-y między tabelami
-   - Agregacje i grupowania
-
-2. **Logika Biznesowa**
-   - Walidacja danych biznesowych (np. długość nazwy, format, relacje)
-   - Złożone operacje (np. soft delete, kasowanie kaskadowe)
-   - Transformacje danych (np. parsowanie tekstu na JSONB)
-   - Obliczenia (np. sumowanie, średnie)
-
-3. **Bezpieczeństwo**
-   - Weryfikacja JWT token
-   - Sprawdzanie własności zasobów
-   - Walidacja uprawnień (oprócz RLS)
-   - Sanityzacja danych wejściowych
-
-4. **Wyszukiwanie**
-   - Full-text search
-   - Filtrowanie po wielu polach
-   - Pattern matching (ILIKE, regex)
-   - Zaawansowane zapytania
-
-5. **Transakcje**
-   - Operacje wymagające atomowości
-   - Rollback przy błędach
-   - Konsystencja danych
-
-
-## Struktura Projektu i Nazewnictwo
-
--   Organizuj funkcje Supabase (Edge Functions) według logiki domenowej lub funkcji biznesowej.
--   Stosuj spójne nazewnictwo dla plików, funkcji i zmiennych (np. `kebab-case` dla plików, `camelCase` dla funkcji i zmiennych).
-
-## Walidacja i Oczyszczanie Danych
-
--   Do walidacji wszystkich danych przychodzących (body, parametry, zapytania) używaj biblioteki takiej jak Zod.
--   Definiuj precyzyjne schematy dla obiektów transferu danych (DTO), aby zapewnić integralność danych wejściowych.
--   Oczyszczaj dane wejściowe, aby chronić system przed atakami typu XSS i innymi zagrożeniami.
-
-## Uwierzytelnianie i Autoryzacja
-
--   Wykorzystuj wbudowane mechanizmy uwierzytelniania Supabase oparte na JWT.
--   Implementuj polityki bezpieczeństwa na poziomie wiersza (Row Level Security - RLS) bezpośrednio w bazie danych, aby zapewnić szczegółową kontrolę dostępu.
--   Weryfikuj tożsamość i uprawnienia użytkownika na początku każdej chronionej funkcji.
-
-## Obsługa Błędów
-
--   Zaimplementuj spójny, scentralizowany mechanizm obsługi błędów.
--   Zwracaj jasne i ustrukturyzowane komunikaty o błędach wraz z odpowiednimi kodami statusu HTTP.
--   Prowadź logi błędów w celu ułatwienia debugowania i monitorowania aplikacji.
-
-## Logika Biznesowa
-
--   Oddzielaj logikę biznesową od warstwy obsługi żądań i odpowiedzi (request/response).
--   Twórz dedykowane warstwy serwisowe lub funkcje pomocnicze do obsługi złożonych operacji.
--   Korzystaj z oficjalnej biblioteki klienckiej Supabase (`supabase-js`) do interakcji z bazą danych.
-
-## Interakcja z Bazą Danych
-
--   Do złożonych zapytań i operacji wykorzystuj widoki oraz funkcje RPC (Remote Procedure Call) w bazie danych PostgreSQL.
--   Pobieraj z bazy danych tylko te kolumny, które są niezbędne do wykonania danej operacji.
--   Wykorzystuj transakcje bazodanowe do zapewnienia atomowości operacji składających się z wielu kroków.
-
-## Typowanie w TypeScript
-
--   Generuj typy TypeScript bezpośrednio ze schematu bazy danych za pomocą komendy `supabase gen types typescript`.
--   Używaj wygenerowanych typów w DTO, warstwach serwisowych i podczas interakcji z bazą danych, aby zapewnić pełne bezpieczeństwo typów.
--   Definiuj jawne interfejsy i typy dla argumentów wejściowych oraz wartości zwracanych przez funkcje.
-
-## Projektowanie API
-
--   Projektuj punkty końcowe API zgodnie z zasadami i konwencjami RESTful.
--   Używaj odpowiednich metod HTTP (GET, POST, PUT, DELETE, PATCH) zgodnie z ich semantycznym przeznaczeniem.
--   Zachowuj spójną i przewidywalną strukturę adresów URL w całym API.
-
-## Testowanie Lokalnie
-
--   Uruchamiaj funkcje lokalnie: `supabase functions serve nazwa-funkcji`
--   Testuj endpoint pod adresem: `http://localhost:54331/functions/v1/nazwa-funkcji`
--   Używaj nagłówka `Authorization: Bearer TOKEN` dla endpointów wymagających uwierzytelnienia
--   Użyj nastepującyh danych logowania użytkownika testowego na lokalnym srodowisku:
-    user:
-    TEST_USER_EMAIL / TEST_USER_PASSWORD z lokalnego `.env.local`
-    (nie zapisuj sekretów w regułach, dokumentacji ani kodzie).
+# Zasady implementacji REST API w Supabase (TypeScript)
+
+Backend jest **jedynym** miejscem dostępu do danych i logiki biznesowej
+(CRUD, filtrowanie, wyszukiwanie, walidacja, uprawnienia, transakcje).
+Aktualna lista tabel, limitów domenowych i endpointów jest w migracjach,
+kodzie oraz w `docs/results/project-reference.md` (generowany z kodu); ta reguła
+opisuje standardy.
+
+## Struktura Edge Functions
+- Supabase rozpoznaje funkcje **tylko na pierwszym poziomie** `supabase/functions/`.
+  Katalog w `kebab-case` = nazwa endpointu (`me` → `/functions/v1/me`), plik
+  wejściowy `index.ts`.
+- Współdzielony kod (błędy, klient Supabase, logger, auth) w `functions/_shared/`.
+- Każda funkcja ma wzorzec separacji odpowiedzialności:
+
+| Plik | Rola |
+|---|---|
+| `index.ts` | Tylko routing, autoryzacja wysokiego poziomu i obsługa błędów. Nigdy logika biznesowa ani zapytania do bazy. |
+| `{zasób}.handlers.ts` | Walidacja requestu, wywołanie serwisu, format odpowiedzi, log operacji (min. info). Osobna funkcja na handler i eksportowany router (np. `profileRouter`). |
+| `{zasób}.service.ts` | Logika biznesowa i dane. Funkcje z prefiksem akcji, parametry jako obiekt, stałe kolumn SELECT na początku pliku, `ApplicationError` dla błędów biznesowych, zwracane DTO (nie typy surowe z bazy). Nie formatuje HTTP. |
+| `{zasób}.types.ts`, `{zasób}.utils.ts` | Typy i pomocnicze funkcje zasobu (opcjonalnie). |
+
+- Większa funkcja (6+ endpointów) może mieć podkatalogi `handlers/`, `services/`,
+  `types/`.
+- Zagnieżdżone ścieżki (`/recipes/{id}/collections/{collectionId}`): router z regex,
+  najpierw ścieżki dłuższe i bardziej specyficzne, capture groups `([^/]+)`,
+  zwrot `null` gdy ścieżka nie pasuje, osobna walidacja metody HTTP dla każdej
+  ścieżki, parametry URL jako argumenty handlerów.
+
+## Domena PychaŚwiatowa
+- **Soft delete przepisów**: `recipes.deleted_at`; każde SELECT filtruje
+  `deleted_at IS NULL`; DELETE ustawia `deleted_at = now()`.
+- **JSONB** (`ingredients`, `steps`): tablica `{ "type": "header" | "item",
+  "content": "…" }`; konwersja tekstu przez `parse_text_to_jsonb(text)` (linie
+  z `#` to nagłówki).
+- Używaj widoku `recipe_details` zamiast ręcznych JOIN-ów (unika N+1) oraz RPC
+  do złożonych zapytań. Wyszukiwanie pełnotekstowe: indeks GIN na `search_vector`.
+- Obrazy w Supabase Storage; `recipes.image_path` trzyma tylko ścieżkę; bucket
+  ma osobne polityki RLS.
+- **RLS** włączone na tabelach użytkownika: operacje tylko na własnych danych
+  (`auth.uid() = user_id`); `categories` read-only; tabele łączące wymagają
+  własności obu stron. Rola aplikacyjna pochodzi z JWT (`app_metadata.app_role`).
+
+## Walidacja, autoryzacja, błędy
+- Wszystkie dane wejściowe (body, parametry, query) waliduj schematami Zod i
+  oczyszczaj; w łańcuchu Zod `.refine()` zwraca `ZodEffects` (bez `.max()`/`.min()`),
+  więc ograniczenia typu stawiaj przed `.refine()`.
+- Weryfikuj JWT i uprawnienia na początku każdej chronionej funkcji; własność
+  zasobu sprawdzaj także w kodzie (nie tylko w RLS).
+- Jeden mechanizm błędów z `_shared/errors.ts`; odpowiedź błędu ma format
+  `{ code, message, details }` z właściwym kodem HTTP; błędy loguj.
+- Operacje na wielu tabelach wykonuj transakcyjnie (RPC); pobieraj tylko
+  potrzebne kolumny.
+
+## Typowanie i API
+- Typy generuj z bazy: `supabase gen types typescript` (lokalnie, `--local`);
+  używaj ich w DTO i serwisach, a argumenty i wyniki funkcji typuj jawnie.
+- Projektuj REST-owo: właściwe metody HTTP, spójne i przewidywalne URL-e.
+
+## Testowanie lokalne
+- `supabase functions serve nazwa-funkcji`; endpoint
+  `http://localhost:54331/functions/v1/nazwa-funkcji`; nagłówek
+  `Authorization: Bearer TOKEN` dla endpointów chronionych.
+- Użytkownik testowy: `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` z lokalnego
+  `.env.local` (nie zapisuj sekretów w regułach, dokumentacji ani kodzie).
+- Do kontroli stanu lokalnego używaj `supabase migration list --local`.
 
 ## Uprawnienia funkcji RPC (`security definer`)
-
--   Każda nowa lub przebudowana funkcja `security definer` w migracji ma
-    `revoke all … from public, anon, authenticated` i jawny `grant` tylko dla ról,
-    które jej potrzebują (zwykle `service_role`).
--   Migracja samodzielnie sprawdza uprawnienia (`has_function_privilege`) i kończy
-    się błędem, gdy `anon` lub `authenticated` mogą wywołać funkcję.
--   Przy przebudowie funkcji (`create or replace`) powtórz `revoke`/`grant`.
--   Nie usuwaj w migracji obiektów spoza repozytorium (`drop function` przeciążeń
-    z lokalnej bazy).
-
-## Zasady aktualne
-
-Lista tabel i limitów domenowych jest utrzymywana w migracjach oraz
-`docs/results/project-summary.md`. Ta reguła opisuje wyłącznie standardy
-implementacji. Wszystkie nowe funkcje muszą rozdzielać `index.ts`, handlery
-i serwisy, używać walidacji Zod, filtrować soft-delete oraz zwracać ujednolicony
-format błędu `{ code, message, details }`.
+- Każda nowa lub przebudowana funkcja `security definer` w migracji ma
+  `revoke all … from public, anon, authenticated` i jawny `grant` tylko dla ról,
+  które jej potrzebują (zwykle `service_role`).
+- Migracja samodzielnie sprawdza uprawnienia (`has_function_privilege`) i kończy
+  się błędem, gdy `anon` lub `authenticated` mogą wywołać funkcję.
+- Przy przebudowie funkcji (`create or replace`) powtórz `revoke`/`grant`.
+- Nie usuwaj w migracji obiektów spoza repozytorium (`drop function` przeciążeń
+  z lokalnej bazy).
