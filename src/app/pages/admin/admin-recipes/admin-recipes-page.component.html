@@ -1,5 +1,13 @@
 <section class="admin-recipes-page">
     <pych-admin-users-page-header [title]="title" [description]="description" />
+    <pych-admin-recipes-filters
+        [categories]="categories()"
+        [categoriesLoading]="categoriesLoading()"
+        [categoriesError]="categoriesError()"
+        [appliedFilters]="appliedFilters()"
+        (apply)="onFiltersApply($event)"
+        (clear)="onFiltersClear()"
+        (retryCategories)="onRetryCategories()" />
     <pych-admin-recipes-table
         [rows]="rows()"
         [state]="tableState()"
@@ -8,5 +16,6 @@
         [displayedColumns]="displayedColumns"
         (sortChange)="onSortChange($event)"
         (pageChange)="onPageChange($event)"
-        (retry)="onRetry()" />
+        (retry)="onRetry()"
+        (clearFilters)="onFiltersClear()" />
 </section>

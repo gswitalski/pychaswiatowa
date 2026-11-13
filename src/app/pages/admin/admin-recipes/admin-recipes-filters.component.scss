@@ -1,0 +1,30 @@
+.admin-recipes-filters {
+    padding: 1rem;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.admin-recipes-filters__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.admin-recipes-filters__flags,
+.admin-recipes-filters__actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.admin-recipes-filters__actions {
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 959px) {
+    .admin-recipes-filters__grid {
+        grid-template-columns: 1fr;
+    }
+}

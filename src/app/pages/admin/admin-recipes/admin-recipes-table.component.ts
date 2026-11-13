@@ -59,6 +59,7 @@ export class AdminRecipesTableComponent {
     readonly sortChange = output<AdminRecipesSortChangeEvent>();
     readonly pageChange = output<AdminRecipesPageChangeEvent>();
     readonly retry = output<void>();
+    readonly clearFilters = output<void>();
 
     readonly pageSizeOptions = ADMIN_RECIPES_PAGE_SIZE_OPTIONS;
     readonly hasRows = computed(() => this.rows().length > 0);
@@ -86,6 +87,10 @@ export class AdminRecipesTableComponent {
 
     onRetryClick(): void {
         this.retry.emit();
+    }
+
+    onClearFiltersClick(): void {
+        this.clearFilters.emit();
     }
 
     trackByRowId(_: number, row: AdminRecipesTableRowVm): number {

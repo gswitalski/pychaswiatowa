@@ -14,8 +14,10 @@ import {
     GetAdminRecipesQueryDto,
 } from '../../../../../shared/contracts/types';
 import { AdminApiService } from '../../../core/services/admin-api.service';
+import { CategoriesService } from '../../../core/services/categories.service';
 import { AdminUsersPageHeaderComponent } from '../admin-users/admin-users-page-header.component';
 import { AdminRecipesTableComponent } from './admin-recipes-table.component';
+import { AdminRecipesFiltersComponent } from './admin-recipes-filters.component';
 import {
     AdminRecipesPageChangeEvent,
     AdminRecipesSortChangeEvent,
@@ -24,6 +26,9 @@ import {
     buildAuthorDisplayId,
     AdminRecipesPaginationVm,
     AdminRecipesSortingVm,
+    AdminRecipesFiltersVm,
+    EMPTY_ADMIN_RECIPES_FILTERS,
+    countActiveAdminRecipeFilters,
 } from './admin-recipes.models';
 
 const AVERAGE_RATING_FORMATTER = new Intl.NumberFormat('pl-PL', {
@@ -34,13 +39,14 @@ const AVERAGE_RATING_FORMATTER = new Intl.NumberFormat('pl-PL', {
 @Component({
     selector: 'pych-admin-recipes-page',
     standalone: true,
-    imports: [AdminUsersPageHeaderComponent, AdminRecipesTableComponent],
+    imports: [AdminUsersPageHeaderComponent, AdminRecipesFiltersComponent, AdminRecipesTableComponent],
     templateUrl: './admin-recipes-page.component.html',
     styleUrl: './admin-recipes-page.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminRecipesPageComponent implements OnInit {
     private readonly adminApi = inject(AdminApiService);
+    private readonly categoriesService = inject(CategoriesService);
     private readonly router = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
     private latestRequestId = 0;
@@ -59,7 +65,7 @@ export class AdminRecipesPageComponent implements OnInit {
         'flags',
         'actions',
     ];
-    readonly query = signal<Required<GetAdminRecipesQueryDto>>({
+    readonly query = signal<GetAdminRecipesQueryDto>({
         page: 1,
         page_size: 25,
         sort_by: 'created_at',
@@ -79,6 +85,11 @@ export class AdminRecipesPageComponent implements OnInit {
     readonly isInitialLoading = signal(true);
     readonly isRefreshing = signal(false);
     readonly errorMessage = signal<string | null>(null);
+    readonly appliedFilters = signal<AdminRecipesFiltersVm>(EMPTY_ADMIN_RECIPES_FILTERS);
+    readonly categories = this.categoriesService.categories;
+    readonly categoriesLoading = this.categoriesService.loading;
+    readonly categoriesError = this.categoriesService.error;
+    readonly activeFilterCount = computed(() => countActiveAdminRecipeFilters(this.appliedFilters()));
 
     private readonly isIdle = computed(
         () => !this.isInitialLoading() && !this.isRefreshing() && !this.errorMessage()
@@ -96,10 +107,40 @@ export class AdminRecipesPageComponent implements OnInit {
         hasNoRowsOnPage: this.hasNoRowsOnPage(),
         hasError: this.errorMessage() !== null,
         errorMessage: this.errorMessage(),
+        hasActiveFilters: this.activeFilterCount() > 0,
     }));
 
     ngOnInit(): void {
+        this.categoriesService.loadCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
         this.loadRecipes(this.query());
+    }
+
+    onFiltersApply(filters: AdminRecipesFiltersVm): void {
+        this.appliedFilters.set(filters);
+        const nextQuery = {
+            ...this.query(),
+            ...this.filtersToQuery(filters),
+            page: 1,
+        };
+        this.query.set(nextQuery);
+        this.loadRecipes(nextQuery);
+    }
+
+    onFiltersClear(): void {
+        this.appliedFilters.set(EMPTY_ADMIN_RECIPES_FILTERS);
+        const nextQuery = {
+            page: 1,
+            page_size: this.query().page_size,
+            sort_by: this.query().sort_by,
+            sort_dir: this.query().sort_dir,
+        };
+        this.query.set(nextQuery);
+        this.loadRecipes(nextQuery);
+    }
+
+    onRetryCategories(): void {
+        this.categoriesService.clearCache();
+        this.categoriesService.loadCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
     }
 
     onRetry(): void {
@@ -153,7 +194,7 @@ export class AdminRecipesPageComponent implements OnInit {
     }
 
     private loadRecipes(
-        query: Required<GetAdminRecipesQueryDto>,
+        query: GetAdminRecipesQueryDto,
         isCorrection = false
     ): void {
         const requestId = ++this.latestRequestId;
@@ -189,6 +230,7 @@ export class AdminRecipesPageComponent implements OnInit {
                     this.pagination.set(response.pagination);
                     this.sorting.set(response.sorting);
                     this.query.set({
+                        ...this.filtersToQuery(this.appliedFilters()),
                         page: response.pagination.currentPage,
                         page_size: response.pagination.pageSize,
                         sort_by: response.sorting.sort_by,
@@ -221,6 +263,24 @@ export class AdminRecipesPageComponent implements OnInit {
                     );
                 },
             });
+    }
+
+    private filtersToQuery(filters: AdminRecipesFiltersVm): Partial<GetAdminRecipesQueryDto> {
+        return {
+            ...(filters.id !== null ? { id: filters.id } : {}),
+            ...(filters.name ? { name: filters.name } : {}),
+            ...(filters.author ? { author: filters.author } : {}),
+            ...(filters.categoryIds.length ? { category_id: [...filters.categoryIds] } : {}),
+            ...(filters.includeUncategorized ? { uncategorized: true } : {}),
+            ...(filters.createdFrom ? { created_from: filters.createdFrom } : {}),
+            ...(filters.createdTo ? { created_to: filters.createdTo } : {}),
+            ...(filters.ratingMin !== null ? { rating_min: filters.ratingMin } : {}),
+            ...(filters.ratingMax !== null ? { rating_max: filters.ratingMax } : {}),
+            ...(filters.ratingsCountMin !== null ? { ratings_count_min: filters.ratingsCountMin } : {}),
+            ...(filters.ratingsCountMax !== null ? { ratings_count_max: filters.ratingsCountMax } : {}),
+            ...(filters.isGrill ? { is_grill: true } : {}),
+            ...(filters.isTermorobot ? { is_termorobot: true } : {}),
+        };
     }
 
     private mapRecipeToRow(recipe: AdminRecipeListItemDto): AdminRecipesTableRowVm {

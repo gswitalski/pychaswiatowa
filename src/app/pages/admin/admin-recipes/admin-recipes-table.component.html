@@ -11,7 +11,12 @@
     </div>
     } @else if (state().isEmpty) {
     <div class="admin-recipes-table__status-block">
+        @if (state().hasActiveFilters) {
+        <p>Brak przepisów spełniających wybrane kryteria.</p>
+        <button mat-stroked-button type="button" (click)="onClearFiltersClick()">Wyczyść filtry</button>
+        } @else {
         <p>Brak przepisów publicznych do wyświetlenia.</p>
+        }
     </div>
     } @else {
     @if (state().hasError && hasRows()) {

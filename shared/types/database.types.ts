@@ -757,8 +757,21 @@ export type Database = {
       }
       admin_get_recipes_page: {
         Args: {
+          p_author?: string
+          p_category_ids?: number[]
+          p_created_from?: string
+          p_created_to?: string
+          p_include_uncategorized?: boolean
+          p_is_grill?: boolean
+          p_is_termorobot?: boolean
+          p_name?: string
           p_page_number?: number
           p_page_size?: number
+          p_rating_max?: number
+          p_rating_min?: number
+          p_ratings_count_max?: number
+          p_ratings_count_min?: number
+          p_recipe_id?: number
           p_sort_by?: string
           p_sort_dir?: string
         }

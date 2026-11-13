@@ -70,6 +70,25 @@ export class AdminApiService {
         if (query.page_size !== undefined) queryParams.append('page_size', query.page_size.toString());
         if (query.sort_by) queryParams.append('sort_by', query.sort_by);
         if (query.sort_dir) queryParams.append('sort_dir', query.sort_dir);
+        if (query.id !== undefined) queryParams.append('id', query.id.toString());
+        if (query.name?.trim()) queryParams.append('name', query.name.trim());
+        if (query.author?.trim()) queryParams.append('author', query.author.trim());
+        for (const categoryId of query.category_id ?? []) {
+            queryParams.append('category_id', categoryId.toString());
+        }
+        if (query.uncategorized) queryParams.append('uncategorized', 'true');
+        if (query.created_from) queryParams.append('created_from', query.created_from);
+        if (query.created_to) queryParams.append('created_to', query.created_to);
+        if (query.rating_min !== undefined) queryParams.append('rating_min', query.rating_min.toString());
+        if (query.rating_max !== undefined) queryParams.append('rating_max', query.rating_max.toString());
+        if (query.ratings_count_min !== undefined) {
+            queryParams.append('ratings_count_min', query.ratings_count_min.toString());
+        }
+        if (query.ratings_count_max !== undefined) {
+            queryParams.append('ratings_count_max', query.ratings_count_max.toString());
+        }
+        if (query.is_grill) queryParams.append('is_grill', 'true');
+        if (query.is_termorobot) queryParams.append('is_termorobot', 'true');
 
         const queryString = queryParams.toString();
         const endpoint = queryString ? `admin/recipes?${queryString}` : 'admin/recipes';

@@ -113,6 +113,10 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/admin/recipes?page=1&page_size=100&sort_by=name&sort_dir=asc
 Authorization: Bearer {{adminToken}}
 
+### RECIPES-2F. SUCCESS: Combined filters
+GET {{baseUrl}}/admin/recipes?name=%C5%BBurek&author=anna&category_id=1&category_id=2&uncategorized=true&created_from=2026-11-01&created_to=2026-11-03&rating_min=4&ratings_count_max=10&is_grill=true
+Authorization: Bearer {{adminToken}}
+
 ### RECIPES-3. SUCCESS: Author sorting
 GET {{baseUrl}}/admin/recipes?sort_by=author&sort_dir=desc
 Authorization: Bearer {{adminToken}}

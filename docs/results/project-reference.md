@@ -32,7 +32,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 ## Funkcje RPC (public) — argumenty
 
 - `add_recipe_to_plan_and_update_shopping_list()`
-- `admin_get_recipes_page(p_page_number, p_page_size, p_sort_by, p_sort_dir)`
+- `admin_get_recipes_page(p_author, p_category_ids, p_created_from, p_created_to, p_include_uncategorized, p_is_grill, p_is_termorobot, p_name, p_page_number, p_page_size, p_rating_max, p_rating_min, p_ratings_count_max, p_ratings_count_min, p_recipe_id, p_sort_by, p_sort_dir)`
 - `admin_get_users_page(p_page_number, p_page_size, p_sort_by, p_sort_dir)`
 - `admin_update_user_role(p_actor_user_id, p_new_role, p_target_user_id)`
 - `ai_rate_limit_hit(p_key, p_limit, p_now, p_window_seconds)`
@@ -59,7 +59,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 Ścieżka: `/functions/v1/{funkcja}`. Metody i wzorce wyciągnięte z kodu handlerów i `index.ts`.
 
 ### admin
-- pliki: admin.handlers.ts, admin.service.ts, admin.types.ts, admin-ai-credits.handlers.ts, admin-ai-credits.service.ts, admin-auth.ts, admin-recipes.handlers.ts, admin-recipes.rpc-guard.ts, admin-recipes.service.ts, admin-recipes.types.ts, index.ts
+- pliki: admin.handlers.ts, admin.service.ts, admin.types.ts, admin-ai-credits.handlers.ts, admin-ai-credits.service.ts, admin-auth.ts, admin-recipes.filters.ts, admin-recipes.handlers.ts, admin-recipes.rpc-guard.ts, admin-recipes.service.ts, admin-recipes.types.ts, index.ts
 - metody: GET, PATCH
 - wzorce ścieżek: `/\/admin(\/.*)?$/` · `/^\/users\/([^/]+)\/ai-credits$/` · `/^\/users\/([^/]+)\/role$/` · `'/health'` · `'/recipes'` · `'/summary'` · `'/users'`
 
@@ -165,11 +165,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 91 plików, ostatnie 5
+## Migracje: 92 plików, ostatnie 5
 
-- `20261009211500_fix_recipe_soft_delete_rls.sql`
 - `20261010120000_create_user_recipe_flags.sql`
 - `20261027120000_create_recipe_ratings.sql`
 - `20261109120000_create_user_recipe_notes.sql`
 - `20261111120000_create_admin_get_recipes_page_rpc.sql`
+- `20261113130000_extend_admin_recipes_filters.sql`
 

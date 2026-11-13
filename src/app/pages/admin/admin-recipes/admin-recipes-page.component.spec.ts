@@ -1,6 +1,7 @@
 import 'zone.js';
 import 'zone.js/testing';
 import '@angular/compiler';
+import { signal } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TestBed } from '@angular/core/testing';
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
@@ -9,6 +10,7 @@ import { Observable, of, Subject, throwError } from 'rxjs';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GetAdminRecipesResponseDto } from '../../../../../shared/contracts/types';
 import { AdminApiService } from '../../../core/services/admin-api.service';
+import { CategoriesService } from '../../../core/services/categories.service';
 import { AdminRecipesPageComponent } from './admin-recipes-page.component';
 
 const response: GetAdminRecipesResponseDto = {
@@ -47,6 +49,16 @@ describe('AdminRecipesPageComponent', () => {
             imports: [AdminRecipesPageComponent, NoopAnimationsModule],
             providers: [
                 { provide: AdminApiService, useValue: api },
+                {
+                    provide: CategoriesService,
+                    useValue: {
+                        categories: signal([]),
+                        loading: signal(false),
+                        error: signal<string | null>(null),
+                        loadCategories: vi.fn().mockReturnValue(of([])),
+                        clearCache: vi.fn(),
+                    },
+                },
                 { provide: Router, useValue: router },
             ],
         }).compileComponents();

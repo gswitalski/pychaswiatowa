@@ -1,0 +1,79 @@
+<form class="admin-recipes-filters" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="admin-recipes-filters__grid">
+        <mat-form-field appearance="outline">
+            <mat-label>ID</mat-label>
+            <input matInput type="number" formControlName="id" aria-label="ID przepisu" />
+            @if (form.controls.id.hasError('min') || form.controls.id.hasError('pattern')) {
+            <mat-error>ID musi być dodatnią liczbą całkowitą.</mat-error>
+            }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Nazwa</mat-label>
+            <input matInput maxlength="100" formControlName="name" aria-label="Nazwa przepisu"
+                (keydown.enter)="onEnter($event)" />
+            @if (form.controls.name.hasError('maxlength')) {
+            <mat-error>Nazwa może mieć maksymalnie 100 znaków.</mat-error>
+            }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Autor</mat-label>
+            <input matInput maxlength="100" formControlName="author" aria-label="Autor"
+                (keydown.enter)="onEnter($event)" />
+            @if (form.controls.author.hasError('maxlength')) {
+            <mat-error>Autor może mieć maksymalnie 100 znaków.</mat-error>
+            }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Kategoria</mat-label>
+            <mat-select multiple formControlName="categoryIds" aria-label="Kategorie">
+                @for (category of categories(); track category.id) {
+                <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                }
+            </mat-select>
+            @if (categoriesLoading()) {
+            <mat-hint>Ładowanie kategorii...</mat-hint>
+            } @else if (categoriesError()) {
+            <mat-hint>{{ categoriesError() }} <button mat-button type="button" (click)="onRetryCategories()">Ponów</button></mat-hint>
+            }
+        </mat-form-field>
+        <mat-checkbox formControlName="includeUncategorized">Bez kategorii</mat-checkbox>
+        <mat-form-field appearance="outline">
+            <mat-label>Data od</mat-label>
+            <input matInput type="date" formControlName="createdFrom" aria-label="Data utworzenia od"
+                (keydown.enter)="onEnter($event)" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Data do</mat-label>
+            <input matInput type="date" formControlName="createdTo" aria-label="Data utworzenia do"
+                (keydown.enter)="onEnter($event)" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Średnia ocena od</mat-label>
+            <input matInput type="number" min="1" max="5" step="0.1" formControlName="ratingMin"
+                aria-label="Średnia ocena od" (keydown.enter)="onEnter($event)" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Średnia ocena do</mat-label>
+            <input matInput type="number" min="1" max="5" step="0.1" formControlName="ratingMax"
+                aria-label="Średnia ocena do" (keydown.enter)="onEnter($event)" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Liczba ocen od</mat-label>
+            <input matInput type="number" min="0" step="1" formControlName="ratingsCountMin"
+                aria-label="Liczba ocen od" (keydown.enter)="onEnter($event)" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Liczba ocen do</mat-label>
+            <input matInput type="number" min="0" step="1" formControlName="ratingsCountMax"
+                aria-label="Liczba ocen do" (keydown.enter)="onEnter($event)" />
+        </mat-form-field>
+        <div class="admin-recipes-filters__flags">
+            <mat-checkbox formControlName="isGrill">Grill</mat-checkbox>
+            <mat-checkbox formControlName="isTermorobot">Termorobot</mat-checkbox>
+        </div>
+    </div>
+    <div class="admin-recipes-filters__actions">
+        <button mat-flat-button color="primary" type="submit">Zastosuj</button>
+        <button mat-stroked-button type="button" (click)="onClear()">Wyczyść</button>
+    </div>
+</form>

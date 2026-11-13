@@ -94,6 +94,7 @@ export async function getAdminRecipes(params: {
     const pageSize = params.query.page_size ?? 25;
     const sortBy = params.query.sort_by ?? "created_at";
     const sortDir = params.query.sort_dir ?? "desc";
+    const filters = params.query;
     const client = params.client ??
         (createServiceRoleClient() as unknown as AdminRecipesRpcClient);
     const { data, error } = await client.rpc("admin_get_recipes_page", {
@@ -101,6 +102,19 @@ export async function getAdminRecipes(params: {
         p_page_size: pageSize,
         p_sort_by: sortBy,
         p_sort_dir: sortDir,
+        p_recipe_id: filters.id ?? null,
+        p_name: filters.name ?? null,
+        p_author: filters.author ?? null,
+        p_category_ids: filters.category_id ?? null,
+        p_include_uncategorized: filters.uncategorized ?? false,
+        p_created_from: filters.created_from ?? null,
+        p_created_to: filters.created_to ?? null,
+        p_rating_min: filters.rating_min ?? null,
+        p_rating_max: filters.rating_max ?? null,
+        p_ratings_count_min: filters.ratings_count_min ?? null,
+        p_ratings_count_max: filters.ratings_count_max ?? null,
+        p_is_grill: filters.is_grill ?? false,
+        p_is_termorobot: filters.is_termorobot ?? false,
     });
     if (error) {
         logger.error("[admin] RPC error while fetching admin recipes", {

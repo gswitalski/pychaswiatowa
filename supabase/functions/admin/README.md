@@ -94,6 +94,12 @@ Zwraca paginowaną listę publicznych, nieusuniętych przepisów dla administrat
 Parametry opcjonalne: `page` (domyślnie `1`), `page_size` (`1..100`, domyślnie `25`),
 `sort_by` (`name | author | category | created_at | average_rating | ratings_count`,
 domyślnie `created_at`) oraz `sort_dir` (`asc | desc`, domyślnie `desc`).
+Filtry opcjonalne: `id`, `name`, `author`, powtarzalne `category_id`,
+`uncategorized=true`, `created_from`, `created_to`, `rating_min`, `rating_max`,
+`ratings_count_min`, `ratings_count_max`, `is_grill=true` i
+`is_termorobot=true`. Teksty są trimowane i wyszukiwane jako zawierające,
+zakresy są inkluzywne, a filtry łączą się przez AND (kategorie przez OR).
+Daty obejmują dni kalendarzowe w strefie `Europe/Warsaw`.
 Strona poza zakresem zwraca `200` z pustym `data`, ale poprawnymi licznikami.
 Sortowanie tekstowe używa polskiej kolejności bez rozróżniania wielkości liter;
 remisy rozstrzyga rosnące ID przepisu. Endpoint zwraca także e-maile autorów,

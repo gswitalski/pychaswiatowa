@@ -825,6 +825,19 @@ export interface GetAdminRecipesQueryDto {
     page_size?: number;
     sort_by?: AdminRecipesSortBy;
     sort_dir?: SortDirection;
+    id?: number;
+    name?: string;
+    author?: string;
+    category_id?: number[];
+    uncategorized?: boolean;
+    created_from?: string;
+    created_to?: string;
+    rating_min?: number;
+    rating_max?: number;
+    ratings_count_min?: number;
+    ratings_count_max?: number;
+    is_grill?: boolean;
+    is_termorobot?: boolean;
 }
 
 export interface AdminRecipeListItemDto {

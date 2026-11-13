@@ -28,6 +28,26 @@ Deno.test("validates all supported recipes query values", () => {
     );
     assertEquals(validateAdminRecipesQuery(new URLSearchParams()), {});
     assertEquals(
+        validateAdminRecipesQuery(new URLSearchParams(
+            "id=42&name=%20%C5%BBurek%20&author=anna%40example.com&category_id=2&category_id=2&category_id=3&uncategorized=true&created_from=2026-11-01&created_to=2026-11-03&rating_min=4&rating_max=5&ratings_count_min=0&ratings_count_max=10&is_grill=true&is_termorobot=true",
+        )),
+        {
+            id: 42,
+            name: "Żurek",
+            author: "anna@example.com",
+            category_id: [2, 3],
+            uncategorized: true,
+            created_from: "2026-11-01",
+            created_to: "2026-11-03",
+            rating_min: 4,
+            rating_max: 5,
+            ratings_count_min: 0,
+            ratings_count_max: 10,
+            is_grill: true,
+            is_termorobot: true,
+        },
+    );
+    assertEquals(
         validateAdminRecipesQuery(new URLSearchParams("page=3000000000")),
         { page: 3000000000 },
     );
@@ -69,6 +89,17 @@ Deno.test("rejects unsafe and invalid recipes query values", () => {
             "sort_dir=up",
             "sort_dir=",
             "sort_dir=ASC",
+            "id=0",
+            "id=1.5",
+            "uncategorized=false",
+            "created_from=2026-02-30",
+            "created_from=2026-11-04&created_to=2026-11-03",
+            "rating_min=0",
+            "rating_max=6",
+            "rating_min=4&rating_max=3",
+            "ratings_count_min=-1",
+            "ratings_count_min=1.5",
+            `name=${"x".repeat(101)}`,
         ]
     ) {
         const error = assertThrows(() =>

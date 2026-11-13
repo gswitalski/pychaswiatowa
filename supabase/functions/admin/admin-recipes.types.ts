@@ -6,6 +6,9 @@ import {
     PositiveIntegerQueryStringSchema,
     type SortDirection,
 } from './admin.types.ts';
+import {
+    parseAdminRecipesFilters,
+} from './admin-recipes.filters.ts';
 
 export const ADMIN_RECIPES_SORT_FIELDS = [
     'name',
@@ -22,6 +25,19 @@ export interface GetAdminRecipesQueryDto {
     page_size?: number;
     sort_by?: AdminRecipesSortBy;
     sort_dir?: SortDirection;
+    id?: number;
+    name?: string;
+    author?: string;
+    category_id?: number[];
+    uncategorized?: boolean;
+    created_from?: string;
+    created_to?: string;
+    rating_min?: number;
+    rating_max?: number;
+    ratings_count_min?: number;
+    ratings_count_max?: number;
+    is_grill?: boolean;
+    is_termorobot?: boolean;
 }
 
 export interface AdminRecipeListItemDto {
@@ -81,7 +97,24 @@ export function validateAdminRecipesQuery(params: URLSearchParams): GetAdminReci
         throw new ApplicationError('VALIDATION_ERROR', DEFAULT_BAD_ADMIN_USERS_QUERY_MESSAGE);
     }
 
-    return Object.fromEntries(
+    const query = Object.fromEntries(
         Object.entries(result.data).filter(([, value]) => value !== undefined),
     ) as GetAdminRecipesQueryDto;
+    const filters = parseAdminRecipesFilters(params);
+    return {
+        ...query,
+        ...(filters.category_ids ? { category_id: filters.category_ids } : {}),
+        ...(filters.recipe_id !== undefined ? { id: filters.recipe_id } : {}),
+        ...(filters.include_uncategorized !== undefined ? { uncategorized: filters.include_uncategorized } : {}),
+        ...(filters.name !== undefined ? { name: filters.name } : {}),
+        ...(filters.author !== undefined ? { author: filters.author } : {}),
+        ...(filters.created_from !== undefined ? { created_from: filters.created_from } : {}),
+        ...(filters.created_to !== undefined ? { created_to: filters.created_to } : {}),
+        ...(filters.rating_min !== undefined ? { rating_min: filters.rating_min } : {}),
+        ...(filters.rating_max !== undefined ? { rating_max: filters.rating_max } : {}),
+        ...(filters.ratings_count_min !== undefined ? { ratings_count_min: filters.ratings_count_min } : {}),
+        ...(filters.ratings_count_max !== undefined ? { ratings_count_max: filters.ratings_count_max } : {}),
+        ...(filters.is_grill !== undefined ? { is_grill: filters.is_grill } : {}),
+        ...(filters.is_termorobot !== undefined ? { is_termorobot: filters.is_termorobot } : {}),
+    };
 }
