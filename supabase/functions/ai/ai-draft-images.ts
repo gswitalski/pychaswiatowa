@@ -87,7 +87,12 @@ export function decodeDraftImages(images: DraftImageInput[]): DecodeDraftImagesR
 
     const sizeResult = validateDraftImageSizes(decoded.map((image) => image.bytes.length));
     if (!sizeResult.ok) {
-        return { ok: false, reason: 'PAYLOAD_TOO_LARGE', ...sizeResult };
+        return {
+            ok: false,
+            reason: 'PAYLOAD_TOO_LARGE',
+            limit: sizeResult.limit,
+            ...(sizeResult.index !== undefined ? { index: sizeResult.index } : {}),
+        };
     }
     return {
         ok: true,

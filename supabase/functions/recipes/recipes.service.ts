@@ -6,7 +6,17 @@
 import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
-import { Json } from '../_shared/database.types.ts';
+import type { Database, Json } from '../_shared/database.types.ts';
+
+type CreateRecipeWithTagsRpcArgs = Extract<
+    Database['public']['Functions']['create_recipe_with_tags'],
+    { Args: { p_tips_raw?: string; p_is_grill?: boolean } }
+>['Args'];
+
+type UpdateRecipeWithTagsRpcArgs = Extract<
+    Database['public']['Functions']['update_recipe_with_tags'],
+    { Args: { p_update_tips?: boolean } }
+>['Args'];
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 import type {
     RecipeFlagsDto,
@@ -209,6 +219,10 @@ export interface RecipeDetailDto {
     ratings_count: number | null;
     my_rating?: number | null;
     my_note?: string | null;
+    /** True if recipe is marked as favorite by the authenticated user. */
+    is_favorite?: boolean;
+    /** True if recipe is marked as wanting to try by the authenticated user. */
+    is_want_to_try?: boolean;
     author: { id: string; username: string };
 }
 
@@ -352,7 +366,7 @@ async function fetchAuthorProfile(
             return { id: userId, username: userId };
         }
 
-        return { id: data.id, username: data.username };
+        return { id: data.id, username: data.username ?? userId };
     } catch (err) {
         logger.warn('Unexpected error fetching author profile, using fallback', {
             userId,
@@ -963,7 +977,7 @@ export async function getRecipeById(
             getRecipeFlagsMap(client, [id], requesterUserId),
             getMyRatingsMap(client, [id], requesterUserId),
             getMyRecipeNote(client, id, requesterUserId),
-            fetchAuthorProfile(client, data.user_id),
+            fetchAuthorProfile(client, data.user_id!),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
@@ -1061,7 +1075,7 @@ export async function getRecipeById(
             getRecipeFlagsMap(client, [id], requesterUserId),
             getMyRatingsMap(client, [id], requesterUserId),
             getMyRecipeNote(client, id, requesterUserId),
-            fetchAuthorProfile(serviceClient, publicRecipe.user_id),
+            fetchAuthorProfile(serviceClient, publicRecipe.user_id!),
         ]);
         const inMyPlan = recipeIdsInPlan.has(id);
         return mapToRecipeDetailDto(
@@ -1408,22 +1422,22 @@ export async function createRecipe(
         {
             p_user_id: userId,
             p_name: input.name,
-            p_description: input.description,
-            p_category_id: input.category_id,
+            p_description: input.description ?? '',
+            p_category_id: input.category_id!,
             p_ingredients_raw: input.ingredients_raw,
             p_steps_raw: input.steps_raw,
             p_tag_names: input.tags,
             p_visibility: input.visibility,
-            p_servings: input.servings,
+            p_servings: input.servings ?? undefined,
             p_is_termorobot: input.is_termorobot,
-            p_prep_time_minutes: input.prep_time_minutes,
-            p_total_time_minutes: input.total_time_minutes,
-            p_diet_type: input.diet_type,
-            p_cuisine: input.cuisine,
-            p_difficulty: input.difficulty,
+            p_prep_time_minutes: input.prep_time_minutes ?? undefined,
+            p_total_time_minutes: input.total_time_minutes ?? undefined,
+            p_diet_type: input.diet_type ?? undefined,
+            p_cuisine: input.cuisine ?? undefined,
+            p_difficulty: input.difficulty ?? undefined,
             p_is_grill: input.is_grill,
-            p_tips_raw: input.tips_raw,
-        }
+            p_tips_raw: input.tips_raw ?? undefined,
+        } as CreateRecipeWithTagsRpcArgs,
     );
 
     if (rpcError) {
@@ -1586,7 +1600,7 @@ export async function updateRecipe(
             p_update_is_grill: updateIsGrill,
             p_tips_raw: input.tips_raw ?? null,
             p_update_tips: updateTips,
-        }
+        } as UpdateRecipeWithTagsRpcArgs,
     );
 
     if (rpcError) {
@@ -1825,6 +1839,8 @@ export async function importRecipeFromText(
         diet_type: null, // No classification from import
         cuisine: null, // No classification from import
         difficulty: null, // No classification from import
+        tips_raw: null,
+        is_grill: false,
     };
 
     logger.info('Creating recipe from parsed text', { name });
@@ -2460,11 +2476,6 @@ export async function setRecipeCollections(
 // #region --- Normalized Ingredients ---
 
 /**
- * Status of the normalized ingredients generation process.
- */
-export type NormalizedIngredientsStatus = 'PENDING' | 'READY' | 'FAILED';
-
-/**
  * Supported unit types for normalized ingredients (MVP controlled list).
  */
 export type NormalizedIngredientUnit =
@@ -2747,10 +2758,13 @@ async function tryEnqueueNormalizedIngredientsJob(
             return;
         }
 
+        const enqueuePayload = data as Record<string, Json> | null;
         logger.info('Successfully enqueued normalized ingredients job', {
             recipeId,
             userId,
-            status: data.status,
+            status: typeof enqueuePayload?.status === 'string'
+                ? enqueuePayload.status
+                : undefined,
         });
     } catch (err) {
         // Catch any unexpected errors and log as warning

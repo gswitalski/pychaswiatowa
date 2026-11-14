@@ -103,6 +103,8 @@ ZASADY EKSTRAKCJI I STRUKTURYZACJI:
    - Nie pisz infantylnych, niczego nie wnoszących zdań typu  "To danie zaspokoi każde podniebienie"
    - Zachowaj ton familiarny, potoczny i pogodny — jak rozmowa z przyjacielem przy stole,
      a nie hasło z encyklopedii. Unikaj formalnych sformułowań.
+   - Wpleć co najmniej jeden element humorystyczny (żart o daniu, lekka uszczypliwość
+     lub kulinarny absurd) — humor familiarny i potoczny, bez sarkazmu w stronę czytelnika.
    - Jak się da,to napisz coś o pochodzeniu dania oraz jego właściościach zdrowotych
    - Zakończ opis dokładnie jedną ciekawostką (historyczną, geograficzną lub dietetyczną)
      powiązaną z potrawą. Jeśli nie dysponujesz pewną ciekawostką o samym daniu, napisz ją

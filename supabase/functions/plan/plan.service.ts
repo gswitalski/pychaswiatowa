@@ -16,6 +16,17 @@ import type {
     PlanRecipeRow,
 } from './plan.types.ts';
 
+function logDbError(
+    message: string,
+    error: { code?: string; message?: string; details?: string },
+): void {
+    logger.error(message, {
+        errorCode: error.code,
+        errorMessage: error.message,
+        errorDetails: error.details,
+    });
+}
+
 /**
  * Checks whether a Free user has reached their plan item limit.
  *
@@ -35,9 +46,9 @@ export async function checkFreePlanLimit(
         .eq('user_id', userId);
 
     if (error) {
-        logger.error(
+        logDbError(
             `[checkFreePlanLimit] Failed to count plan items for user ${userId}`,
-            error
+            error,
         );
         throw new ApplicationError(
             'INTERNAL_ERROR',
@@ -202,9 +213,9 @@ function mapRpcErrorToApplicationError(
     }
 
     // Generic database error
-    logger.error(
+    logDbError(
         `[addRecipeToPlan] RPC error for recipe ${recipeId}, user ${userId}`,
-        error
+        error,
     );
     throw new ApplicationError(
         'INTERNAL_ERROR',
@@ -319,9 +330,9 @@ async function insertRecipeToPlan(
         }
 
         // Other database errors
-        logger.error(
+        logDbError(
             `[insertRecipeToPlan] Failed to insert recipe ${recipeId} to plan`,
-            error
+            error,
         );
         throw new ApplicationError(
             'INTERNAL_ERROR',
@@ -371,7 +382,7 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
         .limit(50);
 
     if (error) {
-        logger.error(`[getPlan] Failed to fetch plan for user ${userId}`, error);
+        logDbError(`[getPlan] Failed to fetch plan for user ${userId}`, error);
         throw new ApplicationError(
             'INTERNAL_ERROR',
             'Failed to fetch plan'
@@ -517,9 +528,9 @@ function mapClearPlanRpcErrorToApplicationError(
         throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
     }
 
-    logger.error(
+    logDbError(
         `[clearPlan] RPC error for user ${userId}`,
-        error
+        error,
     );
     throw new ApplicationError(
         'INTERNAL_ERROR',
@@ -626,9 +637,9 @@ function mapRemoveRpcErrorToApplicationError(
     }
 
     // Generic database error
-    logger.error(
+    logDbError(
         `[removeRecipeFromPlan] RPC error for recipe ${recipeId}, user ${userId}`,
-        error
+        error,
     );
     throw new ApplicationError(
         'INTERNAL_ERROR',

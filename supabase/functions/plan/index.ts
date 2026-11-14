@@ -50,10 +50,10 @@ Deno.serve(async (req: Request) => {
         return response;
     } catch (error) {
         const duration = Date.now() - startTime;
-        logger.error(
-            `[plan] ${method} ${path} - Error (${duration}ms)`,
-            error
-        );
+        logger.error(`[plan] ${method} ${path} - Error (${duration}ms)`, {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+        });
         const errorResponse = handleError(error);
         
         // Ensure CORS headers are present on error response
