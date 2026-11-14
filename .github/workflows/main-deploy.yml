@@ -40,7 +40,7 @@ jobs:
           deno-version: v2.x
 
       - name: Run Deno tests
-        run: deno test --allow-all --unstable supabase/functions
+        run: deno test --allow-all --unstable --node-modules-dir=none supabase/functions
 
   # Job 3: Wdrożenie backendu (Supabase)
   deploy-backend:
