@@ -3,16 +3,6 @@
     [class.shopping-list-item--owned]="item().isOwned"
     [class.shopping-list-item--mutating]="isToggling() || isDeleting()"
 >
-    <!-- Checkbox -->
-    <mat-checkbox
-        matListItemMeta
-        [checked]="item().isOwned"
-        [disabled]="isToggling() || isDeleting()"
-        (change)="onCheckboxChange($event.checked)"
-        [attr.aria-label]="'Oznacz jako posiadane: ' + item().primaryText"
-        class="shopping-list-item__checkbox"
-    />
-
     <!-- Treść -->
     <div matListItemTitle class="shopping-list-item__content">
         <span class="shopping-list-item__primary">{{ item().primaryText }}</span>
@@ -21,21 +11,29 @@
         }
     </div>
 
-    <!-- Przycisk usuwania (tylko gdy canDelete) -->
-    @if (item().canDelete) {
-        <button
-            mat-icon-button
-            matListItemMeta
+    <div matListItemMeta class="shopping-list-item__actions">
+        <mat-checkbox
+            [checked]="item().isOwned"
             [disabled]="isToggling() || isDeleting()"
-            (click)="onDeleteClick()"
-            [attr.aria-label]="'Usuń: ' + item().primaryText"
-            class="shopping-list-item__delete"
-        >
-            @if (isDeleting()) {
-                <mat-spinner [diameter]="20" aria-label="Usuwanie w toku" />
-            } @else {
-                <mat-icon>delete</mat-icon>
-            }
-        </button>
-    }
+            (change)="onCheckboxChange($event.checked)"
+            [attr.aria-label]="'Oznacz jako posiadane: ' + item().primaryText"
+            class="shopping-list-item__checkbox"
+        />
+
+        @if (item().canDelete) {
+            <button
+                mat-icon-button
+                [disabled]="isToggling() || isDeleting()"
+                (click)="onDeleteClick()"
+                [attr.aria-label]="'Usuń: ' + item().primaryText"
+                class="shopping-list-item__delete"
+            >
+                @if (isDeleting()) {
+                    <mat-spinner [diameter]="20" aria-label="Usuwanie w toku" />
+                } @else {
+                    <mat-icon>delete</mat-icon>
+                }
+            </button>
+        }
+    </div>
 </mat-list-item>
