@@ -26,11 +26,27 @@ jobs:
       - name: Run unit tests
         run: npm run test:run
 
-  # Job 2: Wdrożenie backendu (Supabase)
+  # Job 2: Testy Edge Functions (Deno). Równolegle z Vitest; wdrożenie czeka na oba.
+  test-deno:
+    name: 🦕 Run Deno Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Run Deno tests
+        run: deno test --allow-all --unstable supabase/functions
+
+  # Job 3: Wdrożenie backendu (Supabase)
   deploy-backend:
     name: 🚀 Deploy Backend (Supabase)
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, test-deno]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -89,7 +105,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-  # Job 3: Wdrożenie frontendu (Firebase)
+  # Job 4: Wdrożenie frontendu (Firebase)
   deploy-frontend:
     name: 🌐 Deploy Frontend (Firebase)
     runs-on: ubuntu-latest
