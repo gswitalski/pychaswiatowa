@@ -6,7 +6,10 @@ import {
     effect,
     inject,
     OnInit,
+    signal,
+    DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -47,6 +50,7 @@ import { PublicRecipeResultsComponent } from '../public-recipe-results/public-re
 })
 export class PublicRecipesSearchComponent implements OnInit {
     private readonly facade = inject(PublicRecipesFacade);
+    private readonly destroyRef = inject(DestroyRef);
 
     // ==================== Inputs ====================
 
@@ -104,6 +108,9 @@ export class PublicRecipesSearchComponent implements OnInit {
     /** Błąd */
     readonly errorMessage = this.facade.errorMessage;
 
+    /** Komunikat dla czytników ekranu po zatwierdzeniu wyszukiwania (landing) */
+    readonly searchStatusMessage = signal('');
+
     constructor() {
         // Effect do synchronizacji initialQuery z FormControl
         effect(() => {
@@ -122,6 +129,16 @@ export class PublicRecipesSearchComponent implements OnInit {
             this.pageSize(),
             this.initialQuery()
         );
+
+        this.facade.landingSearchReady$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((query) => {
+                if (this.showResults()) {
+                    return;
+                }
+                this.searchSubmit.emit(query);
+                this.announceSearch(query);
+            });
     }
 
     // ==================== Event Handlers ====================
@@ -148,13 +165,20 @@ export class PublicRecipesSearchComponent implements OnInit {
             return;
         }
 
-        // Wymusz natychmiastowe przetworzenie
-        this.facade.submitQueryImmediate(query);
-
-        // Emituj dla trybu bez showResults (legacy support dla landing)
         if (!this.showResults()) {
-            this.searchSubmit.emit(query);
+            if (query.length >= 3) {
+                this.facade.updateQueryDraft(query);
+                this.searchSubmit.emit(query);
+                this.announceSearch(query);
+            }
+            return;
         }
+
+        this.facade.submitQueryImmediate(query);
+    }
+
+    private announceSearch(query: string): void {
+        this.searchStatusMessage.set(`Wyszukiwanie: ${query}`);
     }
 
     /**

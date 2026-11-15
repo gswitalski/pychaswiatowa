@@ -16,26 +16,35 @@
                 <mat-icon matPrefix>search</mat-icon>
                 
                 @if (shortQueryHintVisible()) {
-                    <mat-hint>Wpisz min. 3 znaki, aby wyszukać</mat-hint>
+                    <mat-hint id="public-search-short-hint">
+                        Wpisz co najmniej 3 znaki — wyszukiwanie uruchomi się automatycznie
+                    </mat-hint>
                 }
             </mat-form-field>
 
-            <button
-                mat-raised-button
-                color="primary"
-                type="button"
-                class="search-button"
-                (click)="onSearchSubmit()"
-                [disabled]="loadingInitial()"
-                aria-label="Szukaj przepisów"
-            >
-                @if (loadingInitial() && !showResults()) {
-                    <mat-spinner diameter="20"></mat-spinner>
-                } @else {
-                    Szukaj
-                }
-            </button>
+            @if (showResults()) {
+                <button
+                    mat-raised-button
+                    color="primary"
+                    type="button"
+                    class="search-button"
+                    (click)="onSearchSubmit()"
+                    [disabled]="loadingInitial()"
+                    aria-label="Szukaj przepisów"
+                >
+                    @if (loadingInitial()) {
+                        <mat-spinner diameter="20"></mat-spinner>
+                    } @else {
+                        Szukaj
+                    }
+                </button>
+            }
         </form>
+        @if (!showResults()) {
+            <div class="visually-hidden" aria-live="polite" role="status">
+                {{ searchStatusMessage() }}
+            </div>
+        }
     </div>
 
     <!-- Results Section (full width, only if showResults is true) -->

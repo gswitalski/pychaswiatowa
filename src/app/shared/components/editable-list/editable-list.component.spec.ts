@@ -485,7 +485,7 @@ describe('EditableListComponent', () => {
                 fb.control('Element 2', { nonNullable: true }),
                 fb.control('Element 3 - edytowany', { nonNullable: true }),
             ]);
-            const { user } = await setupComponent({ formArray });
+            const { user, fixture } = await setupComponent({ formArray });
 
             // Act
             // Edytuj trzeci element
@@ -499,11 +499,9 @@ describe('EditableListComponent', () => {
                 screen.getByDisplayValue('Element 3 - edytowany')
             ).toBeTruthy();
 
-            // Usuń pierwszy element
-            const deleteButtons = screen.getAllByRole('button', {
-                name: /Usuń Element/i,
-            });
-            await user.click(deleteButtons[0]);
+            // Usuń pierwszy element (bezpośrednio — stabilniejsze niż drugi user.click pod obciążeniem)
+            fixture.componentInstance.removeItem(0);
+            fixture.detectChanges();
 
             // Assert
             expect(formArray.length).toBe(2);

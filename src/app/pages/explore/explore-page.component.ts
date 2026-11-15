@@ -84,6 +84,8 @@ export class ExplorePageComponent implements OnInit {
         this.items().length === 0 && !this.loadingInitial() && !this.errorMessage()
     );
 
+    readonly searchStatusMessage = signal('');
+
     constructor() {
         this.queryControl.valueChanges
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -200,12 +202,20 @@ export class ExplorePageComponent implements OnInit {
 
         if (normalizedQuery.length >= 1 && normalizedQuery.length < 3) return;
 
+        this.announceSearch(normalizedQuery);
+
         void this.router.navigate([], {
             queryParams: {
                 ...this.filterState.toQueryParams(this.filters()),
                 q: normalizedQuery || undefined,
             },
         });
+    }
+
+    private announceSearch(query: string): void {
+        this.searchStatusMessage.set(
+            query.length >= 3 ? `Wyszukiwanie: ${query}` : 'Wyświetlanie wszystkich przepisów'
+        );
     }
 
     private resetAndLoad(): void {

@@ -20,9 +20,15 @@
             />
             <mat-icon matPrefix>search</mat-icon>
             @if (shortQueryHintVisible()) {
-                <mat-hint>Wpisz min. 3 znaki, aby wyszukać</mat-hint>
+                <mat-hint>
+                    Wpisz co najmniej 3 znaki — wyszukiwanie uruchomi się automatycznie
+                </mat-hint>
             }
         </mat-form-field>
+
+        <div class="visually-hidden" aria-live="polite" role="status">
+            {{ searchStatusMessage() }}
+        </div>
 
         <pych-explore-recipe-filters
             [filters]="filters()"

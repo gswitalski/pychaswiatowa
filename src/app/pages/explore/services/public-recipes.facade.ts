@@ -1,6 +1,14 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, of, Subject, debounceTime, distinctUntilChanged, tap } from 'rxjs';
+import {
+    catchError,
+    of,
+    Subject,
+    debounceTime,
+    distinctUntilChanged,
+    tap,
+    Observable,
+} from 'rxjs';
 
 import { PublicRecipesService, GetPublicRecipesFeedParams } from '../../../core/services/public-recipes.service';
 import {
@@ -97,6 +105,11 @@ export class PublicRecipesFacade {
 
     /** Subject do debounce'owania zmian query */
     private readonly queryChange$ = new Subject<string>();
+
+    /** Emisja frazy ≥ 3 znaki po debounce (kontekst landing — nawigacja zamiast API) */
+    private readonly landingSearchReadySubject = new Subject<string>();
+    readonly landingSearchReady$: Observable<string> =
+        this.landingSearchReadySubject.asObservable();
 
     constructor() {
         // Setup debounced query processing
@@ -245,7 +258,14 @@ export class PublicRecipesFacade {
             return;
         }
 
-        // Pusta fraza lub >= 3 znaki - ładujemy
+        if (this.context === 'landing') {
+            if (qTrim.length >= MIN_QUERY_LENGTH) {
+                this.landingSearchReadySubject.next(qTrim);
+            }
+            return;
+        }
+
+        // Pusta fraza lub >= 3 znaki - ładujemy (explore)
         this.loadInitial();
     }
 
