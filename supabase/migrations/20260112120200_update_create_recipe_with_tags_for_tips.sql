@@ -3,6 +3,26 @@
 -- functions affected: create_recipe_with_tags
 -- note: tips_raw is optional (defaults to null), empty values result in '[]'::jsonb
 
+-- drop previous overload (without tips) so PostgREST does not see duplicate candidates
+drop function if exists public.create_recipe_with_tags(
+    uuid,
+    text,
+    text,
+    bigint,
+    text,
+    text,
+    text[],
+    public.recipe_visibility,
+    smallint,
+    boolean,
+    smallint,
+    smallint,
+    public.recipe_diet_type,
+    public.recipe_cuisine,
+    public.recipe_difficulty,
+    boolean
+);
+
 -- update create_recipe_with_tags function to include tips parameter
 create or replace function public.create_recipe_with_tags(
     p_user_id uuid,

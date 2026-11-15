@@ -56,5 +56,13 @@ export function mapPostgrestErrorToApplicationError(
         );
     }
 
+    if (pgCode === 'PGRST203' || pgMessage.includes('Could not choose the best candidate function')) {
+        return new ApplicationError(
+            'INTERNAL_ERROR',
+            'Konflikt wersji funkcji RPC w bazie — wdróż migrację deduplikującą create_recipe_with_tags.',
+            details,
+        );
+    }
+
     return new ApplicationError('INTERNAL_ERROR', params.fallbackMessage, details);
 }

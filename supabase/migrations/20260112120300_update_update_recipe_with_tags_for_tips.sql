@@ -3,6 +3,38 @@
 -- functions affected: update_recipe_with_tags
 -- note: uses update flag to distinguish between "not provided" and "set to value"
 
+-- drop previous overload (without tips) so PostgREST does not see duplicate candidates
+drop function if exists public.update_recipe_with_tags(
+    bigint,
+    uuid,
+    text,
+    text,
+    bigint,
+    text,
+    text,
+    text[],
+    boolean,
+    public.recipe_visibility,
+    text,
+    boolean,
+    smallint,
+    boolean,
+    boolean,
+    boolean,
+    smallint,
+    boolean,
+    smallint,
+    boolean,
+    public.recipe_diet_type,
+    boolean,
+    public.recipe_cuisine,
+    boolean,
+    public.recipe_difficulty,
+    boolean,
+    boolean,
+    boolean
+);
+
 -- update update_recipe_with_tags function to include tips parameter
 create or replace function public.update_recipe_with_tags(
     p_recipe_id bigint,
