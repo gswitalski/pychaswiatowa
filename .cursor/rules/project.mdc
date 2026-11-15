@@ -61,6 +61,7 @@ Testing and Documentation:
 - ./e2e/ - End-to-end test files and configuration
 - ./docs/ - Project documentation and architectural decisions
 - ./docs/archive/ - Archiwalne przewodniki (nieużywane w nowych funkcjach)
+- ./docs/results/ui-improvements/ - Plany poprawek interfejsu ({slug}/{slug}-ui-plan.md)
 - ./docs/results/project-summary.md - Rejestr zrealizowanych historyjek (jeden wiersz na PS-N)
 - ./docs/results/project-brief.md - Zwięzły skrót projektu dla planerów
 - ./docs/results/project-reference.md - Referencja generowana z kodu (nie edytować ręcznie)

@@ -60,6 +60,14 @@ założenia) i pyta przez `AskQuestion`: `Kontynuuj`, `Zatrzymaj się` (proces
 wznawia to samo polecenie) albo `Inna` (własna instrukcja; wykonaj i ponów bramkę).
 Awarie narzędzi nie są bramką: zastosuj procedurę awaryjną i zapisz status.
 
+## Poprawki UI
+Skill `ui-improvement` (tylko frontend) zapisuje plan w
+`docs/results/ui-improvements/{slug}/{slug}-ui-plan.md`; slug angielski,
+`kebab-case`, ok. czterech słów, ustalany raz. Bez `PS-N` i bez wpisu w
+`project-summary.md`. Pytania zadaje w formacie z sekcji „Pytania do
+użytkownika” (max 2 rundy); ograniczenie pytań do analizy wymagań go nie
+dotyczy. Jedna bramka: akceptacja planu.
+
 ## Limity rozmiaru
 Historyjka ≤ ~15 KB, każdy plan implementacji ≤ ~10 KB. Plany odwołują się do
 scenariuszy GWT po numerze, nie przepisują historyjki, a SQL/RLS cytują dosłownie
