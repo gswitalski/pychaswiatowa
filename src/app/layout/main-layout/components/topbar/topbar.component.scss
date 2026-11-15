@@ -89,6 +89,12 @@
         flex-shrink: 1;
     }
 
+    &__add-recipe {
+        flex-shrink: 0;
+        min-width: 48px;
+        min-height: 48px;
+    }
+
     &__pricing-link {
         color: var(--mat-sys-primary);
         font-weight: 500;

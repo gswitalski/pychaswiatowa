@@ -8,7 +8,7 @@ import {
     BrowserDynamicTestingModule,
     platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RecipeNewAssistPageComponent } from './recipe-new-assist-page.component';
@@ -20,11 +20,24 @@ import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../shared/services/clipboard-
 import { CameraCaptureButtonComponent } from '../../../shared/components/camera-capture-button/camera-capture-button.component';
 import { ImageCompressionService } from '../../../shared/services/image-compression.service';
 
-function assistPageProviders(readImageFile: ReturnType<typeof vi.fn>) {
+function assistPageProviders(
+    readImageFile: ReturnType<typeof vi.fn>,
+    sourceQuery: string | null = null,
+) {
     return [
         {
             provide: Router,
             useValue: { navigate: vi.fn() },
+        },
+        {
+            provide: ActivatedRoute,
+            useValue: {
+                snapshot: {
+                    queryParamMap: {
+                        get: (key: string) => (key === 'source' ? sourceQuery : null),
+                    },
+                },
+            },
         },
         {
             provide: AiRecipeDraftService,
@@ -96,6 +109,21 @@ describe('RecipeNewAssistPageComponent (PS-92 schowek)', () => {
 
         expect(readImageFile).toHaveBeenCalledOnce();
         expect(component.readyImages().map((item) => item.file)).toEqual([file]);
+    });
+
+    it('ustawia tryb obrazu z queryParam source=image', () => {
+        TestBed.overrideProvider(ActivatedRoute, {
+            useValue: {
+                snapshot: {
+                    queryParamMap: {
+                        get: (key: string) => (key === 'source' ? 'image' : null),
+                    },
+                },
+            },
+        });
+
+        const component = TestBed.runInInjectionContext(() => new RecipeNewAssistPageComponent());
+        expect(component.source()).toBe('image');
     });
 
     it('ignoruje klik schowka w trybie tekstowym', async () => {

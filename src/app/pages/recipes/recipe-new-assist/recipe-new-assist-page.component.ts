@@ -12,7 +12,7 @@ import {
     afterNextRender,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -94,6 +94,7 @@ interface AssistImageItem {
 })
 export class RecipeNewAssistPageComponent {
     private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
     private readonly aiDraftService = inject(AiRecipeDraftService);
     private readonly draftStateService = inject(RecipeDraftStateService);
     private readonly creditsService = inject(AiCreditsService);
@@ -115,7 +116,15 @@ export class RecipeNewAssistPageComponent {
     @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
     /** Current input source mode */
-    readonly source = signal<AiInputSource>('text');
+    readonly source = signal<AiInputSource>(this.resolveInitialSource());
+
+    private resolveInitialSource(): AiInputSource {
+        const fromQuery = this.route.snapshot.queryParamMap.get('source');
+        if (fromQuery === 'text' || fromQuery === 'image' || fromQuery === 'url') {
+            return fromQuery;
+        }
+        return 'text';
+    }
 
     /** Text input value */
     readonly text = signal<string>('');

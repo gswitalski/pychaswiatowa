@@ -1,12 +1,12 @@
 import 'zone.js';
 import 'zone.js/testing';
-import { signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
     BrowserDynamicTestingModule,
     platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { MatMenuTrigger } from '@angular/material/menu';
@@ -18,8 +18,12 @@ import { LayoutService } from '../../../../core/services/layout.service';
 import { TopbarComponent } from './topbar.component';
 import { CurrentUserStateService } from '../../../../core/services/current-user-state.service';
 
+@Component({ standalone: true, template: '' })
+class EmptyRouteComponent {}
+
 describe('TopbarComponent', () => {
     const appRoleSignal = signal<AppRole>('user');
+    const isAuthenticatedSignal = signal(false);
     const isMobileSignal = signal(false);
     const isMobileOrTabletSignal = signal(false);
 
@@ -33,16 +37,21 @@ describe('TopbarComponent', () => {
 
     beforeEach(async () => {
         appRoleSignal.set('user');
+        isAuthenticatedSignal.set(false);
         isMobileSignal.set(false);
         isMobileOrTabletSignal.set(false);
 
         await TestBed.configureTestingModule({
             providers: [
-                provideRouter([]),
+                provideRouter([
+                    { path: 'recipes/new/assist', component: EmptyRouteComponent },
+                    { path: '**', component: EmptyRouteComponent },
+                ]),
                 {
                     provide: AuthService,
                     useValue: {
                         appRole: appRoleSignal,
+                        isAuthenticated: isAuthenticatedSignal,
                         signOut: vi.fn().mockResolvedValue(undefined),
                     } satisfies Partial<AuthService>,
                 },
@@ -205,6 +214,67 @@ describe('TopbarComponent', () => {
         expect(
             Boolean(header.compareDocumentPosition(adminItem as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
         ).toBe(true);
+    });
+
+    it('pokazuje przycisk dodawania przepisu dla zalogowanego użytkownika poza kreatorem', async () => {
+        isAuthenticatedSignal.set(true);
+        const fixture = TestBed.createComponent(TopbarComponent);
+        fixture.componentRef.setInput('shouldShowSidebar', false);
+        fixture.detectChanges();
+
+        let addButton = fixture.nativeElement.querySelector('.topbar__add-recipe');
+        expect(addButton).toBeTruthy();
+
+        const router = TestBed.inject(Router);
+        await router.navigateByUrl('/recipes/new/assist');
+        fixture.detectChanges();
+        addButton = fixture.nativeElement.querySelector('.topbar__add-recipe');
+        expect(addButton).toBeNull();
+    });
+
+    it('pokazuje przycisk na trasie bez sidebara gdy użytkownik jest zalogowany', () => {
+        isAuthenticatedSignal.set(true);
+        const fixture = TestBed.createComponent(TopbarComponent);
+        fixture.componentRef.setInput('shouldShowSidebar', false);
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector('.topbar__add-recipe')).toBeTruthy();
+    });
+
+    it('nawiguje do AI z obrazem na mobile/tablet', () => {
+        isAuthenticatedSignal.set(true);
+        isMobileOrTabletSignal.set(true);
+        const fixture = TestBed.createComponent(TopbarComponent);
+        fixture.componentRef.setInput('shouldShowSidebar', false);
+        fixture.detectChanges();
+
+        const router = TestBed.inject(Router);
+        vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+        const button = fixture.nativeElement.querySelector('.topbar__add-recipe') as HTMLButtonElement;
+        button.click();
+
+        expect(router.navigate).toHaveBeenCalledWith(['/recipes/new/assist'], {
+            queryParams: { source: 'image' },
+        });
+        expect(button.getAttribute('aria-label')).toBe('Dodaj przepis ze zdjęcia AI');
+    });
+
+    it('nawiguje do strony wyboru na desktopie', () => {
+        isAuthenticatedSignal.set(true);
+        isMobileOrTabletSignal.set(false);
+        const fixture = TestBed.createComponent(TopbarComponent);
+        fixture.componentRef.setInput('shouldShowSidebar', false);
+        fixture.detectChanges();
+
+        const router = TestBed.inject(Router);
+        vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+        const button = fixture.nativeElement.querySelector('.topbar__add-recipe') as HTMLButtonElement;
+        button.click();
+
+        expect(router.navigate).toHaveBeenCalledWith(['/recipes/new/start']);
+        expect(button.getAttribute('aria-label')).toBe('Dodaj przepis');
     });
 
     it('aktualizuje nazwę reaktywnie bez odtwarzania przycisku', () => {

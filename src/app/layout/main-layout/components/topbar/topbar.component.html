@@ -30,6 +30,32 @@
     }
 
     <div class="topbar__right">
+        @if (showAddRecipeAction()) {
+            @if (isMobileOrTablet()) {
+                <button
+                    mat-icon-button
+                    type="button"
+                    color="primary"
+                    class="topbar__add-recipe"
+                    [attr.aria-label]="addRecipeAriaLabel()"
+                    (click)="onAddRecipe()"
+                >
+                    <mat-icon aria-hidden="true">add</mat-icon>
+                </button>
+            } @else {
+                <button
+                    mat-flat-button
+                    type="button"
+                    color="primary"
+                    class="topbar__add-recipe"
+                    [attr.aria-label]="addRecipeAriaLabel()"
+                    (click)="onAddRecipe()"
+                >
+                    <mat-icon aria-hidden="true">add</mat-icon>
+                    Dodaj przepis
+                </button>
+            }
+        }
         @if (shouldShowPricingLink()) {
             <a
                 mat-button

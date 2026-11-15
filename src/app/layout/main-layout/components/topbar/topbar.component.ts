@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter, map, startWith } from 'rxjs/operators';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -40,6 +42,15 @@ export class TopbarComponent {
     private readonly router = inject(Router);
     private readonly currentUserState = inject(CurrentUserStateService);
 
+    private readonly currentUrl = toSignal(
+        this.router.events.pipe(
+            filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+            map((event) => event.urlAfterRedirects),
+            startWith(this.router.url),
+        ),
+        { initialValue: this.router.url },
+    );
+
     /** Determines if sidebar should be visible (passed from MainLayout) */
     readonly shouldShowSidebar = input.required<boolean>();
 
@@ -60,6 +71,19 @@ export class TopbarComponent {
         const name = this.displayName();
         return name ? `Zalogowano jako ${name}` : null;
     });
+
+    /** Quick add recipe for authenticated users, hidden during recipe creation wizard */
+    readonly showAddRecipeAction = computed(() => {
+        if (!this.authService.isAuthenticated()) {
+            return false;
+        }
+        const url = this.currentUrl() ?? '';
+        return !url.startsWith('/recipes/new');
+    });
+
+    readonly addRecipeAriaLabel = computed(() =>
+        this.isMobileOrTablet() ? 'Dodaj przepis ze zdjęcia AI' : 'Dodaj przepis',
+    );
 
     /** Topbar navigation items with conditional Admin entry */
     readonly mainNavItems = computed<MainNavigationItem[]>(() => {
@@ -84,6 +108,17 @@ export class TopbarComponent {
      */
     toggleSidebar(): void {
         this.layoutService.toggleSidebar();
+    }
+
+    /** Navigate to recipe creation (mobile/tablet: AI image assist; desktop: mode chooser) */
+    onAddRecipe(): void {
+        if (this.isMobileOrTablet()) {
+            void this.router.navigate(['/recipes/new/assist'], {
+                queryParams: { source: 'image' },
+            });
+            return;
+        }
+        void this.router.navigate(['/recipes/new/start']);
     }
 
     /**
