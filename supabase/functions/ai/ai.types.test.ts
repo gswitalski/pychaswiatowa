@@ -3,6 +3,7 @@ import {
     AiRecipeDraftLlmResponseSchema,
     AiRecipeDraftRequestSchema,
     AiRecipeImageRequestSchema,
+    MAX_RECIPE_DESCRIPTION_LENGTH,
 } from './ai.types.ts';
 
 function createValidImageRequest(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -65,6 +66,26 @@ Deno.test('AiRecipeImageRequestSchema: mode=with_reference bez reference_image z
             (error) => error.message.includes('reference_image') && error.message.includes('with_reference'),
         );
         assertEquals(hasExpectedMessage, true);
+    }
+});
+
+Deno.test('AiRecipeImageRequestSchema: długi opis jest obcinany zamiast odrzucany', () => {
+    const longDescription = 'a'.repeat(MAX_RECIPE_DESCRIPTION_LENGTH + 100);
+    const payload = createValidImageRequest({
+        recipe: {
+            name: 'Sernik klasyczny',
+            description: longDescription,
+            ingredients: [{ type: 'item', content: '500 g twarogu' }],
+            steps: [{ type: 'item', content: 'Wymieszać składniki' }],
+            tags: ['deser'],
+        },
+    });
+
+    const result = AiRecipeImageRequestSchema.safeParse(payload);
+
+    assertEquals(result.success, true);
+    if (result.success) {
+        assertEquals(result.data.recipe.description?.length, MAX_RECIPE_DESCRIPTION_LENGTH);
     }
 });
 

@@ -48,7 +48,7 @@ export const REQUIRED_OUTPUT_FORMAT = 'pycha_recipe_draft_v1' as const;
 /** Required output format for recipe image generation */
 export const REQUIRED_IMAGE_OUTPUT_FORMAT = 'pycha_recipe_image_v1' as const;
 
-/** Maximum description length for recipe image generation */
+/** Description length sent to the image prompt (longer form text is truncated, not rejected) */
 export const MAX_RECIPE_DESCRIPTION_LENGTH = 500;
 
 /** Maximum category name length */
@@ -351,11 +351,20 @@ const AiRecipeImageRecipeSchema = z.object({
         .min(1, 'Recipe name is required')
         .max(MAX_RECIPE_NAME_LENGTH, `Recipe name cannot exceed ${MAX_RECIPE_NAME_LENGTH} characters`)
         .transform(s => s.trim()),
-    description: z.string()
-        .max(MAX_RECIPE_DESCRIPTION_LENGTH, `Description cannot exceed ${MAX_RECIPE_DESCRIPTION_LENGTH} characters`)
+    description: z
+        .string()
         .nullable()
         .optional()
-        .transform(s => s?.trim() || null),
+        .transform((value) => {
+            const trimmed = value?.trim() || null;
+            if (!trimmed) {
+                return null;
+            }
+            if (trimmed.length <= MAX_RECIPE_DESCRIPTION_LENGTH) {
+                return trimmed;
+            }
+            return trimmed.slice(0, MAX_RECIPE_DESCRIPTION_LENGTH);
+        }),
     servings: z.number()
         .int()
         .min(1, 'Servings must be at least 1')
