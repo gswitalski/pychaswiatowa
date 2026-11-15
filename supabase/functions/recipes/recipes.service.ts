@@ -6,6 +6,7 @@
 import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
+import { mapPostgrestErrorToApplicationError } from '../_shared/postgrest-errors.ts';
 import type { Database, Json } from '../_shared/database.types.ts';
 
 type CreateRecipeWithTagsRpcArgs = Extract<
@@ -1423,7 +1424,7 @@ export async function createRecipe(
             p_user_id: userId,
             p_name: input.name,
             p_description: input.description ?? '',
-            p_category_id: input.category_id!,
+            p_category_id: input.category_id ?? null,
             p_ingredients_raw: input.ingredients_raw,
             p_steps_raw: input.steps_raw,
             p_tag_names: input.tags,
@@ -1447,24 +1448,9 @@ export async function createRecipe(
             errorDetails: rpcError.details,
         });
 
-        // Handle specific error cases based on PostgreSQL error codes/messages
-        // P0002 = no_data_found (category not found)
-        if (rpcError.code === 'P0002' || rpcError.message?.includes('does not exist')) {
-            throw new ApplicationError(
-                'NOT_FOUND',
-                'The specified category does not exist'
-            );
-        }
-
-        // P0001 = raise_exception (validation error from RPC)
-        if (rpcError.code === 'P0001') {
-            throw new ApplicationError(
-                'VALIDATION_ERROR',
-                rpcError.message || 'Validation error occurred'
-            );
-        }
-
-        throw new ApplicationError('INTERNAL_ERROR', 'Failed to create recipe');
+        throw mapPostgrestErrorToApplicationError(rpcError, {
+            fallbackMessage: 'Failed to create recipe',
+        });
     }
 
     if (!recipeId) {

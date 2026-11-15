@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, from, map } from 'rxjs';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { environment } from '../../../../environments/environment';
+import { resolveFunctionInvokeErrorMessage } from '../../../core/utils/function-error-status';
 import {
     RecipeDetailDto,
     CreateRecipeCommand,
@@ -424,7 +425,11 @@ export class RecipesService {
         );
 
         if (response.error) {
-            throw new Error(response.error.message);
+            const message = await resolveFunctionInvokeErrorMessage(
+                response.error,
+                'Nie udało się utworzyć przepisu',
+            );
+            throw new Error(message);
         }
 
         if (!response.data) {

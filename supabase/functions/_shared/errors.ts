@@ -34,12 +34,14 @@ export type ErrorCode =
 export class ApplicationError extends Error {
     public readonly code: ErrorCode;
     public readonly statusCode: number;
+    public readonly diagnostics?: Record<string, unknown>;
 
-    constructor(code: ErrorCode, message: string) {
+    constructor(code: ErrorCode, message: string, diagnostics?: Record<string, unknown>) {
         super(message);
         this.name = 'ApplicationError';
         this.code = code;
         this.statusCode = ApplicationError.getStatusCode(code);
+        this.diagnostics = diagnostics;
     }
 
     /**
@@ -80,6 +82,7 @@ export class ApplicationError extends Error {
         return {
             code: this.code,
             message: this.message,
+            ...(this.diagnostics ? { details: this.diagnostics } : {}),
         };
     }
 }

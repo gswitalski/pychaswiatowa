@@ -43,3 +43,63 @@ export function toStatusError(
     result.status = extractFunctionErrorStatus(error) ?? fallbackStatus;
     return result;
 }
+
+type FunctionInvokeErrorBody = {
+    message?: string;
+    code?: string;
+    details?: {
+        pgMessage?: string;
+    };
+};
+
+/**
+ * Reads JSON body from Supabase FunctionsHttpError (error.context).
+ */
+export async function readFunctionInvokeErrorBody(
+    error: unknown,
+): Promise<FunctionInvokeErrorBody | null> {
+    if (!error || typeof error !== 'object') {
+        return null;
+    }
+
+    const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
+    if (!context?.json) {
+        return null;
+    }
+
+    try {
+        const body = await context.json();
+        if (!body || typeof body !== 'object') {
+            return null;
+        }
+        return body as FunctionInvokeErrorBody;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Prefer API error message from Edge Function response body over generic invoke wrapper text.
+ */
+export async function resolveFunctionInvokeErrorMessage(
+    error: unknown,
+    fallbackMessage: string,
+): Promise<string> {
+    const body = await readFunctionInvokeErrorBody(error);
+    if (body?.message) {
+        const pgMessage = body.details?.pgMessage;
+        if (pgMessage && body.message === 'Failed to create recipe') {
+            return `${body.message}: ${pgMessage}`;
+        }
+        return body.message;
+    }
+
+    if (error && typeof error === 'object' && 'message' in error) {
+        const message = (error as { message?: string }).message;
+        if (message) {
+            return message;
+        }
+    }
+
+    return fallbackMessage;
+}
