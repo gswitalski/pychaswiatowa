@@ -18,9 +18,6 @@ export interface PricingFeatureCategory {
 }
 
 export const PRICING_CONFIG = {
-    trial: {
-        days: 7,
-    },
     plans: {
         free: {
             id: 'free',
@@ -34,12 +31,14 @@ export const PRICING_CONFIG = {
             priceMonthly: 2400,
             priceYearly: 16900,
             priceYearlyMonthly: 1408,
-            savingsPercent: 17,
+            // 169 zł / rok vs 12 × 24 zł = 288 zł → oszczędność ok. 41%.
+            savingsPercent: 41,
         },
     },
     limits: {
         free: {
-            planItems: 3,
+            // Musi odpowiadać domyślnej wartości PLAN_LIMIT_FREE w supabase/functions/plan/plan.types.ts.
+            planItems: 7,
             aiImportsLifetime: 3,
         },
         premium: {
@@ -75,9 +74,10 @@ export const PLAN_BENEFITS = {
     ],
     premium: [
         'Wszystko z planu Free',
-        'Miesięczna pula kredytów AI',
+        'Miesięczna pula kredytów AI (tekst, link, zdjęcia)',
+        'Generowanie zdjęć przepisów przez AI',
         `Mój plan do ${PRICING_CONFIG.limits.premium.planItems} pozycji`,
-        'Brak reklam i priorytet zadań AI',
+        'Brak reklam w katalogu',
     ],
 } as const;
 
@@ -87,26 +87,24 @@ export const PRICING_FEATURE_CATEGORIES: readonly PricingFeatureCategory[] = [
         features: [
             {
                 name: 'Asysta AI (draft przepisu z tekstu)',
-                free: '1–3 importy lifetime',
+                free: `${PRICING_CONFIG.limits.free.aiImportsLifetime} importy łącznie`,
                 premium: 'Miesięczna pula kredytów',
                 freeAvailability: 'text',
                 premiumAvailability: 'text',
             },
             {
-                name: 'Import ze zdjęcia / skanu',
-                free: 'Niedostępne',
-                premium: 'Dostępne',
-                freeAvailability: 'unavailable',
-                premiumAvailability: 'available',
-                comingSoon: true,
+                name: 'Import ze zdjęć / skanu (do 5 zdjęć)',
+                free: 'W puli importów próbnych',
+                premium: 'Z miesięcznej puli kredytów',
+                freeAvailability: 'text',
+                premiumAvailability: 'text',
             },
             {
-                name: 'Import z URL',
-                free: 'Niedostępne',
-                premium: 'Dostępne',
-                freeAvailability: 'unavailable',
-                premiumAvailability: 'available',
-                comingSoon: true,
+                name: 'Import z linku (URL)',
+                free: 'W puli importów próbnych',
+                premium: 'Z miesięcznej puli kredytów',
+                freeAvailability: 'text',
+                premiumAvailability: 'text',
             },
             {
                 name: 'Generowanie zdjęcia AI',
@@ -144,9 +142,9 @@ export const PRICING_FEATURE_CATEGORIES: readonly PricingFeatureCategory[] = [
             {
                 name: 'Upload zdjęcia własnego',
                 free: 'Dostępne',
-                premium: 'Wyższy limit przestrzeni',
+                premium: 'Dostępne',
                 freeAvailability: 'available',
-                premiumAvailability: 'text',
+                premiumAvailability: 'available',
             },
         ],
     },
@@ -155,8 +153,8 @@ export const PRICING_FEATURE_CATEGORIES: readonly PricingFeatureCategory[] = [
         features: [
             {
                 name: 'Mój plan (limit pozycji)',
-                free: '3 pozycje',
-                premium: '50 pozycji',
+                free: `${PRICING_CONFIG.limits.free.planItems} pozycji`,
+                premium: `${PRICING_CONFIG.limits.premium.planItems} pozycji`,
                 freeAvailability: 'text',
                 premiumAvailability: 'text',
             },
@@ -209,6 +207,7 @@ export const PRICING_FEATURE_CATEGORIES: readonly PricingFeatureCategory[] = [
                 premium: 'Podwyższony',
                 freeAvailability: 'text',
                 premiumAvailability: 'text',
+                comingSoon: true,
             },
         ],
     },
@@ -216,20 +215,12 @@ export const PRICING_FEATURE_CATEGORIES: readonly PricingFeatureCategory[] = [
 
 export const PRICING_FAQ = [
     {
-        question: 'Jak działa 7-dniowy trial?',
-        answer: 'Przez 7 dni od aktywacji konta Premium masz pełny dostęp do funkcji Premium. Aktywacja trialu wymaga podania metody płatności — karta nie zostaje obciążona przed upływem okresu próbnego.',
-    },
-    {
-        question: 'Co się dzieje po zakończeniu trialu?',
-        answer: 'Jeśli anulujesz trial przed jego końcem, konto wraca do planu Free i karta nie jest obciążana. Jeśli go nie anulujesz, po 7 dniach pobierana jest opłata za wybrany plan. Przepisy i dane zostają na koncie.',
-    },
-    {
         question: 'Czy mogę anulować subskrypcję w dowolnym momencie?',
         answer: 'Tak. Anulowanie zatrzymuje przyszłe odnowienia, a dostęp do Premium zostaje do końca bieżącego okresu. Anulowanie zgłaszasz do nas — adres jest w regulaminie subskrypcji.',
     },
     {
         question: 'Jakie metody płatności są dostępne?',
-        answer: 'Kartą płatniczą lub BLIK-iem. Kartą — subskrypcja odnawia się automatycznie; BLIK-iem płacisz jednorazowo za wybrany okres.',
+        answer: 'Kartą płatniczą. Subskrypcja odnawia się automatycznie na kolejny okres rozliczeniowy.',
     },
     {
         question: 'Czy mogę zmienić plan z miesięcznego na roczny?',

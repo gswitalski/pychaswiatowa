@@ -23,6 +23,7 @@ import type {
 } from '../../../../shared/contracts/types';
 import { SubscriptionStateService } from '../../core/services/subscription-state.service';
 import { getPremiumPlanPrice } from '../pricing/pricing.config';
+import { CHECKOUT_ENABLED_PAYMENT_METHODS } from './checkout.constants';
 import { CheckoutConsentsComponent } from './components/checkout-consents/checkout-consents.component';
 import { OrderSummaryComponent } from './components/order-summary/order-summary.component';
 import { PaymentMethodSelectorComponent } from './components/payment-method-selector/payment-method-selector.component';
@@ -245,6 +246,8 @@ export class CheckoutPageComponent implements OnInit {
     }
 
     private parsePaymentMethod(value: string | null): SubscriptionPaymentMethod {
-        return value === 'card' || value === 'blik' ? value : 'card';
+        const method = CHECKOUT_ENABLED_PAYMENT_METHODS.find((enabled) => enabled === value);
+
+        return method ?? 'card';
     }
 }

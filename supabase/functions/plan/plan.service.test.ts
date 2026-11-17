@@ -46,9 +46,9 @@ function createPlanClient(params: {
 
 Deno.test('parsePlanLimitFree: używa wartości dodatniej lub domyślnego limitu', () => {
     assertEquals(parsePlanLimitFree('10'), 10);
-    assertEquals(parsePlanLimitFree('abc'), 3);
-    assertEquals(parsePlanLimitFree('0'), 3);
-    assertEquals(parsePlanLimitFree(undefined), 3);
+    assertEquals(parsePlanLimitFree('abc'), 7);
+    assertEquals(parsePlanLimitFree('0'), 7);
+    assertEquals(parsePlanLimitFree(undefined), 7);
 });
 
 Deno.test('PlanLimitExceededFreeError: zwraca kontrakt błędu 422', () => {

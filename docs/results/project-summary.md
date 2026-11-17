@@ -20,11 +20,12 @@ summary bez ponownej weryfikacji);
 | ID | Funkcja | Status | Braki weryfikacji |
 |---|---|---|---|
 | — | Google OAuth: logowanie i rejestracja, uzupełnienie profilu | zakończone | — |
-| — | Strona cennika, stub `/checkout`, regulamin subskrypcji | zakończone | — |
+| PS-63 | Strona cennika `/pricing` i regulamin subskrypcji `/legal/subscription` (oferta Premium; bez trialu, oszczędność ~41%) | zakończone | — |
+| PS-66 | Checkout i płatności Stripe (karta; BLIK w API, ukryty w UI), webhook, `/billing/payments`, wygaszanie subskrypcji | zaimplementowane, niezweryfikowane | konfiguracja Stripe/sekretów, test z kartą testową i webhookiem (Stripe CLI), `deno test`/`vitest` całości, smoke na produkcji (karta live ze zwrotem), weryfikacja regulaminu przez prawnika i księgową |
 | PS-64 | Kredyty AI (pule `draft` i `image`, reset miesięczny) | zakończone | — |
 | PS-91 | Metadane draftu AI (`POST /ai/recipes/draft`) | zakończone | — |
 | PS-100 | Wiele zdjęć draftu AI (1–5) | zakończone | — |
-| PS-65 | Limit „Mojego planu” dla Free (domyślnie 3) | zakończone | — |
+| PS-65 | Limit „Mojego planu” dla Free (domyślnie 7, `PLAN_LIMIT_FREE`) | zakończone | — |
 | PS-92 | Przycisk „Wklej ze schowka” | zakończone | — |
 | PS-95 | Osobiste flagi przepisów (ulubiony, chcę wypróbować) | zakończone | — |
 | PS-96 | Filtry przepisów w Odkrywaj | zakończone | — |

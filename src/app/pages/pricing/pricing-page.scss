@@ -86,8 +86,7 @@
         gap: 12px;
     }
 
-    &__recommended,
-    &__trial {
+    &__recommended {
         --mdc-chip-elevated-container-color: var(--mat-sys-primary-container);
         --mdc-chip-label-text-color: var(--mat-sys-on-primary-container);
     }

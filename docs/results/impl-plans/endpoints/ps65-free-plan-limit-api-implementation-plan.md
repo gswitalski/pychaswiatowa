@@ -2,7 +2,7 @@
 
 ## 1. Przegląd punktu końcowego
 
-Modyfikacja istniejącego endpointu `POST /plan/recipes` (Edge Function `plan`) polegająca na dodaniu weryfikacji limitu pozycji planu dla użytkownika z rolą `user` (Free). Przed wywołaniem istniejącego RPC `add_recipe_to_plan_and_update_shopping_list` handler pobiera `app_role` z JWT claims i — jeśli rola to `user` — sprawdza aktualną liczbę pozycji w `plan_recipes`. Gdy liczba ta jest >= `PLAN_LIMIT_FREE` (env, domyślnie `3`), endpoint zwraca `422` z kodem `PLAN_LIMIT_EXCEEDED_FREE` i strukturą `details` zawierającą obydwa limity oraz link do `/pricing`.
+Modyfikacja istniejącego endpointu `POST /plan/recipes` (Edge Function `plan`) polegająca na dodaniu weryfikacji limitu pozycji planu dla użytkownika z rolą `user` (Free). Przed wywołaniem istniejącego RPC `add_recipe_to_plan_and_update_shopping_list` handler pobiera `app_role` z JWT claims i — jeśli rola to `user` — sprawdza aktualną liczbę pozycji w `plan_recipes`. Gdy liczba ta jest >= `PLAN_LIMIT_FREE` (env, domyślnie `7`), endpoint zwraca `422` z kodem `PLAN_LIMIT_EXCEEDED_FREE` i strukturą `details` zawierającą obydwa limity oraz link do `/pricing`.
 
 **Zakres zmian:**
 
@@ -76,12 +76,12 @@ export interface PlanLimitExceededFreeErrorDto {
 ```typescript
 /**
  * Maximum number of plan items for Free users (configurable via env).
- * Defaults to 3 if PLAN_LIMIT_FREE is not set or invalid.
+ * Defaults to 7 if PLAN_LIMIT_FREE is not set or invalid.
  */
 export const PLAN_LIMIT_FREE: number = (() => {
     const raw = Deno.env.get('PLAN_LIMIT_FREE');
     const parsed = parseInt(raw ?? '', 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 7;
 })();
 
 /**
@@ -148,7 +148,7 @@ Zwracany gdy: `app_role === 'user'` AND `COUNT(plan_recipes WHERE user_id = auth
     "error": "PLAN_LIMIT_EXCEEDED_FREE",
     "message": "Osiągnięto limit pozycji w Moim planie dla konta Free.",
     "details": {
-        "free_limit": 3,
+        "free_limit": 7,
         "premium_limit": 50,
         "upgrade_url": "/pricing"
     }
@@ -219,12 +219,12 @@ Client
 ### Walidacja danych wejściowych
 
 - `recipe_id`: schema Zod (`z.number().int().positive()`) — bez zmian
-- `PLAN_LIMIT_FREE`: odczyt z env przy starcie funkcji, guard `parsed > 0` zapobiega limitu `0` lub ujemnego — domyślnie `3`
+- `PLAN_LIMIT_FREE`: odczyt z env przy starcie funkcji, guard `parsed > 0` zapobiega limitu `0` lub ujemnego — domyślnie `7`
 
 ### Race condition
 
 - Przy równoczesnych żądaniach COUNT może zwrócić wartość przed faktycznym INSERT → możliwe przekroczenie o 1 pozycję
-- Dla limitu 3 ryzyko praktyczne jest minimalne (grandfathering jest celowym zachowaniem)
+- Dla limitu 7 ryzyko praktyczne jest minimalne (grandfathering jest celowym zachowaniem)
 - Istniejąca transakcyjność RPC zapobiega przekroczeniu twardego limitu 50
 
 ### Grandfathering
@@ -323,12 +323,12 @@ Dodaj na początku pliku (po imporcie Zod):
 ```typescript
 /**
  * Maximum number of plan items for Free users (app_role = 'user').
- * Read from PLAN_LIMIT_FREE env variable; defaults to 3 if not set or invalid.
+ * Read from PLAN_LIMIT_FREE env variable; defaults to 7 if not set or invalid.
  */
 export const PLAN_LIMIT_FREE: number = (() => {
     const raw = Deno.env.get('PLAN_LIMIT_FREE');
     const parsed = parseInt(raw ?? '', 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 7;
 })();
 
 /**
@@ -506,13 +506,13 @@ export interface PlanLimitExceededFreeErrorDto {
 **Lokalne środowisko** (`supabase/.env.local` lub Supabase CLI secrets):
 
 ```bash
-PLAN_LIMIT_FREE=3
+PLAN_LIMIT_FREE=7
 ```
 
 **Produkcja / dev** — ustaw secret przez Supabase Dashboard lub CLI:
 
 ```bash
-supabase secrets set PLAN_LIMIT_FREE=3
+supabase secrets set PLAN_LIMIT_FREE=7
 ```
 
 > Zmiana wartości nie wymaga redeploymentu kodu — funkcja odczytuje env przy zimnym starcie (cold start). Restart funkcji jest wymagany przy zmianie wartości na działającym środowisku.
@@ -525,15 +525,15 @@ supabase secrets set PLAN_LIMIT_FREE=3
 
 | Scenariusz | Oczekiwany wynik |
 |---|---|
-| `checkFreePlanLimit`: count = 0 → limit = 3 | brak błędu |
-| `checkFreePlanLimit`: count = 2 → limit = 3 | brak błędu |
-| `checkFreePlanLimit`: count = 3 → limit = 3 | rzuca `PlanLimitExceededFreeError` z `details.free_limit = 3` |
-| `checkFreePlanLimit`: count = 5 → limit = 3 (grandfathering) | rzuca `PlanLimitExceededFreeError` |
+| `checkFreePlanLimit`: count = 0 → limit = 7 | brak błędu |
+| `checkFreePlanLimit`: count = 2 → limit = 7 | brak błędu |
+| `checkFreePlanLimit`: count = 7 → limit = 7 | rzuca `PlanLimitExceededFreeError` z `details.free_limit = 7` |
+| `checkFreePlanLimit`: count = 5 → limit = 7 (grandfathering) | rzuca `PlanLimitExceededFreeError` |
 | `checkFreePlanLimit`: błąd DB | rzuca `ApplicationError('INTERNAL_ERROR')` |
 | `addRecipeToPlan`: appRole = `'user'`, limit OK | wywołuje RPC, brak błędu |
 | `addRecipeToPlan`: appRole = `'premium'` | nie wywołuje `checkFreePlanLimit`, wywołuje RPC |
 | `addRecipeToPlan`: appRole = `'admin'` | nie wywołuje `checkFreePlanLimit`, wywołuje RPC |
-| `PLAN_LIMIT_FREE` env = `'abc'` | używa domyślnego `3` |
-| `PLAN_LIMIT_FREE` env = `'0'` | używa domyślnego `3` |
+| `PLAN_LIMIT_FREE` env = `'abc'` | używa domyślnego `7` |
+| `PLAN_LIMIT_FREE` env = `'0'` | używa domyślnego `7` |
 | `PLAN_LIMIT_FREE` env = `'10'` | używa `10` |
 

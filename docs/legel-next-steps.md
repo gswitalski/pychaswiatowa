@@ -21,9 +21,9 @@ Przy uzupełnianiu trzeba wybrać jedną formę i wpisać ją tak samo w trzech 
 Na stronie wydawcy brakuje daty uruchomienia serwisu (art. 5 ustawy o świadczeniu usług drogą elektroniczną, lista z planu reorganizacji).
 Dopisać ją razem z danymi firmy.
 
-Adres w checkoutcie anulowania to osobny placeholder w kodzie, nie w Markdownie:
-`SUPPORT_EMAIL` w `src/app/pages/checkout/checkout.constants.ts` ma wartość `TODO@ustalic-przed-wdrozeniem`.
-Po ustaleniu e-maila wpisać ten sam adres tutaj i w placeholdery `\<EMAIL\>`.
+Adres kontaktowy w kodzie (`SUPPORT_EMAIL` w `src/app/pages/checkout/checkout.constants.ts`) to już
+`kontakt@pychaswiatowa.pl`, ten sam co w `subscription-terms.md`. Upewnić się, że skrzynka istnieje,
+i wpisać ten sam adres w placeholdery `\<EMAIL\>` w pozostałych dokumentach.
 
 ## 2. Operator płatności
 
@@ -43,21 +43,20 @@ Do weryfikacji jest treść tych zgód, a nie sam fakt ich istnienia.
 - Grace period w regulaminie subskrypcji wynosi 3 dni, tak jak domyślne `BILLING_EXPIRY_GRACE_DAYS`.
   Zmiana tej zmiennej środowiskowej wymaga zmiany tego zdania w `subscription-terms.md`.
 - Regulamin mówi, że przy nieudanej płatności odnowienia użytkownik zostanie poinformowany e-mailem, jeżeli to możliwe.
-  Wysyłka tego maila jest w zakresie PS-67. Po wdrożeniu maila warto doprecyzować zdanie.
+  Wysyłka tego maila jest w zakresie PS-72 (e-maile cyklu życia). Do tego czasu o nieudanej
+  płatności informuje Stripe, jeśli włączono jego e-maile o nieudanych płatnościach.
+  Po wdrożeniu maila warto doprecyzować zdanie.
 - W ustawieniach konta nie ma jeszcze anulowania subskrypcji ani zmiany planu.
-  FAQ cennika tego nie obiecuje. Regulamin subskrypcji dopuszcza anulowanie w ustawieniach tylko wtedy, gdy taka funkcja jest dostępna, a w przeciwnym razie przez `\<EMAIL\>`.
-  Gdy pojawi się samodzielna obsługa w ustawieniach, zaktualizować FAQ i sekcję 5 regulaminu subskrypcji.
+  FAQ cennika mówi, że anulowanie zgłasza się do nas. Regulamin subskrypcji (sekcja 4) dopuszcza anulowanie w ustawieniach tylko wtedy, gdy taka funkcja jest dostępna, a w przeciwnym razie przez `\<EMAIL\>`.
+  Gdy pojawi się przycisk „Zarządzaj subskrypcją” (Stripe Customer Portal, krok po starcie w `premium-users-payments-launch-plan.md`), zaktualizować FAQ i sekcję 4 regulaminu subskrypcji.
+- Trial 7-dniowy nie jest częścią wersji startowej. Z regulaminu i z cennika usunięto opisy trialu;
+  przy wdrożeniu PS-68 trzeba je przywrócić razem z jednoznaczną zasadą (karta wymagana przy aktywacji).
 - Usunięty przepis znika z serwisu, ale rekord z `deleted_at` zostaje w bazie. Nie ma automatycznego kasowania po 30 dniach.
   Polityka prywatności to opisuje. Jeśli zapadnie decyzja o trwałym usuwaniu po określonym czasie, najpierw trzeba to wdrożyć, potem zmienić pkt 7 sekcji 7 w `privacy.md`.
   Zdanie o kopiach zapasowych (do 30 dni) dotyczy backupów, nie soft delete.
 
-## 5. Stare opisy, które wskazują złą ścieżkę
+## 5. Zasada edycji
 
-W drzewie roboczym nie ma już `docs/legal-documents/` ani `scripts/sync-legal-terms.mjs`.
-Dwa opisy nadal każą edytować stare duplikaty i synchronizować je do `public/assets/legal/`:
-
-- `docs/results/project-summary.md` — wiersz o regulaminie i syncu z `docs/legal-documents`
-- `docs/results/new-features/user-stories/PS-66/PS-66-checkout-payments-deployment-plan.md` — krok o uzupełnianiu regulaminu subskrypcji w `docs/legal-documents`
-
-Te zdania trzeba poprawić, żeby nikt nie odtworzył drugiego źródła treści.
+W drzewie roboczym nie ma już `docs/legal-documents/` ani `scripts/sync-legal-terms.mjs`
+(opisy odwołujące się do nich poprawiono w listopadzie 2026).
 Edytować wyłącznie pliki w `public/assets/legal/` i przy zmianie treści aktualizować datę „Ostatnia aktualizacja”.

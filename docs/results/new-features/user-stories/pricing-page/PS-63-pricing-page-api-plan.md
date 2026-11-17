@@ -49,14 +49,14 @@ Odpowiedź (istniejąca, bez zmian):
 Strona cennika **nie wywołuje żadnych nowych endpointów API** w wersji MVP. Uzasadnienie:
 
 - Ceny są orientacyjnymi ramami B2C, podlegają walidacji rynkowej — trzymanie ich w konfiguracji frontendu pozwala na szybką zmianę bez redeploymentu backendu.
-- Checkout i subskrypcja nie są jeszcze zaimplementowane (PS-62 w toku).
+- Stan na etapie PS-63: checkout i subskrypcja nie były jeszcze zaimplementowane. Zrealizowano je w PS-66 (aktualny kontrakt: `PS-66-checkout-payments-api-plan.md`; poniższe szkice endpointów są nieaktualne).
 - Strona `/checkout` w MVP jest stubem z komunikatem „Wkrótce" — nie wymaga backendu.
 
 ---
 
 ## 4. Endpointy planowane (po wdrożeniu checkout — poza zakresem PS-63)
 
-Poniższe endpointy są **udokumentowane jako przyszłe** i zostaną zaimplementowane w ramach historyjek checkout/monetyzacja (PS-62 i kolejne).
+Poniższe endpointy są **udokumentowane jako przyszłe** i zostaną zaimplementowane w ramach historyjek checkout/monetyzacja (PS-66 i kolejne).
 
 ### `GET /pricing/plans` *(przyszły)*
 
@@ -118,8 +118,8 @@ Planowane body:
 ```json
 {
     "plan_id": "premium_yearly",
-    "success_url": "https://pychaswiatowa.web.app/checkout/success",
-    "cancel_url": "https://pychaswiatowa.web.app/pricing"
+    "success_url": "https://pychaswiatowa.pl/checkout/success",
+    "cancel_url": "https://pychaswiatowa.pl/pricing"
 }
 ```
 

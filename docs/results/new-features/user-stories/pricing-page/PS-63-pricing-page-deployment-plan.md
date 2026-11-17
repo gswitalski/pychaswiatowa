@@ -24,7 +24,7 @@ Wszystkie kroki wdrożenia dotyczą warstwy Angulara i plików statycznych Fireb
 
 **Typ:** Operacja na plikach / treść prawna
 
-Utworzyć plik: `src/assets/legal/subscription-terms.md`
+Utworzyć plik: `public/assets/legal/subscription-terms.md`
 
 Zawartość na start (placeholder — do uzupełnienia przez dział prawny przed startem sprzedaży):
 
@@ -188,14 +188,14 @@ Poniższe elementy są poza zakresem tej historyjki i zostaną zrealizowane w ko
 
 | Element | Historyjka |
 |---|---|
-| Integracja z operatorem płatności (Stripe/PayU) | PS-62 (checkout) |
+| Integracja z operatorem płatności (Stripe) | PS-66 (checkout) |
 | Limit kredytów AI i ich egzekwowanie | PS-64 |
 | Limit pozycji planu dla Free (7 vs 50) | PS-65 |
-| Pełna treść regulaminu subskrypcji | Dział prawny + PS-62 |
+| Pełna treść regulaminu subskrypcji | Dział prawny + PS-71 |
 | Strona zarządzania subskrypcją (`/settings/subscription`) | Przyszłe historyjki |
 | Reklamy w katalogu publicznym | Przyszłe historyjki |
 | Import z URL / ze zdjęcia | Przyszłe historyjki |
-| Webhook od operatora płatności → zmiana `app_role` na `premium` | PS-62 |
+| Webhook od operatora płatności → zmiana `app_role` na `premium` | PS-66 |
 
 ---
 

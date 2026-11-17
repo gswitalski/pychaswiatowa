@@ -6,12 +6,15 @@ import { z } from 'npm:zod@3.22.4';
 
 /**
  * Maximum number of plan items for Free users (app_role = 'user').
- * Read from PLAN_LIMIT_FREE; defaults to 3 when unset or invalid.
+ * Read from PLAN_LIMIT_FREE; defaults to 7 when unset or invalid.
+ * Keep the default in sync with PRICING_CONFIG.limits.free.planItems on the frontend.
  */
+export const DEFAULT_PLAN_LIMIT_FREE = 7;
+
 export function parsePlanLimitFree(raw: string | undefined): number {
     const parsed = Number.parseInt(raw ?? '', 10);
 
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_PLAN_LIMIT_FREE;
 }
 
 export const PLAN_LIMIT_FREE = parsePlanLimitFree(

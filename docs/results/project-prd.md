@@ -17,8 +17,8 @@
 - Strony prawne z treścią Markdown (`/legal/terms`, `/legal/privacy`); link „Wydawca” w stopce wyłączony
 - Clickio Consent Manager + Google Analytics
 - Logo / favicon, Bottom Bar, drzewo kolekcji, lista zakupów, normalizacja składników, zdjęcie AI także przed zapisem przepisu
-- **Limit planu Free (PS-65):** egzekwowanie na API (`PLAN_LIMIT_FREE`, domyślnie 3), dialog `PlanLimitExceededDialogComponent` z CTA do `/pricing`, licznik pozycji w drawerze „Mój plan”
-- **Strona cennika** (`/pricing`, publiczna): karty Free i Premium, okres miesięczny/roczny (domyślnie roczny, oszczędność ~17%), tabela porównawcza, FAQ, trial 7 dni na karcie Premium. CTA zależy od sesji i roli. Stub `/checkout` („Płatności wkrótce”). Regulamin subskrypcji `/legal/subscription`. Link „Cennik” dla gościa (nagłówek publiczny) i roli `user` (topbar). Blok promo Premium na landingu dla gościa i `user`
+- **Limit planu Free (PS-65):** egzekwowanie na API (`PLAN_LIMIT_FREE`, domyślnie 7), dialog `PlanLimitExceededDialogComponent` z CTA do `/pricing`, licznik pozycji w drawerze „Mój plan”
+- **Strona cennika** (`/pricing`, publiczna): karty Free i Premium, okres miesięczny/roczny (domyślnie roczny, oszczędność ~41%: 169 zł rocznie vs 12 × 24 zł), tabela porównawcza, FAQ (bez trialu — odłożony). CTA zależy od sesji i roli. `/checkout` (PS-66): hosted Checkout Stripe, na start tylko karta; stan: zaimplementowane, niezweryfikowane, sprzedaż nie jest uruchomiona (brak konfiguracji Stripe). Regulamin subskrypcji `/legal/subscription`. Link „Cennik” dla gościa (nagłówek publiczny) i roli `user` (topbar). Blok promo Premium na landingu dla gościa i `user`
 - **Wklej ze schowka (PS-92):** `ClipboardImageService` + przycisk „Wklej ze schowka” w uploadzie zdjęcia przepisu i w asyście AI (tryb obrazu); walidacja MIME/rozmiaru i mapowanie błędów schowka; testy jednostkowe serwisu i komponentów
 - **Osobiste flagi przepisów (PS-95):** przełączniki „Ulubiony” / „Chcę wypróbować” w nagłówku szczegółów; wskaźnik serduszka na `RecipeCardComponent`; wszystkie role zalogowane; prywatność flag względem autora i innych użytkowników
 - **Filtry Odkrywaj (PS-96):** chipy Termorobot, Grill, dieta (Wszystkie / Wegetariańskie+ / Tylko wegańskie), dla zalogowanych Ulubione i Chcę wypróbować; query params w URL; filtrowanie przez `GET /public/recipes/feed`
@@ -38,9 +38,10 @@
 
 **W toku:** PS-62 Plan biznesowy (freemium / Premium — analiza w
 `docs/results/new-features/epics/premium-users/analiza-funkcjonalnosci-premium-users.md`,
-historyjki w `premium-users-user-stories.md`). Widok cennika, stub checkout i
-pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płatności
-**nie są zaimplementowane**.
+historyjki w `premium-users-user-stories.md`, plan uruchomienia płatności w
+`premium-users-payments-launch-plan.md`). Widok cennika, pule kredytów AI (PS-64),
+limit planu Free (PS-65) oraz kod checkoutu i webhooków Stripe (PS-66) są w repozytorium.
+Płatności **nie są uruchomione** — wymagają konfiguracji Stripe, sekretów i treści prawnych.
 
 **Nie będzie realizowane (Jira):** PS-17 (filtr wyszukiwarki o rodzaj/termorobot — osobny ticket), PS-20 (przebudowa wyszukiwarek), PS-26 (stary ticket listy zakupów; funkcja jest jako PS-42).
 
@@ -58,7 +59,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 - Pełny CRUD przepisów z formularzem: nazwa, opis, porcje, czasy, flagi (Termorobot/Grill), klasyfikacja (dieta/kuchnia/trudność), składniki, kroki, wskazówki, zdjęcie
 - Trzy poziomy widoczności przepisu: Prywatny, Współdzielony, Publiczny
 - Organizacja: kategorie (predefiniowane), tagi (własne), kolekcje (nazwane zbiory)
-- "Mój plan" — trwała lista do 50 przepisów (Free: do 3, PS-65), powiązana z listą zakupów
+- "Mój plan" — trwała lista do 50 przepisów (Free: do 7, PS-65), powiązana z listą zakupów
 - Lista zakupów — pozycje z przepisów (znormalizowane składniki) + ręczne wpisy
 - Import przepisu z Markdown (bez LLM, wszyscy zalogowani) oraz asystowane dodawanie z AI (tekst/obraz → formularz). API draftu rozlicza kredyty `draft` (także rola `user`); ekran asysty w UI nadal tylko `premium`/`admin`
 - Generowanie zdjęć AI (**premium/admin**, pula kredytów `image`) — model Gemini `gemini-3-pro-image-preview` (bez referencji i z referencją); możliwe przed pierwszym zapisem przepisu
@@ -78,7 +79,7 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 - Funkcje społecznościowe (znajomi, komentarze i tekstowe recenzje)
 - Zaawansowane wartości odżywcze, historia zmian
 - Filtrowanie po flagach na listach prywatnych (np. „Moje przepisy”, kolekcje); w katalogu `/explore` filtry flag są wdrożone (PS-96)
-- Subskrypcja i płatności (strona `/pricing` oraz stub `/checkout` są; brak endpointu planów i bramki płatności). Pule kredytów AI są wdrożone; dokupienie pakietu nie jest
+- Rozszerzenia płatności: trial, BLIK, Stripe Customer Portal / własny UI anulowania, e-maile cyklu życia, endpoint planów. Kod checkoutu (karta) i pule kredytów AI są; dokupienie pakietu kredytów nie jest
 - Tworzenie/usuwanie kont z panelu admina, audyt zmian ról, masowa zmiana ról
 - Inni dostawcy OAuth (poza Google)
 
@@ -125,11 +126,11 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 | US-030 | Przycisk "Więcej" (load more) | Domyślnie 12 elementów, doładowywanie kolejnych 12. |
 | US-031 | Przepisy kolekcji bez paginacji | Jednorazowe ładowanie (limit techniczny 500). |
 | US-032 | Ikonka widoczności na liście | Ikona Prywatny/Współdzielony/Publiczny z tooltipem, tylko dla autora. |
-| US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz wraz z porcjami, czasami, klasyfikacją i flagami. Metadane są normalizowane tolerancyjnie. Rozliczenie kredytów `draft` (`402` przy wyczerpaniu). Trasa UI `/recipes/new/assist` — `premium`/`admin`; endpoint przyjmuje też rolę `user`. |
+| US-036 | Asystowane dodawanie (AI) | Wklejenie tekstu/obrazu → LLM → wstępnie wypełniony formularz wraz z porcjami, czasami, klasyfikacją i flagami. Metadane są normalizowane tolerancyjnie. Rozliczenie kredytów `draft` (`402` przy wyczerpaniu). Trasa UI `/recipes/new/assist` jest dostępna dla wszystkich zalogowanych ról; Free korzysta z puli 3 próbnych kredytów `draft` (tryby: tekst, link URL, 1–5 zdjęć). Generowanie zdjęcia AI tylko `premium`/`admin`. |
 | US-037 | Generowanie zdjęcia AI | Przycisk AI w edycji/kreatorze, podgląd, akceptacja, Gemini `gemini-3-pro-image-preview`. `premium`/`admin` plus pula kredytów `image`. Możliwe przed zapisem przepisu. |
 | PS-64 | Kredyty AI | Osobne pule draft i zdjęcie. Free: limit dożywotni; Premium: miesięczny (reset cron); admin: bez limitu. Wskaźnik, dialog wyczerpania, sekcja w `/settings`, korekta w panelu admina. |
-| US-038 | Dodanie do "Mojego planu" | Przycisk na szczegółach, limit 50 (Free: 3 — PS-65, dialog z CTA do `/pricing`), stany: dodaj/spinner/zobacz listę. |
-| PS-65 | Limit planu dla Free | Rola `user`: max 3 pozycje (`PLAN_LIMIT_FREE`), `422 PLAN_LIMIT_EXCEEDED_FREE`, dialog, licznik w drawerze. Premium/admin: 50. Bez usuwania nadmiarowych pozycji. |
+| US-038 | Dodanie do "Mojego planu" | Przycisk na szczegółach, limit 50 (Free: 7 — PS-65, dialog z CTA do `/pricing`), stany: dodaj/spinner/zobacz listę. |
+| PS-65 | Limit planu dla Free | Rola `user`: max 7 pozycji (`PLAN_LIMIT_FREE`), `422 PLAN_LIMIT_EXCEEDED_FREE`, dialog, licznik w drawerze. Premium/admin: 50. Bez usuwania nadmiarowych pozycji. |
 | US-039 | Przeglądanie "Mojego planu" | Drawer z prawej, lista z miniaturami, usuwanie, czyszczenie, FAB. |
 | US-040 | Czasy przygotowania/całkowity | Opcjonalne 0-999 min, walidacja całkowity >= przygotowania. |
 | US-041 | Kanoniczny URL ze slugiem | `/recipes/:id-:slug`, transliteracja polskich znaków, normalizacja. |
@@ -162,9 +163,9 @@ pule kredytów AI (PS-64) są wdrożone. Subskrypcja i właściwy checkout płat
 
 Historyjki monetyzacji `PREM-001` … (entitlements, checkout płatności) są w
 `docs/results/new-features/epics/premium-users/premium-users-user-stories.md` i
-**nie zastępują** powyższych story MVP. Publiczny widok `/pricing`, stub
-`/checkout` oraz kredyty AI (PS-64) są już w aplikacji. Sprzedaż subskrypcji i
-pakietów kredytów nie jest.
+**nie zastępują** powyższych story MVP. Publiczny widok `/pricing`, kod
+`/checkout` (PS-66) oraz kredyty AI (PS-64) są już w aplikacji. Sprzedaż subskrypcji nie
+jest uruchomiona (patrz `premium-users-payments-launch-plan.md`); pakiety kredytów nie istnieją.
 
 ---
 
@@ -189,10 +190,10 @@ Piramida testów: solidna baza jednostkowych, uzupełniona integracjami i E2E.
 3. Cykl życia przepisu: tworzenie → lista → szczegóły → edycja → usuwanie
 4. Kolekcje, plan, lista zakupów
 5. Admin: lista użytkowników, zmiana roli, odmowa dostępu dla `user`
-6. Feature gating: `user` nie wchodzi na `/recipes/new/assist` ani nie generuje zdjęcia AI; API draftu rozlicza kredyty także dla roli `user`
+6. Feature gating: `user` korzysta z `/recipes/new/assist` w ramach 3 próbnych kredytów, ale nie generuje zdjęcia AI; API draftu rozlicza kredyty także dla roli `user`
 7. Kredyty AI: wskaźnik i sekcja ustawień; wyczerpanie puli → dialog i `402`; admin bez limitu; korekta puli w panelu admina
-8. Cennik: `/pricing` dla gościa i zalogowanego (CTA według roli); `/checkout` pokazuje „Płatności wkrótce”
-9. Limit planu Free: `user` dodaje 3 przepisy, czwarte → dialog z CTA (bez snackbara); licznik w drawerze; `premium`/`admin` bez blokady do 50; istniejący plan ponad limit nie jest czyszczony
+8. Cennik: `/pricing` dla gościa i zalogowanego (CTA według roli); `/checkout` (zalogowany `user`) pokazuje wybór planu, zgody i przekierowanie do Stripe (test: karta 4242…)
+9. Limit planu Free: `user` dodaje 7 przepisów, ósmy → dialog z CTA (bez snackbara); licznik w drawerze; `premium`/`admin` bez blokady do 50; istniejący plan ponad limit nie jest czyszczony
 10. Wklej ze schowka (PS-92): happy path PNG/JPG/WebP na formularzu i w asyście (obraz); pusty schowek / zły format / >10 MB / odmowa uprawnień → komunikat inline; brak Clipboard API → przycisk disabled + tooltip; Ctrl+V i DnD nadal działają
 11. Flagi przepisów (PS-95): toggle ulubiony i „Chcę wypróbować” na szczegółach, stan po odświeżeniu; serduszko na liście po powrocie; klik w serduszko na kafelku nawiguje do szczegółów; gość bez ikon flag i bez serduszka; błąd zapisu → rollback i snackbar; `401` → login
 12. Filtry Explore (PS-96): toggle Termorobot/Grill i dieta; zalogowany — Ulubione/Chcę wypróbować; URL z bookmarku aktywuje chipy; kombinacje filtrów + `q`; load more z zachowanymi filtrami; reset paginacji po zmianie filtra; gość bez chipów flag, `favorite=true` w URL bez efektu; empty state i „Wyczyść filtry”; regresja landingu bez filtrów Explore

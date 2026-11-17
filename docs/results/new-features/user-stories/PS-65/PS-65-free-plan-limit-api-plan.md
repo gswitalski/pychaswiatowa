@@ -11,7 +11,7 @@
 | Element | Typ | Opis |
 |---|---|---|
 | `POST /plan/recipes` | Modyfikacja istniejącego endpointu | Dodanie weryfikacji limitu Free przed INSERT |
-| Zmienna środowiskowa `PLAN_LIMIT_FREE` | Nowa konfiguracja | Konfigurowalny limit pozycji planu dla roli `user` (domyślnie `3`) |
+| Zmienna środowiskowa `PLAN_LIMIT_FREE` | Nowa konfiguracja | Konfigurowalny limit pozycji planu dla roli `user` (domyślnie `7`) |
 | Kod błędu `PLAN_LIMIT_EXCEEDED_FREE` | Nowy kod błędu | Zwracany `422` gdy Free user przekroczy swój limit |
 
 Pozostałe endpointy modułu `plan` (`GET /plan`, `DELETE /plan/recipes/{recipeId}`, `DELETE /plan`) nie wymagają zmian.
@@ -22,7 +22,7 @@ Pozostałe endpointy modułu `plan` (`GET /plan`, `DELETE /plan/recipes/{recipeI
 
 | Zmienna | Domyślna wartość | Opis |
 |---|---|---|
-| `PLAN_LIMIT_FREE` | `3` | Maksymalna liczba pozycji w „Moim planie" dla użytkownika Free (`app_role = 'user'`). Konfigurowalna bez redeploymentu kodu. |
+| `PLAN_LIMIT_FREE` | `7` | Maksymalna liczba pozycji w „Moim planie" dla użytkownika Free (`app_role = 'user'`). Konfigurowalna bez redeploymentu kodu. |
 
 > Istniejący limit `50` dla użytkowników Premium i Admin pozostaje zakodowany na stałe (nie wymaga zmiennej środowiskowej, gdyż jest wartością produktową opisaną w UI — patrz PS-63).
 
@@ -50,7 +50,7 @@ autoryzacja
 → pobierz app_role z JWT claims
 → jeśli app_role === 'user':
       COUNT(plan_recipes WHERE user_id = auth.uid())
-      jeśli count >= PLAN_LIMIT_FREE (env, domyślnie 3):
+      jeśli count >= PLAN_LIMIT_FREE (env, domyślnie 7):
           → 422 PLAN_LIMIT_EXCEEDED_FREE
 → istniejąca weryfikacja limitu 50 (dla 'premium' i 'admin')
 → INSERT plan_recipes + wiersze zakupowe
@@ -76,7 +76,7 @@ autoryzacja
     "error": "PLAN_LIMIT_EXCEEDED_FREE",
     "message": "Osiągnięto limit pozycji w Moim planie dla konta Free.",
     "details": {
-        "free_limit": 3,
+        "free_limit": 7,
         "premium_limit": 50,
         "upgrade_url": "/pricing"
     }
@@ -104,7 +104,7 @@ autoryzacja
 ```typescript
 // supabase/functions/plan/handlers/add-recipe.ts
 
-const PLAN_LIMIT_FREE = parseInt(Deno.env.get('PLAN_LIMIT_FREE') ?? '3', 10);
+const PLAN_LIMIT_FREE = parseInt(Deno.env.get('PLAN_LIMIT_FREE') ?? '7', 10);
 const PLAN_LIMIT_PREMIUM = 50;
 
 export async function addRecipeToPlan(req: Request, supabase: SupabaseClient, userId: string, appRole: string) {
@@ -142,7 +142,7 @@ export async function addRecipeToPlan(req: Request, supabase: SupabaseClient, us
 | Zagrożenie | Mitygacja |
 |---|---|
 | Manipulacja rolą przez klienta | Rola `app_role` pochodzi wyłącznie z JWT claims (Supabase Auth) — nie z body żądania |
-| Race condition (równoczesne wywołania) | Istniejąca transakcyjność INSERT w Edge Function; dla limitu 3 ryzyko praktyczne minimalne |
+| Race condition (równoczesne wywołania) | Istniejąca transakcyjność INSERT w Edge Function; dla limitu 7 ryzyko praktyczne minimalne |
 | Obejście grandfatheringu | Nieistotne — grandfathering jest celowym zachowaniem; usunięcie nadliczbowych pozycji leży po stronie użytkownika |
 
 ---

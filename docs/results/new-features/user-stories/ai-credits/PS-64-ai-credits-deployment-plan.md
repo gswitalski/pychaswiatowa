@@ -196,7 +196,7 @@ WHERE id NOT IN (SELECT user_id FROM public.user_ai_credits)
 
 > **Uwaga:** Istniejący użytkownicy `premium` (przypisani przez admina przed startem checkout) otrzymają pełną pulę miesięczną z datą resetu = `now() + 1 miesiąc`. Kredyty `draft_credits_used` i `image_credits_used` startują od 0, gdyż system nie śledził dotąd zużycia.
 >
-> Po wdrożeniu prawdziwego checkout (PS-62), webhook płatności nadpisze `next_reset_at` datą pierwszej płatności.
+> Po wdrożeniu prawdziwego checkout (PS-66), webhook płatności nadpisze `next_reset_at` datą pierwszej płatności.
 
 ---
 
@@ -324,7 +324,7 @@ firebase deploy --only hosting
 
 | Element | Historyjka |
 |---|---|
-| Checkout i webhook płatności (nadpisanie `next_reset_at`) | PS-62 (checkout) |
+| Checkout i webhook płatności (nadpisanie `next_reset_at`) | PS-66 (checkout) |
 | Strona cennika z widocznym limitem AI dla Free | PS-63 (zrealizowana) |
 | Pakiety kredytów (add-on do dokupienia) | Przyszłe historyjki |
 | Import z URL/zdjęcia (nowe typy kredytów) | Przyszłe historyjki |

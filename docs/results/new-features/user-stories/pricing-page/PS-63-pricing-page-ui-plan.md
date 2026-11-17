@@ -52,7 +52,7 @@
 | Ścieżka | `/legal/subscription` |
 | Dostęp | Publiczny |
 | Komponent | Reuse istniejącego `LegalPageComponent` (analogicznie jak `/legal/terms`) |
-| Źródło treści | `src/assets/legal/subscription-terms.md` |
+| Źródło treści | `public/assets/legal/subscription-terms.md` |
 | Uwaga | MVP: plik Markdown z placeholderem treści |
 
 ---

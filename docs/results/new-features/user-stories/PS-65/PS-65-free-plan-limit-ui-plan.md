@@ -27,7 +27,7 @@ Dialog Angular Material (`MatDialog`) wyświetlany gdy `POST /plan/recipes` zwr�
 
 ```typescript
 interface PlanLimitExceededDialogData {
-    freeLimit: number;      // wartość z pola details.free_limit odpowiedzi API (np. 3)
+    freeLimit: number;      // wartość z pola details.free_limit odpowiedzi API (np. 7)
     premiumLimit: number;   // wartość z pola details.premium_limit odpowiedzi API (np. 50)
     upgradeUrl: string;     // '/pricing'
 }
@@ -41,7 +41,7 @@ interface PlanLimitExceededDialogData {
 ║  Osiągnięto limit planu                  ║
 ║                                          ║
 ║  Twój plan Free pozwala na              ║
-║  przechowywanie do 3 pozycji             ║
+║  przechowywanie do 7 pozycji             ║
 ║  w Moim planie.                          ║
 ║                                          ║
 ║  Konto Premium umożliwia                ║
@@ -102,12 +102,12 @@ Licznik jest wyświetlany **wyłącznie dla roli `user`** (Free). Dla `premium` 
 
 Wariant normalny (poniżej limitu):
 ```
-Mój plan  ·  2 / 3 pozycji
+Mój plan  ·  2 / 7 pozycji
 ```
 
 Wariant przy limicie (count === freeLimit):
 ```
-Mój plan  ·  3 / 3 pozycji  [kolor warn]
+Mój plan  ·  7 / 7 pozycji  [kolor warn]
 ```
 
 **Implementacja:**
@@ -141,7 +141,7 @@ W kategorii **„Plan i zakupy"** tabeli porównawczej aktualizacja wartości w 
 
 | Funkcja | Free (przed) | Free (po) | Premium |
 |---|---|---|---|
-| Mój plan (limit pozycji) | 7 pozycji | **3 pozycje** | 50 pozycji |
+| Mój plan (limit pozycji) | 7 pozycji | **7 pozycji** (bez zmiany względem wcześniejszej oferty) | 50 pozycji |
 
 Pozostałe wiersze kategorii „Plan i zakupy" pozostają bez zmian:
 
@@ -159,10 +159,10 @@ Pozostałe wiersze kategorii „Plan i zakupy" pozostają bez zmian:
 { feature: 'Mój plan (limit pozycji)', free: '7 pozycji', premium: '50 pozycji' }
 
 // Po:
-{ feature: 'Mój plan (limit pozycji)', free: '3 pozycje', premium: '50 pozycji' }
+{ feature: 'Mój plan (limit pozycji)', free: '7 pozycji', premium: '50 pozycji' }
 ```
 
-> Wartość `3` jest spójna z domyślną wartością zmiennej środowiskowej `PLAN_LIMIT_FREE` na backendzie. Jeśli w przyszłości wartość env var zostanie zmieniona, konieczna jest synchroniczna aktualizacja tego pliku konfiguracyjnego.
+> Wartość `7` jest spójna z domyślną wartością zmiennej środowiskowej `PLAN_LIMIT_FREE` na backendzie. Jeśli w przyszłości wartość env var zostanie zmieniona, konieczna jest synchroniczna aktualizacja tego pliku konfiguracyjnego.
 
 ---
 
@@ -170,8 +170,8 @@ Pozostałe wiersze kategorii „Plan i zakupy" pozostają bez zmian:
 
 | Stan | Komponent | Zachowanie |
 |---|---|---|
-| `user` Free, count < limit | Drawer „Mój plan" | Licznik neutralny: „2 / 3 pozycji" |
-| `user` Free, count = limit | Drawer „Mój plan" | Licznik w kolorze `warn`: „3 / 3 pozycji" |
+| `user` Free, count < limit | Drawer „Mój plan" | Licznik neutralny: „2 / 7 pozycji" |
+| `user` Free, count = limit | Drawer „Mój plan" | Licznik w kolorze `warn`: „7 / 7 pozycji" |
 | `user` Free, próba dodania przy limicie | Drawer / przycisk „Dodaj do planu" | API zwraca `422` → otwierany `PlanLimitExceededDialogComponent` |
 | `premium` / `admin` | Drawer „Mój plan" | Brak licznika z limitem; istniejące zachowanie bez zmian |
 | Błąd sieciowy / inny niż `422 PLAN_LIMIT_EXCEEDED_FREE` | Serwis planu | Istniejąca obsługa błędów — bez zmian |

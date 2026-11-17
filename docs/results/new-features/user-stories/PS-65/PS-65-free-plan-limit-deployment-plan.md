@@ -33,14 +33,14 @@ Deploy kodu wykonuje się automatycznie przez GitHub Actions (push do gałęzi `
 W panelu Supabase (`Project Settings → Edge Functions → Secrets`) lub przez Supabase CLI:
 
 ```bash
-supabase secrets set PLAN_LIMIT_FREE=3
+supabase secrets set PLAN_LIMIT_FREE=7
 ```
 
 | Zmienna | Wartość domyślna | Opis |
 |---|---|---|
-| `PLAN_LIMIT_FREE` | `3` | Maksymalna liczba pozycji w „Moim planie" dla użytkownika Free (`app_role = 'user'`). Konfigurowalna bez redeploymentu — zmiana wartości w Secrets wymaga jedynie ponownego uruchomienia funkcji (automatyczne przy następnym wywołaniu). |
+| `PLAN_LIMIT_FREE` | `7` | Maksymalna liczba pozycji w „Moim planie" dla użytkownika Free (`app_role = 'user'`). Konfigurowalna bez redeploymentu — zmiana wartości w Secrets wymaga jedynie ponownego uruchomienia funkcji (automatyczne przy następnym wywołaniu). |
 
-> **Uwaga:** Wartość `3` jest spójna z wierszem tabeli porównawczej na stronie `/pricing`. Jeśli wartość zostanie zmieniona w Supabase Secrets, konieczna jest synchroniczna aktualizacja `pricing.config.ts` na frontendzie (nie aktualizuje się automatycznie).
+> **Uwaga:** Wartość `7` jest spójna z wierszem tabeli porównawczej na stronie `/pricing`. Jeśli wartość zostanie zmieniona w Supabase Secrets, konieczna jest synchroniczna aktualizacja `pricing.config.ts` na frontendzie (nie aktualizuje się automatycznie).
 
 ---
 
@@ -50,22 +50,22 @@ Po automatycznym deployu przez GitHub Actions wykonać ręczną weryfikację:
 
 **Backend (Edge Function `plan`):**
 
-- [ ] `POST /plan/recipes` dla roli `user` z `count(plan_recipes) >= 3` zwraca `422 PLAN_LIMIT_EXCEEDED_FREE`
+- [ ] `POST /plan/recipes` dla roli `user` z `count(plan_recipes) >= 7` zwraca `422 PLAN_LIMIT_EXCEEDED_FREE`
 - [ ] Odpowiedź `422` zawiera pola `details.free_limit`, `details.premium_limit`, `details.upgrade_url`
-- [ ] `POST /plan/recipes` dla roli `user` z `count < 3` kończy się sukcesem (`200 OK`)
-- [ ] `POST /plan/recipes` dla roli `premium` z `count >= 3` nie zwraca `422 PLAN_LIMIT_EXCEEDED_FREE` (obowiązuje limit 50)
-- [ ] `POST /plan/recipes` dla roli `admin` z `count >= 3` nie zwraca `422 PLAN_LIMIT_EXCEEDED_FREE`
-- [ ] Istniejące pozycje planu użytkownika Free z liczbą > 3 (grandfathering) nie są usuwane — nadal widoczne w `GET /plan`
+- [ ] `POST /plan/recipes` dla roli `user` z `count < 7` kończy się sukcesem (`200 OK`)
+- [ ] `POST /plan/recipes` dla roli `premium` z `count >= 7` nie zwraca `422 PLAN_LIMIT_EXCEEDED_FREE` (obowiązuje limit 50)
+- [ ] `POST /plan/recipes` dla roli `admin` z `count >= 7` nie zwraca `422 PLAN_LIMIT_EXCEEDED_FREE`
+- [ ] Istniejące pozycje planu użytkownika Free z liczbą > 7 (grandfathering) nie są usuwane — nadal widoczne w `GET /plan`
 
 **Frontend (Angular):**
 
-- [ ] Drawer „Mój plan" dla roli `user` wyświetla licznik „X / 3 pozycji" w nagłówku
-- [ ] Licznik zmienia kolor na `warn` gdy `count = 3`
+- [ ] Drawer „Mój plan" dla roli `user` wyświetla licznik „X / 7 pozycji" w nagłówku
+- [ ] Licznik zmienia kolor na `warn` gdy `count = 7`
 - [ ] Drawer „Mój plan" dla roli `premium` i `admin` nie wyświetla licznika z limitem
 - [ ] Próba dodania przepisu do planu przy limicie otwiera dialog `PlanLimitExceededDialogComponent`
-- [ ] Dialog zawiera poprawne wartości limitu Free (3) i Premium (50)
+- [ ] Dialog zawiera poprawne wartości limitu Free (7) i Premium (50)
 - [ ] Przycisk „Przejdź na Premium" w dialogu nawiguje do `/pricing`
-- [ ] Strona `/pricing` — wiersz „Mój plan (limit pozycji)" pokazuje „3 pozycje" (Free) i „50 pozycji" (Premium)
+- [ ] Strona `/pricing` — wiersz „Mój plan (limit pozycji)" pokazuje „7 pozycji" (Free) i „50 pozycji" (Premium)
 
 ---
 

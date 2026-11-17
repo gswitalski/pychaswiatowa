@@ -13,7 +13,7 @@
 | 1 | Anulowanie subskrypcji i zarządzanie nią (portal klienta, zmiana planu, metody płatności) | PS-67 | Wysoki | Wysokie (prawo konsumenckie, obsługa klientów ręcznie) |
 | 2 | Obsługa nieudanych odnowień, grace period, degradacja roli | PS-67 | Wysoki | Średnie (siatka bezpieczeństwa w PS-66 częściowo je łagodzi) |
 | 3 | Start trialu 7-dniowego z odrębną pulą AI | PS-68 | Średni | Niskie (funkcja marketingowa) |
-| 4 | E-maile cyklu życia (przypomnienia, winback, nieudana płatność, faktury) | PS-71 | Średni | Średnie (BLIK bez przypomnienia o końcu okresu) |
+| 4 | E-maile cyklu życia (przypomnienia, winback, nieudana płatność, faktury) | PS-72 | Średni | Średnie (BLIK bez przypomnienia o końcu okresu) |
 | 5 | Ponowna wysyłka nieudanych e-maili potwierdzających | Backlog | Niski | Niskie |
 | 6 | Faktury VAT na żądanie (NIP), integracja z systemem fakturowym, KSeF | Osobna historyjka | Średni | Zależne od decyzji księgowej |
 | 7 | Zwroty, spory (chargebacks) i korekty | PS-67 / osobna | Średni | Średnie |
@@ -37,7 +37,7 @@
 - **Opis:** Sekcja „Subskrypcja” w `/settings` z akcją „Anuluj subskrypcję” (dostęp do końca opłaconego okresu), podgląd statusu, zmiana metody płatności, podgląd i pobranie faktur. Realizacja przez własne endpointy (`POST /billing/subscription/cancel`) lub Stripe Customer Portal (sesja portalu tworzona po stronie backendu).
 - **Dlaczego poza PS-66:** PS-67 jest osobną historyjką zależną od PS-66; PS-66 wystarcza do „pierwszej złotówki”.
 - **Przygotowane w PS-66:** tabela `subscriptions` z kolumnami `status`, `canceled_at`, `auto_renew`, `provider_subscription_id`; `GET /me` zwraca status subskrypcji; historia płatności w `/settings`.
-- **Ryzyko do czasu wdrożenia:** użytkownik nie może samodzielnie zrezygnować z automatycznego odnowienia kartą — konieczna ręczna obsługa (Stripe Dashboard + kontakt e-mail). Przed startem sprzedaży zalecane, by PS-67 wyszło razem z PS-66 lub tuż po nim. Regulamin subskrypcji musi opisywać tymczasowy sposób rezygnacji.
+- **Ryzyko do czasu wdrożenia:** użytkownik nie może samodzielnie zrezygnować z automatycznego odnowienia kartą — konieczna ręczna obsługa (Stripe Dashboard + kontakt e-mail). Decyzja startowa (listopad 2026): sprzedaż startuje bez PS-67; pierwszym krokiem po starcie jest anulowanie przez Stripe Customer Portal (PS-67 etap A). Do tego czasu regulamin (sekcja 4 `subscription-terms.md`) opisuje rezygnację przez e-mail, a obsługa odbywa się ręcznie w Stripe Dashboard.
 
 ### 2.2. Nieudane odnowienia, grace period i degradacja roli
 
@@ -50,7 +50,7 @@
 
 - **Opis:** Jednorazowy trial z odrębną, mniejszą pulą kredytów AI, wymagający podania metody płatności, automatyczna konwersja lub powrót do `user`.
 - **Przygotowane w PS-66:** kolumna `trial_ends_at`, status `trialing`, `GET /me` zwraca pola trialu, `checkoutAccessGuard` i API dopuszczają zakup przy `trialing`, przełączenie na `active` bez utraty zużycia kredytów, baner na `/checkout`.
-- **Do rozstrzygnięcia w PS-68:** FAQ na `/pricing` obiecuje trial bez karty, a historyjka PS-68 wymaga metody płatności — ujednolicić komunikację; ochrona przed wielokrotnym trialem (jednorazowo na konto, ewentualnie na kartę/e-mail).
+- **Stan komunikacji (listopad 2026):** obietnice trialu zostały usunięte z `/pricing` (FAQ, chip), z konfiguracji i z regulaminu subskrypcji. Przy wdrożeniu PS-68 przywrócić je spójnie: karta wymagana przy aktywacji (zgodnie z historyjką), ochrona przed wielokrotnym trialem (jednorazowo na konto, ewentualnie na kartę/e-mail).
 - **Weryfikacja:** ścieżka „zakup w trakcie trialu” w PS-66 jest pokryta wyłącznie testami jednostkowymi (fixtury) do czasu wdrożenia PS-68 — po jego wdrożeniu dodać test E2E.
 
 ### 2.4. E-maile cyklu życia
@@ -130,7 +130,7 @@
 | `subscriptions.provider_subscription_id`, `billing_customers` | Portal klienta, anulowanie, zmiana planu |
 | `subscription_payments.status`, dokumenty | Zwroty, faktury, historia |
 | `payment_webhook_events` (idempotencja, status, błąd) | Monitoring, ponowne przetwarzanie, nowe typy zdarzeń |
-| `_shared/email/` | E-maile cyklu życia (PS-71), ponawianie |
+| `_shared/email/` | E-maile cyklu życia (PS-72), ponawianie |
 | `_shared/ai-credits-sync.ts` | Add-ony kredytów, trial z odrębną pulą, degradacja roli |
 | `checkoutAccessGuard` + obsługa `trialing` | PS-68 |
 | Metadane `terms_version`, `terms_accepted_at` | Zmiany regulaminu, dowody akceptacji |

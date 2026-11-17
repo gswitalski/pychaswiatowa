@@ -2,7 +2,7 @@
 
 Wersja 2.0 dokumentu. Cel nadrzędny: **maksymalizacja zysku z witryny** (subskrypcja, kredyty AI, reklamy i afiliacja na częściach publicznych), przy zachowaniu uczciwego freemium.
 
-Dokument zastępuje rekomendacje z `docs/analizaf0funkcjonalnosci-premium.md`. Opiera się na `docs/results/project-summary.md`.
+Dokument zastępuje wcześniejszą analizę v01 (jej pliku nie ma już w repozytorium; różnice opisuje sekcja 9). Opiera się na stanie produktu z `docs/results/project-prd.md` i `docs/results/project-summary.md`. Historyjki: `premium-users-user-stories.md`. Kroki uruchomienia płatności: `premium-users-payments-launch-plan.md`.
 
 ## 1. Cel dokumentu
 
@@ -18,8 +18,23 @@ Założenia v02:
 - dodatkowe strumienie: reklamy i afiliacja na witrynie publicznej, pakiety kredytów AI,
 - strategia freemium: darmowa prywatna książka kucharska ma realną wartość; Premium sprzedaje **oszczędność czasu, planer/zakupy, brak reklam i pulę AI**, a nie prawo do przechowywania przepisów,
 - persona: domowy pasjonat gotowania gromadzący własne przepisy; nisza o wysokiej skłonności do płacenia: **termorobot / grill**,
-- haczyk Premium: import z **URL, zdjęcia i skanu** plus inteligentne zakupy i planer; wklejany tekst i Markdown nie są głównym powodem płatności,
-- pierwsza złotówka ma spiąć to, co już jest w produkcie (limity AI draft, zdjęcia AI, checkout), zanim powstanie import z URL.
+- haczyk Premium: import z **URL, zdjęcia i skanu** (już w produkcie: PS-97 i PS-100, w ramach puli kredytów) plus inteligentne zakupy i planer (jeszcze nie ma); wklejany tekst i Markdown nie są głównym powodem płatności,
+- pierwsza złotówka ma spiąć to, co już jest w produkcie (pula kredytów AI PS-64, import tekst/URL/zdjęcia, zdjęcia AI, checkout PS-66, `/pricing` PS-63), bez czekania na planer i zaawansowane zakupy.
+
+### 1.1. Decyzje startowe (listopad 2026)
+
+Zakres wersji startowej płatności jest celowo wąski. Wszystko poza poniższą tabelą wchodzi po starcie przychodu (kolejność w `premium-users-payments-launch-plan.md`).
+
+| Obszar | Decyzja na start | Odłożone na po starcie |
+|---|---|---|
+| Operator płatności | **Stripe** (hosted Checkout, faktury Stripe); „PayU lub odpowiednik” z wcześniejszych opisów oznacza Stripe | — |
+| Metody płatności | **Tylko karta** (subskrypcja odnawiana automatycznie) | BLIK (API gotowe, ukryty w UI; wymaga przypomnień o końcu okresu) |
+| Ceny | 24 zł / miesiąc, **169 zł / rok** (ok. 7 miesięcy ceny miesięcznej, oszczędność ok. 41%); domyślnie plan roczny | Zmiany cen, kody promocyjne |
+| Trial 7 dni | **Poza wersją startową** (nie ma go na `/pricing`, w FAQ ani w regulaminie) | PS-68 |
+| Limit „Mojego planu” Free | **7 pozycji** (`PLAN_LIMIT_FREE`, Premium: 50) | — |
+| Anulowanie subskrypcji | Na start e-mail do supportu; **Stripe Customer Portal** (przycisk w `/settings`) jako pierwszy krok po starcie | Własny UI i e-maile cyklu życia (PS-67, PS-72) |
+| E-mail po zakupie | Potwierdzenie i faktura ze Stripe | Własne e-maile przez Resend (PS-72) |
+| Domena | `pychaswiatowa.pl` | — |
 
 ## 2. Rekomendacja biznesowa
 
@@ -40,16 +55,16 @@ Proponowane ramy do walidacji na starcie sprzedaży (kwoty orientacyjne, PLN, B2
 | Element | Rekomendacja |
 |---|---|
 | Premium miesięcznie | ok. 19–29 zł |
-| Premium rocznie | ok. 149–199 zł (równowartość ok. 10 miesięcy; **domyślny wybór w checkout**) |
-| Trial | 7 dni, z **limitem AI**, nie z nielimitowanym AI |
-| Free AI | 1–3 **udane** importy na konto (onboarding), potem paywall; nie 3 próby co miesiąc w nieskończoność |
-| Premium AI | stała miesięczna pula kredytów, osobno: tani import (tekst/URL) vs drogi obraz vs generowanie zdjęcia |
+| Premium rocznie | ok. 149–199 zł (start: **169 zł**, czyli ok. 7 miesięcy ceny 24 zł i oszczędność ok. 41%; **domyślny wybór w checkout**) |
+| Trial | 7 dni, z **limitem AI**, nie z nielimitowanym AI — **po starcie płatności** (poza wersją startową, patrz 1.1) |
+| Free AI | 1–3 **udane** importy na konto (start: **3**, wspólna pula dla tekstu, URL i zdjęć), potem paywall; nie 3 próby co miesiąc w nieskończoność |
+| Premium AI | stała miesięczna pula kredytów. Wdrożone są dwie pule: `draft` (tekst, URL, zdjęcia wejściowe, asysty) i `image` (generowanie zdjęcia); dalszy podział (tani URL vs drogi obraz) dopiero, gdy koszty to uzasadnią |
 | Add-on | pakiet kredytów (także dla Free) — impuls bez nowej subskrypcji, ochrona marży |
 | Free vs Premium (reklamy) | reklamy i/lub afiliacja na częściach publicznych; Premium = **bez reklam** |
 
 Zasada: nigdy nie komunikować „nielimitowanego AI”. Nielimitowany LLM niszczy marżę.
 
-Luka produktowa: **import z URL jest poza MVP**, a w ofercie to filar Premium. Do czasu wdrożenia sprzedawać to, co jest: asysta AI z limitem kredytów, zdjęcia AI, brak reklam po starcie reklam, zapowiedź URL. Checkout i rola `premium` w JWT są warunkiem pierwszej złotówki.
+Stan produktu a oferta: import z URL (PS-97) i ze zdjęć (PS-100, do 5 zdjęć) **już działają** w asyście AI na `/recipes/new/assist`, rozliczane z puli `draft`. Free ma 3 takie importy na konto (próbka), Premium miesięczną pulę. Brakuje natomiast planera tygodniowego, zaawansowanych zakupów, konta rodzinnego, reklam (więc „brak reklam” jest dziś obietnicą na przyszłość) i priorytetu jobów AI (PS-82). Do czasu ich wdrożenia sprzedawać to, co jest: pulę kredytów AI (tekst, URL, zdjęcia), zdjęcia AI, limit planu 50 pozycji; pozostałe korzyści oznaczać „Wkrótce”. Checkout i rola `premium` w JWT są warunkiem pierwszej złotówki.
 
 ### 2.2. Czego nie robić
 
@@ -65,19 +80,19 @@ Rola biznesowa: ruch organiczny, ewentualny przychód z reklam/afiliacji oraz ko
 
 Funkcjonalności, które powinien mieć:
 
-- landing z jasnym opisem wartości i linkiem do `/pricing` (gdy powstanie),
+- landing z jasnym opisem wartości i linkiem do `/pricing`,
 - wyszukiwanie publicznych przepisów w `/explore`,
 - filtrowanie: dieta, kuchnia, trudność, grill, termorobot,
 - szczegóły publicznego przepisu pod kanonicznym URL,
 - sekcje najnowszych i popularnych przepisów,
 - rejestracja, logowanie, weryfikacja e-mail,
-- strony prawne: regulamin, prywatność, wydawca; po starcie płatności także regulamin subskrypcji i odstąpienia.
+- strony prawne: regulamin, prywatność, wydawca oraz regulamin subskrypcji `/legal/subscription` (obejmuje politykę zwrotów i prawo odstąpienia w jednym dokumencie).
 
 Rekomendowane ograniczenia:
 
 - brak dodawania i zapisywania przepisów,
 - brak planu i listy zakupów,
-- brak funkcji AI (w tym braku demo importu bez konta),
+- brak funkcji AI (w tym demo importu bez konta),
 - brak prywatnych danych i personalizacji.
 
 Rekomendowane funkcje dodatkowe:
@@ -114,16 +129,16 @@ Rekomendowane limity Free:
 
 - **przepisy i kolekcje:** praktycznie bez twardego niskiego sufitu; ewentualny bardzo wysoki cap antyspamowy (np. tysiące), nie 50–100 jako oferta,
 - **zdjęcia własne:** umiarkowany limit przestrzeni (koszt Storage), komunikowany jako miejsce na dysku, nie jako „kup więcej przepisów”,
-- **plan:** węższy niż pełne MVP, żeby Premium miało różnicę, np. plan na bieżący tydzień albo ok. 7–14 pozycji; nie ten sam limit 50 co „nielimitowane Premium”,
-- **AI:** 1–3 udane importy/asysty na konto (lifetime onboarding), potem paywall lub dokupienie kredytów,
+- **plan:** węższy niż pełne MVP, żeby Premium miało różnicę: **7 pozycji** (wystarcza na tydzień obiadów; konfigurowalne przez `PLAN_LIMIT_FREE`), Premium 50; nie ten sam limit co „nielimitowane Premium”,
+- **AI:** 3 udane importy/asysty na konto (lifetime onboarding, wspólna pula `draft` dla tekstu, URL i zdjęć — Free ma więc próbkę importu z URL i zdjęć), potem paywall lub dokupienie kredytów,
 - brak generowania zdjęć AI w cenie Free (możliwy wyłącznie add-on kredytów),
-- brak importu z URL, skanu i masowego importu,
+- brak masowego importu,
 - brak zaawansowanego scalania jednostek na liście zakupów i planera tygodniowego,
 - brak masowego eksportu biblioteki.
 
 Rekomendowane funkcje dodatkowe:
 
-- ekran wykorzystania kredytów AI i przestrzeni zdjęć,
+- ekran wykorzystania kredytów AI (jest: sekcja w `/settings`, PS-64) i przestrzeni zdjęć (jeszcze nie ma limitu przestrzeni),
 - komunikat upgrade przy ~70–80% puli AI lub przestrzeni, oraz w momencie bólu (kolejny URL, skan, scalanie zakupów),
 - eksport **pojedynczego** przepisu (Markdown/PDF); lock-in: brak eksportu całej biblioteki,
 - udostępnianie linkiem publicznym (już spójne z widocznością Publiczny),
@@ -142,11 +157,11 @@ Premium to czas, automatyzacja, wygoda codziennego gotowania i brak reklam — n
 Funkcjonalności, które powinien mieć:
 
 - wszystko z konta zwykłego, bez reklam,
-- wysoki limit przestrzeni na zdjęcia (nadal mierzalny, nie „nieskończoność”),
-- import z URL,
-- import ze zdjęcia, zrzutu i skanu,
+- wysoki limit przestrzeni na zdjęcia (nadal mierzalny, nie „nieskończoność”; dziś brak limitu i brak tej korzyści w ofercie),
+- import z URL w ramach miesięcznej puli (PS-97),
+- import ze zdjęcia, zrzutu i skanu w ramach miesięcznej puli (PS-100),
 - asystowane porządkowanie zaimportowanej treści (składniki, kroki, wskazówki) w ramach puli kredytów,
-- sugestie kategorii, tagów, kuchni, diety i trudności,
+- sugestie kategorii, tagów, kuchni, diety i trudności (przy imporcie AI już są: PS-91; osobny przycisk dla ręcznie tworzonych przepisów to PS-79),
 - automatyczne przeliczanie porcji i składników,
 - zaawansowana lista zakupów: scalanie, lepsze jednostki, grupy,
 - planer tygodniowy z listą zakupów z planu (gdy funkcja powstanie — wysoki priorytet, nie „średni”),
@@ -163,7 +178,7 @@ Czego nie dawać w pierwszym SKU jako „nielimitowane”:
 
 Rekomendowane ograniczenia mimo Premium:
 
-- twarda miesięczna pula kredytów, rozdzielona: tekst/URL vs obraz vs generowanie zdjęcia,
+- twarda miesięczna pula kredytów, rozdzielona na `draft` (tekst, URL, zdjęcia wejściowe, asysty) i `image` (generowanie zdjęcia),
 - komunikaty zużycia i możliwość dokupienia pakietu,
 - fair use (nadużycia, scrapowanie, automaty) — widoczne w adminie.
 
@@ -184,15 +199,15 @@ Monetyzować koszt infrastruktury i wysoką wartość użytkową. Import URL/zdj
 
 Priorytet najwyższy — **pierwsza złotówka i ochrona marży**:
 
-- płatności (checkout, BLIK/PayU lub odpowiednik, webhook → `app_role = premium`, faktury, `/pricing`),
-- limity kredytów na istniejące AI (`/ai/recipes/draft`, `/ai/recipes/image`),
-- strona upgrade z konkretnymi korzyściami (import URL/zdjęcie, planer/zakupy, brak reklam, pula AI),
+- płatności (checkout Stripe: karta na start, BLIK po starcie; webhook → `app_role = premium`, faktury Stripe, `/pricing`) — kod gotowy (PS-63, PS-66), brakuje konfiguracji usług i wdrożenia (patrz `premium-users-payments-launch-plan.md`),
+- limity kredytów na istniejące AI (`/ai/recipes/draft`, `/ai/recipes/image`) — wdrożone (PS-64),
+- strona upgrade z konkretnymi korzyściami (pula AI z importem URL/zdjęcia — jest; planer/zakupy, brak reklam — „Wkrótce”),
 - brak reklam w Premium (gdy reklamy ruszą u gościa/Free),
 - jasne limity Free: kredyty AI, przestrzeń zdjęć, węższy plan — **nie** niski cap liczby przepisów.
 
 Priorytet wysoki — **skok ARPU po starcie sprzedaży**:
 
-- import z URL oraz ze zdjęcia/skanu,
+- rozszerzenia importu URL/zdjęcie/skan (podstawowy import już działa; porządkowanie wyniku, historia szkiców),
 - ulepszona lista zakupów i planer tygodniowy,
 - nisza termorobot/grill (SEO, filtry, obietnica na `/pricing`),
 - sugestie metadanych i przeliczanie porcji,
@@ -209,7 +224,7 @@ Priorytet średni:
 
 Priorytet niski na tym etapie (nie rozwijać przed przychodem):
 
-- komentarze, oceny, znajomi,
+- komentarze, znajomi (oceny przepisów 1–5 już są: PS-99),
 - spiżarnia,
 - marketplace przepisów,
 - zaawansowana analiza wartości odżywczych.
@@ -222,7 +237,7 @@ Nie jedna ścieżka, kilka równoległych:
 2. **Habit → import:** Free dodaje 1–2 przepisy ręcznie/Markdown → kończą się kredyty albo pojawia się URL/zdjęcie → Premium lub pakiet.
 3. **Zakupy/planer → checkout:** użytkownik korzysta z planu i listy → komunikat o scalaniu, tygodniu, rodzinie.
 4. **Reklama → konto lub klik afiliacyjny:** gość na `/explore` (przychód nawet bez rejestracji).
-5. **Trial → rok:** 7 dni z limitem AI → w checkout domyślnie plan roczny.
+5. **Trial → rok:** 7 dni z limitem AI → w checkout domyślnie plan roczny (po starcie płatności; trial nie wchodzi do wersji startowej).
 
 Klasyczna sekwencja produktowa:
 
@@ -239,11 +254,11 @@ Onboarding i retencja: pierwszy przepis, potem paywall importu; e-mail (koniec t
 
 Warunek skalowania zysku, nie opcjonalny backlog:
 
-- checkout i odnawianie subskrypcji, mapowanie na rolę `premium` w JWT,
-- strona `/pricing`, komunikaty limitów w UI,
-- regulamin subskrypcji, polityka zwrotów, prawo odstąpienia (B2C, PL/UE),
-- maile transakcyjne i lifecycle,
-- panel admina (dziś placeholder): zużycie AI, nadużycia, refundy, status subskrypcji,
+- checkout i odnawianie subskrypcji, mapowanie na rolę `premium` w JWT (kod gotowy: PS-66),
+- strona `/pricing` (jest), komunikaty limitów w UI (dialog wyczerpania kredytów i limitu planu są; reszta w PS-69),
+- regulamin subskrypcji, polityka zwrotów, prawo odstąpienia (B2C, PL/UE) — roboczy dokument `/legal/subscription`, przed startem wymaga weryfikacji prawnika,
+- maile transakcyjne i lifecycle (na start: e-maile Stripe; własne — PS-72),
+- panel admina (dziś: lista użytkowników i tabela przepisów publicznych; brak widoku subskrypcji i zużycia AI): zużycie AI, nadużycia, refundy, status subskrypcji,
 - pomiar: koszt kredytu vs konwersja, LTV plan miesięczny vs roczny, churn po końcu trialu.
 
 ## 9. Porównanie v01 → v02 (skrót)
@@ -259,7 +274,7 @@ Warunek skalowania zysku, nie opcjonalny backlog:
 | Zdjęcia AI | lista korzyści Premium | wąska, droga pula kredytów |
 | Masowy import | w pierwszym Premium | add-on / wyższy plan |
 | Przychód z witryny | tylko subskrypcja | subskrypcja + kredyty + reklamy/afiliacja |
-| Cena i trial | brak | ramy 19–29 zł / rok, trial 7 dni z limitem AI |
+| Cena i trial | brak | ramy 19–29 zł / miesiąc oraz 149–199 zł / rok (start: 24 zł i 169 zł); trial 7 dni z limitem AI po starcie płatności |
 
 ## 10. Wnioski
 
@@ -267,11 +282,11 @@ Darmowy użytkownik ma zbudować wartościową prywatną książkę kucharską. 
 
 Najważniejsze płatne elementy:
 
-- import z URL oraz ze zdjęcia/skanu, w ramach **mierzonej puli**,
+- import z URL oraz ze zdjęcia/skanu (działa dziś), w ramach **mierzonej puli**,
 - porządkowanie i sugestie metadanych,
 - planer i zaawansowana lista zakupów,
 - brak reklam,
 - zdjęcia AI jako drogi dodatek, nie powód subskrypcji,
 - pakiety kredytów i (kolejno) konto rodzinne.
 
-Dopóki nie ma ceny, trialu, płatności i importu z URL, podział funkcji nie maksymalizuje zysku. Najszybsza ścieżka przy obecnym kodzie: **checkout + kredyty na US-036/US-037 + `/pricing`**, potem import URL i planer jako skok ARPU, równolegle SEO katalogu i — po ruchu — reklamy/afiliacja na witrynie publicznej.
+Dopóki płatności nie są uruchomione (kod jest, brakuje konfiguracji Stripe, wdrożenia i prawnika), podział funkcji nie maksymalizuje zysku. Najszybsza ścieżka przy obecnym kodzie: **uruchomić checkout PS-66 z pulą kredytów PS-64 (asysta AI US-036, zdjęcia AI US-037) i `/pricing` PS-63**, potem Stripe Customer Portal i e-maile cyklu życia, trial, BLIK, a jako skok ARPU planer i zaawansowane zakupy; równolegle SEO katalogu i — po ruchu — reklamy/afiliacja na witrynie publicznej.

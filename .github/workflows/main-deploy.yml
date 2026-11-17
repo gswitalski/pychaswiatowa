@@ -88,10 +88,14 @@ jobs:
           # Public/anon endpoints must skip JWT verification
           supabase functions deploy --yes explore --no-verify-jwt
           supabase functions deploy --yes public --no-verify-jwt
+          # Stripe webhook is authorized by the Stripe-Signature header, not by a Supabase JWT
+          supabase functions deploy --yes payments-webhook --no-verify-jwt
           # Auth-required endpoints keep default JWT verification
           supabase functions deploy --yes admin
           supabase functions deploy --yes ai
+          supabase functions deploy --yes billing
           supabase functions deploy --yes categories
+          supabase functions deploy --yes checkout
           supabase functions deploy --yes collections
           supabase functions deploy --yes me
           supabase functions deploy --yes plan

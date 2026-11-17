@@ -1,7 +1,7 @@
 # Regulamin subskrypcji Premium, polityka zwrotów i prawo odstąpienia
 
 > **Data publikacji:** 04.11.2026
-> **Ostatnia aktualizacja:** 04.11.2026
+> **Ostatnia aktualizacja:** 17.11.2026
 
 > **Ważne:** część dotycząca prawa odstąpienia jest roboczym wzorem i przed
 > rozpoczęciem sprzedaży wymaga weryfikacji przez prawnika oraz potwierdzenia jej
@@ -19,8 +19,6 @@
    Subskrypcję: miesięczny albo roczny.
 4. **Plan miesięczny** i **Plan roczny** – warianty Subskrypcji różniące się
    długością Okresu rozliczeniowego.
-5. **Trial** – 7-dniowy okres próbny dostępu do funkcji Premium przed pobraniem
-   pierwszej opłaty, jeżeli jest dostępny w ofercie.
 
 ### 2. Zawarcie umowy i oferta
 
@@ -33,21 +31,7 @@
 3. Przed złożeniem zamówienia Użytkownik otrzymuje podsumowanie planu, ceny,
    okresu rozliczeniowego i zasad automatycznego odnowienia.
 
-### 3. Trial
-
-1. Trial trwa 7 dni od jego aktywacji i zapewnia pełny dostęp do funkcji Premium
-   dostępnych w wybranym planie. Limity funkcji AI w trakcie Trialu są takie jak
-   dla planu Premium i są podane na stronie `/pricing`.
-2. Aktywacja Trialu wymaga podania karty płatniczej. Karta nie zostaje obciążona
-   przed zakończeniem okresu próbnego.
-3. Jeżeli Użytkownik nie anuluje Subskrypcji przed końcem Trialu, po jego
-   zakończeniu pobierana jest opłata za wybrany plan zgodnie z ceną pokazaną w
-   checkout.
-4. Usługodawca może ograniczyć dostępność Trialu, w szczególności do jednego
-   Trialu na Użytkownika, Konto lub metodę płatności, aby przeciwdziałać
-   nadużyciom.
-
-### 4. Płatności, odnowienie i dokumenty rozliczeniowe
+### 3. Płatności, odnowienie i dokumenty rozliczeniowe
 
 1. Dostępne metody płatności są prezentowane w checkout i obejmują kartę
    płatniczą oraz BLIK, jeżeli dana metoda jest dostępna.
@@ -60,7 +44,7 @@
    rozliczeniowy jest wystawiany zgodnie z obowiązującymi przepisami i sposobem
    rozliczenia wybranym podczas zakupu.
 
-### 5. Zmiana planu i anulowanie
+### 4. Zmiana planu i anulowanie
 
 1. Użytkownik może anulować automatyczne odnowienie w ustawieniach Konta, o ile
    taka funkcja jest dostępna, lub przez kontakt z Usługodawcą pod adresem
@@ -72,7 +56,7 @@
    następnego Okresu rozliczeniowego, chyba że checkout wyraźnie wskazuje inny
    moment jej wejścia w życie.
 
-### 6. Nieudana płatność odnowienia
+### 5. Nieudana płatność odnowienia
 
 1. Jeżeli automatyczne odnowienie nie powiedzie się, Usługodawca podejmie próbę
    ponownego pobrania płatności i, jeżeli to możliwe, poinformuje Użytkownika
@@ -82,7 +66,7 @@
 3. Po bezskutecznym upływie grace period Subskrypcja wygasa, a Konto przechodzi
    na plan bezpłatny. Dane Użytkownika nie są z tego powodu usuwane.
 
-### 7. Zmiany regulaminu subskrypcji
+### 6. Zmiany regulaminu subskrypcji
 
 1. Usługodawca może zmienić regulamin z ważnych przyczyn, w szczególności z
    powodu zmian prawa, funkcji Premium, metod płatności lub kosztów świadczenia

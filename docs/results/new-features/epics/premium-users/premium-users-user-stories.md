@@ -6,6 +6,23 @@ Dokument opisuje historyjki użytkownika dla obszaru funkcjonalnego **premium-us
 
 Historyjki są uporządkowane zgodnie z kolejnością implementacji: elementy blokujące poprzedzają zależne od nich funkcjonalności.
 
+## Stan wdrożenia i decyzje startowe (listopad 2026)
+
+Dokument był pisany przed implementacją PS-63–PS-66. Poniżej stan po implementacji; szczegóły decyzji: `analiza-funkcjonalnosci-premium-users.md` (sekcja 1.1), kroki uruchomienia: `premium-users-payments-launch-plan.md`.
+
+| Historyjka | Stan w kodzie | Uwagi |
+|---|---|---|
+| PS-63 Cennik | zaimplementowane, niezweryfikowane | `/pricing`, `pricing.config.ts` |
+| PS-64 Kredyty AI | zakończone (wg rejestru `project-summary.md`) | pule `draft` i `image` |
+| PS-65 Limit planu Free | zaimplementowane, niezweryfikowane | wartość startowa **7** (wcześniej błędnie 3) |
+| PS-66 Checkout Stripe | zaimplementowane, niezweryfikowane, **niewdrożone** | wymaga konfiguracji Stripe i wdrożenia (CI nie wdrażało funkcji płatności do listopada 2026) |
+| PS-71 Strony prawne | zrealizowane w innej formie | jeden dokument `/legal/subscription` |
+| PS-76, PS-77 Import URL / zdjęcia | zrealizowane jako PS-97 i PS-100 | w puli `draft`, dostępne też dla Free (3 próbne importy) |
+
+**Model kredytów AI (obowiązuje wszystkie historyjki):** wdrożone są dwie pule — `draft` (każde wywołanie LLM: draft z tekstu, linku lub 1–5 zdjęć, porządkowanie, sugestie metadanych) oraz `image` (generowanie zdjęcia przepisu). „Typ” kredytu podawany w historyjkach (`import-url`, `assist-cleanup` itd.) to etykieta analityczna, a nie osobna pula. Jedno wywołanie = 1 kredyt `draft`, niezależnie od liczby zdjęć. Podział na więcej pul wymaga osobnej decyzji i zmiany modelu z PS-64.
+
+**Zakres wersji startowej płatności:** karta (bez BLIK), bez trialu, bez własnych e-maili, anulowanie przez Stripe Customer Portal jako pierwszy krok po starcie. Historyjki PS-67, PS-68, PS-72 są odpowiednio zawężone lub odłożone (patrz ich opisy).
+
 ---
 
 ## Lista historyjek użytkownika
@@ -21,10 +38,10 @@ Jako odwiedzający aplikację (gość lub użytkownik Free), chcę zobaczyć prz
 - [ ] Strona `/pricing` jest publicznie dostępna (bez logowania).
 - [ ] Tabela porównawcza zawiera plany Free i Premium (miesięczny i roczny).
 - [ ] Plan roczny jest wyróżniony jako domyślny/rekomendowany, z przeliczeniem na koszt miesięczny.
-- [ ] Wymienione są korzyści Premium: import URL/zdjęcie, planer, zaawansowane zakupy, brak reklam, pula AI, konto rodzinne.
-- [ ] Widoczne są ramy cenowe (orientacyjne PLN B2C) oraz informacja o 7-dniowym trialu.
+- [ ] Wymienione są korzyści Premium: pula AI (import URL/zdjęcie/tekst), generowanie zdjęć AI, limit planu 50; korzyści jeszcze niewdrożone (planer, zaawansowane zakupy, konto rodzinne, priorytet jobów AI) są oznaczone „Wkrótce” albo pominięte. Reklam jeszcze nie ma — „brak reklam” nie może być jedyną korzyścią.
+- [ ] Widoczne są ceny brutto PLN (24 zł / miesiąc, 169 zł / rok, oszczędność ok. 41% przy planie rocznym). Informacja o trialu pojawia się dopiero po wdrożeniu PS-68.
 - [ ] CTA „Wybierz Premium" przekierowuje zalogowanego użytkownika do checkoutu, a niezalogowanego — do rejestracji.
-- [ ] Strona zawiera link do regulaminu subskrypcji.
+- [ ] Strona zawiera link do regulaminu subskrypcji (`/legal/subscription`).
 - [ ] Strona jest responsywna (desktop-first, mobile-friendly).
 
 **Zależności:** brak
@@ -38,7 +55,7 @@ Jako system, chcę przechowywać i egzekwować limity kredytów AI per użytkown
 
 **Kryteria akceptacji:**
 - [ ] Nowa tabela lub kolumny w bazie danych przechowują: liczbę dostępnych kredytów AI (draft, obraz), zużyte kredyty, datę ostatniego resetu (Premium), typ limitu (lifetime dla Free, miesięczny dla Premium).
-- [ ] Endpoint `/ai/recipes/draft` i `/ai/recipes/image` weryfikują stan kredytów przed wykonaniem wywołania AI.
+- [ ] Endpoint `/ai/recipes/draft` (wszystkie źródła: tekst, zdjęcia, URL) i `/ai/recipes/image` weryfikują stan kredytów przed wykonaniem wywołania AI. `/ai/recipes/draft` jest dostępny także dla roli `user` (3 próbne importy), `/ai/recipes/image` wyłącznie dla `premium` i `admin`.
 - [ ] Przy braku kredytów zwracany jest status `402 Payment Required` z kodem błędu `AI_CREDITS_EXHAUSTED`.
 - [ ] Zużycie kredytu jest odejmowane wyłącznie po pomyślnym zakończeniu wywołania AI (liczy się udany import).
 - [ ] Worker normalizacji składników NIE zużywa puli kredytów UI (osobna pula wewnętrzna).
@@ -55,7 +72,7 @@ Jako system, chcę przechowywać i egzekwować limity kredytów AI per użytkown
 Jako użytkownik Free, chcę wiedzieć, jaki limit pozycji w „Moim planie" mam do dyspozycji, aby rozumieć, kiedy potrzebuję konta Premium.
 
 **Kryteria akceptacji:**
-- [ ] Użytkownicy Free mają limit planu wynoszący 7–14 pozycji (konfigurowalne przez zmienną środowiskową).
+- [ ] Użytkownicy Free mają limit planu wynoszący **7 pozycji** (wartość startowa; konfigurowalna zmienną środowiskową `PLAN_LIMIT_FREE`, a wartość wyświetlana na `/pricing` musi się z nią zgadzać).
 - [ ] Endpoint `POST /plan/recipes` zwraca `422` z kodem `PLAN_LIMIT_EXCEEDED_FREE` gdy Free user przekroczy swój limit.
 - [ ] Odpowiedź zawiera informację o dostępnym limicie Premium (50 pozycji) i link do `/pricing`.
 - [ ] Użytkownicy Premium zachowują dotychczasowy limit 50 pozycji.
@@ -73,14 +90,14 @@ Jako zalogowany użytkownik Free, chcę zakupić subskrypcję Premium przez bezp
 
 **Kryteria akceptacji:**
 - [ ] Strona checkoutu jest dostępna pod `/checkout` lub jako modal (auth required).
-- [ ] Obsługiwane są metody płatności: BLIK oraz karta (PayU lub odpowiednik).
+- [ ] Operatorem płatności jest Stripe (hosted Checkout). Obsługiwane metody: karta (subskrypcja odnawiana automatycznie) oraz BLIK (płatność jednorazowa, bez odnowienia). W wersji startowej w UI dostępna jest **tylko karta**; BLIK jest obsłużony w API i włączany po wdrożeniu przypomnień o końcu okresu.
 - [ ] Domyślnie wybrany jest plan roczny (z możliwością przełączenia na miesięczny).
-- [ ] Po pomyślnej płatności webhook dostawcy płatności aktualizuje `app_role` na `premium` w `auth.users.raw_app_meta_data` oraz zapisuje dane subskrypcji (data startu, data następnej płatności, ID transakcji).
-- [ ] Użytkownik otrzymuje potwierdzenie zakupu na e-mail.
-- [ ] Faktura/paragon jest generowany i dostępny dla użytkownika.
+- [ ] Po pomyślnej płatności webhook Stripe aktualizuje `app_role` na `premium` w `auth.users.raw_app_meta_data` oraz zapisuje dane subskrypcji (data startu, data następnej płatności, ID transakcji).
+- [ ] Użytkownik otrzymuje potwierdzenie zakupu na e-mail (w wersji startowej wysyła je Stripe; własny e-mail przez Resend jest zakresem PS-72).
+- [ ] Faktura/potwierdzenie ze Stripe jest dostępne w `/settings` oraz w e-mailu ze Stripe. Faktury VAT na firmę (NIP) są poza wersją startową.
 - [ ] W przypadku błędu płatności użytkownik widzi czytelny komunikat i może ponowić próbę.
 - [ ] Checkout nie jest dostępny dla gości (redirect do rejestracji/logowania).
-- [ ] Obsługiwany jest scenariusz zakupu, gdy użytkownik ma aktywny trial.
+- [ ] API obsługuje zakup, gdy użytkownik ma status `trialing` (przygotowanie pod PS-68; scenariusz da się zweryfikować dopiero po wdrożeniu PS-68, do tego czasu jest pokryty tylko testami jednostkowymi).
 
 **Zależności:**
 - Wymaga: PS-63
@@ -93,14 +110,21 @@ Jako zalogowany użytkownik Free, chcę zakupić subskrypcję Premium przez bezp
 **Opis:**
 Jako użytkownik Premium, chcę zarządzać swoją subskrypcją (przeglądać status, anulować, zobaczyć datę odnowienia), aby mieć pełną kontrolę nad płatnościami.
 
-**Kryteria akceptacji:**
-- [ ] W ustawieniach konta (`/settings`) widoczna jest sekcja „Subskrypcja" ze statusem (aktywna/anulowana/trial), datą następnej płatności oraz planem.
-- [ ] Użytkownik może anulować subskrypcję — dostęp Premium obowiązuje do końca opłaconego okresu.
-- [ ] Po anulowaniu rola wraca do `user` dopiero po wygaśnięciu okresu.
-- [ ] Automatyczne odnowienie: webhook aktualizuje datę następnej płatności i utrzymuje rolę `premium`.
-- [ ] W przypadku nieudanej płatności przy odnowieniu użytkownik dostaje e-mail z prośbą o aktualizację metody płatności i ma grace period (np. 3 dni).
-- [ ] Po wygaśnięciu grace period rola zmienia się na `user`, a użytkownik otrzymuje e-mail winback.
-- [ ] JWT docelowego użytkownika odzwierciedla aktualną rolę po ponownym zalogowaniu lub po force-refresh sesji.
+**Podział na etapy:** etap A (pierwszy krok po starcie płatności) realizuje anulowanie i zmianę karty przez **Stripe Customer Portal**; etap B (własny UI i e-maile) jest odłożony.
+
+**Kryteria akceptacji — etap A (Customer Portal):**
+- [ ] W `/settings` widoczna jest sekcja „Subskrypcja" ze statusem, datą następnej płatności (lub końca okresu) oraz planem (dane z `GET /me`).
+- [ ] Przycisk „Zarządzaj subskrypcją" (tylko dla użytkownika z subskrypcją kartą) wywołuje endpoint tworzący sesję portalu Stripe i przekierowuje do portalu; adres powrotu budowany z `APP_BASE_URL`.
+- [ ] W portalu użytkownik może anulować subskrypcję (dostęp Premium do końca opłaconego okresu), zmienić kartę i pobrać faktury. Zmiana planu w portalu jest wyłączona do czasu obsługi prorationów.
+- [ ] Po anulowaniu nie następuje kolejne odnowienie; rola wraca do `user` po wygaśnięciu okresu i dni łaski (job `billing_expire_subscriptions`, zmienna `BILLING_EXPIRY_GRACE_DAYS`).
+- [ ] Zaktualizowane są FAQ na `/pricing` i sekcja 4 regulaminu subskrypcji (anulowanie w ustawieniach).
+
+**Kryteria akceptacji — etap B (odłożone):**
+- [ ] Własny UI anulowania i statusu `canceled` oraz obsługa zdarzeń Stripe `customer.subscription.updated/deleted` i `invoice.payment_failed` (status `past_due`, grace period zamiast samego jobu czasowego).
+- [ ] E-mail z prośbą o aktualizację metody płatności przy nieudanym odnowieniu oraz e-mail winback po wygaśnięciu (zakres PS-72).
+- [ ] JWT użytkownika odzwierciedla aktualną rolę po ponownym zalogowaniu lub po force-refresh sesji.
+
+> Automatyczne odnowienie kartą jest już obsługiwane w PS-66 (zdarzenie `invoice.paid` przesuwa `current_period_end`).
 
 **Zależności:**
 - Wymaga: PS-66
@@ -111,6 +135,8 @@ Jako użytkownik Premium, chcę zarządzać swoją subskrypcją (przeglądać st
 
 **Opis:**
 Jako nowy użytkownik, chcę przetestować Premium przez 7 dni z ograniczoną pulą AI, aby ocenić wartość subskrypcji przed zakupem.
+
+**Status:** odłożone na po starcie płatności. Do czasu wdrożenia trial nie jest obiecywany nigdzie w UI ani w regulaminie (usunięte z `/pricing`, FAQ i `subscription-terms.md`; przy wdrożeniu przywrócić je spójnie: karta wymagana przy aktywacji, jeden trial na konto).
 
 **Kryteria akceptacji:**
 - [ ] Nowy użytkownik (lub Free user aktywujący trial) może jednorazowo uruchomić 7-dniowy trial Premium.
@@ -132,11 +158,12 @@ Jako nowy użytkownik, chcę przetestować Premium przez 7 dni z ograniczoną pu
 **Opis:**
 Jako użytkownik Free, chcę widzieć kontekstualne komunikaty o możliwości przejścia na Premium w momentach, gdy osiągam limity, aby naturalnie trafiać do oferty.
 
+**Stan:** częściowo zrealizowane w PS-64 i PS-65 (wskaźnik zużycia kredytów z progiem ostrzegawczym `AI_CREDITS_WARN_THRESHOLD_PERCENT`, dialog po wyczerpaniu kredytów, dialog limitu planu). Do zrobienia: weryfikacja i ujednolicenie komunikatów oraz brakujące przypadki z listy.
+
 **Kryteria akceptacji:**
 - [ ] Przy ~70–80% zużycia puli kredytów AI pojawia się nieinwazyjny baner/snackbar z informacją o zbliżającym się limicie i linkiem do `/pricing`.
-- [ ] Po wyczerpaniu kredytów AI wyświetlany jest modal z korzyściami Premium i CTA checkout, zamiast pustego błędu.
-- [ ] Przy próbie importu z URL (PS-76) przez Free usera pokazywany jest ekran upgrade z opisem korzyści.
-- [ ] Przy próbie importu ze zdjęcia/skanu (PS-77) przez Free usera pokazywany jest ekran upgrade.
+- [ ] Po wyczerpaniu kredytów AI (w dowolnym trybie: tekst, URL, zdjęcia) wyświetlany jest modal z korzyściami Premium i CTA checkout, zamiast pustego błędu.
+- [ ] Przy próbie użycia funkcji dostępnej tylko dla Premium (generowanie zdjęcia AI, a po ich wdrożeniu planer i zaawansowane zakupy) Free user widzi ekran upgrade z opisem korzyści.
 - [ ] Przy przekroczeniu limitu planu (PS-65) pokazywany jest komunikat z linkiem do `/pricing`.
 - [ ] Komunikaty są spójne wizualnie z Angular Material i nie przerywają pracy agresywnie.
 - [ ] Zalogowany Premium user nigdy nie widzi komunikatów upgrade.
@@ -153,12 +180,14 @@ Jako użytkownik Free, chcę widzieć kontekstualne komunikaty o możliwości pr
 **Opis:**
 Jako zalogowany użytkownik (Free lub Premium), chcę widzieć aktualne zużycie kredytów AI i przestrzeni na zdjęcia, aby świadomie zarządzać limitami.
 
+**Stan:** sekcja kredytów AI w `/settings` istnieje (PS-64, `GET /ai/credits`). Brakuje przestrzeni zdjęć — limit przestrzeni nie jest dziś egzekwowany, więc ta część wymaga najpierw decyzji o limicie (do tego czasu nie obiecywać go w ofercie).
+
 **Kryteria akceptacji:**
 - [ ] W ustawieniach konta (`/settings`) dostępna jest sekcja „Użycie" z paskami postępu kredytów AI (draft, obraz) i przestrzeni zdjęć.
 - [ ] Dla Free: widoczna jest liczba zużytych i dostępnych kredytów lifetime oraz zbliżanie się do limitu przestrzeni.
 - [ ] Dla Premium: widoczne jest zużycie miesięczne, data resetu oraz limit przestrzeni.
 - [ ] Dane są pobierane z backendu w czasie rzeczywistym (nie cache'owane dłużej niż 5 minut).
-- [ ] Link „Dokup kredyty" (PS-80) lub „Przejdź na Premium" jest widoczny kontekstowo.
+- [ ] Link „Dokup kredyty" (PS-86) lub „Przejdź na Premium" jest widoczny kontekstowo.
 
 **Zależności:**
 - Wymaga: PS-64
@@ -170,12 +199,15 @@ Jako zalogowany użytkownik (Free lub Premium), chcę widzieć aktualne zużycie
 **Opis:**
 Jako użytkownik lub gość, chcę mieć dostęp do regulaminu subskrypcji, polityki zwrotów i prawa odstąpienia, aby być świadomym swoich praw przed zakupem Premium.
 
+**Stan:** zrealizowane w innej formie niż pierwotny opis (decyzja z `docs/legal-reorganisation.md`): jeden dokument `public/assets/legal/subscription-terms.md` pod trasą `/legal/subscription`, z częściami A (regulamin subskrypcji), B (polityka zwrotów) i C (prawo odstąpienia). Osobne trasy `/legal/refund-policy` i `/legal/withdrawal-rights` nie są potrzebne. Przed startem sprzedaży część C wymaga weryfikacji prawnika.
+
 **Kryteria akceptacji:**
-- [ ] Dostępne są strony: `/legal/subscription-terms` (regulamin subskrypcji), `/legal/refund-policy` (polityka zwrotów), `/legal/withdrawal-rights` (prawo odstąpienia B2C PL/UE).
-- [ ] Treść stron jest renderowana z dokumentów Markdown (analogicznie do istniejących `/legal/terms`, `/legal/privacy`).
-- [ ] Linki do nowych stron prawnych są widoczne w stopce oraz na stronie `/pricing` i w checkoucie.
-- [ ] Strony są publicznie dostępne (bez logowania).
-- [ ] Treść dokumentów jest zsynchronizowana z plikami w `src/assets/legal/`.
+- [x] Regulamin subskrypcji, polityka zwrotów i prawo odstąpienia (B2C PL/UE) są dostępne pod `/legal/subscription` jako jeden dokument.
+- [x] Treść jest renderowana z Markdown (`LegalPageComponent`, analogicznie do `/legal/terms`, `/legal/privacy`).
+- [ ] Link do regulaminu subskrypcji jest widoczny w stopce, na `/pricing` i w checkoucie (zweryfikować w przeglądarce).
+- [x] Strona jest publicznie dostępna (bez logowania).
+- [x] Jedynym źródłem treści jest `public/assets/legal/` (bez duplikatów w `src/assets/legal/` i `docs/legal-documents/`).
+- [ ] Prawnik zweryfikował część C i zgodność z checkoutem; placeholdery danych firmy (`\<NAZWA_FIRMY\>` itd.) uzupełnione (patrz `docs/legel-next-steps.md`).
 
 **Zależności:**
 - Wymaga: PS-63
@@ -187,16 +219,19 @@ Jako użytkownik lub gość, chcę mieć dostęp do regulaminu subskrypcji, poli
 **Opis:**
 Jako użytkownik, chcę otrzymywać automatyczne e-maile związane z subskrypcją i aktywnością konta (koniec trialu, koniec kredytów, winback), aby być informowanym i powracać do aplikacji.
 
+**Stan:** moduł `_shared/email/` (klient Resend) i szablon „Potwierdzenie zakupu” powstały w PS-66, ale w wersji startowej nie są używane (potwierdzenia i faktury wysyła Stripe, a sekretów Resend nie konfigurujemy). PS-72 włącza Resend i dodaje pozostałe scenariusze.
+
 **Kryteria akceptacji:**
-- [ ] Zaimplementowane są szablony i wysyłka e-maili dla scenariuszy: potwierdzenie zakupu, faktura, zbliżający się koniec trialu (24h przed), koniec trialu bez konwersji (winback), wyczerpanie puli AI, nieudana płatność odnowienia (grace period), anulowanie subskrypcji, pomyślne odnowienie.
+- [ ] Zaimplementowane są szablony i wysyłka e-maili dla scenariuszy: potwierdzenie zakupu (własny szablon zamiast e-maila Stripe; wtedy wyłączyć e-maile Stripe), przypomnienie o końcu okresu (BLIK, po jego włączeniu), zbliżający się koniec trialu (24h przed, po PS-68), koniec trialu bez konwersji (winback), wyczerpanie puli AI, nieudana płatność odnowienia (grace period), anulowanie subskrypcji, pomyślne odnowienie.
 - [ ] E-maile zawierają CTA prowadzące do odpowiednich sekcji aplikacji (checkout, `/settings`, `/pricing`).
-- [ ] Wysyłka odbywa się przez Supabase (lub dedykowanego dostawcę e-mail) z Edge Function.
+- [ ] Wysyłka odbywa się przez Resend z Edge Function (`_shared/email/`).
 - [ ] Użytkownik może wypisać się z e-maili marketingowych (zgodnie z istniejącą zgodą marketingową), ale nie z e-maili transakcyjnych.
 - [ ] Każdy typ e-maila ma unikalny identyfikator szablonu wersjonowany w `docs/`.
 
 **Zależności:**
-- Wymaga: PS-67
-- Wymaga: PS-68
+- Wymaga: PS-66 (moduł e-mail, dane płatności)
+- Wymaga: PS-67 (scenariusze anulowania i nieudanej płatności)
+- Wymaga: PS-68 (tylko scenariusze trialu)
 
 ---
 
@@ -214,8 +249,9 @@ Jako administrator, chcę mieć rozszerzony panel admina z podglądem subskrypcj
 - [ ] Audit log zmian statusu subskrypcji jest przechowywany w bazie danych.
 
 **Zależności:**
-- Wymaga: PS-67
-- Wymaga: PS-64
+- Wymaga: PS-66 (tabele `subscriptions`, `subscription_payments`)
+- Wymaga: PS-64 (kredyty AI)
+- Wymaga: PS-67 (tylko ręczna zmiana statusu subskrypcji i anulowanie)
 
 ---
 
@@ -233,7 +269,7 @@ Jako administrator produktu, chcę móc wyświetlać reklamy i linki afiliacyjne
 - [ ] Clickio Consent Manager blokuje reklamy do czasu wyrażenia zgody na cookies.
 
 **Zależności:**
-- Wymaga: PS-67 (weryfikacja roli Premium)
+- Wymaga: PS-66 (rola `premium` ustawiana po zakupie; weryfikacja roli z JWT nie wymaga PS-67)
 
 ---
 
@@ -256,45 +292,45 @@ Jako gość lub użytkownik, chcę trafić do katalogu przepisów przez wyszukiw
 
 ### PS-76: Import przepisu z URL (Premium)
 
+**Status:** zrealizowane jako **PS-97** (tryb „Link URL” w `/recipes/new/assist`, `POST /ai/recipes/draft`, `source: "url"`). PS-97 nie ma jeszcze wpisu w `project-summary.md` — dodać po weryfikacji. Poniższe kryteria opisują stan docelowy po uzgodnieniu z faktycznym zachowaniem: import jest dostępny także dla Free w ramach 3 próbnych kredytów `draft` (nie jest chroniony `premiumRoleMatchGuard`; guard istnieje, ale nie jest podpięty do żadnej trasy).
+
 **Opis:**
-Jako użytkownik Premium, chcę wkleić URL strony z przepisem, aby aplikacja automatycznie wypełniła formularz przepisu, oszczędzając mi czas na ręczne przepisywanie.
+Jako użytkownik Premium (oraz Free w ramach puli próbnej), chcę wkleić URL strony z przepisem, aby aplikacja automatycznie wypełniła formularz przepisu, oszczędzając mi czas na ręczne przepisywanie.
 
 **Kryteria akceptacji:**
-- [ ] W kreatorze przepisu (`/recipes/new/start`) dostępna jest opcja „Importuj z linku" dla Premium i Admin.
-- [ ] Użytkownik wkleja URL — backend pobiera stronę, parsuje przepis przez LLM i zwraca wypełniony formularz (jak `/ai/recipes/draft` dla tekstu).
-- [ ] Obsługiwane są popularne formaty przepisów (schema.org `Recipe`, popularni wydawcy).
-- [ ] Każdy pomyślny import z URL zużywa 1 kredyt AI (typ: `import-url`).
-- [ ] Przy braku kredytów wyświetlany jest modal upgrade/dokupienia kredytów (PS-69).
-- [ ] Użytkownicy Free, którzy próbują skorzystać z funkcji, widzą ekran upgrade.
-- [ ] W przypadku niedostępności URL lub błędu parsowania wyświetlany jest czytelny komunikat błędu.
-- [ ] Trasa jest chroniona przez `premiumRoleMatchGuard` analogicznie do `/recipes/new/assist`.
+- [x] W asyście AI (`/recipes/new/assist`) dostępny jest tryb „Link URL”.
+- [x] Użytkownik wkleja URL — backend pobiera stronę, przekazuje tekst do LLM i zwraca wypełniony formularz (jak `/ai/recipes/draft` dla tekstu).
+- [ ] Obsługiwane są popularne formaty przepisów (schema.org `Recipe`, popularni wydawcy) — poza zakresem PS-97 (opcjonalna optymalizacja).
+- [x] Każdy pomyślny import z URL zużywa 1 kredyt `draft` (etykieta analityczna: `import-url`).
+- [ ] Przy braku kredytów wyświetlany jest modal upgrade/dokupienia kredytów (dialog z PS-64; domknięcie w PS-69, dokupienie w PS-86).
+- [ ] Decyzja produktowa: czy Free po wyczerpaniu 3 importów próbnych widzi ekran upgrade (zalecane) — realizuje PS-69.
+- [x] W przypadku niedostępności URL lub błędu parsowania wyświetlany jest czytelny komunikat błędu.
 
 **Zależności:**
 - Wymaga: PS-64 (kredyty AI)
-- Wymaga: PS-69 (paywall w UI)
-- Wymaga: PS-66 (checkout / rola premium)
+- Współpracuje z: PS-69 (domknięcie paywalla), PS-66 (rola premium po zakupie)
 
 ---
 
 ### PS-77: Import przepisu ze zdjęcia, zrzutu ekranu i skanu (Premium)
 
+**Status:** zrealizowane jako **PS-100** (tryb „Obraz” z 1–5 zdjęciami, `POST /ai/recipes/draft`, `source: "image"`) wraz z PS-92 (schowek) i PS-93 (aparat). Obrazy żyją tylko w pamięci przeglądarki i na czas jednego wywołania modelu (nie trafiają do Storage). Dostępne także dla Free w ramach 3 próbnych kredytów `draft`.
+
 **Opis:**
-Jako użytkownik Premium, chcę wgrać zdjęcie lub skan strony z przepisem, aby aplikacja automatycznie rozpoznała i wypełniła formularz przepisu.
+Jako użytkownik Premium (oraz Free w ramach puli próbnej), chcę wgrać zdjęcie lub skan strony z przepisem, aby aplikacja automatycznie rozpoznała i wypełniła formularz przepisu.
 
 **Kryteria akceptacji:**
-- [ ] W kreatorze przepisu dostępna jest opcja „Importuj ze zdjęcia/skanu" dla Premium i Admin.
-- [ ] Obsługiwane formaty: JPG, PNG, WebP, PDF (jednorazowa strona).
-- [ ] Backend wysyła obraz do LLM (multimodal) i zwraca wypełniony formularz.
-- [ ] Każdy pomyślny import ze zdjęcia/skanu zużywa 1 kredyt AI (typ: `import-image`, droższy niż `import-url`).
-- [ ] Przy nieczytelnym lub błędnym obrazie wyświetlany jest czytelny komunikat błędu z możliwością ponowienia.
-- [ ] Użytkownicy Free widzą ekran upgrade.
-- [ ] Plik jest tymczasowo przechowywany w Supabase Storage (usuwany po parsowaniu lub po 24h).
-- [ ] Maksymalny rozmiar pliku wejściowego: 20 MB.
+- [x] W asyście AI (`/recipes/new/assist`) dostępny jest tryb „Obraz” (wiele zdjęć: wybór pliku, schowek, aparat).
+- [x] Obsługiwane formaty: JPG, PNG, WebP (PDF poza zakresem; skan to zdjęcie lub zrzut strony).
+- [x] Backend wysyła obrazy do LLM (multimodal) i zwraca wypełniony formularz.
+- [x] Import (niezależnie od liczby zdjęć, maks. 5) zużywa 1 kredyt `draft` (etykieta analityczna: `import-image`); osobny, droższy kredyt nie jest planowany bez zmiany modelu z PS-64.
+- [x] Przy nieczytelnym lub błędnym obrazie wyświetlany jest czytelny komunikat błędu z możliwością ponowienia.
+- [x] Limity rozmiaru: 10 MB na plik, 15 MB łącznie (PS-100); wcześniejszy zapis „20 MB” i „plik w Storage przez 24h” nie obowiązują.
+- [ ] Przy braku kredytów wyświetlany jest modal upgrade (PS-69).
 
 **Zależności:**
 - Wymaga: PS-64 (kredyty AI)
-- Wymaga: PS-69 (paywall w UI)
-- Wymaga: PS-66
+- Współpracuje z: PS-69 (domknięcie paywalla), PS-66 (rola premium po zakupie)
 
 ---
 
@@ -306,12 +342,12 @@ Jako użytkownik Premium, po imporcie z URL/zdjęcia chcę, aby asystent AI zapr
 **Kryteria akceptacji:**
 - [ ] Po imporcie URL/zdjęcia formularz przepisu wyświetla wynik parsowania z możliwością uruchomienia „Porządkowania AI".
 - [ ] „Porządkowanie" wywołuje LLM w celu: normalizacji jednostek składników, weryfikacji kolejności kroków, wyodrębnienia wskazówek.
-- [ ] Akcja kosztuje 1 kredyt AI (typ: `assist-cleanup`) i jest dostępna wyłącznie dla Premium/Admin.
+- [ ] Akcja kosztuje 1 kredyt `draft` (etykieta analityczna: `assist-cleanup`) i jest dostępna wyłącznie dla Premium/Admin.
 - [ ] Wynik jest prezentowany jako propozycja do zaakceptowania lub odrzucenia przez użytkownika.
 - [ ] Użytkownik może edytować wynik przed zapisem.
 
 **Zależności:**
-- Wymaga: PS-76 lub PS-77 (import poprzedzający)
+- Wymaga: import poprzedzający (PS-97 lub PS-100; w tej numeracji PS-76 / PS-77)
 - Wymaga: PS-64 (kredyty AI)
 
 ---
@@ -321,11 +357,13 @@ Jako użytkownik Premium, po imporcie z URL/zdjęcia chcę, aby asystent AI zapr
 **Opis:**
 Jako użytkownik Premium tworzący lub edytujący przepis, chcę otrzymać sugestie kategorii, tagów, kuchni, diety i trudności generowane przez AI, aby szybciej i spójniej klasyfikować przepisy.
 
+> **Uwaga:** metadane (kategoria, tagi, kuchnia, dieta, trudność) są już zwracane razem z draftem AI (PS-91). Ta historyjka dotyczy wyłącznie przepisów tworzonych ręcznie lub edytowanych, bez wcześniejszego importu AI.
+
 **Kryteria akceptacji:**
 - [ ] W formularzu przepisu dla Premium/Admin dostępny jest przycisk „Zasugeruj metadane AI".
 - [ ] Akcja wysyła nazwę, opis i składniki przepisu do LLM i zwraca propozycje: kategorii, tagów (maks. 5), kuchni, diety, trudności.
 - [ ] Sugestie są wyświetlane obok odpowiednich pól formularza jako chipy do zaakceptowania/odrzucenia.
-- [ ] Każde wywołanie sugestii metadanych zużywa 1 kredyt AI (typ: `metadata-suggest`).
+- [ ] Każde wywołanie sugestii metadanych zużywa 1 kredyt `draft` (etykieta analityczna: `metadata-suggest`).
 - [ ] Wynik nie jest automatycznie zapisywany — użytkownik zatwierdza każdą sugestię oddzielnie.
 - [ ] Użytkownicy Free nie widzą przycisku (lub widzą z zamkniętą ikoną Premium).
 
@@ -404,7 +442,7 @@ Jako użytkownik Premium, chcę aby lista zakupów automatycznie scalała te sam
 
 **Zależności:**
 - Wymaga: PS-66
-- Wymaga: PS-64 (normalizacja składników musi być dostępna)
+- Wymaga: istniejącej normalizacji składników (`recipe_normalized_ingredients`, niezależna od PS-64)
 
 ---
 
@@ -471,7 +509,7 @@ Jako użytkownik Free lub Premium, który wyczerpał pulę AI, chcę jednorazowo
 ### PS-87: Eksport przepisu i całej biblioteki
 
 **Opis:**
-Jako zalogowany użytkownik, chcę wyeksportować pojedynczy przepis do Markdown lub PDF, a jako użytkownik Premium — wyeksportować całą bibliotekę, aby mieć kopię zapasową swoich danych.
+Jako zalogowany użytkownik, chcę wyeksportować pojedynczy przepis do Markdown (PDF opcjonalnie, w drugiej kolejności — wymaga dodatkowej biblioteki lub funkcji renderującej), a jako użytkownik Premium — wyeksportować całą bibliotekę, aby mieć kopię zapasową swoich danych.
 
 **Kryteria akceptacji:**
 - [ ] Wszyscy zalogowani użytkownicy mogą wyeksportować pojedynczy przepis do formatu Markdown (przycisk w widoku szczegółów).
@@ -516,7 +554,7 @@ Jako użytkownik Premium chcący przenieść dużą kolekcję przepisów (dziesi
 
 **Zależności:**
 - Wymaga: PS-86 (pakiety add-on)
-- Wymaga: PS-77 (import ze zdjęcia — wspólna infrastruktura parsowania)
+- Wymaga: PS-97 / PS-100 (import z linku i zdjęć — wspólna infrastruktura parsowania; w tej numeracji PS-76 / PS-77)
 
 ---
 
@@ -548,43 +586,49 @@ Poniżej przedstawiono graf zależności pomiędzy historyjkami w kolejności im
 | **PS-63** Strona cennika | — |
 | **PS-64** Model kredytów AI | — |
 | **PS-65** Limity planu Free | PS-63 |
-| **PS-66** Checkout i płatności | PS-63, PS-64 |
-| **PS-67** Zarządzanie subskrypcją | PS-66 |
+| **PS-66** Checkout i płatności | PS-63, PS-64, PS-71 (regulamin przed sprzedażą) |
+| **PS-67** Zarządzanie subskrypcją (etap A: Customer Portal) | PS-66 |
 | **PS-68** Trial 7-dniowy | PS-66, PS-64 |
 | **PS-69** Komunikaty paywall w UI | PS-64, PS-65, PS-63 |
 | **PS-70** Ekran zużycia kredytów | PS-64 |
 | **PS-71** Strony prawne subskrypcji | PS-63 |
-| **PS-72** Maile transakcyjne | PS-67, PS-68 |
-| **PS-73** Rozszerzenie panelu admina | PS-67, PS-64 |
-| **PS-74** Reklamy i afiliacja | PS-67 |
+| **PS-72** Maile transakcyjne | PS-66, PS-67, PS-68 (część) |
+| **PS-73** Rozszerzenie panelu admina | PS-66, PS-64 |
+| **PS-74** Reklamy i afiliacja | PS-66 |
 | **PS-75** Strony SEO kategorii | — |
-| **PS-76** Import z URL | PS-64, PS-69, PS-66 |
-| **PS-77** Import ze zdjęcia/skanu | PS-64, PS-69, PS-66 |
+| **PS-76** Import z URL (zrealizowane jako PS-97) | PS-64 |
+| **PS-77** Import ze zdjęcia/skanu (zrealizowane jako PS-100) | PS-64 |
 | **PS-78** Asystowane porządkowanie importu | PS-76 lub PS-77, PS-64 |
 | **PS-79** Sugestie metadanych AI | PS-64, PS-66 |
 | **PS-80** Przeliczanie porcji | PS-66 |
 | **PS-81** Historia szkiców AI | PS-64, PS-66 |
 | **PS-82** Priorytet jobów AI dla Premium | PS-66, PS-67 |
-| **PS-83** Zaawansowana lista zakupów | PS-66, PS-64 |
+| **PS-83** Zaawansowana lista zakupów | PS-66 |
 | **PS-84** Planer tygodniowy | PS-83, PS-66 |
 | **PS-85** Konto rodzinne | PS-67, PS-84 |
 | **PS-86** Pakiety kredytów (add-on) | PS-66, PS-64, PS-63 |
 | **PS-87** Eksport biblioteki | PS-66 |
 | **PS-88** Wykrywanie duplikatów | — |
-| **PS-89** Masowy import (add-on) | PS-86, PS-77 |
+| **PS-89** Masowy import (add-on) | PS-86, PS-97/PS-100 |
 | **PS-90** Zachęty UGC | PS-64, PS-70 |
 
 ### Bloki implementacyjne (sugerowana kolejność sprintów)
 
+Szczegółowy, krok po kroku plan uruchomienia płatności (kroki programistyczne i konfiguracyjne) oraz kolejność prac po starcie: [`premium-users-payments-launch-plan.md`](./premium-users-payments-launch-plan.md).
+
 ```
 Sprint 1 — Pierwsza złotówka (blokujące):
-  PS-63 → PS-64 → PS-65 → PS-66 → PS-67 → PS-68 → PS-69 → PS-70 → PS-71
+  PS-63 → PS-64 → PS-65 → PS-66 (kod gotowy)  +  PS-71 (treści prawne)  +  konfiguracja Stripe/Supabase
 
-Sprint 2 — Operacje i komunikacja:
-  PS-72 → PS-73 → PS-74 → PS-75
+Sprint 2 — Pierwsze tygodnie po starcie (retencja i bezpieczeństwo):
+  PS-67 (etap A: Customer Portal) → PS-72 (e-maile cyklu życia) → PS-69 + PS-70 (domknięcie paywalla i użycia)
+  → PS-73 (panel admina) → PS-68 (trial) → BLIK (osobna historyjka w PS-66 deferred-features)
 
-Sprint 3 — Import Premium (skok ARPU):
-  PS-76 → PS-77 → PS-78 → PS-79 → PS-80 → PS-81 → PS-82 → PS-86
+Sprint 3 — Wartość Premium (skok ARPU):
+  PS-78 → PS-79 → PS-80 → PS-81 → PS-82 → PS-86 (PS-76 i PS-77 są już zrealizowane jako PS-97 i PS-100)
+
+Sprint 3b — Ruch i monetyzacja uzupełniająca:
+  PS-74 → PS-75
 
 Sprint 4 — Planer, zakupy, rodzina:
   PS-83 → PS-84 → PS-85

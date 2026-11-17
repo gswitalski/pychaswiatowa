@@ -2,20 +2,22 @@
 
 > **User Story:** PS-66 — Checkout i płatności (subskrypcja Premium)
 > **Data:** wrzesień 2026
-> **Środowisko docelowe:** Firebase Hosting (frontend) + Supabase Cloud (backend) + Stripe + Resend
+> **Środowisko docelowe:** Firebase Hosting (frontend) + Supabase Cloud (backend) + Stripe
+>
+> **Aktualizacja (listopad 2026):** wersja startowa płatności jest uproszczona — **tylko karta** (2 ceny cykliczne), **bez Resend** (potwierdzenia i faktury wysyła Stripe), **bez trialu**, domena produkcyjna `https://pychaswiatowa.pl`. Migracje i deploy funkcji `checkout`, `billing`, `payments-webhook` wykonuje CI (`.github/workflows/main-deploy.yml`). Aktualna, uporządkowana lista kroków: `docs/results/new-features/epics/premium-users/premium-users-payments-launch-plan.md`. Poniższy dokument pozostaje szczegółową referencją; fragmenty o BLIK i Resend dotyczą etapu po starcie.
 
 ---
 
 ## 1. Podsumowanie
 
-PS-66 wymaga konfiguracji dwóch zewnętrznych usług (operator płatności Stripe, wysyłka e-maili Resend), migracji bazy, nowych sekretów Edge Functions, zadania `pg_cron` oraz uzupełnienia treści prawnych. Deploy kodu (frontend i Edge Functions) wykonuje GitHub Actions — poniżej wyłącznie kroki ręczne.
+PS-66 wymaga konfiguracji operatora płatności Stripe (wysyłka e-maili Resend jest odłożona na po starcie), migracji bazy, nowych sekretów Edge Functions, zadania `pg_cron` oraz uzupełnienia treści prawnych. Deploy kodu (frontend i Edge Functions) wykonuje GitHub Actions — poniżej wyłącznie kroki ręczne.
 
 | Obszar | Wymagane działanie |
 |---|---|
 | Konto i konfiguracja Stripe | Rejestracja, weryfikacja firmy, produkty/ceny, BLIK, faktury, webhook — **ręcznie** |
-| Konto Resend | Domena nadawcy (DNS), klucz API — **ręcznie** |
+| Konto Resend | **Odłożone na po starcie** (PS-72): domena nadawcy (DNS), klucz API |
 | Baza danych | Migracja `create_billing_subscriptions` — **ręcznie przed deployem funkcji** |
-| Secrets Edge Functions | 11 nowych zmiennych — **ręcznie przed deployem funkcji** |
+| Secrets Edge Functions | 6 zmiennych w wersji startowej (bez BLIK i Resend) — **ręcznie przed deployem funkcji** |
 | `supabase/config.toml` | `verify_jwt = false` dla `payments-webhook` (zmiana w kodzie, patrz krok 7) |
 | Supabase Cron | Nowe zadanie `billing_expire_subscriptions` — **ręcznie po migracji** |
 | Treści prawne | Finalny regulamin subskrypcji — **ręcznie przed startem sprzedaży** |
@@ -33,7 +35,7 @@ PS-66 wymaga konfiguracji dwóch zewnętrznych usług (operator płatności Stri
 
 1. Zarejestrować konto na stripe.com; kraj: Polska, waluta rozliczeniowa: PLN.
 2. Uzupełnić dane firmy/działalności i konto bankowe do wypłat (weryfikacja KYC/KYB — wymagana dla trybu live).
-3. W `Settings → Payment methods` włączyć: **Karty** oraz **BLIK**. BLIK może wymagać osobnej aktywacji — sprawdzić dostępność dla PLN. Jeśli BLIK nie jest dostępny, wstrzymać wdrożenie wariantu BLIK (ukryć opcję w UI).
+3. W `Settings → Payment methods` włączyć: **Karty**. BLIK (osobna aktywacja, dostępność dla PLN do sprawdzenia) włączyć dopiero po wdrożeniu przypomnień o końcu okresu; w UI opcja BLIK jest ukryta (`CHECKOUT_ENABLED_PAYMENT_METHODS`).
 4. Ustawić nazwę sprzedawcy widoczną na wyciągu (`statement descriptor`, np. `PYCHASWIATOWA`).
 5. Do momentu zakończenia testów pracować wyłącznie w **trybie testowym** (osobne klucze i Price ID niż w live).
 
@@ -43,18 +45,18 @@ PS-66 wymaga konfiguracji dwóch zewnętrznych usług (operator płatności Stri
 
 **Typ:** Konfiguracja Stripe (Product catalog)
 
-Utworzyć produkt „PychaŚwiatowa Premium” z czterema cenami (PLN, `tax behavior = inclusive` — cena brutto zawiera VAT, zgodnie z cennikiem PS-63):
+Utworzyć produkt „PychaŚwiatowa Premium” z cenami (PLN, `tax behavior = inclusive` — cena brutto zawiera VAT, zgodnie z cennikiem PS-63):
 
 | Wariant | Kwota | Typ ceny | Używana dla |
 |---|---|---|---|
 | Miesięczna cykliczna | 24,00 zł | Recurring, co 1 miesiąc | Karta |
 | Roczna cykliczna | 169,00 zł | Recurring, co 1 rok | Karta |
-| Miesięczna jednorazowa | 24,00 zł | One-time | BLIK |
-| Roczna jednorazowa | 169,00 zł | One-time | BLIK |
+| Miesięczna jednorazowa | 24,00 zł | One-time | BLIK — **po starcie** |
+| Roczna jednorazowa | 169,00 zł | One-time | BLIK — **po starcie** |
 
-Zanotować cztery identyfikatory `price_...` — są potrzebne w kroku 6. Kwoty muszą być zgodne z `pricing.config.ts` (2400 i 16900 groszy); backend weryfikuje kwotę w webhooku.
+W wersji startowej wystarczą dwie ceny cykliczne (miesięczna, roczna). Zanotować ich identyfikatory `price_...` — są potrzebne w kroku 6. Kwoty muszą być zgodne z `pricing.config.ts` (2400 i 16900 groszy); backend weryfikuje kwotę w webhooku.
 
-> Przed startem sprzedaży zweryfikować ostateczne ceny (`PS-62` — ramy 19–29 zł / miesiąc i 149–199 zł / rok). Zmiana ceny wymaga nowych Price ID (Stripe nie edytuje kwoty istniejącej ceny) oraz aktualizacji `pricing.config.ts`.
+> Przed startem sprzedaży zweryfikować ostateczne ceny (ramy cenowe z analizy epiku: 19–29 zł / miesiąc i 149–199 zł / rok; decyzja startowa: 24 zł / 169 zł). Zmiana ceny wymaga nowych Price ID (Stripe nie edytuje kwoty istniejącej ceny) oraz aktualizacji `pricing.config.ts`.
 
 ---
 
@@ -64,7 +66,7 @@ Zanotować cztery identyfikatory `price_...` — są potrzebne w kroku 6. Kwoty 
 
 1. `Invoice settings`: dane sprzedawcy (nazwa, adres, NIP), prefiks numeracji (np. `PYCH`), stopka faktury.
 2. Upewnić się, że faktury są generowane i dostępne przez `hosted_invoice_url` / PDF (wymagane przez aplikację).
-3. `Customer emails`: **wyłączyć** automatyczne e-maile „Successful payments” i „Refunds” dla klienta — potwierdzenie zakupu wysyła aplikacja (Resend), aby uniknąć duplikatów.
+3. `Customer emails`: w wersji startowej **włączyć** e-maile „Successful payments” i „Refunds” dla klienta — to jedyne potwierdzenie zakupu, dopóki nie działa Resend (PS-72). Po wdrożeniu własnych e-maili wyłączyć je, aby uniknąć duplikatów.
 4. Włączyć e-maile o nieudanych płatnościach tylko jeśli chcesz, żeby Stripe informował klienta przed wdrożeniem PS-67 (domyślnie: wyłączone — komunikacja będzie po stronie aplikacji).
 5. **Konsultacja z księgową:** potwierdzić, że faktura/potwierdzenie ze Stripe jest wystarczające jako dokument sprzedaży B2C (paragon/faktura, zwolnienie z kasy fiskalnej dla sprzedaży online, KSeF). Wynik decyduje o konieczności wcześniejszego wdrożenia integracji z systemem fakturowym (patrz dokument funkcjonalności odłożonych).
 
@@ -109,13 +111,15 @@ Sekret `STRIPE_WEBHOOK_SECRET` powstaje dopiero w kroku 9 (po pierwszym deployu 
 supabase secrets set STRIPE_SECRET_KEY=rk_test_...
 supabase secrets set STRIPE_PRICE_PREMIUM_MONTHLY_RECURRING=price_...
 supabase secrets set STRIPE_PRICE_PREMIUM_YEARLY_RECURRING=price_...
-supabase secrets set STRIPE_PRICE_PREMIUM_MONTHLY_ONETIME=price_...
-supabase secrets set STRIPE_PRICE_PREMIUM_YEARLY_ONETIME=price_...
-supabase secrets set APP_BASE_URL=https://pychaswiatowa.web.app
+# po starcie (BLIK):
+# supabase secrets set STRIPE_PRICE_PREMIUM_MONTHLY_ONETIME=price_...
+# supabase secrets set STRIPE_PRICE_PREMIUM_YEARLY_ONETIME=price_...
+supabase secrets set APP_BASE_URL=https://pychaswiatowa.pl
 supabase secrets set SUBSCRIPTION_TERMS_VERSION=subscription-terms-pl-v1
 supabase secrets set BILLING_EXPIRY_GRACE_DAYS=3
-supabase secrets set RESEND_API_KEY=re_...
-supabase secrets set EMAIL_FROM="PychaŚwiatowa <no-reply@twojadomena.pl>"
+# po starcie (PS-72, Resend):
+# supabase secrets set RESEND_API_KEY=re_...
+# supabase secrets set EMAIL_FROM="PychaŚwiatowa <no-reply@pychaswiatowa.pl>"
 # po kroku 9:
 supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 ```
@@ -124,11 +128,11 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 |---|---|
 | `STRIPE_SECRET_KEY` | Restricted key (test → live przy uruchomieniu produkcji) |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret endpointu webhooka |
-| `STRIPE_PRICE_*` (4 zmienne) | Identyfikatory cen z kroku 2 |
+| `STRIPE_PRICE_*_RECURRING` (2 zmienne) | Identyfikatory cen z kroku 2 (ceny `*_ONETIME` dla BLIK dopiero po starcie) |
 | `APP_BASE_URL` | Adres frontendu; na dev/lokalnie inny niż na produkcji |
 | `SUBSCRIPTION_TERMS_VERSION` | Wersja regulaminu zapisywana jako dowód akceptacji |
 | `BILLING_EXPIRY_GRACE_DAYS` | Dni łaski przed wygaszeniem Premium |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Wysyłka e-maili |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Wysyłka e-maili — po starcie (PS-72) |
 
 Dla środowiska deweloperskiego i produkcyjnego ustawić **osobne** zestawy (dev = tryb testowy Stripe, produkcja = tryb live). Jeśli deploy funkcji odbywa się z sekretami trzymanymi także w GitHub Secrets/Environments, uzupełnić je zgodnie z istniejącą praktyką projektu.
 
@@ -152,7 +156,7 @@ Zmiana jest częścią kodu (deploy automatyczny). Kroki ręczne: po pierwszym d
 **Typ:** Supabase Migration (SQL)
 **Kiedy:** **Przed** deployem Edge Functions korzystających z nowych tabel
 
-Plik: `supabase/migrations/<timestamp>_create_billing_subscriptions.sql` (zawartość: patrz plan API, sekcje 7–8).
+Plik: `supabase/migrations/20260930224000_create_billing_subscriptions.sql`. Migrację stosuje CI przy merge do `main` (job `deploy-backend`); ręcznie `supabase db push` tylko dla środowiska dev lub gdy CI nie zadziała. Przed pierwszym merge sprawdzić `supabase migration list --linked`.
 
 ```bash
 supabase db push
@@ -212,7 +216,7 @@ Osobny endpoint webhooka (i osobny signing secret) należy utworzyć dla trybu l
 **Typ:** Supabase Cron (`pg_cron`)
 **Kiedy:** Po migracji
 
-Wygaszanie subskrypcji po upływie okresu + dni łaski (siatka bezpieczeństwa do czasu PS-67):
+Wygaszanie subskrypcji po upływie okresu + dni łaski (w wersji startowej jedyny mechanizm wygaszania; Customer Portal z PS-67 nie zmienia tego zadania):
 
 ```sql
 select cron.unschedule(jobid)
@@ -254,8 +258,8 @@ Weryfikacja: `select * from cron.job where jobname = 'billing-expire-subscriptio
 **Typ:** Praca merytoryczna (nie kod)
 **Kiedy:** Przed przełączeniem na tryb live
 
-1. Uzupełnić `docs/legal-documents` → sync do `public/assets/legal` treść **Regulaminu subskrypcji** (`/legal/subscription`, obecnie placeholder). Musi zawierać: cenę i okresy, automatyczne odnowienie kartą, BLIK jako płatność jednorazową bez odnowienia, sposób rezygnacji, zgodę na natychmiastowe świadczenie treści cyfrowych i utratę prawa odstąpienia po 14 dniach, dane sprzedawcy.
-2. Zaktualizować politykę prywatności o podprocesorów: Stripe (płatności) i Resend (e-mail).
+1. Uzupełnić i zweryfikować **Regulamin subskrypcji** w `public/assets/legal/subscription-terms.md` (`/legal/subscription`; jedyne źródło treści). Musi zawierać: cenę i okresy, automatyczne odnowienie kartą, sposób rezygnacji, zgodę na natychmiastowe świadczenie treści cyfrowych i utratę prawa odstąpienia, dane sprzedawcy (uzupełnić placeholdery). Fragment o BLIK dodać razem z uruchomieniem BLIK.
+2. Zaktualizować politykę prywatności o podprocesora Stripe (płatności); Resend (e-mail) dopisać przy wdrożeniu PS-72.
 3. Ustawić `SUBSCRIPTION_TERMS_VERSION` na wersję odpowiadającą opublikowanemu regulaminowi; przy każdej zmianie treści zwiększyć wersję.
 4. Zalecana weryfikacja przez prawnika (prawo konsumenckie, treści cyfrowe).
 
@@ -271,12 +275,12 @@ Wykonać najpierw na środowisku dev (Stripe test), następnie krótki smoke tes
 - [ ] `POST /checkout/sessions` bez zaznaczonych zgód zwraca `400`
 - [ ] `POST /checkout/sessions` dla `admin` zwraca `403`, dla aktywnego `premium` — `409`
 - [ ] Płatność kartą testową `4242 4242 4242 4242` → webhook: `app_role = premium` w `raw_app_meta_data`, wiersz w `subscriptions` (data startu, `current_period_end`) i `subscription_payments` (ID transakcji)
-- [ ] Płatność BLIK (kod testowy Stripe) → `auto_renew = false`, `current_period_end` = start + wybrany okres
+- [ ] (po starcie) Płatność BLIK (kod testowy Stripe) → `auto_renew = false`, `current_period_end` = start + wybrany okres
 - [ ] Karta odrzucona `4000 0000 0000 0002` → brak zmiany roli, komunikat po stronie Stripe, możliwość ponowienia
 - [ ] Ponowne wysłanie tego samego zdarzenia (`stripe events resend`) nie tworzy duplikatu płatności
 - [ ] Webhook z niepoprawnym podpisem zwraca `400`
 - [ ] Pula kredytów AI po zakupie: Premium (20 draft / 5 image), `limit_type = monthly`
-- [ ] E-mail „Potwierdzenie zakupu” dotarł, zawiera plan, kwotę, datę i link do faktury
+- [ ] E-mail ze Stripe (potwierdzenie/faktura) dotarł; własny e-mail „Potwierdzenie zakupu” dopiero po PS-72
 - [ ] `GET /billing/payments` zwraca płatność z `document_url`, tylko dla właściciela
 - [ ] `GET /me` zwraca `subscription_status = 'active'` i `current_period_end`
 
@@ -306,7 +310,7 @@ Wykonać najpierw na środowisku dev (Stripe test), następnie krótki smoke tes
 | Edge Function `me` | ✅ Istniejąca | Rozszerzenie odpowiedzi |
 | Edge Function `admin` | ✅ Istniejąca | Zmiana importu logiki synchronizacji kredytów |
 | Konto Stripe (tryb test / live) | ❌ Do utworzenia | Kroki 1–4, 9 |
-| Konto Resend + domena | ❌ Do utworzenia | Krok 5 (sekcja 6) |
+| Konto Resend + domena | ⏸ Po starcie (PS-72) | Krok 5 (sekcja 6) |
 | Secrets (`STRIPE_*`, `RESEND_*` itd.) | ❌ Do ustawienia | Krok 6 |
 | Migracja `create_billing_subscriptions` | ❌ Do zastosowania | Krok 8 |
 | Finalny regulamin subskrypcji | ❌ Do przygotowania | Krok 11 |
@@ -317,7 +321,7 @@ Wykonać najpierw na środowisku dev (Stripe test), następnie krótki smoke tes
 
 | Ryzyko | Prawdopodobieństwo | Mitygacja |
 |---|---|---|
-| BLIK niedostępny lub wymaga dodatkowej weryfikacji na koncie Stripe | Średnie | Sprawdzić w kroku 1; awaryjnie wdrożyć tylko kartę (ukrycie opcji BLIK w UI) |
+| BLIK niedostępny lub wymaga dodatkowej weryfikacji na koncie Stripe | Średnie | Wersja startowa jest tylko kartą; BLIK sprawdzić po starcie |
 | Webhook nie dociera (zły URL/sekret, włączone `verify_jwt`) | Średnie | Krok 9, wysłanie zdarzenia testowego, monitoring `payment_webhook_events` |
 | Użytkownik zapłacił, ale rola nie została ustawiona (błąd RPC) | Niskie | Stripe ponawia webhook do 3 dni; monitorować zdarzenia o statusie `failed`; ręczna zmiana roli w panelu admina jako awaryjna |
 | Niezgodność ceny w Stripe i `pricing.config.ts` | Niskie | Weryfikacja kwoty w webhooku; testowa płatność przed startem |

@@ -368,7 +368,7 @@ Pełna obsługa (anulowanie, `past_due`, e-maile grace period, portal klienta) �
 | `STRIPE_PRICE_PREMIUM_YEARLY_RECURRING` | Price ID: 169 zł / rok, cykliczna (karta) |
 | `STRIPE_PRICE_PREMIUM_MONTHLY_ONETIME` | Price ID: 24 zł, jednorazowa (BLIK) |
 | `STRIPE_PRICE_PREMIUM_YEARLY_ONETIME` | Price ID: 169 zł, jednorazowa (BLIK) |
-| `APP_BASE_URL` | Bazowy URL frontendu (`https://pychaswiatowa.web.app`) |
+| `APP_BASE_URL` | Bazowy URL frontendu (produkcja: `https://pychaswiatowa.pl`) |
 | `SUBSCRIPTION_TERMS_VERSION` | Bieżąca wersja regulaminu subskrypcji (allowlista) |
 | `BILLING_EXPIRY_GRACE_DAYS` | Dni łaski przed wygaszeniem (domyślnie `3`) |
 | `RESEND_API_KEY` | Klucz API Resend |

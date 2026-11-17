@@ -39,17 +39,17 @@ describe('Komponenty prezentacyjne checkoutu', () => {
 
         expect(fixture.nativeElement.textContent).toContain('Roczny');
         expect(fixture.nativeElement.textContent).toContain('Miesięczny');
-        expect(fixture.nativeElement.textContent).toContain('Oszczędzasz ~17%');
+        expect(fixture.nativeElement.textContent).toContain('Oszczędzasz ~41%');
     });
 
-    it('powinien wyświetlić kartę i BLIK', () => {
+    it('powinien wyświetlić tylko kartę, dopóki BLIK jest wyłączony w checkoucie', () => {
         const fixture = TestBed.createComponent(PaymentMethodSelectorComponent);
         fixture.componentRef.setInput('selectedMethod', 'card');
         fixture.detectChanges();
 
         expect(fixture.nativeElement.textContent).toContain('Karta płatnicza');
-        expect(fixture.nativeElement.textContent).toContain('BLIK');
-        expect(fixture.nativeElement.textContent).toContain('bez automatycznego odnowienia');
+        expect(fixture.nativeElement.textContent).toContain('Odnawia się automatycznie');
+        expect(fixture.nativeElement.textContent).not.toContain('BLIK');
     });
 
     it('powinien wskazać brakujące zgody', () => {

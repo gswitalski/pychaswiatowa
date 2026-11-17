@@ -2,7 +2,7 @@
 
 ## 1. Przegląd
 
-Widok PS-65 egzekwuje limit pozycji w „Moim planie" dla użytkowników Free. Zmiany obejmują: nowy dialog informujący o przekroczeniu limitu, licznik pozycji w nagłówku drawera „Mój plan" (tylko dla roli `user`), obsługę błędu `422 PLAN_LIMIT_EXCEEDED_FREE` w `MyPlanService` oraz aktualizację konfiguracji cennika (limit Free z 7 na 3).
+Widok PS-65 egzekwuje limit pozycji w „Moim planie" dla użytkowników Free. Zmiany obejmują: nowy dialog informujący o przekroczeniu limitu, licznik pozycji w nagłówku drawera „Mój plan" (tylko dla roli `user`), obsługę błędu `422 PLAN_LIMIT_EXCEEDED_FREE` w `MyPlanService` oraz aktualizację konfiguracji cennika (limit Free = 7, spójny z `PLAN_LIMIT_FREE`).
 
 ## 2. Routing widoku
 
@@ -23,7 +23,7 @@ MyPlanService (modyfikacja)
   └── otwiera PlanLimitExceededDialogComponent po 422 PLAN_LIMIT_EXCEEDED_FREE
 
 pricing.config.ts (modyfikacja)
-  └── planItems: 7 → 3
+  └── planItems: 7
 ```
 
 ## 4. Szczegóły komponentów
@@ -57,10 +57,10 @@ pricing.config.ts (modyfikacja)
 
 ### `pricing.config.ts` (modyfikacja)
 
-- **Opis:** Konfiguracja cennika. Zaktualizowano limit Free z 7 na 3 i tekst wiersza tabeli.
+- **Opis:** Konfiguracja cennika. Limit Free = 7 (źródło: `PRICING_CONFIG.limits.free.planItems`; wiersz tabeli liczony z konfiguracji).
 - **Zmienione pola:**
-  - `PRICING_CONFIG.limits.free.planItems: 3`
-  - `PRICING_FEATURE_CATEGORIES` — wiersz „Mój plan": `free: '3 pozycje'`
+  - `PRICING_CONFIG.limits.free.planItems: 7`
+  - `PRICING_FEATURE_CATEGORIES` — wiersz „Mój plan": `free: '7 pozycji'`
   - `PLAN_BENEFITS.free` — zaktualizuje się automatycznie (używa `PRICING_CONFIG.limits.free.planItems`)
 
 ## 5. Typy
@@ -97,7 +97,7 @@ export interface PlanLimitExceededDialogData {
 
 - Użytkownik Free klika „Dodaj do planu" gdy limit osiągnięty → API zwraca `422` → serwis otwiera `PlanLimitExceededDialogComponent` → spinner znika (`finalize`), brak snackbara.
 - Dialog: „Zamknij" → zamknięcie; „Przejdź na Premium →" → nawigacja `/pricing` i zamknięcie.
-- Użytkownik Free widzi licznik „X / 3 pozycji" w nagłówku drawera; kolor warn gdy `X >= 3`.
+- Użytkownik Free widzi licznik „X / 7 pozycji" w nagłówku drawera; kolor warn gdy `X >= 7`.
 - Użytkownicy `premium` / `admin`: brak licznika w nagłówku, istniejące zachowanie bez zmian.
 
 ## 9. Warunki i walidacja
@@ -119,7 +119,7 @@ export interface PlanLimitExceededDialogData {
 
 ## 11. Kroki implementacji
 
-1. Zaktualizować `src/app/pages/pricing/pricing.config.ts`: `planItems: 7 → 3`, tekst wiersza tabeli `'7 pozycji' → '3 pozycje'`
+1. Zaktualizować `src/app/pages/pricing/pricing.config.ts`: `planItems: 7` (wiersz tabeli liczony z konfiguracji)
 2. Utworzyć `src/app/shared/components/plan-limit-exceeded-dialog/plan-limit-exceeded-dialog.component.ts` — interfejs `PlanLimitExceededDialogData`, komponent `pych-plan-limit-exceeded-dialog`
 3. Utworzyć `plan-limit-exceeded-dialog.component.html` — dialog z ikoną, tytułem, treścią dynamiczną i przyciskami
 4. Utworzyć `plan-limit-exceeded-dialog.component.scss` — style ikony i treści
