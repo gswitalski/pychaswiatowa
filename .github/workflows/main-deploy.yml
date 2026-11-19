@@ -42,11 +42,64 @@ jobs:
       - name: Run Deno tests
         run: deno test --allow-all --unstable --node-modules-dir=none supabase/functions
 
-  # Job 3: Wdrożenie backendu (Supabase)
+  # Job 3: Lint frontendu. Równolegle z testami; wdrożenie czeka na wynik.
+  lint:
+    name: 🔍 Run Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+  # Job 4: Produkcyjny build frontendu. Plik środowiska jest poza gitem,
+  # więc CI podstawia wartości zastępcze — kompilacja nie wymaga sekretów.
+  build:
+    name: 🏗️ Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write placeholder production environment
+        run: |
+          cat > src/environments/environment.production.ts << EOF
+          export const environment = {
+              production: true,
+              supabase: {
+                  url: 'https://placeholder.supabase.co',
+                  anonKey: 'placeholder-anon-key'
+              }
+          };
+          EOF
+
+      - name: Build Angular app
+        run: npm run build -- --configuration production
+
+  # Job 5: Wdrożenie backendu (Supabase)
   deploy-backend:
     name: 🚀 Deploy Backend (Supabase)
     runs-on: ubuntu-latest
-    needs: [test, test-deno]
+    needs: [test, test-deno, lint, build]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -109,7 +162,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-  # Job 4: Wdrożenie frontendu (Firebase)
+  # Job 6: Wdrożenie frontendu (Firebase)
   deploy-frontend:
     name: 🌐 Deploy Frontend (Firebase)
     runs-on: ubuntu-latest
