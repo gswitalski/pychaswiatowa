@@ -17,7 +17,7 @@
    - **Adres:** ul. Jasia i Małgosi 8, 55-002 Kamieniec Wrocławski, Polska
    - **NIP:** 8991394492
    - **E-mail kontaktowy:** kontakt@pychaswiatowa.pl
-2. Dodatkowe informacje o wydawcy mogą być prezentowane na stronie `/legal/publisher`.
+2. Dodatkowe informacje o wydawcy mogą być prezentowane na stronie [Wydawca serwisu](/legal/publisher).
 
 ## 3. Definicje
 
@@ -106,7 +106,7 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
    - wymagają weryfikacji przez Użytkownika przed zapisaniem/udostępnieniem,
    - mogą różnić się w zależności od danych wejściowych i ograniczeń technologii.
 3. Użytkownik zobowiązuje się nie wykorzystywać Funkcji AI w sposób naruszający prawo lub prawa osób trzecich (w szczególności poprzez generowanie lub publikowanie treści bezprawnych).
-4. Funkcje AI podlegają limitom ilościowym uzależnionym od posiadanego planu. Aktualne limity dla planów Free i Premium są prezentowane w Serwisie na stronie `/pricing`. Usługodawca może zmieniać limity z ważnych przyczyn (np. koszty usług zewnętrznych, nadużycia), z poszanowaniem praw Użytkowników Premium.
+4. Funkcje AI podlegają limitom ilościowym uzależnionym od posiadanego planu. Aktualne limity dla planów Free i Premium są prezentowane w Serwisie na stronie [Cennik](/pricing). Usługodawca może zmieniać limity z ważnych przyczyn (np. koszty usług zewnętrznych, nadużycia), z poszanowaniem praw Użytkowników Premium.
 
 ## 11. Premium (abonament)
 
@@ -114,7 +114,7 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
 2. Status Użytkownika Premium jest przyznawany po opłaceniu abonamentu zgodnie z ofertą prezentowaną w Serwisie (lub w innym uzgodnionym kanale sprzedaży).
 3. Szczegółowe warunki abonamentu (cena, okres rozliczeniowy, odnowienia, metody płatności, faktury, rezygnacja, zwroty) są określone w:
    - opisie oferty w Serwisie oraz/lub
-   - regulaminie subskrypcji dostępnym pod adresem `/legal/subscription`.
+   - dokumencie [Regulamin subskrypcji](/legal/subscription).
 4. W razie sprzeczności pomiędzy Regulaminem a warunkami płatności – w zakresie płatności i rozliczeń – pierwszeństwo mają warunki płatności.
 
 ## 12. Odpowiedzialność
@@ -146,7 +146,7 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
 
 ## 15. Dane osobowe i prywatność
 
-1. Zasady przetwarzania danych osobowych oraz informacje o plikach cookies i podobnych technologiach są opisane w dokumencie „Polityka prywatności” dostępnym pod `/legal/privacy`.
+1. Zasady przetwarzania danych osobowych oraz informacje o plikach cookies i podobnych technologiach są opisane w dokumencie [Polityka prywatności](/legal/privacy).
 
 ## 16. Zmiany Regulaminu
 
@@ -162,5 +162,5 @@ Na potrzeby Regulaminu przyjmuje się następujące definicje:
 ## 18. Postanowienia końcowe
 
 1. W sprawach nieuregulowanych Regulaminem zastosowanie mają właściwe przepisy prawa.
-2. Regulamin jest dostępny w Serwisie pod adresem `/legal/terms`.
+2. Regulamin jest dostępny w Serwisie na stronie [Regulamin Serwisu](/legal/terms).
 

@@ -5,7 +5,7 @@
 
 Niniejsza Polityka prywatności („**Polityka**”) opisuje zasady przetwarzania danych osobowych oraz informacje o plikach cookies i podobnych technologiach w związku z korzystaniem z serwisu internetowego „PychaŚwiatowa” („**Serwis**”).
 
-Polityka jest powiązana z dokumentem „Regulamin serwisu PychaŚwiatowa” dostępnym pod `/legal/terms`.
+Polityka jest powiązana z dokumentem [Regulamin Serwisu](/legal/terms).
 
 ---
 
@@ -235,7 +235,7 @@ stronie Serwisu.
 1. Jeżeli wyrazisz zgodę, możemy wysyłać Ci powiadomienia marketingowe (np. o nowych funkcjach, treściach, promocjach).
 2. Zgodę możesz w każdej chwili wycofać:
     - poprzez link rezygnacji w wiadomości e-mail (jeśli dotyczy) i/lub
-    - poprzez ustawienia konta w Serwisie: `/settings` i/lub
+    - na stronie [Ustawienia](/settings) i/lub
     - kontaktując się z nami: **kontakt@pychaswiatowa.pl**.
 
 ---

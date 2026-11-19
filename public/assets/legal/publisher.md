@@ -10,5 +10,5 @@ Serwis „PychaŚwiatowa” jest prowadzony przez:
 - **Wpis do rejestru:** Centralna Ewidencja i Informacja o Działalności Gospodarczej (CEIDG)
 - **E-mail:** kontakt@pychaswiatowa.pl
 
-Serwis jest dostępny pod adresem: https://pychaswiatowa.web.app.
+Serwis jest dostępny pod adresem: [https://pychaswiatowa.pl](https://pychaswiatowa.pl).
 

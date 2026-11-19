@@ -26,5 +26,11 @@
 
     &__content {
         display: block;
+
+        ::ng-deep a {
+            color: var(--mat-sys-primary);
+            text-decoration: underline;
+            text-underline-offset: 0.15em;
+        }
     }
 }

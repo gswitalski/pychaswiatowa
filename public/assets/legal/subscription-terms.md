@@ -12,7 +12,7 @@
 ### 1. Definicje
 
 1. **Usługodawca** – podmiot prowadzący serwis „PychaŚwiatowa”, wskazany na
-   stronie `/legal/publisher`.
+   stronie [Wydawca serwisu](/legal/publisher).
 2. **Subskrypcja Premium** – odpłatna usługa zapewniająca dostęp do funkcji
    Premium Serwisu.
 3. **Okres rozliczeniowy** – okres, za który pobierana jest opłata za
@@ -23,7 +23,7 @@
 ### 2. Zawarcie umowy i oferta
 
 1. Aktualne ceny, zakres funkcji i limity planów są prezentowane na stronie
-   `/pricing` oraz w checkout przed złożeniem zamówienia. Ceny są podawane
+   [Cennik](/pricing) oraz w checkout przed złożeniem zamówienia. Ceny są podawane
    brutto, z uwzględnieniem VAT, jeżeli ma zastosowanie.
 2. Umowa o Subskrypcję zostaje zawarta po złożeniu zamówienia, akceptacji tego
    regulaminu oraz skutecznym potwierdzeniu płatności przez wybraną metodę
@@ -46,7 +46,7 @@
 
 ### 4. Zmiana planu i anulowanie
 
-1. Użytkownik może anulować automatyczne odnowienie w ustawieniach Konta, o ile
+1. Użytkownik może anulować automatyczne odnowienie na stronie [Ustawienia](/settings), o ile
    taka funkcja jest dostępna, lub przez kontakt z Usługodawcą pod adresem
    kontakt@pychaswiatowa.pl.
 2. Anulowanie zatrzymuje przyszłe odnowienia. Dostęp do Premium pozostaje aktywny

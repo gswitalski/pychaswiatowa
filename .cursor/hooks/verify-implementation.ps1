@@ -49,13 +49,27 @@ if ($files -match '^supabase/functions/') {
     }
 }
 
-$agent = [regex]::Match($payloadText, 'ps-(api|view)-implementer').Value
+$agent = [regex]::Match($payloadText, 'ps-(api-implementer|view-implementer|bugfix-api|bugfix-view)').Value
+$isBugfix = $agent -like 'ps-bugfix-*'
 
 if ($files -match '^(src|shared)/') {
-    if ($agent -eq 'ps-api-implementer') {
+    if ($agent -in @('ps-api-implementer', 'ps-bugfix-api')) {
         # Etap API: zmieniły się tylko kontrakty/typy. Wystarczy szybki typecheck;
         # pełny lint, Vitest i build wykonuje hook po etapie widoków.
         Invoke-Check 'tsc (typecheck frontendu)' { npx tsc -p tsconfig.app.json --noEmit }
+    } elseif ($agent -eq 'ps-bugfix-view') {
+        # Naprawa bugu: celowana weryfikacja zamiast pełnego lint + test:run + build.
+        Invoke-Check 'tsc (typecheck frontendu)' { npx tsc -p tsconfig.app.json --noEmit }
+        $related = @($files |
+            Where-Object { $_ -match '^src/.+\.(ts|html|scss|css)$' } |
+            ForEach-Object { if ($_ -match '\.(html|scss|css)$') { $_ -replace '\.(html|scss|css)$', '.ts' } else { $_ } } |
+            Sort-Object -Unique |
+            Where-Object { Test-Path $_ })
+        if ($related) {
+            Invoke-Check 'vitest related (zmienione pliki)' {
+                node ./node_modules/vitest/vitest.mjs related --run --passWithNoTests @related
+            }
+        }
     } else {
         Invoke-Check 'npm run lint' { npm run lint }
         Invoke-Check 'npm run test:run' { npm run test:run }
@@ -64,7 +78,7 @@ if ($files -match '^(src|shared)/') {
 }
 
 $storyId = [regex]::Match($payloadText, 'PS-\d+')
-if ($storyId.Success -and $results.Count -gt 0) {
+if ($storyId.Success -and $results.Count -gt 0 -and -not $isBugfix) {
     $storyDir = "docs/results/new-features/user-stories/$($storyId.Value)"
     $story = Get-ChildItem -Path $storyDir -Filter "$($storyId.Value)-*-user-story.md" -ErrorAction SilentlyContinue |
         Select-Object -First 1
