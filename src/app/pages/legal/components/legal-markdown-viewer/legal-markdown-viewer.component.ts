@@ -10,8 +10,17 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { Router } from '@angular/router';
 import { MarkdownComponent } from 'ngx-markdown';
+import { AuthService } from '../../../../core/services/auth.service';
+import {
+    LoginDialogComponent,
+    LoginDialogData,
+} from '../../../../shared/components/login-dialog/login-dialog.component';
+
+const SESSION_REQUIRED_PATH_PREFIXES = ['/settings'] as const;
 
 type LegalMarkdownLoadState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -31,6 +40,9 @@ interface LegalMarkdownViewerState {
 })
 export class LegalMarkdownViewerComponent {
     private readonly http = inject(HttpClient);
+    private readonly router = inject(Router);
+    private readonly dialog = inject(MatDialog);
+    private readonly authService = inject(AuthService);
 
     readonly assetPath = input.required<string>();
     readonly documentName = input<string>('treści strony prawnej');
@@ -57,6 +69,48 @@ export class LegalMarkdownViewerComponent {
 
     reload(): void {
         this.reloadTick.update((value) => value + 1);
+    }
+
+    handleContentClick(event: MouseEvent): void {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+
+        const anchor = target.closest('a');
+        if (!anchor) {
+            return;
+        }
+
+        const href = anchor.getAttribute('href');
+        if (!href || !href.startsWith('/') || href.startsWith('//')) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (this.requiresSession(href) && !this.authService.isAuthenticated()) {
+            this.openLoginDialog(href);
+            return;
+        }
+
+        void this.router.navigateByUrl(href);
+    }
+
+    private requiresSession(url: string): boolean {
+        const pathname = url.split('?')[0] ?? url;
+        return SESSION_REQUIRED_PATH_PREFIXES.some(
+            (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+        );
+    }
+
+    private openLoginDialog(nextUrl: string): void {
+        this.dialog.open<LoginDialogComponent, LoginDialogData>(LoginDialogComponent, {
+            data: { nextUrl },
+            width: '480px',
+            maxWidth: 'calc(100vw - 32px)',
+            panelClass: 'mobile-fullscreen-dialog',
+        });
     }
 
     private createLoadErrorMessage(): string {

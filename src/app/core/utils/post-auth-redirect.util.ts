@@ -3,7 +3,7 @@ import type {
     SubscriptionPlanId,
 } from '../../../../shared/contracts/types';
 
-export const POST_AUTH_ALLOWED_PATHS = ['/checkout'] as const;
+export const POST_AUTH_ALLOWED_PATHS = ['/checkout', '/settings'] as const;
 
 const ALLOWED_PLAN_IDS: readonly SubscriptionPlanId[] = ['premium_monthly', 'premium_yearly'];
 const ALLOWED_PAYMENT_METHODS: readonly SubscriptionPaymentMethod[] = ['card', 'blik'];

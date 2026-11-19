@@ -24,6 +24,10 @@
     }
 
     @if (content()) {
-        <markdown class="legal-markdown-viewer__content" [data]="content() ?? ''" />
+        <markdown
+            class="legal-markdown-viewer__content"
+            [data]="content() ?? ''"
+            (click)="handleContentClick($event)"
+        />
     }
 </section>

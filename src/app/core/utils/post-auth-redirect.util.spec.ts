@@ -20,6 +20,10 @@ describe('sanitizeNextUrl', () => {
         expect(sanitizeNextUrl('/checkout')).toBe('/checkout');
     });
 
+    it('powinien dopuścić ustawienia bez parametrów', () => {
+        expect(sanitizeNextUrl('/settings')).toBe('/settings');
+    });
+
     it('powinien zachować dozwolony plan i metodę', () => {
         expect(sanitizeNextUrl('/checkout?plan=premium_monthly&method=blik')).toBe(
             '/checkout?plan=premium_monthly&method=blik',

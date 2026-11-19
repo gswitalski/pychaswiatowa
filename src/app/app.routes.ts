@@ -292,6 +292,11 @@ export const routes: Routes = [
                 pathMatch: 'full',
             },
             {
+                path: 'settings',
+                redirectTo: () => '/login?next=%2Fsettings',
+                pathMatch: 'full',
+            },
+            {
                 path: 'checkout/success',
                 redirectTo: () => '/login?next=%2Fcheckout',
                 pathMatch: 'full',

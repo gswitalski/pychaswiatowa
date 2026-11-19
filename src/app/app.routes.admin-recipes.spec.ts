@@ -3,6 +3,21 @@ import { describe, expect, it } from 'vitest';
 import { routes } from './app.routes';
 import { guestOnlyMatchGuard } from './core/guards/guest-only-match.guard';
 
+describe('gość na /settings', () => {
+    it('otrzymuje przekierowanie do logowania z next', () => {
+        const guestGroup = routes.find(
+            (route) =>
+                route.canMatch?.includes(guestOnlyMatchGuard) &&
+                route.children?.some((child) => child.path === 'settings'),
+        );
+        expect(guestGroup?.canMatch).toContain(guestOnlyMatchGuard);
+        const settingsRoute = guestGroup?.children?.find((child) => child.path === 'settings');
+        expect(settingsRoute?.pathMatch).toBe('full');
+        expect(settingsRoute?.redirectTo).toBeTypeOf('function');
+        expect((settingsRoute?.redirectTo as () => string)()).toBe('/login?next=%2Fsettings');
+    });
+});
+
 describe('gość na /admin/recipes', () => {
     it('otrzymuje przekierowanie do logowania z returnUrl', () => {
         const guestGroup = routes.find((route) =>

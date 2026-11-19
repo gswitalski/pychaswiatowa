@@ -1,0 +1,15 @@
+<mat-dialog-content class="login-dialog">
+    <pych-login-form
+        [isLoading]="state().isLoading"
+        [apiError]="state().error"
+        [requiresEmailConfirmation]="state().requiresEmailConfirmation"
+        [resendCooldownSeconds]="state().cooldownRemainingSeconds"
+        [isResending]="state().isResending"
+        [isGoogleLoading]="state().isGoogleLoading"
+        [oauthErrorMessage]="state().oauthErrorMessage"
+        [registerNext]="nextUrl"
+        (login)="handleLogin($event)"
+        (resendVerification)="handleResendVerification($event)"
+        (loginWithGoogle)="handleGoogleLogin()"
+    />
+</mat-dialog-content>
