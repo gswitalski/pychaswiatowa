@@ -44,13 +44,13 @@ export function toStatusError(
     return result;
 }
 
-type FunctionInvokeErrorBody = {
+interface FunctionInvokeErrorBody {
     message?: string;
     code?: string;
     details?: {
         pgMessage?: string;
     };
-};
+}
 
 /**
  * Reads JSON body from Supabase FunctionsHttpError (error.context).
