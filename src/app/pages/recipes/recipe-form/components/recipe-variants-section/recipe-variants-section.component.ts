@@ -1,15 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    OnInit,
+    effect,
+    inject,
+    input,
+    output,
+    signal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Router } from '@angular/router';
 import { MeApiService } from '../../../../../core/services/me-api.service';
 import { RecipesService } from '../../../services/recipes.service';
 import type { RecipeVariantSummaryDto } from '../../../../../../../shared/contracts/types';
-import { isTechnicalVariantName } from '../../../models/recipe-variants.constants';
 
 @Component({
     selector: 'pych-recipe-variants-section',
@@ -22,7 +29,6 @@ import { isTechnicalVariantName } from '../../../models/recipe-variants.constant
 export class RecipeVariantsSectionComponent implements OnInit {
     private readonly meApi = inject(MeApiService);
     private readonly recipes = inject(RecipesService);
-    private readonly router = inject(Router);
 
     readonly enabled = signal(false);
     readonly loading = signal(true);
@@ -33,10 +39,45 @@ export class RecipeVariantsSectionComponent implements OnInit {
     private latestRequestId = 0;
 
     readonly recipeId = input.required<number>();
+    /** ID wariantu aktualnie edytowanego w formularzu powyżej. */
+    readonly editingRecipeId = input.required<number>();
+    /** Bieżąca wartość pola „Wariant” — synchronizacja z listą. */
+    readonly editingVariantName = input<string>('');
     readonly variantsCountChange = output<number>();
+    readonly variantsLoaded = output<RecipeVariantSummaryDto[]>();
+    readonly editVariantRequest = output<RecipeVariantSummaryDto>();
+
+    private loadedVariantsForRecipeId: number | null = null;
+    private pendingCreatedVariant: { recipe_id: number; variant_name: string } | null = null;
+
+    constructor() {
+        effect(() => {
+            const editingId = this.editingRecipeId();
+            if (!this.enabled() || editingId == null) {
+                return;
+            }
+            if (this.loadedVariantsForRecipeId === editingId) {
+                return;
+            }
+            this.loadedVariantsForRecipeId = editingId;
+            this.loadVariants();
+        });
+    }
 
     ngOnInit(): void {
         this.refreshFeatureAndVariants();
+    }
+
+    displayVariantName(variant: RecipeVariantSummaryDto): string {
+        if (variant.recipe_id !== this.editingRecipeId()) {
+            return variant.variant_name;
+        }
+        const live = this.editingVariantName().trim();
+        return live.length > 0 ? live : variant.variant_name;
+    }
+
+    isEditingVariant(variant: RecipeVariantSummaryDto): boolean {
+        return variant.recipe_id === this.editingRecipeId();
     }
 
     refreshFeatureAndVariants(): void {
@@ -48,7 +89,6 @@ export class RecipeVariantsSectionComponent implements OnInit {
                     this.loading.set(false);
                     return;
                 }
-                this.loadVariants();
             },
             error: () => this.loading.set(false),
         });
@@ -61,8 +101,11 @@ export class RecipeVariantsSectionComponent implements OnInit {
                 if (requestId !== this.latestRequestId) return;
                 this.variants.set(variants);
                 this.variantsCountChange.emit(variants.length);
+                this.variantsLoaded.emit(variants);
+                this.loadedVariantsForRecipeId = this.editingRecipeId();
                 this.error.set(null);
                 this.loading.set(false);
+                this.completeCreatedVariantNavigation(variants);
             },
             error: (error: Error & { status?: number }) => {
                 if (requestId !== this.latestRequestId) return;
@@ -88,7 +131,10 @@ export class RecipeVariantsSectionComponent implements OnInit {
     }
 
     editVariant(variant: RecipeVariantSummaryDto): void {
-        void this.router.navigate(['/recipes', `${variant.recipe_id}/edit`]);
+        if (variant.recipe_id === this.editingRecipeId()) {
+            return;
+        }
+        this.editVariantRequest.emit(variant);
     }
 
     setDefault(variant: RecipeVariantSummaryDto): void {
@@ -119,28 +165,41 @@ export class RecipeVariantsSectionComponent implements OnInit {
     }
 
     private create(command: { variant_name: string; source_recipe_id?: number }): void {
-        const previousCount = this.variants().length;
         this.mutate(
             this.recipes.createRecipeVariant(this.recipeId(), command),
-            (result: { recipe_id: number; data: RecipeVariantSummaryDto[]; image_warning?: string }) => {
+            (result: { recipe_id: number; image_warning?: string | null }) => {
                 this.imageWarning.set(result.image_warning ?? null);
-                if (previousCount < 2 && result.data.length >= 2) {
-                    this.promptTechnicalVariantRenames(result.data);
-                }
+                this.pendingCreatedVariant = {
+                    recipe_id: result.recipe_id,
+                    variant_name: command.variant_name,
+                };
             },
         );
     }
 
-    private promptTechnicalVariantRenames(variants: RecipeVariantSummaryDto[]): void {
-        const stale = variants.filter((variant) => isTechnicalVariantName(variant.variant_name));
-        for (const variant of stale) {
-            const label = variant.variant_name;
-            const newName = window.prompt(
-                `Przepis ma już więcej niż jeden wariant. Podaj nazwę zamiast „${label}” (wariant „${label}”):`,
-            );
-            if (!newName?.trim()) continue;
-            this.mutate(this.recipes.renameRecipeVariant(variant.recipe_id, { variant_name: newName.trim() }));
+    private completeCreatedVariantNavigation(variants: RecipeVariantSummaryDto[]): void {
+        const pending = this.pendingCreatedVariant;
+        if (!pending) {
+            return;
         }
+        this.pendingCreatedVariant = null;
+        const created =
+            variants.find((variant) => variant.recipe_id === pending.recipe_id) ??
+            ({
+                recipe_id: pending.recipe_id,
+                variant_name: pending.variant_name,
+                is_default: false,
+                sort_order: variants.length,
+                image_path: null,
+                chips: {
+                    diet_type: null,
+                    difficulty: null,
+                    servings: null,
+                    is_termorobot: false,
+                    is_grill: false,
+                },
+            } satisfies RecipeVariantSummaryDto);
+        this.editVariantRequest.emit(created);
     }
 
     private mutate<T>(request: import('rxjs').Observable<T>, after?: (result: T) => void): void {

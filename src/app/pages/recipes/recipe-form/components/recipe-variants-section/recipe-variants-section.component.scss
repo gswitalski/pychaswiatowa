@@ -47,6 +47,11 @@
     padding: 10px;
 }
 
+.variant-row.is-editing {
+    border-color: var(--mat-sys-primary);
+    background: color-mix(in srgb, var(--mat-sys-primary-container) 55%, transparent);
+}
+
 .variant-row img,
 .thumbnail-placeholder {
     width: 56px;

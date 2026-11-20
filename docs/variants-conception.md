@@ -53,9 +53,10 @@ przyszłych historyjek. Nie jest planem implementacji ani specyfikacją API.
   wszystkich list przed włączeniem funkcji, testy w każdej historyjce.
 - W interfejsie właściciela nie używa się słowa „grupa”: **nazwa przepisu** to
   wspólna tożsamość logiczna (`recipe_families.name`); wariant opisuje pole
-  **nazwa wariantu** (widoczne przy ≥2 wariantach). Nazwę przepisu i widoczność
-  ustawia się w głównym formularzu, nie w sekcji „Warianty”. Usunięcie całego
-  przepisu (wszystkich wariantów) jest poza ekranem edycji.
+  pole **Wariant** w formularzu (widoczne przy ≥2 wariantach; etykieta
+  „Wariant”, nie „Nazwa wariantu”). Nazwę przepisu i widoczność ustawia się w
+  głównym formularzu, nie w sekcji „Warianty”. Usunięcie całego przepisu
+  (wszystkich wariantów) jest poza ekranem edycji.
 - Domyślna nazwa techniczna pierwszego wariantu to **„Wariant podstawowy”**
   (wcześniejsza migracja ustawiała „Podstawowa”; istniejące dane znormalizowano
   w migracji `20261120220000`).
@@ -106,12 +107,13 @@ Nazwa wyświetlana składa się jako:
 
 Jeśli grupa ma tylko jeden wariant, widoczne jest dotychczasowe „Lasagne”
 bez sufiksu. W bazie wariant ma nazwę zawsze (`variant_name` NOT NULL); w UI
-pole **nazwa wariantu** jest ukryte przy jednym aktywnym wariancie. Nowy
+pole **Wariant** w formularzu jest ukryte przy jednym aktywnym wariancie. Nowy
 pierwszy wariant dostaje nazwę techniczną **„Wariant podstawowy”** (starsze
 rekordy mogły mieć „Podstawowa” — traktowane jak nazwa techniczna).
-Gdy użytkownik dodaje drugi wariant, **sekcja „Warianty”** prosi o zmianę
-nazwy wariantów nadal oznaczonych nazwą techniczną, aby nie pozostały w
-widocznych etykietach (`Wariant podstawowy` · …).
+Gdy w rodzinie są ≥2 warianty, właściciel zmienia nazwę techniczną pierwszego
+wariantu **wyłącznie** w polu **Wariant** po przełączeniu na ten wariant
+(lista na dole lub edycja po dodaniu drugiego wariantu) — bez osobnego okna
+`prompt` w sekcji „Warianty”.
 
 ### Zasady danych
 
@@ -249,18 +251,37 @@ W formularzu edycji wariantu (przy włączonej fladze `recipe_variants`):
 - pole **Nazwa przepisu** — wspólna nazwa dla wszystkich wariantów; zapis
   przez istniejący `PUT /recipes/{id}` aktualizuje źródło prawdy w
   `recipe_families`,
-- pole **Nazwa wariantu** — pod nazwą przepisu; widoczne i wymagane dopiero
-  gdy w rodzinie są co najmniej dwa aktywne warianty; zapis przez
-  `PUT /recipes/{id}/variant-name`,
+- pole **Wariant** (etykieta stała, bez znikania przy wpisywaniu) — pod nazwą
+  przepisu; widoczne i wymagane dopiero gdy w rodzinie są co najmniej dwa
+  aktywne warianty; zapis przez `PUT /recipes/{id}/variant-name`; to jedyne
+  miejsce edycji nazwy bieżącego wariantu (lista na dole nie ma osobnego pola),
+- **synchronizacja z listą wariantów**: w wierszu aktualnie edytowanego wariantu
+  na dole wyświetlana jest na żywo ta sama wartość co w polu **Wariant**;
+  pozostałe wiersze pokazują nazwy z API,
+- **wyróżnienie** wiersza aktualnie edytowanego wariantu na liście,
 - pole **Widoczność** (sekcja kategoria/tagi) — dotyczy całego przepisu
   (wszystkich wariantów); ten sam zapis co nazwa przepisu,
 - pozostałe pola — treść wybranego wariantu (składniki, kroki, zdjęcie itd.).
 
 Sekcja „Warianty” na dole edycji (tylko właściciel, flaga włączona) służy do
 listy wariantów, ustawienia domyślnego, kolejności, utworzenia pustego/kopii,
-edycji innego wariantu i usunięcia wariantu (gdy jest ich ≥2). **Nie** zawiera
-osobnych akcji zmiany nazwy przepisu, widoczności ani usunięcia całego
-przepisu — te rzeczy są w formularzu głównym lub na liście przepisów.
+przełączenia na edycję innego wariantu (ołówek → `/recipes/{variantId}/edit`)
+i usunięcia wariantu (gdy jest ich ≥2). **Nie** zawiera osobnych akcji zmiany
+nazwy przepisu, widoczności ani usunięcia całego przepisu — te rzeczy są w
+formularzu głównym lub na liście przepisów.
+
+Przełączanie i tworzenie wariantu (stan zaimplementowany):
+
+- po **utworzeniu** pustego wariantu lub kopii aplikacja przechodzi na edycję
+  nowego wariantu (tak jak po kliknięciu ołówka); `POST …/variants` zwraca
+  `{ recipe_id, image_warning? }`, a pełna lista jest odświeżana osobnym
+  `GET …/variants`,
+- przy przełączeniu na inny wariant, gdy formularz ma niezapisane zmiany,
+  dialog: **Zapisz zmiany** / **Odrzuć** / **Anuluj** (bez utraty pracy przy
+  zapisie na miejscu — bez przejścia na widok szczegółów),
+- po dodaniu drugiego wariantu **nie** wyświetla się `window.prompt` na zmianę
+  nazwy technicznej pierwszego wariantu; użytkownik ustawia ją w polu
+  **Wariant** po przełączeniu na ten wariant.
 
 Nie wolno usunąć ostatniego wariantu bez usunięcia całego przepisu (grupy).
 
@@ -693,18 +714,37 @@ niewdrożone zdalnie).
 - **`SHARED` po linku** nadal bez zmian (pkt 3) — do historyjki 3 lub osobnej.
 - Limit wariantów: 10 aktywnych w grupie (RPC pod `FOR UPDATE` na grupie).
 
-**Poprawka UX formularza edycji (po pierwszej implementacji PS-109):**
+**Poprawka UX formularza edycji (pierwsza implementacja PS-109):**
 
 - Domyślna nazwa techniczna: **„Wariant podstawowy”** (migracja SQL + trigger;
   `UPDATE` rekordów z „Podstawowa”).
-- W UI: **nazwa przepisu** = wspólna nazwa; **nazwa wariantu** pod nią (ukryta
-  przy jednym wariancie, wymagana przy ≥2); **widoczność** w formularzu — dla
+- W UI: **nazwa przepisu** = wspólna nazwa; pole **Wariant** pod nią (ukryte
+  przy jednym wariancie, wymagane przy ≥2); **widoczność** w formularzu — dla
   wszystkich wariantów.
 - Sekcja „Warianty”: bez przycisków zmiany nazwy/widoczności przepisu i bez
-  „usuń całą grupę”; po dodaniu drugiego wariantu prompt na zmianę nazwy
-  technicznej w sekcji wariantów.
+  „usuń całą grupę”.
 - GET pojedynczego przepisu: `variant_name`, `active_variant_count` w
   `recipe_details` (migracja `20261120220000`).
+
+**Iteracja UX edycji wariantów (po weryfikacji PS-109 — zaimplementowana):**
+
+- Etykieta pola: **Wariant** (`floatLabel="always"` — etykieta nie znika przy
+  wpisywaniu).
+- Jedno źródło nazwy w UI: pole w formularzu ↔ wiersz listy dla edytowanego
+  wariantu (live sync); po odświeżeniu listy wartość w formularzu jest
+  uzupełniana z API, jeśli użytkownik nie zmienił pola lokalnie.
+- Wyróżnienie wizualne wiersza aktualnie edytowanego wariantu na liście.
+- Ołówek na liście: nawigacja `/recipes/{variantId}/edit` i przeładowanie
+  formularza przy zmianie `:id` w URL.
+- Przełączenie wariantu przy `form.dirty`: dialog trzech akcji (zapis na
+  miejscu, odrzucenie, anulowanie przełączenia).
+- Po utworzeniu wariantu (pusty / kopia): automatyczne przejście na edycję
+  nowego wariantu z nazwą podaną przy tworzeniu.
+- Usunięto pierwotny **`prompt`** na zmianę nazwy technicznej po drugim
+  wariancie — zastąpiony edycją w polu **Wariant** przy przełączeniu na
+  pierwszy wariant.
+- Kontrakt odpowiedzi `POST …/variants` w frontendzie dopasowany do API:
+  `{ recipe_id, image_warning? }` (nie pełna lista wariantów w body utworzenia).
 
 ### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
 

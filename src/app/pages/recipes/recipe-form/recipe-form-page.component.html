@@ -181,7 +181,10 @@
         @if (recipeId(); as id) {
             <pych-recipe-variants-section
                 [recipeId]="id"
-                (variantsCountChange)="onVariantsCountChange($event)"
+                [editingRecipeId]="id"
+                [editingVariantName]="liveVariantName()"
+                (variantsLoaded)="onVariantsLoaded($event)"
+                (editVariantRequest)="onEditVariantRequest($event)"
             />
         }
     }

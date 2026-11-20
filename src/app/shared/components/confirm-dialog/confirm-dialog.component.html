@@ -8,6 +8,11 @@
     <button mat-stroked-button (click)="onCancel()">
         {{ cancelText }}
     </button>
+  @if (secondaryConfirmText) {
+        <button mat-stroked-button [color]="secondaryConfirmColor" (click)="onSecondary()">
+            {{ secondaryConfirmText }}
+        </button>
+    }
     <button mat-raised-button [color]="confirmColor" (click)="onConfirm()">
         {{ confirmText }}
     </button>

@@ -300,7 +300,7 @@ export class RecipesService {
     createRecipeVariant(
         recipeId: number,
         command: CreateRecipeVariantCommand,
-    ): Observable<{ recipe_id: number; data: RecipeVariantSummaryDto[]; image_warning?: string }> {
+    ): Observable<{ recipe_id: number; image_warning?: string | null }> {
         return this.invokeVariantCommand(`recipes/${recipeId}/variants`, 'POST', command);
     }
 

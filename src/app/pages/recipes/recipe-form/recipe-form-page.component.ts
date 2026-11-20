@@ -1,12 +1,14 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    DestroyRef,
     OnInit,
     inject,
     signal,
     computed,
     ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
     FormBuilder,
@@ -24,6 +26,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import {
+    ConfirmDialogComponent,
+    ConfirmDialogData,
+    ConfirmDialogResult,
+} from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -77,6 +84,7 @@ import {
     RecipeCuisine,
     RecipeDifficulty,
     AiRecipeDraftImageMimeType,
+    RecipeVariantSummaryDto,
 } from '../../../../../shared/contracts/types';
 import { formatUnreadableImagesMessage } from './draft-image-warnings.messages';
 
@@ -151,6 +159,7 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly creditsService = inject(AiCreditsService);
     private readonly slugService = inject(SlugService);
     private readonly imageCompression = inject(ImageCompressionService);
+    private readonly destroyRef = inject(DestroyRef);
 
     /** Reference to RecipeImageUploadComponent for applying AI-generated images */
     @ViewChild(RecipeImageUploadComponent)
@@ -190,6 +199,8 @@ export class RecipeFormPageComponent implements OnInit {
     readonly recipeVariantsEnabled = signal(false);
     readonly activeVariantCount = signal(1);
     private readonly savedVariantName = signal<string>('');
+    /** Wartość pola „Wariant” — live sync z listą wariantów na dole. */
+    readonly liveVariantName = signal<string>('');
 
     readonly showVariantNameField = computed(
         () => this.recipeVariantsEnabled() && this.activeVariantCount() >= 2,
@@ -328,10 +339,14 @@ export class RecipeFormPageComponent implements OnInit {
     ngOnInit(): void {
         this.initForm();
         this.loadCategories();
-        this.checkEditMode();
+        this.bindEditRoute();
         this.meApi.getMe().subscribe({
             next: (me) => this.recipeVariantsEnabled.set(me.features.recipe_variants.enabled),
         });
+
+        this.form.controls.variantName.valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((value) => this.liveVariantName.set(value));
 
         // In create mode, check for AI draft to prefill
         if (!this.isEditMode()) {
@@ -405,17 +420,87 @@ export class RecipeFormPageComponent implements OnInit {
         });
     }
 
-    private checkEditMode(): void {
-        const idParam = this.route.snapshot.paramMap.get('id');
-
-        if (idParam) {
+    private bindEditRoute(): void {
+        this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+            const idParam = params.get('id');
+            if (!idParam) {
+                return;
+            }
             const id = parseInt(idParam, 10);
-            if (!isNaN(id)) {
-                this.isEditMode.set(true);
-                this.recipeId.set(id);
+            if (isNaN(id)) {
+                return;
+            }
+            const previousId = this.recipeId();
+            this.isEditMode.set(true);
+            this.recipeId.set(id);
+            if (previousId !== id) {
                 this.loadRecipe(id);
             }
+        });
+    }
+
+    onEditVariantRequest(variant: RecipeVariantSummaryDto): void {
+        const targetId = variant.recipe_id;
+        const currentId = this.recipeId();
+        if (currentId == null || targetId === currentId) {
+            return;
         }
+        if (!this.form.dirty) {
+            this.navigateToVariantEdit(targetId);
+            return;
+        }
+        this.openUnsavedVariantSwitchDialog(targetId);
+    }
+
+    private openUnsavedVariantSwitchDialog(targetRecipeId: number): void {
+        const data: ConfirmDialogData = {
+            title: 'Niezapisane zmiany',
+            message:
+                'Masz niezapisane zmiany w tym wariancie. Co chcesz zrobić przed przejściem do innego wariantu?',
+            confirmText: 'Zapisz zmiany',
+            secondaryConfirmText: 'Odrzuć',
+            cancelText: 'Anuluj',
+            secondaryConfirmColor: 'warn',
+        };
+        this.dialog
+            .open<ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult>(ConfirmDialogComponent, {
+                width: '420px',
+                disableClose: true,
+                data,
+            })
+            .afterClosed()
+            .subscribe((result) => {
+                if (result !== true && result !== 'secondary') {
+                    return;
+                }
+                if (result === 'secondary') {
+                    this.navigateToVariantEdit(targetRecipeId);
+                    return;
+                }
+                this.saveAndNavigateToVariantEdit(targetRecipeId);
+            });
+    }
+
+    private saveAndNavigateToVariantEdit(targetRecipeId: number): void {
+        if (this.form.invalid) {
+            this.form.markAllAsTouched();
+            return;
+        }
+        if (this.imageUploading()) {
+            return;
+        }
+        const currentId = this.recipeId();
+        if (currentId == null) {
+            return;
+        }
+        this.saving.set(true);
+        this.error.set(null);
+        const command = this.mapFormToCommand(this.form.getRawValue());
+        this.updateRecipe(currentId, command, () => this.navigateToVariantEdit(targetRecipeId));
+    }
+
+    private navigateToVariantEdit(recipeId: number): void {
+        void this.router.navigate(['/recipes', recipeId, 'edit']);
     }
 
     /**
@@ -578,6 +663,30 @@ export class RecipeFormPageComponent implements OnInit {
         this.applyVariantNameFieldState();
     }
 
+    onVariantsLoaded(variants: RecipeVariantSummaryDto[]): void {
+        this.onVariantsCountChange(variants.length);
+        this.syncVariantNameFromList(variants);
+    }
+
+    private syncVariantNameFromList(variants: RecipeVariantSummaryDto[]): void {
+        if (!this.showVariantNameField()) {
+            return;
+        }
+        const currentId = this.recipeId();
+        if (currentId == null || this.form.controls.variantName.dirty) {
+            return;
+        }
+        const current = variants.find((variant) => variant.recipe_id === currentId);
+        if (!current) {
+            return;
+        }
+        const name = current.variant_name;
+        this.savedVariantName.set(name);
+        this.liveVariantName.set(name);
+        this.form.controls.variantName.setValue(name, { emitEvent: false });
+        this.formValid.set(this.form.valid);
+    }
+
     private applyVariantNameFieldState(): void {
         const control = this.form.controls.variantName;
         if (this.showVariantNameField()) {
@@ -589,12 +698,14 @@ export class RecipeFormPageComponent implements OnInit {
             control.clearValidators();
         }
         control.updateValueAndValidity({ emitEvent: false });
+        this.liveVariantName.set(control.value);
         this.formValid.set(this.form.valid);
     }
 
     private populateForm(recipe: RecipeDetailDto): void {
         const variantName = recipe.variant_name ?? '';
         this.savedVariantName.set(variantName);
+        this.liveVariantName.set(variantName);
         this.activeVariantCount.set(recipe.active_variant_count ?? 1);
 
         this.form.patchValue({
@@ -655,6 +766,7 @@ export class RecipeFormPageComponent implements OnInit {
         }
 
         this.applyVariantNameFieldState();
+        this.form.markAsPristine();
     }
 
     /**
@@ -810,7 +922,7 @@ export class RecipeFormPageComponent implements OnInit {
      * Updates an existing recipe
      * Note: Image is handled separately through RecipeImageUploadComponent's auto-upload
      */
-    private updateRecipe(id: number, command: UpdateRecipeCommand): void {
+    private updateRecipe(id: number, command: UpdateRecipeCommand, onComplete?: () => void): void {
         const variantName = this.form.controls.variantName.value.trim();
         const shouldRenameVariant =
             this.showVariantNameField() &&
@@ -830,6 +942,15 @@ export class RecipeFormPageComponent implements OnInit {
             .subscribe({
                 next: () => {
                     this.saving.set(false);
+                    if (shouldRenameVariant) {
+                        this.savedVariantName.set(variantName);
+                        this.liveVariantName.set(variantName);
+                    }
+                    this.form.markAsPristine();
+                    if (onComplete) {
+                        onComplete();
+                        return;
+                    }
                     const recipeName = command.name ?? this.form.get('name')?.value ?? 'przepis';
                     this.navigateToRecipe(id, recipeName);
                 },

@@ -5,7 +5,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { beforeAll, describe, expect, it, beforeEach, vi } from 'vitest';
 import { Subject, of } from 'rxjs';
-import { Router } from '@angular/router';
 import { MeApiService } from '../../../../../core/services/me-api.service';
 import { RecipesService } from '../../../services/recipes.service';
 import type { RecipeVariantSummaryDto } from '../../../../../../../shared/contracts/types';
@@ -29,7 +28,6 @@ describe('RecipeVariantsSectionComponent', () => {
             providers: [
                 { provide: MeApiService, useValue: meApi },
                 { provide: RecipesService, useValue: recipes },
-                { provide: Router, useValue: { navigate: vi.fn() } },
             ],
         }).compileComponents();
     });
@@ -41,6 +39,7 @@ describe('RecipeVariantsSectionComponent', () => {
         recipes.getRecipeVariants.mockReturnValue(of([]));
         fixture = TestBed.createComponent(RecipeVariantsSectionComponent);
         fixture.componentRef.setInput('recipeId', 7);
+        fixture.componentRef.setInput('editingRecipeId', 7);
         fixture.detectChanges();
     }
 
@@ -68,6 +67,7 @@ describe('RecipeVariantsSectionComponent', () => {
             .mockReturnValueOnce(second);
         fixture = TestBed.createComponent(RecipeVariantsSectionComponent);
         fixture.componentRef.setInput('recipeId', 7);
+        fixture.componentRef.setInput('editingRecipeId', 7);
         fixture.detectChanges();
         fixture.componentInstance.loadVariants();
         second.next([{ recipe_id: 2, variant_name: 'Nowszy', is_default: true, sort_order: 0, image_path: null, chips: { diet_type: null, is_termorobot: false, is_grill: false, difficulty: null, servings: null } }]);

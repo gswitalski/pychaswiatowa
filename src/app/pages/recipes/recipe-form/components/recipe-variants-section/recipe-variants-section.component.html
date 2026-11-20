@@ -28,14 +28,14 @@
                 <p class="scope-note">Nazwę przepisu i widoczność ustaw w formularzu powyżej — dotyczą wszystkich wariantów.</p>
                 <div class="variant-list">
                     @for (variant of variants(); track variant.recipe_id; let i = $index) {
-                        <article class="variant-row">
+                        <article class="variant-row" [class.is-editing]="isEditingVariant(variant)">
                             @if (variant.image_path) {
                                 <img [src]="variant.image_path" [alt]="'Miniatura wariantu ' + variant.variant_name" />
                             } @else {
                                 <div class="thumbnail-placeholder" aria-hidden="true"><mat-icon>restaurant</mat-icon></div>
                             }
                             <div class="variant-info">
-                                <h3>{{ variant.variant_name }}</h3>
+                                <h3>{{ displayVariantName(variant) }}</h3>
                                 @if (variant.is_default) { <span class="default-badge">Domyślny</span> }
                                 <div class="chips">
                                     @if (variant.chips.diet_type) { <span>{{ variant.chips.diet_type }}</span> }

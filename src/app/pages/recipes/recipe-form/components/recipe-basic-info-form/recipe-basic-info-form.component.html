@@ -17,8 +17,8 @@
     </mat-form-field>
 
     @if (showVariantNameField && variantNameControl) {
-        <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nazwa wariantu</mat-label>
+        <mat-form-field appearance="outline" class="full-width" floatLabel="always">
+            <mat-label>Wariant</mat-label>
             <input
                 matInput
                 [formControl]="variantNameControl"
@@ -26,7 +26,7 @@
                 maxlength="150"
             />
             @if (variantNameControl.hasError('required') && variantNameControl.touched) {
-                <mat-error>Nazwa wariantu jest wymagana przy kilku wariantach</mat-error>
+                <mat-error>Wariant jest wymagany przy kilku wersjach przepisu</mat-error>
             }
             @if (variantNameControl.hasError('maxlength')) {
                 <mat-error>Nazwa może mieć maksymalnie 150 znaków</mat-error>
