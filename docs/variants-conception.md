@@ -619,7 +619,8 @@ wdrożone i czym różni się od koncepcji; aktualizuj ją po każdej historyjce
 | Historyjka | ID | Status | Artefakty |
 |---|---|---|---|
 | 1. Model grupy, migracja, widoczność | PS-108 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-108/PS-108-recipe-family-model-visibility-user-story.md`; plan API: `docs/results/impl-plans/endpoints/PS-108-recipe-family-model-visibility-api-implementation-plan.md`; weryfikacja: `…/PS-108-recipe-family-model-visibility-verification.md` |
-| 2–5 | — | niezaplanowane | — |
+| 2. Zarządzanie wariantami przez właściciela | PS-109 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-109/PS-109-recipe-variants-owner-management-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-109-recipe-variants-owner-management-*-implementation-plan.md`; weryfikacja: `…/PS-109-recipe-variants-owner-management-verification.md` |
+| 3–5 | — | niezaplanowane | — |
 
 Migracje PS-108: `20261120200000_create_recipe_families.sql` i
 `20261120200100_fix_recipe_family_default_triggers.sql` (zastosowane lokalnie,
@@ -663,6 +664,17 @@ niewdrożone zdalnie).
    - Migracja backfilluje także przepisy usunięte (`deleted_at` kopiowane do grupy).
    - Wariant migrowany ma `variant_name = 'Podstawowa'`, `is_default = true`,
      `sort_order = 0`.
+
+### Zmiany wprowadzone w PS-109 (stan względem pkt 3–5 powyżej)
+
+- **Flaga funkcji powstała** (pkt 5): tabela `feature_flags` (`disabled`/`admin`/`all`, po
+  migracji `disabled`), stan w `/me` jako `features.recipe_variants`. Tryb `all` nie
+  powinien być włączany przed domknięciem pkt 2 (RLS na `recipes`) i pkt 3 (`SHARED`).
+- **Luka `p_user_id` domknięta** (pkt 4): `create_recipe_with_tags`,
+  `update_recipe_with_tags`, `soft_delete_recipe` oraz nowe RPC wariantów mają `execute`
+  tylko dla `service_role`; `recipes` korzysta z klienta serwisowego po weryfikacji JWT.
+- **`SHARED` po linku** nadal bez zmian (pkt 3) — do historyjki 3 lub osobnej.
+- Limit wariantów: 10 aktywnych w grupie (RPC pod `FOR UPDATE` na grupie).
 
 ### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
 

@@ -31,7 +31,9 @@ Używaj `rg -n "<fraza>"` i `Read` z `offset`/`limit`. Przy sprzeczności prawd�
 - Tabele: `profiles`, `categories`, `recipes` (soft delete `deleted_at`,
   JSONB: składniki/kroki/wskazówki; od PS-108 każdy przepis należy do grupy
   `recipe_families` z wariantem `Podstawowa`, a `recipes.name`/`visibility` to
-  kopie grupy), `tags`, `collections`,
+  kopie grupy; od PS-109 operacje wariantów przez `recipes` na kliencie
+  `service_role`, flaga `feature_flags` `disabled`/`admin`/`all` w `/me`),
+  `tags`, `collections`,
   `recipe_collections`, `recipe_tags`, `user_ai_credits`, `user_recipe_flags`,
   `user_recipe_notes`, `recipe_ratings`, plan i lista zakupów, joby
   normalizacji składników.

@@ -10,6 +10,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 - `ai_rate_limits`: count, created_at, key, updated_at, user_id, window_start
 - `categories`: created_at, id, name
 - `collections`: created_at, description, id, name, updated_at, user_id
+- `feature_flags`: name, mode, updated_at
 - `normalized_ingredients_jobs`: attempts, created_at, id, last_error, next_run_at, recipe_id, status, updated_at, user_id
 - `plan_recipes`: added_at, recipe_id, user_id
 - `profiles`: created_at, id, marketing_consent, marketing_consent_text_version, marketing_consent_updated_at, updated_at, username
@@ -38,14 +39,24 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 - `admin_update_user_role(p_actor_user_id, p_new_role, p_target_user_id)`
 - `ai_rate_limit_hit(p_key, p_limit, p_now, p_window_seconds)`
 - `claim_normalized_ingredients_jobs()`
+- `create_recipe_variant(p_is_admin, p_recipe_id, p_source_recipe_id, p_user_id, p_variant_name)`
+- `delete_recipe_family()`
+- `delete_recipe_variant()`
 - `enqueue_normalized_ingredients_refresh()`
 - `get_recipes_list(p_category_id, p_cuisine, p_diet_type, p_difficulty, p_grill, p_limit, p_page, p_search, p_sort_direction, p_sort_field, p_tag_ids, p_termorobot, p_user_id, p_view)`
+- `recipe_variant_usage()`
+- `recipe_variants_allowed()`
+- `recipe_variants_list()`
 - `remove_recipe_from_plan_and_update_shopping_list()`
+- `rename_recipe_variant(p_is_admin, p_recipe_id, p_user_id, p_variant_name)`
+- `reorder_recipe_variants(p_is_admin, p_recipe_id, p_recipe_ids, p_user_id)`
 - `resolve_signup_marketing_consent()`
+- `set_default_recipe_variant()`
 - `set_recipe_flags(p_is_favorite, p_is_want_to_try, p_recipe_id)`
 - `set_recipe_note(p_note, p_recipe_id)`
 - `set_recipe_rating(p_rating, p_recipe_id)`
 - `supported_marketing_consent_text_versions()`
+- `update_recipe_family(p_is_admin, p_name, p_recipe_id, p_user_id, p_visibility)`
 
 ## Enumy
 
@@ -122,9 +133,9 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 - wzorce ścieżek: `/\/public(\/.*)?$/` · `/^\/recipes\/([^/]+)$/` · `'/recipes'` · `'/recipes/feed'`
 
 ### recipes
-- pliki: index.ts, recipes.handlers.ts, recipes.service.ts
+- pliki: index.ts, recipes.handlers.ts, recipes.service.ts, recipes.variants.ts
 - metody: DELETE, GET, POST, PUT
-- wzorce ścieżek: `/\/recipes\/([^/]+)$/` · `/\/recipes\/([^/]+)\/collections\/?$/` · `/\/recipes\/([^/]+)\/flags\/?$/` · `/\/recipes\/([^/]+)\/image\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/refresh\/?$/` · `/\/recipes\/([^/]+)\/note\/?$/` · `/\/recipes\/([^/]+)\/rating\/?$/` · `/\/recipes\/feed\/?$/`
+- wzorce ścieżek: `/(\.[a-z0-9]+)$/i` · `/\/recipes\/([^/]+)$/` · `/\/recipes\/([^/]+)\/collections\/?$/` · `/\/recipes\/([^/]+)\/default\/?$/` · `/\/recipes\/([^/]+)\/family\/?$/` · `/\/recipes\/([^/]+)\/flags\/?$/` · `/\/recipes\/([^/]+)\/image\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/refresh\/?$/` · `/\/recipes\/([^/]+)\/note\/?$/` · `/\/recipes\/([^/]+)\/order\/?$/` · `/\/recipes\/([^/]+)\/rating\/?$/` · `/\/recipes\/([^/]+)\/usage\/?$/` · `/\/recipes\/([^/]+)\/variant-name\/?$/` · `/\/recipes\/([^/]+)\/variants\/([^/]+)\/?$/` · `/\/recipes\/([^/]+)\/variants\/?$/` · `/\/recipes\/feed\/?$/`
 
 ### search
 - pliki: index.ts, search.handlers.ts, search.service.ts, search.types.ts
@@ -166,11 +177,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 96 plików, ostatnie 5
+## Migracje: 97 plików, ostatnie 5
 
-- `20261113130000_extend_admin_recipes_filters.sql`
 - `20261115120000_fix_ai_rate_limit_hit_ambiguous_window_start.sql`
 - `20261115140000_dedupe_create_recipe_with_tags_overloads.sql`
 - `20261120200000_create_recipe_families.sql`
 - `20261120200100_fix_recipe_family_default_triggers.sql`
+- `20261120210000_recipe_variants_owner_management.sql`
 

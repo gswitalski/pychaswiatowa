@@ -4,7 +4,7 @@
  */
 
 import { z } from 'npm:zod@3.22.4';
-import { getAuthenticatedContext } from '../_shared/supabase-client.ts';
+import { getAuthenticatedContext, createServiceRoleClient } from '../_shared/supabase-client.ts';
 import { handleError, ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import {
@@ -36,6 +36,18 @@ import {
     SetRecipeNoteInput,
 } from './recipes.service.ts';
 import {
+    listRecipeVariants,
+    createRecipeVariant,
+    renameRecipeVariant,
+    updateRecipeFamily,
+    setDefaultRecipeVariant,
+    reorderRecipeVariants,
+    getRecipeVariantUsage,
+    deleteRecipeVariant,
+    deleteRecipeFamily,
+} from './recipes.variants.ts';
+import { extractAndValidateAppRole, extractAuthToken } from '../_shared/auth.ts';
+import {
     normalizeRecipeNote,
     countRecipeNoteCharacters,
     RECIPE_NOTE_MAX_LENGTH,
@@ -49,6 +61,10 @@ const DEFAULT_LIMIT = 20;
 
 /** Default page number. */
 const DEFAULT_PAGE = 1;
+
+function getIsAdmin(req: Request): boolean {
+    return extractAndValidateAppRole(extractAuthToken(req)).app_role === 'admin';
+}
 
 /** Maximum allowed file size for recipe images (10 MB in bytes). */
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -953,7 +969,7 @@ export async function handleCreateRecipe(req: Request): Promise<Response> {
 
         // Call the service to create the recipe
         const result: RecipeDetailDto = await createRecipe(
-            client,
+            createServiceRoleClient(),
             user.id,
             createRecipeInput
         );
@@ -1048,7 +1064,7 @@ export async function handleUpdateRecipe(
 
         // Call the service to update the recipe
         const result: RecipeDetailDto = await updateRecipe(
-            client,
+            createServiceRoleClient(),
             recipeId,
             user.id,
             updateRecipeInput
@@ -1155,7 +1171,7 @@ export async function handleDeleteRecipe(
         const { client, user } = await getAuthenticatedContext(req);
 
         // Call the service to delete the recipe (soft delete)
-        await deleteRecipe(client, recipeId, user.id);
+        await deleteRecipe(createServiceRoleClient(), recipeId, user.id);
 
         logger.info('DELETE /recipes/{id} completed successfully', {
             userId: user.id,
@@ -1908,6 +1924,116 @@ export async function handlePostRecipeNormalizedIngredientsRefresh(
     }
 }
 
+export const createVariantSchema = z.object({
+    variant_name: z.string().min(1).max(150).transform((value) => value.trim()),
+    source_recipe_id: z.number().int().positive().nullable().optional(),
+}).strict();
+const familySchema = z.object({
+    name: z.string().min(1).max(150).optional(),
+    visibility: z.enum(['PRIVATE', 'SHARED', 'PUBLIC']).optional(),
+}).strict();
+export const reorderSchema = z.object({
+    recipe_ids: z.array(z.number().int().positive()),
+}).strict();
+export const variantNameSchema = z.object({ variant_name: z.string().min(1).max(150).transform((value) => value.trim()) }).strict();
+
+async function getVariantContext(req: Request) {
+    const context = await getAuthenticatedContext(req);
+    // RPC wariantów mają EXECUTE wyłącznie dla service_role; user_id pochodzi z zweryfikowanego JWT.
+    return { ...context, client: createServiceRoleClient(), isAdmin: getIsAdmin(req) };
+}
+
+function jsonBodyError(result: z.SafeParseError<unknown>): never {
+    throw new ApplicationError('VALIDATION_ERROR', result.error.issues.map((issue) => issue.message).join(', '));
+}
+
+export async function handleListRecipeVariants(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        return createSuccessResponse(await listRecipeVariants(client, recipeId, user.id, isAdmin));
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleCreateRecipeVariant(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        const parsed = createVariantSchema.safeParse(await req.json());
+        if (!parsed.success) jsonBodyError(parsed);
+        const result = await createRecipeVariant(client, recipeId, user.id, parsed.data.variant_name, parsed.data.source_recipe_id ?? null, isAdmin);
+        return createCreatedResponse(result);
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleRenameRecipeVariant(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        const parsed = variantNameSchema.safeParse(await req.json());
+        if (!parsed.success) jsonBodyError(parsed);
+        await renameRecipeVariant(client, recipeId, user.id, parsed.data.variant_name, isAdmin);
+        return createSuccessResponse({ ok: true });
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleUpdateRecipeFamily(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        const parsed = familySchema.safeParse(await req.json());
+        if (!parsed.success) jsonBodyError(parsed);
+        await updateRecipeFamily(client, recipeId, user.id, parsed.data.name ?? null, parsed.data.visibility ?? null, isAdmin);
+        return createSuccessResponse({ ok: true });
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleSetDefaultRecipeVariant(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        await setDefaultRecipeVariant(client, recipeId, user.id, isAdmin);
+        return createSuccessResponse({ ok: true });
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleReorderRecipeVariants(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        const parsed = reorderSchema.safeParse(await req.json());
+        if (!parsed.success) jsonBodyError(parsed);
+        await reorderRecipeVariants(client, recipeId, user.id, parsed.data.recipe_ids, isAdmin);
+        return createSuccessResponse({ ok: true });
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleRecipeVariantUsage(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        return createSuccessResponse(await getRecipeVariantUsage(client, recipeId, user.id, isAdmin));
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleDeleteRecipeVariant(req: Request, recipeIdParam: string, variantIdParam?: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(variantIdParam ?? recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        await deleteRecipeVariant(client, recipeId, user.id, isAdmin);
+        return new Response(null, { status: 204 });
+    } catch (error) { return handleError(error); }
+}
+
+export async function handleDeleteRecipeFamily(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        await deleteRecipeFamily(client, recipeId, user.id, isAdmin);
+        return new Response(null, { status: 204 });
+    } catch (error) { return handleError(error); }
+}
+
 /**
  * Recipes router - routes HTTP methods to appropriate handlers.
  * Supports:
@@ -1956,6 +2082,13 @@ export async function recipesRouter(req: Request): Promise<Response> {
     const ratingRecipeId = extractRecipeIdFromRatingPath(url);
 
     const noteRecipeId = extractRecipeIdFromNotePath(url);
+    const variantsPath = url.pathname.match(/\/recipes\/([^/]+)\/variants\/?$/);
+    const variantNamePath = url.pathname.match(/\/recipes\/([^/]+)\/variant-name\/?$/);
+    const familyPath = url.pathname.match(/\/recipes\/([^/]+)\/family\/?$/);
+    const defaultPath = url.pathname.match(/\/recipes\/([^/]+)\/default\/?$/);
+    const orderPath = url.pathname.match(/\/recipes\/([^/]+)\/order\/?$/);
+    const usagePath = url.pathname.match(/\/recipes\/([^/]+)\/usage\/?$/);
+    const variantDeletePath = url.pathname.match(/\/recipes\/([^/]+)\/variants\/([^/]+)\/?$/);
 
     // Check for /recipes/{id}/image path (must be checked before extracting simple recipe ID)
     const imageRecipeId = extractRecipeIdFromImagePath(url);
@@ -1974,6 +2107,22 @@ export async function recipesRouter(req: Request): Promise<Response> {
             },
         });
     }
+
+    if (variantDeletePath && method === 'DELETE') {
+        return handleDeleteRecipeVariant(req, variantDeletePath[1], variantDeletePath[2]);
+    }
+    if (familyPath) {
+        if (method === 'PUT') return handleUpdateRecipeFamily(req, familyPath[1]);
+        if (method === 'DELETE') return handleDeleteRecipeFamily(req, familyPath[1]);
+    }
+    if (variantsPath) {
+        if (method === 'GET') return handleListRecipeVariants(req, variantsPath[1]);
+        if (method === 'POST') return handleCreateRecipeVariant(req, variantsPath[1]);
+    }
+    if (variantNamePath && method === 'PUT') return handleRenameRecipeVariant(req, variantNamePath[1]);
+    if (defaultPath && method === 'PUT') return handleSetDefaultRecipeVariant(req, defaultPath[1]);
+    if (orderPath && method === 'PUT') return handleReorderRecipeVariants(req, orderPath[1]);
+    if (usagePath && method === 'GET') return handleRecipeVariantUsage(req, usagePath[1]);
 
     if (noteRecipeId) {
         if (method === 'PUT') {

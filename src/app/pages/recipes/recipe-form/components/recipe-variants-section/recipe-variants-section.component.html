@@ -1,0 +1,80 @@
+@if (enabled()) {
+    <mat-card class="variants-section" [class.is-loading]="loading()">
+        <mat-card-header>
+            <mat-card-title>Warianty</mat-card-title>
+            <mat-card-subtitle>Zarządzanie wariantami tego przepisu</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            @if (loading()) {
+                <div class="loading" role="status">
+                    <mat-spinner diameter="32"></mat-spinner>
+                    <span>Ładowanie wariantów...</span>
+                </div>
+            } @else {
+                @if (error()) {
+                    <div class="error" role="alert">{{ error() }}</div>
+                }
+                @if (imageWarning()) {
+                    <div class="warning" role="status">{{ imageWarning() }}</div>
+                }
+                <div class="toolbar">
+                    <button mat-stroked-button type="button" (click)="addEmpty()" [disabled]="busy()">
+                        <mat-icon>add</mat-icon> Dodaj pusty
+                    </button>
+                    <button mat-stroked-button type="button" (click)="copyVariant()" [disabled]="busy()">
+                        <mat-icon>content_copy</mat-icon> Utwórz kopię
+                    </button>
+                    <button mat-button type="button" (click)="renameFamily()" [disabled]="busy()">
+                        Zmień nazwę grupy
+                    </button>
+                    <button mat-button type="button" (click)="changeVisibility()" [disabled]="busy()">
+                        Zmień widoczność grupy
+                    </button>
+                </div>
+                <p class="scope-note">Nazwa i widoczność dotyczą wszystkich wariantów. Nowy wariant w grupie PUBLIC jest od razu publiczny.</p>
+                <div class="variant-list">
+                    @for (variant of variants(); track variant.recipe_id; let i = $index) {
+                        <article class="variant-row">
+                            @if (variant.image_path) {
+                                <img [src]="variant.image_path" [alt]="'Miniatura wariantu ' + variant.variant_name" />
+                            } @else {
+                                <div class="thumbnail-placeholder" aria-hidden="true"><mat-icon>restaurant</mat-icon></div>
+                            }
+                            <div class="variant-info">
+                                <h3>{{ variant.variant_name }}</h3>
+                                @if (variant.is_default) { <span class="default-badge">Domyślny</span> }
+                                <div class="chips">
+                                    @if (variant.chips.diet_type) { <span>{{ variant.chips.diet_type }}</span> }
+                                    @if (variant.chips.difficulty) { <span>{{ variant.chips.difficulty }}</span> }
+                                    @if (variant.chips.servings) { <span>{{ variant.chips.servings }} porcji</span> }
+                                    @if (variant.chips.is_termorobot) { <span>Termorobot</span> }
+                                    @if (variant.chips.is_grill) { <span>Grill</span> }
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button mat-icon-button type="button" (click)="editVariant(variant)" [disabled]="busy()" [attr.aria-label]="'Edytuj wariant ' + variant.variant_name">
+                                    <mat-icon>edit</mat-icon>
+                                </button>
+                                <button mat-icon-button type="button" (click)="setDefault(variant)" [disabled]="busy() || variant.is_default" [attr.aria-label]="'Ustaw jako domyślny: ' + variant.variant_name">
+                                    <mat-icon>star</mat-icon>
+                                </button>
+                                <button mat-icon-button type="button" (click)="move(variant, -1)" [disabled]="busy() || i === 0" [attr.aria-label]="'Przenieś wariant ' + variant.variant_name + ' w górę'">
+                                    <mat-icon>arrow_upward</mat-icon>
+                                </button>
+                                <button mat-icon-button type="button" (click)="move(variant, 1)" [disabled]="busy() || i === variants().length - 1" [attr.aria-label]="'Przenieś wariant ' + variant.variant_name + ' w dół'">
+                                    <mat-icon>arrow_downward</mat-icon>
+                                </button>
+                                <button mat-icon-button type="button" (click)="removeVariant(variant)" [disabled]="busy() || variants().length < 2" [attr.aria-label]="'Usuń wariant ' + variant.variant_name">
+                                    <mat-icon>delete</mat-icon>
+                                </button>
+                            </div>
+                        </article>
+                    } @empty {
+                        <p>Brak wariantów.</p>
+                    }
+                </div>
+                <button mat-button color="warn" type="button" (click)="removeFamily()" [disabled]="busy()">Usuń całą grupę</button>
+            }
+        </mat-card-content>
+    </mat-card>
+}

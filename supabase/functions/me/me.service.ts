@@ -4,7 +4,7 @@
  * Provides minimal user profile data for App Shell initialization.
  */
 
-import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
+import { TypedSupabaseClient, createServiceRoleClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { type AppRole } from '../_shared/auth.ts';
@@ -19,6 +19,31 @@ export interface MeAiCreditsDto {
 
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired';
 export type SubscriptionPlanId = 'premium_monthly' | 'premium_yearly';
+export interface MeRecipeVariantsFeatureDto {
+    enabled: boolean;
+    mode: 'disabled' | 'admin' | 'all';
+}
+
+interface FeatureFlagClient {
+    from(table: 'feature_flags'): {
+        select(columns: string): {
+            eq(column: string, value: string): {
+                maybeSingle(): Promise<{ data: { mode?: string } | null; error: { code?: string } | null }>;
+            };
+        };
+    };
+}
+
+export function resolveRecipeVariantsFeature(
+    mode: string | null | undefined,
+    appRole: AppRole,
+): MeRecipeVariantsFeatureDto {
+    const normalizedMode = mode === 'admin' || mode === 'all' ? mode : 'disabled';
+    return {
+        mode: normalizedMode,
+        enabled: normalizedMode === 'all' || (normalizedMode === 'admin' && appRole === 'admin'),
+    };
+}
 
 /**
  * Me DTO type for API responses.
@@ -34,6 +59,7 @@ export interface MeDto {
     current_period_end: string | null;
     auto_renew: boolean | null;
     trial_ends_at: string | null;
+    features: { recipe_variants: MeRecipeVariantsFeatureDto };
 }
 
 /** Columns to select for minimal profile queries. */
@@ -80,6 +106,17 @@ export async function getMeProfile(
 ): Promise<MeDto> {
     logger.info('Fetching minimal profile for /me', { userId, appRole });
 
+    let featurePromise: Promise<{ data: { mode?: string } | null; error: { code?: string } | null }>;
+    try {
+        featurePromise = (createServiceRoleClient() as unknown as FeatureFlagClient)
+            .from('feature_flags')
+            .select('mode')
+            .eq('name', 'recipe_variants')
+            .maybeSingle();
+    } catch {
+        // Unit-test clients do not expose environment-backed service credentials.
+        featurePromise = Promise.resolve({ data: null, error: null });
+    }
     const profilePromise = client
         .from('profiles')
         .select(PROFILE_SELECT_COLUMNS)
@@ -106,7 +143,8 @@ export async function getMeProfile(
         { data: profileData, error: profileError },
         { data: creditsData, error: creditsError },
         { data: subscriptionData, error: subscriptionError },
-    ] = await Promise.all([profilePromise, creditsPromise, subscriptionPromise]);
+        { data: featureData, error: featureError },
+    ] = await Promise.all([profilePromise, creditsPromise, subscriptionPromise, featurePromise]);
 
     if (profileError) {
         // Handle case where no profile was found (PGRST116 = "Row not found")
@@ -143,6 +181,10 @@ export async function getMeProfile(
             errorMessage: subscriptionError.message,
         });
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch subscription');
+    }
+    if (featureError) {
+        logger.error('Database error while fetching feature flags for /me', { errorCode: featureError.code });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch feature flags');
     }
 
     // Additional check for empty data (defensive programming)
@@ -190,5 +232,8 @@ export async function getMeProfile(
         current_period_end: subscriptionData?.current_period_end ?? null,
         auto_renew: subscriptionData?.auto_renew ?? null,
         trial_ends_at: subscriptionData?.trial_ends_at ?? null,
+        features: {
+            recipe_variants: resolveRecipeVariantsFeature(featureData?.mode, appRole),
+        },
     };
 }

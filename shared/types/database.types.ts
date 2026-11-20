@@ -34,6 +34,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      feature_flags: {
+        Row: {
+          name: string
+          mode: "disabled" | "admin" | "all"
+          updated_at: string
+        }
+        Insert: {
+          name: string
+          mode: "disabled" | "admin" | "all"
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          mode?: "disabled" | "admin" | "all"
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_rate_limits: {
         Row: {
           count: number
@@ -765,6 +783,79 @@ export type Database = {
       }
     }
     Functions: {
+      create_recipe_variant: {
+        Args: {
+          p_is_admin?: boolean
+          p_recipe_id: number
+          p_source_recipe_id?: number | null
+          p_user_id: string
+          p_variant_name: string
+        }
+        Returns: Json
+      }
+      delete_recipe_family: {
+        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
+        Returns: boolean
+      }
+      delete_recipe_variant: {
+        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
+        Returns: boolean
+      }
+      recipe_variant_usage: {
+        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
+        Returns: Json
+      }
+      recipe_variants_allowed: {
+        Args: { p_is_admin?: boolean }
+        Returns: boolean
+      }
+      recipe_variants_list: {
+        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
+        Returns: {
+          recipe_id: number
+          variant_name: string
+          is_default: boolean
+          sort_order: number
+          image_path: string | null
+          diet_type: Database["public"]["Enums"]["recipe_diet_type"]
+          is_termorobot: boolean
+          is_grill: boolean
+          difficulty: Database["public"]["Enums"]["recipe_difficulty"]
+          servings: number
+        }[]
+      }
+      rename_recipe_variant: {
+        Args: {
+          p_is_admin?: boolean
+          p_recipe_id: number
+          p_user_id: string
+          p_variant_name: string
+        }
+        Returns: boolean
+      }
+      reorder_recipe_variants: {
+        Args: {
+          p_is_admin?: boolean
+          p_recipe_id: number
+          p_recipe_ids: number[]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      set_default_recipe_variant: {
+        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
+        Returns: boolean
+      }
+      update_recipe_family: {
+        Args: {
+          p_is_admin?: boolean
+          p_name?: string | null
+          p_recipe_id: number
+          p_user_id: string
+          p_visibility?: Database["public"]["Enums"]["recipe_visibility"] | null
+        }
+        Returns: boolean
+      }
       set_recipe_rating: {
         Args: {
           p_rating?: number

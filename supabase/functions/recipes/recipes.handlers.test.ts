@@ -1,5 +1,10 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
-import { setRecipeNoteSchema, recipesRouter } from './recipes.handlers.ts';
+import {
+    createVariantSchema,
+    reorderSchema,
+    setRecipeNoteSchema,
+    recipesRouter,
+} from './recipes.handlers.ts';
 
 Deno.test('setRecipeNoteSchema: akceptuje null i normalizuje puste notatki', () => {
     assertEquals(setRecipeNoteSchema.parse({ note: null }), { note: null });
@@ -29,4 +34,16 @@ Deno.test('recipesRouter: OPTIONS zwraca preflight bez wywołania handlera', asy
     );
 
     assertEquals(response.status, 204);
+});
+
+Deno.test('recipesRouter: dłuższa ścieżka wariantów jest routowana przed /recipes/{id}', async () => {
+    const response = await recipesRouter(new Request('http://localhost/recipes/123/variants'));
+    assertEquals(response.status, 401);
+});
+
+Deno.test('warianty: walidują nazwę i kolejność', () => {
+    assertEquals(createVariantSchema.safeParse({ variant_name: '  Nowa  ' }).success, true);
+    assertEquals(createVariantSchema.safeParse({ variant_name: '' }).success, false);
+    assertEquals(reorderSchema.safeParse({ recipe_ids: [1, 2, 2] }).success, true);
+    assertEquals(reorderSchema.safeParse({ recipe_ids: ['1'] }).success, false);
 });

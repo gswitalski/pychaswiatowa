@@ -39,6 +39,7 @@ import {
     RecipeImageEvent,
 } from './components/recipe-image-upload/recipe-image-upload.component';
 import { RecipeCategorizationFormComponent } from './components/recipe-categorization-form/recipe-categorization-form.component';
+import { RecipeVariantsSectionComponent } from './components/recipe-variants-section/recipe-variants-section.component';
 import { EditableListComponent } from '../../../shared/components/editable-list/editable-list.component';
 import {
     AiRecipeImagePreviewDialogComponent,
@@ -124,6 +125,7 @@ export function mapLinesToAiRecipeImageContentItems(lines: string[]): AiRecipeIm
         RecipeImageUploadComponent,
         RecipeCategorizationFormComponent,
         EditableListComponent,
+        RecipeVariantsSectionComponent,
     ],
     templateUrl: './recipe-form-page.component.html',
     styleUrl: './recipe-form-page.component.scss',

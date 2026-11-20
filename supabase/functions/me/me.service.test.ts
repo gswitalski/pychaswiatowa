@@ -2,7 +2,7 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals
 import { assertRejects } from 'https://deno.land/std@0.224.0/assert/assert_rejects.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import type { TypedSupabaseClient } from '../_shared/supabase-client.ts';
-import { getMeProfile } from './me.service.ts';
+import { getMeProfile, resolveRecipeVariantsFeature } from './me.service.ts';
 
 const USER_ID = '5fb3646f-8980-4afb-aeb1-8a4e5fa58212';
 
@@ -96,4 +96,16 @@ Deno.test('getMeProfile: błąd subskrypcji mapuje na INTERNAL_ERROR', async () 
     );
 
     assertEquals(error.code, 'INTERNAL_ERROR');
+});
+
+Deno.test('getMeProfile: brak flagi zwraca disabled', async () => {
+    const result = await getMeProfile(createMeClient(), USER_ID, 'user');
+    assertEquals(result.features.recipe_variants, { enabled: false, mode: 'disabled' });
+});
+
+Deno.test('features.recipe_variants: admin i all mają oczekiwany stan', () => {
+    assertEquals(resolveRecipeVariantsFeature('admin', 'admin'), { enabled: true, mode: 'admin' });
+    assertEquals(resolveRecipeVariantsFeature('admin', 'user'), { enabled: false, mode: 'admin' });
+    assertEquals(resolveRecipeVariantsFeature('all', 'user'), { enabled: true, mode: 'all' });
+    assertEquals(resolveRecipeVariantsFeature('missing', 'user'), { enabled: false, mode: 'disabled' });
 });

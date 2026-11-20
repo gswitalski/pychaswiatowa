@@ -1864,7 +1864,7 @@ export async function deleteRecipe(
 
     const { data: wasDeleted, error } = await client.rpc(
         'soft_delete_recipe',
-        { p_recipe_id: recipeId }
+        { p_recipe_id: recipeId, p_user_id: userId }
     );
 
     if (error) {

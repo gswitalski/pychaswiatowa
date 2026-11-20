@@ -12,6 +12,12 @@ import {
     ImportRecipeCommand,
     UploadRecipeImageResponseDto,
     CursorPaginatedResponseDto,
+    RecipeVariantSummaryDto,
+    RecipeVariantsResponseDto,
+    CreateRecipeVariantCommand,
+    UpdateRecipeFamilyCommand,
+    ReorderRecipeVariantsCommand,
+    RecipeUsageDto,
 } from '../../../../../shared/contracts/types';
 
 /**
@@ -272,6 +278,103 @@ export class RecipesService {
                 }
             })
         );
+    }
+
+    getRecipeVariants(recipeId: number): Observable<RecipeVariantSummaryDto[]> {
+        return from(
+            this.supabase.functions.invoke<RecipeVariantsResponseDto>(
+                `recipes/${recipeId}/variants`,
+                { method: 'GET' },
+            ),
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw this.toDomainError(response.error);
+                }
+                return response.data?.data ?? [];
+            }),
+        );
+    }
+
+    createRecipeVariant(
+        recipeId: number,
+        command: CreateRecipeVariantCommand,
+    ): Observable<{ recipe_id: number; data: RecipeVariantSummaryDto[]; image_warning?: string }> {
+        return this.invokeVariantCommand(`recipes/${recipeId}/variants`, 'POST', command);
+    }
+
+    updateRecipeFamily(
+        recipeId: number,
+        command: UpdateRecipeFamilyCommand,
+    ): Observable<{ data: RecipeVariantSummaryDto[] }> {
+        return this.invokeVariantCommand(`recipes/${recipeId}/family`, 'PUT', command);
+    }
+
+    setDefaultVariant(recipeId: number): Observable<{ data: RecipeVariantSummaryDto[] }> {
+        return this.invokeVariantCommand(`recipes/${recipeId}/default`, 'PUT', {});
+    }
+
+    reorderRecipeVariants(
+        recipeId: number,
+        command: ReorderRecipeVariantsCommand,
+    ): Observable<{ data: RecipeVariantSummaryDto[] }> {
+        return this.invokeVariantCommand(`recipes/${recipeId}/order`, 'PUT', command);
+    }
+
+    getRecipeUsage(recipeId: number): Observable<RecipeUsageDto> {
+        return from(
+            this.supabase.functions.invoke<RecipeUsageDto>(`recipes/${recipeId}/usage`, {
+                method: 'GET',
+            }),
+        ).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw this.toDomainError(response.error);
+                }
+                if (!response.data) {
+                    throw new Error('Nie udało się pobrać użycia wariantu');
+                }
+                return response.data;
+            }),
+        );
+    }
+
+    deleteRecipeVariant(recipeId: number, variantId: number): Observable<void> {
+        return this.invokeVariantCommand(`recipes/${recipeId}/variants/${variantId}`, 'DELETE', {}).pipe(
+            map(() => undefined),
+        );
+    }
+
+    deleteRecipeFamily(recipeId: number): Observable<void> {
+        return this.invokeVariantCommand(`recipes/${recipeId}/family`, 'DELETE', {}).pipe(
+            map(() => undefined),
+        );
+    }
+
+    private invokeVariantCommand<T>(
+        endpoint: string,
+        method: 'POST' | 'PUT' | 'DELETE',
+        body: object,
+    ): Observable<T> {
+        return from(this.supabase.functions.invoke<T>(endpoint, { method, body })).pipe(
+            map((response) => {
+                if (response.error) {
+                    throw this.toDomainError(response.error);
+                }
+                if (!response.data) {
+                    throw new Error('Operacja wariantu nie zwróciła danych');
+                }
+                return response.data;
+            }),
+        );
+    }
+
+    private toDomainError(error: { message?: string; status?: number; context?: { status?: number } }): Error & { status?: number } {
+        const domainError = new Error(error.message || 'Operacja wariantu nie powiodła się') as Error & {
+            status?: number;
+        };
+        domainError.status = error.status ?? error.context?.status;
+        return domainError;
     }
 
     /**

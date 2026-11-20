@@ -44,7 +44,7 @@ Deno.test('deleteRecipe: wykonuje soft-delete przez bezpieczne RPC', async () =>
     );
 
     assertEquals(calledFunction, 'soft_delete_recipe');
-    assertEquals(calledArgs, { p_recipe_id: 348 });
+    assertEquals(calledArgs, { p_recipe_id: 348, p_user_id: USER_ID });
 });
 
 Deno.test('deleteRecipe: zwraca NOT_FOUND, gdy żaden rekord nie został zmieniony', async () => {

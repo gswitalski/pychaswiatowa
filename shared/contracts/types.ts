@@ -420,6 +420,38 @@ export type UpdateRecipeCommand = Partial<CreateRecipeCommand> & {
     image_path?: string | null;
 };
 
+export interface RecipeVariantSummaryDto {
+    recipe_id: number;
+    variant_name: string;
+    is_default: boolean;
+    sort_order: number;
+    image_path: string | null;
+    chips: {
+        diet_type: RecipeDietType | null;
+        is_termorobot: boolean;
+        is_grill: boolean;
+        difficulty: RecipeDifficulty | null;
+        servings: number | null;
+    };
+}
+
+export interface RecipeVariantsResponseDto { data: RecipeVariantSummaryDto[]; }
+export interface CreateRecipeVariantCommand {
+    variant_name: string;
+    source_recipe_id?: number | null;
+}
+export interface UpdateRecipeFamilyCommand {
+    name?: string;
+    visibility?: RecipeVisibility;
+}
+export interface SetDefaultVariantCommand {}
+export interface ReorderRecipeVariantsCommand { recipe_ids: number[]; }
+export interface RecipeUsageDto {
+    plan: number;
+    collections: number;
+    shopping_list: number;
+}
+
 /**
  * Command model for importing a new recipe from a raw text block.
  */
@@ -735,6 +767,12 @@ export interface MeDto {
     current_period_end: string | null;
     auto_renew: boolean | null;
     trial_ends_at: string | null;
+    features: {
+        recipe_variants: {
+            enabled: boolean;
+            mode: 'disabled' | 'admin' | 'all';
+        };
+    };
 }
 
 /**
