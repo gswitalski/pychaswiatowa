@@ -13,10 +13,21 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MeApiService } from '../../../../../core/services/me-api.service';
+import { SupabaseService } from '../../../../../core/services/supabase.service';
+import {
+    ConfirmDialogComponent,
+    type ConfirmDialogData,
+    type ConfirmDialogResult,
+} from '../../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import {
+    TextInputDialogComponent,
+    type TextInputDialogData,
+} from '../../../../../shared/components/text-input-dialog/text-input-dialog.component';
 import { RecipesService } from '../../../services/recipes.service';
-import type { RecipeVariantSummaryDto } from '../../../../../../../shared/contracts/types';
+import type { RecipeUsageDto, RecipeVariantSummaryDto } from '../../../../../../../shared/contracts/types';
 
 @Component({
     selector: 'pych-recipe-variants-section',
@@ -29,6 +40,8 @@ import type { RecipeVariantSummaryDto } from '../../../../../../../shared/contra
 export class RecipeVariantsSectionComponent implements OnInit {
     private readonly meApi = inject(MeApiService);
     private readonly recipes = inject(RecipesService);
+    private readonly dialog = inject(MatDialog);
+    private readonly supabase = inject(SupabaseService);
 
     readonly enabled = signal(false);
     readonly loading = signal(true);
@@ -80,6 +93,24 @@ export class RecipeVariantsSectionComponent implements OnInit {
         return variant.recipe_id === this.editingRecipeId();
     }
 
+    /**
+     * Publiczny URL miniatury. Pusta ścieżka zostaje placeholderem,
+     * pełny http(s) bez zmian, ścieżka bucketa recipe-images przez getPublicUrl.
+     */
+    variantImageUrl(imagePath: string | null): string | null {
+        const path = imagePath?.trim() ?? '';
+        if (!path) {
+            return null;
+        }
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            return path;
+        }
+        const { data } = this.supabase.storage
+            .from('recipe-images')
+            .getPublicUrl(path);
+        return data?.publicUrl || null;
+    }
+
     refreshFeatureAndVariants(): void {
         this.loading.set(true);
         this.meApi.getMe().subscribe({
@@ -117,17 +148,26 @@ export class RecipeVariantsSectionComponent implements OnInit {
     }
 
     addEmpty(): void {
-        const name = window.prompt('Nazwa nowego wariantu');
-        if (!name?.trim()) return;
-        this.create({ variant_name: name.trim() });
+        this.promptVariantName({
+            title: 'Dodaj pusty wariant',
+            label: 'Nazwa wariantu',
+            confirmText: 'Dodaj',
+        }, (name) => this.create({ variant_name: name }));
     }
 
     copyVariant(): void {
-        const source = window.prompt('ID wariantu źródłowego');
-        const name = window.prompt('Nazwa kopii');
-        const sourceId = Number(source);
-        if (!name?.trim() || !Number.isInteger(sourceId)) return;
-        this.create({ variant_name: name.trim(), source_recipe_id: sourceId });
+        const sourceId = this.editingRecipeId();
+        const current = this.variants().find((v) => v.recipe_id === sourceId);
+        const baseName = this.editingVariantName().trim() || current?.variant_name || 'Wariant';
+        this.promptVariantName(
+            {
+                title: 'Utwórz kopię wariantu',
+                label: 'Nazwa kopii',
+                initialValue: `${baseName} (kopia)`,
+                confirmText: 'Utwórz kopię',
+            },
+            (name) => this.create({ variant_name: name, source_recipe_id: sourceId }),
+        );
     }
 
     editVariant(variant: RecipeVariantSummaryDto): void {
@@ -156,11 +196,52 @@ export class RecipeVariantsSectionComponent implements OnInit {
     removeVariant(variant: RecipeVariantSummaryDto): void {
         if (this.variants().length < 2) return;
         this.recipes.getRecipeUsage(variant.recipe_id).subscribe({
-            next: (usage) => {
-                const warning = `Plan: ${usage.plan}, kolekcje: ${usage.collections}, lista zakupów: ${usage.shopping_list}. Usunąć wariant?`;
-                if (window.confirm(warning)) this.mutate(this.recipes.deleteRecipeVariant(this.recipeId(), variant.recipe_id));
-            },
+            next: (usage) => this.confirmRemoveVariant(variant, usage),
             error: (error: Error) => this.error.set(this.messageFor(error)),
+        });
+    }
+
+    private confirmRemoveVariant(
+        variant: RecipeVariantSummaryDto,
+        usage: RecipeUsageDto,
+    ): void {
+        const data: ConfirmDialogData = {
+            title: 'Usuń wariant',
+            message: `„${variant.variant_name}” jest użyty w planie (${usage.plan}), kolekcjach (${usage.collections}) i na liście zakupów (${usage.shopping_list}). Usunąć ten wariant?`,
+            confirmText: 'Usuń',
+            cancelText: 'Anuluj',
+            confirmColor: 'warn',
+        };
+        this.dialog
+            .open<ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult>(ConfirmDialogComponent, {
+                width: '420px',
+                data,
+            })
+            .afterClosed()
+            .subscribe((confirmed) => {
+                if (confirmed !== true) return;
+                const remaining = this.variants().filter((item) => item.recipe_id !== variant.recipe_id);
+                const nextVariant = variant.recipe_id === this.editingRecipeId()
+                    ? remaining.find((item) => item.is_default) ?? remaining[0]
+                    : undefined;
+                this.mutate(this.recipes.deleteRecipeVariant(this.recipeId(), variant.recipe_id), () => {
+                    if (nextVariant) {
+                        this.editVariantRequest.emit(nextVariant);
+                    }
+                });
+            });
+    }
+
+    private promptVariantName(data: TextInputDialogData, onConfirm: (name: string) => void): void {
+        const dialogRef = this.dialog.open(TextInputDialogComponent, {
+            data,
+            width: '400px',
+        });
+        dialogRef.afterClosed().subscribe((name) => {
+            if (!name?.trim()) {
+                return;
+            }
+            onConfirm(name.trim());
         });
     }
 

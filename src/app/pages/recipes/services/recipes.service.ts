@@ -350,28 +350,28 @@ export class RecipesService {
     }
 
     deleteRecipeVariant(recipeId: number, variantId: number): Observable<void> {
-        return this.invokeVariantCommand(`recipes/${recipeId}/variants/${variantId}`, 'DELETE', {}).pipe(
-            map(() => undefined),
-        );
+        return this.invokeVariantCommand(`recipes/${recipeId}/variants/${variantId}`, 'DELETE', {}, true);
     }
 
     deleteRecipeFamily(recipeId: number): Observable<void> {
-        return this.invokeVariantCommand(`recipes/${recipeId}/family`, 'DELETE', {}).pipe(
-            map(() => undefined),
-        );
+        return this.invokeVariantCommand(`recipes/${recipeId}/family`, 'DELETE', {}, true);
     }
 
     private invokeVariantCommand<T>(
         endpoint: string,
         method: 'POST' | 'PUT' | 'DELETE',
         body: object,
+        allowEmpty = false,
     ): Observable<T> {
         return from(this.supabase.functions.invoke<T>(endpoint, { method, body })).pipe(
             map((response) => {
                 if (response.error) {
                     throw this.toDomainError(response.error);
                 }
-                if (!response.data) {
+                if (response.data == null) {
+                    if (allowEmpty) {
+                        return undefined as T;
+                    }
                     throw new Error('Operacja wariantu nie zwróciła danych');
                 }
                 return response.data;

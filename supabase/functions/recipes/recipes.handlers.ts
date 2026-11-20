@@ -2021,7 +2021,7 @@ export async function handleDeleteRecipeVariant(req: Request, recipeIdParam: str
         const recipeId = parseAndValidateRecipeId(variantIdParam ?? recipeIdParam);
         const { client, user, isAdmin } = await getVariantContext(req);
         await deleteRecipeVariant(client, recipeId, user.id, isAdmin);
-        return new Response(null, { status: 204 });
+        return createSuccessResponse({ ok: true });
     } catch (error) { return handleError(error); }
 }
 
@@ -2030,7 +2030,7 @@ export async function handleDeleteRecipeFamily(req: Request, recipeIdParam: stri
         const recipeId = parseAndValidateRecipeId(recipeIdParam);
         const { client, user, isAdmin } = await getVariantContext(req);
         await deleteRecipeFamily(client, recipeId, user.id, isAdmin);
-        return new Response(null, { status: 204 });
+        return createSuccessResponse({ ok: true });
     } catch (error) { return handleError(error); }
 }
 

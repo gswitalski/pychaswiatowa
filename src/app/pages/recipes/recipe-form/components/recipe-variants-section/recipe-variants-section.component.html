@@ -29,8 +29,8 @@
                 <div class="variant-list">
                     @for (variant of variants(); track variant.recipe_id; let i = $index) {
                         <article class="variant-row" [class.is-editing]="isEditingVariant(variant)">
-                            @if (variant.image_path) {
-                                <img [src]="variant.image_path" [alt]="'Miniatura wariantu ' + variant.variant_name" />
+                            @if (variantImageUrl(variant.image_path); as imageUrl) {
+                                <img [src]="imageUrl" [alt]="'Miniatura wariantu ' + variant.variant_name" />
                             } @else {
                                 <div class="thumbnail-placeholder" aria-hidden="true"><mat-icon>restaurant</mat-icon></div>
                             }

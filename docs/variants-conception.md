@@ -242,6 +242,9 @@ Formularz istniejącego przepisu pozostaje prosty dla jednego wariantu:
   przepływie,
 - dodanie wariantu zaczyna się od pustego formularza albo od kopii wybranego
   wariantu,
+- w sekcji „Warianty” na formularzu edycji **Utwórz kopię** zawsze kopiuje
+  **aktualnie edytowany** wariant (ten sam `recipe_id`, co w URL
+  `/recipes/{id}/edit`); użytkownik nie podaje identyfikatora źródła,
 - kopiowanie jest jawne, aby użytkownik nie nadpisał oryginału,
 - kopia zdjęcia jest fizyczną kopią pliku w Storage; wariant nigdy nie
   współdzieli pliku z innym wariantem.
@@ -272,6 +275,14 @@ formularzu głównym lub na liście przepisów.
 
 Przełączanie i tworzenie wariantu (stan zaimplementowany):
 
+- **Dodaj pusty** i **Utwórz kopię** proszą o nazwę w dialogu Angular
+  Material (`TextInputDialogComponent` w
+  `src/app/shared/components/text-input-dialog/`), nie w systemowym oknie
+  przeglądarki (`window.prompt`),
+- przy kopii dialog ma domyślną nazwę `{bieżąca nazwa wariantu} (kopia)`
+  (wartość z pola **Wariant** w formularzu, jeśli użytkownik ją edytuje; w
+  przeciwnym razie nazwa z listy wariantów); backend dostaje
+  `source_recipe_id` = id aktualnie edytowanego wariantu,
 - po **utworzeniu** pustego wariantu lub kopii aplikacja przechodzi na edycję
   nowego wariantu (tak jak po kliknięciu ołówka); `POST …/variants` zwraca
   `{ recipe_id, image_warning? }`, a pełna lista jest odświeżana osobnym
@@ -289,9 +300,15 @@ Nie wolno usunąć ostatniego wariantu bez usunięcia całego przepisu (grupy).
 
 - Usunięcie wariantu jest soft delete. Przed usunięciem interfejs pokazuje,
   w ilu miejscach właściciela wariant jest użyty (plan, kolekcje, lista
-  zakupów), i prosi o potwierdzenie. Po potwierdzeniu wariant jest usuwany
-  z planu i kolekcji właściciela, a odpowiadające mu pozycje listy zakupów
-  są usuwane tą samą logiką co ręczne usunięcie przepisu z planu.
+  zakupów), i prosi o potwierdzenie w dialogu Angular Material
+  (`ConfirmDialogComponent`: tytuł „Usuń wariant”, **Anuluj** / **Usuń**),
+  nie w systemowym oknie przeglądarki (`window.confirm`). Po potwierdzeniu
+  wariant jest usuwany z planu i kolekcji właściciela, a odpowiadające mu
+  pozycje listy zakupów są usuwane tą samą logiką co ręczne usunięcie
+  przepisu z planu. Lista wariantów odświeża się po sukcesie.
+- Gdy usuwany wariant jest otwarty w formularzu, po udanym usunięciu edycja
+  przechodzi na pozostały wariant domyślny, a gdy go nie ma — na pierwszy
+  z listy.
 - Usunięcie wariantu domyślnego wybiera nowy domyślny w tej samej operacji
   (pierwszy aktywny według kolejności).
 - Usunięcie grupy kaskadowo oznacza wszystkie jej warianty jako usunięte.
@@ -694,8 +711,12 @@ niewdrożone zdalnie).
 6. **Szczegóły modelu.**
    - `recipe_families.id` jest typu `uuid`.
    - Spójność kopii `recipes.name` i `recipes.visibility` oraz `deleted_at`
-     zapewniają triggery (`recipe_family_sync_recipes`,
+     grupy zapewniają triggery (`recipe_family_sync_recipes`,
      `recipe_family_guard_recipe`, `recipe_family_check_default`), a nie tylko RPC.
+     Soft delete jednego wariantu jest wyjątkiem: grupa zostaje aktywna, więc
+     `delete_recipe_variant` na czas `UPDATE` ustawia `app.recipe_family_sync`.
+     Bez tej flagi guard nadpisuje `recipes.deleted_at` wartością grupy
+     (`null`) i wariant zostaje.
    - Insert do `recipes` bez grupy dostaje grupę 1:1 automatycznie, więc stare
      ścieżki zapisu (import, AI, seedy) działają bez zmian.
    - Migracja backfilluje także przepisy usunięte (`deleted_at` kopiowane do grupy).
@@ -745,6 +766,29 @@ niewdrożone zdalnie).
   pierwszy wariant.
 - Kontrakt odpowiedzi `POST …/variants` w frontendzie dopasowany do API:
   `{ recipe_id, image_warning? }` (nie pełna lista wariantów w body utworzenia).
+
+**Poprawka UX tworzenia wariantów (iteracja po PS-109 — zaimplementowana):**
+
+- Usunięto `window.prompt` przy **Dodaj pusty** i **Utwórz kopię**; nazwa
+  wariantu jest zbierana w `TextInputDialogComponent` (Material: tytuł, pole
+  z walidacją „Podaj nazwę”, OK / Anuluj).
+- **Utwórz kopię** nie pyta o „ID wariantu źródłowego”; źródłem kopii jest
+  wariant edytowany w formularzu (`editingRecipeId` / `:id` w trasie).
+- Domyślna nazwa kopii: `{aktualna nazwa wariantu} (kopia)` w polu dialogu
+  (edytowalna przed zatwierdzeniem).
+
+**Poprawka usuwania wariantu (iteracja po PS-109 — zaimplementowana):**
+
+- Ikona kosza otwiera `ConfirmDialogComponent`, nie `window.confirm`. Treść
+  podaje użycie w planie, kolekcjach i na liście zakupów.
+- `DELETE …/variants/{id}` zwraca `{ ok: true }`. Pusta odpowiedź sukcesu
+  (wcześniej 204 bez body) też jest sukcesem; frontend nie traktuje jej jako
+  błędu „Operacja wariantu nie zwróciła danych” i odświeża listę.
+- Migracja `20261120230000`: `delete_recipe_variant` ustawia
+  `app.recipe_family_sync` na czas soft delete, żeby
+  `recipe_family_guard_recipe` nie cofnął `deleted_at`.
+- Po usunięciu wariantu otwartego w formularzu edycja przechodzi na pozostały
+  wariant domyślny albo pierwszy z listy.
 
 ### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
 
