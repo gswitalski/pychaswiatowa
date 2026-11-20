@@ -2,7 +2,7 @@
     <mat-card class="variants-section" [class.is-loading]="loading()">
         <mat-card-header>
             <mat-card-title>Warianty</mat-card-title>
-            <mat-card-subtitle>Zarządzanie wariantami tego przepisu</mat-card-subtitle>
+            <mat-card-subtitle>Wersje tego samego przepisu (składniki, kroki, zdjęcie)</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
             @if (loading()) {
@@ -24,14 +24,8 @@
                     <button mat-stroked-button type="button" (click)="copyVariant()" [disabled]="busy()">
                         <mat-icon>content_copy</mat-icon> Utwórz kopię
                     </button>
-                    <button mat-button type="button" (click)="renameFamily()" [disabled]="busy()">
-                        Zmień nazwę grupy
-                    </button>
-                    <button mat-button type="button" (click)="changeVisibility()" [disabled]="busy()">
-                        Zmień widoczność grupy
-                    </button>
                 </div>
-                <p class="scope-note">Nazwa i widoczność dotyczą wszystkich wariantów. Nowy wariant w grupie PUBLIC jest od razu publiczny.</p>
+                <p class="scope-note">Nazwę przepisu i widoczność ustaw w formularzu powyżej — dotyczą wszystkich wariantów.</p>
                 <div class="variant-list">
                     @for (variant of variants(); track variant.recipe_id; let i = $index) {
                         <article class="variant-row">
@@ -73,7 +67,6 @@
                         <p>Brak wariantów.</p>
                     }
                 </div>
-                <button mat-button color="warn" type="button" (click)="removeFamily()" [disabled]="busy()">Usuń całą grupę</button>
             }
         </mat-card-content>
     </mat-card>

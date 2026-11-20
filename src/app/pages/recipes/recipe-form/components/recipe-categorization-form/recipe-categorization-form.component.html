@@ -51,7 +51,13 @@
                 <span class="option-description">— Widoczny dla wszystkich</span>
             </mat-option>
         </mat-select>
-        <mat-hint>Określa, kto może zobaczyć Twój przepis</mat-hint>
+        <mat-hint>
+            @if (multiVariantVisibilityHint) {
+                Dotyczy wszystkich wariantów tego przepisu
+            } @else {
+                Określa, kto może zobaczyć Twój przepis
+            }
+        </mat-hint>
         @if (visibilityControl.hasError('required') && visibilityControl.touched) {
             <mat-error>Musisz wybrać widoczność przepisu</mat-error>
         }

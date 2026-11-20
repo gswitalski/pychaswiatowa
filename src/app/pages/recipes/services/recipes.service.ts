@@ -15,6 +15,7 @@ import {
     RecipeVariantSummaryDto,
     RecipeVariantsResponseDto,
     CreateRecipeVariantCommand,
+    RenameRecipeVariantCommand,
     UpdateRecipeFamilyCommand,
     ReorderRecipeVariantsCommand,
     RecipeUsageDto,
@@ -308,6 +309,15 @@ export class RecipesService {
         command: UpdateRecipeFamilyCommand,
     ): Observable<{ data: RecipeVariantSummaryDto[] }> {
         return this.invokeVariantCommand(`recipes/${recipeId}/family`, 'PUT', command);
+    }
+
+    renameRecipeVariant(
+        recipeId: number,
+        command: RenameRecipeVariantCommand,
+    ): Observable<void> {
+        return this.invokeVariantCommand(`recipes/${recipeId}/variant-name`, 'PUT', command).pipe(
+            map(() => undefined),
+        );
     }
 
     setDefaultVariant(recipeId: number): Observable<{ data: RecipeVariantSummaryDto[] }> {

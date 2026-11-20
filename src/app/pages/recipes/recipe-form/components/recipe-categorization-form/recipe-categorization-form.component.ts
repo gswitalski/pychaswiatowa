@@ -35,6 +35,8 @@ export class RecipeCategorizationFormComponent {
     @Input({ required: true }) tagsArray!: FormArray<FormControl<string>>;
     @Input({ required: true }) visibilityControl!: FormControl<RecipeVisibility>;
     @Input() categories: CategoryDto[] = [];
+    /** Gdy true — widoczność dotyczy wszystkich wariantów przepisu. */
+    @Input() multiVariantVisibilityHint = false;
 
     readonly separatorKeyCodes = [ENTER, COMMA] as const;
 

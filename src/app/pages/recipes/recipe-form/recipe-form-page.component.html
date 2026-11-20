@@ -53,6 +53,8 @@
                 <mat-card-content>
                     <pych-recipe-basic-info-form
                         [nameControl]="form.controls.name"
+                        [showVariantNameField]="showVariantNameField()"
+                        [variantNameControl]="form.controls.variantName"
                         [descriptionControl]="form.controls.description"
                         [servingsControl]="form.controls.servings"
                         [isTermorobotControl]="form.controls.isTermorobot"
@@ -119,6 +121,7 @@
                         [categoryControl]="form.controls.categoryId"
                         [tagsArray]="tagsArray"
                         [visibilityControl]="form.controls.visibility"
+                        [multiVariantVisibilityHint]="multiVariantVisibilityHint()"
                         [categories]="categories()"
                     />
                 </mat-card-content>
@@ -176,7 +179,10 @@
             </mat-card>
         </form>
         @if (recipeId(); as id) {
-            <pych-recipe-variants-section [recipeId]="id" />
+            <pych-recipe-variants-section
+                [recipeId]="id"
+                (variantsCountChange)="onVariantsCountChange($event)"
+            />
         }
     }
 </div>

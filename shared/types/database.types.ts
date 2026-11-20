@@ -741,6 +741,7 @@ export type Database = {
         Row: {
           category_id: number | null
           category_name: string | null
+          active_variant_count: number | null
           average_rating: number | null
           collection_ids: number[] | null
           collections: Json | null
@@ -769,6 +770,7 @@ export type Database = {
           total_time_minutes: number | null
           updated_at: string | null
           user_id: string | null
+          variant_name: string | null
           visibility: Database["public"]["Enums"]["recipe_visibility"] | null
         }
         Relationships: [

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -8,7 +8,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
 import { MeApiService } from '../../../../../core/services/me-api.service';
 import { RecipesService } from '../../../services/recipes.service';
-import type { RecipeVariantSummaryDto, RecipeVisibility } from '../../../../../../../shared/contracts/types';
+import type { RecipeVariantSummaryDto } from '../../../../../../../shared/contracts/types';
+import { isTechnicalVariantName } from '../../../models/recipe-variants.constants';
 
 @Component({
     selector: 'pych-recipe-variants-section',
@@ -32,6 +33,7 @@ export class RecipeVariantsSectionComponent implements OnInit {
     private latestRequestId = 0;
 
     readonly recipeId = input.required<number>();
+    readonly variantsCountChange = output<number>();
 
     ngOnInit(): void {
         this.refreshFeatureAndVariants();
@@ -58,6 +60,7 @@ export class RecipeVariantsSectionComponent implements OnInit {
             next: (variants) => {
                 if (requestId !== this.latestRequestId) return;
                 this.variants.set(variants);
+                this.variantsCountChange.emit(variants.length);
                 this.error.set(null);
                 this.loading.set(false);
             },
@@ -82,18 +85,6 @@ export class RecipeVariantsSectionComponent implements OnInit {
         const sourceId = Number(source);
         if (!name?.trim() || !Number.isInteger(sourceId)) return;
         this.create({ variant_name: name.trim(), source_recipe_id: sourceId });
-    }
-
-    renameFamily(): void {
-        const name = window.prompt('Nowa nazwa grupy (zmieni wszystkie warianty)');
-        if (!name?.trim()) return;
-        this.mutate(this.recipes.updateRecipeFamily(this.recipeId(), { name: name.trim() }));
-    }
-
-    changeVisibility(): void {
-        const visibility = window.prompt('Widoczność grupy: PRIVATE, PUBLIC lub SHARED')?.trim().toUpperCase();
-        if (!visibility || !['PRIVATE', 'PUBLIC', 'SHARED'].includes(visibility)) return;
-        this.mutate(this.recipes.updateRecipeFamily(this.recipeId(), { visibility: visibility as RecipeVisibility }));
     }
 
     editVariant(variant: RecipeVariantSummaryDto): void {
@@ -127,17 +118,29 @@ export class RecipeVariantsSectionComponent implements OnInit {
         });
     }
 
-    removeFamily(): void {
-        if (!window.confirm('Usunąć całą grupę wariantów? Tej operacji nie można cofnąć.')) return;
-        this.mutate(this.recipes.deleteRecipeFamily(this.recipeId()), () => {
-            void this.router.navigate(['/my-recipies']);
-        });
+    private create(command: { variant_name: string; source_recipe_id?: number }): void {
+        const previousCount = this.variants().length;
+        this.mutate(
+            this.recipes.createRecipeVariant(this.recipeId(), command),
+            (result: { recipe_id: number; data: RecipeVariantSummaryDto[]; image_warning?: string }) => {
+                this.imageWarning.set(result.image_warning ?? null);
+                if (previousCount < 2 && result.data.length >= 2) {
+                    this.promptTechnicalVariantRenames(result.data);
+                }
+            },
+        );
     }
 
-    private create(command: { variant_name: string; source_recipe_id?: number }): void {
-        this.mutate(this.recipes.createRecipeVariant(this.recipeId(), command), (result) => {
-            this.imageWarning.set(result.image_warning ?? null);
-        });
+    private promptTechnicalVariantRenames(variants: RecipeVariantSummaryDto[]): void {
+        const stale = variants.filter((variant) => isTechnicalVariantName(variant.variant_name));
+        for (const variant of stale) {
+            const label = variant.variant_name;
+            const newName = window.prompt(
+                `Przepis ma już więcej niż jeden wariant. Podaj nazwę zamiast „${label}” (wariant „${label}”):`,
+            );
+            if (!newName?.trim()) continue;
+            this.mutate(this.recipes.renameRecipeVariant(variant.recipe_id, { variant_name: newName.trim() }));
+        }
     }
 
     private mutate<T>(request: import('rxjs').Observable<T>, after?: (result: T) => void): void {

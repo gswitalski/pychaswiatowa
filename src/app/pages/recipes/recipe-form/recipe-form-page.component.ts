@@ -52,6 +52,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AiCreditsService } from '../../../core/services/ai-credits.service';
 import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.model';
 import { RecipesService } from '../services/recipes.service';
+import { MeApiService } from '../../../core/services/me-api.service';
+import { of, switchMap } from 'rxjs';
 import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
 import { SlugService } from '../../../shared/services/slug.service';
 import { ImageCompressionService } from '../../../shared/services/image-compression.service';
@@ -80,6 +82,7 @@ import { formatUnreadableImagesMessage } from './draft-image-warnings.messages';
 
 export interface RecipeFormViewModel {
     name: FormControl<string>;
+    variantName: FormControl<string>;
     description: FormControl<string>;
     categoryId: FormControl<number | null>;
     visibility: FormControl<RecipeVisibility>;
@@ -142,6 +145,7 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly categoriesService = inject(CategoriesService);
     private readonly authService = inject(AuthService);
     private readonly recipesService = inject(RecipesService);
+    private readonly meApi = inject(MeApiService);
     private readonly draftStateService = inject(RecipeDraftStateService);
     private readonly aiRecipeImageService = inject(AiRecipeImageService);
     private readonly creditsService = inject(AiCreditsService);
@@ -182,6 +186,16 @@ export class RecipeFormPageComponent implements OnInit {
 
     /** Error message */
     readonly error = signal<string | null>(null);
+
+    readonly recipeVariantsEnabled = signal(false);
+    readonly activeVariantCount = signal(1);
+    private readonly savedVariantName = signal<string>('');
+
+    readonly showVariantNameField = computed(
+        () => this.recipeVariantsEnabled() && this.activeVariantCount() >= 2,
+    );
+
+    readonly multiVariantVisibilityHint = computed(() => this.recipeVariantsEnabled());
 
     /** Categories from service */
     readonly categories = this.categoriesService.categories;
@@ -315,6 +329,9 @@ export class RecipeFormPageComponent implements OnInit {
         this.initForm();
         this.loadCategories();
         this.checkEditMode();
+        this.meApi.getMe().subscribe({
+            next: (me) => this.recipeVariantsEnabled.set(me.features.recipe_variants.enabled),
+        });
 
         // In create mode, check for AI draft to prefill
         if (!this.isEditMode()) {
@@ -336,6 +353,10 @@ export class RecipeFormPageComponent implements OnInit {
                 name: this.fb.control('', {
                     nonNullable: true,
                     validators: [Validators.required, Validators.maxLength(150)],
+                }),
+                variantName: this.fb.control('', {
+                    nonNullable: true,
+                    validators: [Validators.maxLength(150)],
                 }),
                 description: this.fb.control('', { nonNullable: true }),
                 categoryId: this.fb.control<number | null>(null),
@@ -552,9 +573,33 @@ export class RecipeFormPageComponent implements OnInit {
         });
     }
 
+    onVariantsCountChange(count: number): void {
+        this.activeVariantCount.set(count);
+        this.applyVariantNameFieldState();
+    }
+
+    private applyVariantNameFieldState(): void {
+        const control = this.form.controls.variantName;
+        if (this.showVariantNameField()) {
+            control.setValidators([Validators.required, Validators.maxLength(150)]);
+            if (!control.value.trim() && this.savedVariantName()) {
+                control.setValue(this.savedVariantName(), { emitEvent: false });
+            }
+        } else {
+            control.clearValidators();
+        }
+        control.updateValueAndValidity({ emitEvent: false });
+        this.formValid.set(this.form.valid);
+    }
+
     private populateForm(recipe: RecipeDetailDto): void {
+        const variantName = recipe.variant_name ?? '';
+        this.savedVariantName.set(variantName);
+        this.activeVariantCount.set(recipe.active_variant_count ?? 1);
+
         this.form.patchValue({
             name: recipe.name ?? '',
+            variantName,
             description: recipe.description ?? '',
             categoryId: recipe.category_id,
             visibility: recipe.visibility ?? 'PRIVATE',
@@ -608,6 +653,8 @@ export class RecipeFormPageComponent implements OnInit {
                 this.tipsArray.push(this.fb.control(value, { nonNullable: true }));
             });
         }
+
+        this.applyVariantNameFieldState();
     }
 
     /**
@@ -764,18 +811,33 @@ export class RecipeFormPageComponent implements OnInit {
      * Note: Image is handled separately through RecipeImageUploadComponent's auto-upload
      */
     private updateRecipe(id: number, command: UpdateRecipeCommand): void {
-        this.recipesService.updateRecipe(id, command, null).subscribe({
-            next: () => {
-                this.saving.set(false);
-                // Use name from command, fallback to current form value
-                const recipeName = command.name ?? this.form.get('name')?.value ?? 'przepis';
-                this.navigateToRecipe(id, recipeName);
-            },
-            error: (err) => {
-                this.error.set(err.message || 'Nie udało się zaktualizować przepisu');
-                this.saving.set(false);
-            },
-        });
+        const variantName = this.form.controls.variantName.value.trim();
+        const shouldRenameVariant =
+            this.showVariantNameField() &&
+            variantName.length > 0 &&
+            variantName !== this.savedVariantName();
+
+        this.recipesService
+            .updateRecipe(id, command, null)
+            .pipe(
+                switchMap(() => {
+                    if (!shouldRenameVariant) {
+                        return of(undefined);
+                    }
+                    return this.recipesService.renameRecipeVariant(id, { variant_name: variantName });
+                }),
+            )
+            .subscribe({
+                next: () => {
+                    this.saving.set(false);
+                    const recipeName = command.name ?? this.form.get('name')?.value ?? 'przepis';
+                    this.navigateToRecipe(id, recipeName);
+                },
+                error: (err) => {
+                    this.error.set(err.message || 'Nie udało się zaktualizować przepisu');
+                    this.saving.set(false);
+                },
+            });
     }
 
     /**

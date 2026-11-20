@@ -51,6 +51,14 @@ przyszłych historyjek. Nie jest planem implementacji ani specyfikacją API.
   danych, ocen na karcie i limitu planu.
 - Zmieniono kolejność historyjek: zabezpieczenia przed ekspozycją, grupowanie
   wszystkich list przed włączeniem funkcji, testy w każdej historyjce.
+- W interfejsie właściciela nie używa się słowa „grupa”: **nazwa przepisu** to
+  wspólna tożsamość logiczna (`recipe_families.name`); wariant opisuje pole
+  **nazwa wariantu** (widoczne przy ≥2 wariantach). Nazwę przepisu i widoczność
+  ustawia się w głównym formularzu, nie w sekcji „Warianty”. Usunięcie całego
+  przepisu (wszystkich wariantów) jest poza ekranem edycji.
+- Domyślna nazwa techniczna pierwszego wariantu to **„Wariant podstawowy”**
+  (wcześniejsza migracja ustawiała „Podstawowa”; istniejące dane znormalizowano
+  w migracji `20261120220000`).
 
 ## 2. Model pojęciowy
 
@@ -97,10 +105,13 @@ Nazwa wyświetlana składa się jako:
 > Lasagne · Klasyczna
 
 Jeśli grupa ma tylko jeden wariant, widoczne jest dotychczasowe „Lasagne”
-bez sufiksu. Wariant ma jednak nazwę zawsze. Wariant migrowany dostaje nazwę
-techniczną „Podstawowa”. Gdy użytkownik dodaje drugi wariant, formularz
-prosi o zmianę nazwy pierwszego, aby nazwa „Podstawowa” nie pozostała
-w widocznych etykietach.
+bez sufiksu. W bazie wariant ma nazwę zawsze (`variant_name` NOT NULL); w UI
+pole **nazwa wariantu** jest ukryte przy jednym aktywnym wariancie. Nowy
+pierwszy wariant dostaje nazwę techniczną **„Wariant podstawowy”** (starsze
+rekordy mogły mieć „Podstawowa” — traktowane jak nazwa techniczna).
+Gdy użytkownik dodaje drugi wariant, **sekcja „Warianty”** prosi o zmianę
+nazwy wariantów nadal oznaczonych nazwą techniczną, aby nie pozostały w
+widocznych etykietach (`Wariant podstawowy` · …).
 
 ### Zasady danych
 
@@ -233,22 +244,25 @@ Formularz istniejącego przepisu pozostaje prosty dla jednego wariantu:
 - kopia zdjęcia jest fizyczną kopią pliku w Storage; wariant nigdy nie
   współdzieli pliku z innym wariantem.
 
-W formularzu wariantu znajdują się:
+W formularzu edycji wariantu (przy włączonej fladze `recipe_variants`):
 
-- nazwa wspólna grupy, edytowana na poziomie grupy (z informacją, że zmiana
-  dotyczy wszystkich wariantów),
-- nazwa wariantu,
-- komplet obecnych pól przepisu,
-- informacja, czy wariant jest domyślny.
+- pole **Nazwa przepisu** — wspólna nazwa dla wszystkich wariantów; zapis
+  przez istniejący `PUT /recipes/{id}` aktualizuje źródło prawdy w
+  `recipe_families`,
+- pole **Nazwa wariantu** — pod nazwą przepisu; widoczne i wymagane dopiero
+  gdy w rodzinie są co najmniej dwa aktywne warianty; zapis przez
+  `PUT /recipes/{id}/variant-name`,
+- pole **Widoczność** (sekcja kategoria/tagi) — dotyczy całego przepisu
+  (wszystkich wariantów); ten sam zapis co nazwa przepisu,
+- pozostałe pola — treść wybranego wariantu (składniki, kroki, zdjęcie itd.).
 
-Widoczność ustawia się dla grupy. Formularz wariantu pokazuje ją tylko do
-odczytu z linkiem do zmiany na poziomie grupy.
+Sekcja „Warianty” na dole edycji (tylko właściciel, flaga włączona) służy do
+listy wariantów, ustawienia domyślnego, kolejności, utworzenia pustego/kopii,
+edycji innego wariantu i usunięcia wariantu (gdy jest ich ≥2). **Nie** zawiera
+osobnych akcji zmiany nazwy przepisu, widoczności ani usunięcia całego
+przepisu — te rzeczy są w formularzu głównym lub na liście przepisów.
 
-Na poziomie grupy jest sekcja „Warianty”, gdzie właściciel może zmienić
-wariant domyślny, zmienić kolejność, edytować wariant, utworzyć kopię
-i usunąć wariant.
-
-Nie wolno usunąć ostatniego wariantu bez usunięcia całej grupy.
+Nie wolno usunąć ostatniego wariantu bez usunięcia całego przepisu (grupy).
 
 ### Usuwanie
 
@@ -344,7 +358,7 @@ recipe_families
 recipes
   id                  -- bez zmian
   recipe_family_id    -- NOT NULL po migracji, klucz złożony (id, user_id)
-  variant_name        -- NOT NULL, „Podstawowa” po migracji
+  variant_name        -- NOT NULL, „Wariant podstawowy” (domyślnie w triggerze)
   is_default          -- boolean
   sort_order          -- smallint
   name                -- kopia nazwy grupy (ustawiana przez backend)
@@ -381,7 +395,8 @@ Warto rozdzielić:
 - `RecipeVariantSummaryDto` — id, nazwa, chipy cech, kolejność, znacznik
   domyślnego,
 - `RecipeDetailDto` — pełne dane wybranego wariantu wraz z grupą i listą
-  wariantów.
+  wariantów; od poprawki PS-109 także `variant_name` i `active_variant_count`
+  (widok `recipe_details`) dla formularza edycji.
 
 Pełna treść wszystkich wariantów nie jest zwracana na liście ani na starcie
 widoku szczegółów.
@@ -517,10 +532,11 @@ grupę, wyszukiwanie ani link bezpośredni.
 ### Historyjka 2 — Zarządzanie wariantami przez właściciela
 
 Dodać utworzenie wariantu, utworzenie przez kopiowanie (z kopią zdjęcia),
-edycję, zmianę nazwy grupy, zmianę widoczności grupy, zmianę wariantu
-domyślnego, kolejności oraz usunięcie wariantu i grupy z ostrzeżeniem
-o użyciu w planie i kolekcjach. Uwzględnić limit wariantów, unikalność nazw
-i ochronę przed usunięciem ostatniego wariantu.
+edycję, zmianę nazwy przepisu i widoczności (przez główny formularz i istniejący
+zapis przepisu), zmianę nazwy wariantu, wariantu domyślnego, kolejności oraz
+usunięcie wariantu z ostrzeżeniem o użyciu w planie i kolekcjach. Usunięcie
+całego przepisu (wszystkich wariantów) pozostaje poza ekranem edycji. Uwzględnić
+limit wariantów, unikalność nazw i ochronę przed usunięciem ostatniego wariantu.
 
 > **Dodatkowo (z sekcji 8):** historyjka 2 wprowadza mechanizm flagi funkcji
 > (w repozytorium go nie ma) oraz egzekwuje limit wariantów w backendzie.
@@ -551,8 +567,8 @@ wariantów, poprawną paginację, `total` oraz sortowanie.
 > **Dodatkowo (z sekcji 8):** dziś wyszukiwanie to `ilike` po `recipes.name`, a
 > `search_vector` nie jest używany. Ta historyjka musi objąć `variant_name` w
 > wyszukiwaniu i zdecydować, czy rozszerzać `search_vector` (wymaga przebudowy
-> kolumny generowanej, indeksu GIN i widoku `recipe_details`; nazwa techniczna
-> „Podstawowa” nie powinna trafić do wektora).
+> kolumny generowanej, indeksu GIN i widoku `recipe_details`; nazwy techniczne
+> „Wariant podstawowy” i legacy „Podstawowa” nie powinny trafić do wektora).
 
 Kryterium koncepcyjne: warianty zachowują wyszukiwalność, a grupa nie zajmuje
 kilku miejsc na jednej stronie wyników żadnej listy.
@@ -662,8 +678,9 @@ niewdrożone zdalnie).
    - Insert do `recipes` bez grupy dostaje grupę 1:1 automatycznie, więc stare
      ścieżki zapisu (import, AI, seedy) działają bez zmian.
    - Migracja backfilluje także przepisy usunięte (`deleted_at` kopiowane do grupy).
-   - Wariant migrowany ma `variant_name = 'Podstawowa'`, `is_default = true`,
-     `sort_order = 0`.
+   - Wariant migrowany miał początkowo `variant_name = 'Podstawowa'`; po migracji
+     `20261120220000` domyślnie **„Wariant podstawowy”** (`is_default = true`,
+     `sort_order = 0`).
 
 ### Zmiany wprowadzone w PS-109 (stan względem pkt 3–5 powyżej)
 
@@ -675,6 +692,19 @@ niewdrożone zdalnie).
   tylko dla `service_role`; `recipes` korzysta z klienta serwisowego po weryfikacji JWT.
 - **`SHARED` po linku** nadal bez zmian (pkt 3) — do historyjki 3 lub osobnej.
 - Limit wariantów: 10 aktywnych w grupie (RPC pod `FOR UPDATE` na grupie).
+
+**Poprawka UX formularza edycji (po pierwszej implementacji PS-109):**
+
+- Domyślna nazwa techniczna: **„Wariant podstawowy”** (migracja SQL + trigger;
+  `UPDATE` rekordów z „Podstawowa”).
+- W UI: **nazwa przepisu** = wspólna nazwa; **nazwa wariantu** pod nią (ukryta
+  przy jednym wariancie, wymagana przy ≥2); **widoczność** w formularzu — dla
+  wszystkich wariantów.
+- Sekcja „Warianty”: bez przycisków zmiany nazwy/widoczności przepisu i bez
+  „usuń całą grupę”; po dodaniu drugiego wariantu prompt na zmianę nazwy
+  technicznej w sekcji wariantów.
+- GET pojedynczego przepisu: `variant_name`, `active_variant_count` w
+  `recipe_details` (migracja `20261120220000`).
 
 ### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
 

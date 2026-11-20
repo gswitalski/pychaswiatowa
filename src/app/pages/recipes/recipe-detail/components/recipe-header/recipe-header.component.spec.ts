@@ -47,6 +47,8 @@ function makeRecipe(overrides: Partial<RecipeDetailDto> = {}): RecipeDetailDto {
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',
         author: { id: 'user-abc', username: 'jan.kowalski' },
+        variant_name: 'Wariant podstawowy',
+        active_variant_count: 1,
         ...overrides,
     } as RecipeDetailDto;
 }

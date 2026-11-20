@@ -337,6 +337,10 @@ export type RecipeDetailDto = Omit<
     my_rating?: number | null;
     /** Authenticated user's private recipe note, omitted for anonymous responses. */
     my_note?: string | null;
+    /** Nazwa bieżącego wariantu (rekord recipes). */
+    variant_name: string | null;
+    /** Liczba aktywnych wariantów w tej samej rodzinie przepisu. */
+    active_variant_count: number;
 };
 
 /** Request body for PUT /recipes/{id}/note. */
@@ -439,6 +443,9 @@ export interface RecipeVariantsResponseDto { data: RecipeVariantSummaryDto[]; }
 export interface CreateRecipeVariantCommand {
     variant_name: string;
     source_recipe_id?: number | null;
+}
+export interface RenameRecipeVariantCommand {
+    variant_name: string;
 }
 export interface UpdateRecipeFamilyCommand {
     name?: string;

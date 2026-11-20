@@ -40,6 +40,9 @@ import {
 })
 export class RecipeBasicInfoFormComponent implements OnInit {
     @Input({ required: true }) nameControl!: FormControl<string>;
+    /** Gdy true (≥2 warianty przy włączonej fladze), pokazuje pole nazwy wariantu. */
+    @Input() showVariantNameField = false;
+    @Input() variantNameControl: FormControl<string> | null = null;
     @Input({ required: true }) descriptionControl!: FormControl<string>;
     @Input({ required: true }) servingsControl!: FormControl<number | null>;
     @Input({ required: true }) isTermorobotControl!: FormControl<boolean>;

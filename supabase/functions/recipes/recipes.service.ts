@@ -225,6 +225,8 @@ export interface RecipeDetailDto {
     /** True if recipe is marked as wanting to try by the authenticated user. */
     is_want_to_try?: boolean;
     author: { id: string; username: string };
+    variant_name: string | null;
+    active_variant_count: number;
 }
 
 /**
@@ -1144,6 +1146,8 @@ function mapToRecipeDetailDto(
         ...buildRatingFields(data, myRating, true),
         ...(myNote !== undefined && { my_note: myNote }),
         author,
+        variant_name: data.variant_name ?? null,
+        active_variant_count: Number(data.active_variant_count ?? 1),
     };
 }
 
