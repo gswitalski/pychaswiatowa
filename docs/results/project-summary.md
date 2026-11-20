@@ -35,6 +35,7 @@ summary bez ponownej weryfikacji);
 | PS-37 | Nazwa użytkownika w topbarze | zaimplementowane, niezweryfikowane | Deno (CI `validate-backend`), smoke API, test w przeglądarce |
 | PS-204 | Tabela przepisów publicznych w panelu admina (`/admin/recipes`) | zaimplementowane, niezweryfikowane | smoke `200`/`403`, test w przeglądarce, `pl-x-icu` na produkcji, `deno lint` |
 | PS-107 | Filtrowanie tabeli przepisów w panelu admina po polach kolumn | zaimplementowane, niezweryfikowane | smoke z kontami, `deno test` całego `supabase/functions` (wcześniejsze błędy typów w recipes/plan/ai), test w przeglądarce, `deno lint` |
+| PS-108 | Model grupy przepisu (`recipe_families`), migracja i widoczność (bez zmian UI) | zaimplementowane, niezweryfikowane | smoke z kontami, `deno lint`, migracja na kopii danych produkcyjnych, `deno check explore` (istniejące błędy `RecipeDetailFullRow`) |
 
 Znane ryzyko PS-204: funkcje `security definer` admina mają teraz `execute` tylko dla
 `service_role`; inne funkcje admin/RPC z niepełnym `revoke` nie zostały zinwentaryzowane

@@ -510,6 +510,10 @@ Kryterium koncepcyjne: po migracji użytkownik nie widzi różnicy w zachowaniu
 przepisów bez wariantów, a żaden wariant nie ujawnia prywatnych danych przez
 grupę, wyszukiwanie ani link bezpośredni.
 
+> **Status: zrealizowana jako PS-108** (zaimplementowana, niezweryfikowana).
+> Zakres zawężono względem opisu powyżej: bez zmiany `search_vector` (→
+> historyjka 4) i bez zmian RLS na `recipes`. Szczegóły w sekcji 8.
+
 ### Historyjka 2 — Zarządzanie wariantami przez właściciela
 
 Dodać utworzenie wariantu, utworzenie przez kopiowanie (z kopią zdjęcia),
@@ -517,6 +521,11 @@ edycję, zmianę nazwy grupy, zmianę widoczności grupy, zmianę wariantu
 domyślnego, kolejności oraz usunięcie wariantu i grupy z ostrzeżeniem
 o użyciu w planie i kolekcjach. Uwzględnić limit wariantów, unikalność nazw
 i ochronę przed usunięciem ostatniego wariantu.
+
+> **Dodatkowo (z sekcji 8):** historyjka 2 wprowadza mechanizm flagi funkcji
+> (w repozytorium go nie ma) oraz egzekwuje limit wariantów w backendzie.
+> Do rozstrzygnięcia: czy obsłużyć dostęp `SHARED` po linku tutaj, czy w
+> osobnej historyjce.
 
 Kryterium koncepcyjne: właściciel może zbudować pełną grupę bez ręcznego
 tworzenia niezależnych przepisów.
@@ -538,6 +547,12 @@ Zmienić Explore, wyszukiwanie, „Moje przepisy” i kolekcje tak, aby
 dopasowywały warianty, ale zwracały grupy. Dodać reprezentanta najlepszego
 dopasowania (także dla filtrów osobistych), liczbę wariantów i pasujących
 wariantów, poprawną paginację, `total` oraz sortowanie.
+
+> **Dodatkowo (z sekcji 8):** dziś wyszukiwanie to `ilike` po `recipes.name`, a
+> `search_vector` nie jest używany. Ta historyjka musi objąć `variant_name` w
+> wyszukiwaniu i zdecydować, czy rozszerzać `search_vector` (wymaga przebudowy
+> kolumny generowanej, indeksu GIN i widoku `recipe_details`; nazwa techniczna
+> „Podstawowa” nie powinna trafić do wektora).
 
 Kryterium koncepcyjne: warianty zachowują wyszukiwalność, a grupa nie zajmuje
 kilku miejsc na jednej stronie wyników żadnej listy.
@@ -583,7 +598,8 @@ Do potwierdzenia przy planowaniu implementacji:
 - zachowanie wpisów innych użytkowników (plan, kolekcje) po usunięciu
   publicznego wariantu — zgodnie z dzisiejszym zachowaniem przy usunięciu
   przepisu,
-- wartość limitu wariantów w grupie (propozycja: 10),
+- wartość limitu wariantów w grupie (propozycja: 10; egzekwowany dopiero od
+  historyjki 2, w PS-108 nie da się utworzyć drugiego wariantu),
 - sposób odświeżania wektora wyszukiwania po zmianie nazwy grupy (trigger
   czy operacja w RPC).
 
@@ -592,3 +608,68 @@ z filtrowaniem, warianty innych autorów (np. model rozwidlenia przepisu),
 stan „szkic” wariantu, przywracanie usuniętych grup i wariantów,
 operacje dołączania i odłączania wariantów, generowanie wariantu przez AI,
 zbiorcza ocena grupy.
+
+## 8. Stan wdrożenia i odchylenia od koncepcji
+
+Sekcje 1–7 opisują stan docelowy. Ta sekcja jest dziennikiem tego, co zostało
+wdrożone i czym różni się od koncepcji; aktualizuj ją po każdej historyjce.
+
+### Stan historyjek
+
+| Historyjka | ID | Status | Artefakty |
+|---|---|---|---|
+| 1. Model grupy, migracja, widoczność | PS-108 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-108/PS-108-recipe-family-model-visibility-user-story.md`; plan API: `docs/results/impl-plans/endpoints/PS-108-recipe-family-model-visibility-api-implementation-plan.md`; weryfikacja: `…/PS-108-recipe-family-model-visibility-verification.md` |
+| 2–5 | — | niezaplanowane | — |
+
+Migracje PS-108: `20261120200000_create_recipe_families.sql` i
+`20261120200100_fix_recipe_family_default_triggers.sql` (zastosowane lokalnie,
+niewdrożone zdalnie).
+
+### Odchylenia od koncepcji (po PS-108)
+
+1. **`search_vector` bez zmian.** Sekcje 3 i 6 przewidywały rozszerzenie o nazwę
+   grupy i wariantu. Odłożone do historyjki 4 (dziś wyszukiwanie to `ilike` po
+   `recipes.name`; nazwa grupy jest tam już obecna jako kopia).
+2. **RLS na `recipes` poza zakresem.** W bazie jest wyłączony migracją
+   `20251125121000_disable_rls_for_development.sql`, a widok `recipe_details` nie
+   ma `security_invoker` (pomija RLS). Sekcja 5 zakłada działające polityki; w
+   PS-108 RLS dodano tylko dla `recipe_families`. Stan produkcji jest
+   nieznany (ręczny skrypt `docs/scripts/enable_rls_for_production.sql`).
+   **Warunek przed włączeniem flagi wariantów:** osobna historyjka włączająca
+   RLS na `recipes`, dostosowująca polityki do grup i ustawiająca
+   `security_invoker` na `recipe_details`.
+3. **`SHARED` bez dostępu po linku.** Sekcja 5 opisuje `SHARED` jako dostępny po
+   linku z listą wariantów. Dziś widzi go wyłącznie właściciel (endpointy
+   `public` i `explore` filtrują `PUBLIC` lub własne). PS-108 przechowuje
+   widoczność w grupie i kopiuje na warianty, bez nowego dostępu. Dostęp po
+   linku wymaga decyzji, w której historyjce powstanie.
+4. **Uprawnienia RPC.** `create_recipe_with_tags`, `update_recipe_with_tags` i
+   `soft_delete_recipe` zostały przebudowane (poprzednie wersje
+   `update_recipe_with_tags` i `soft_delete_recipe` zachowano jako funkcje
+   `*_legacy` z odebranymi uprawnieniami wywołania). Przebudowane dostały jawny
+   `revoke` od `public` i `anon`, ale `authenticated` zachowuje `execute`, a `p_user_id` podaje
+   wywołujący. Luka (wywołanie z cudzym `p_user_id`) pozostaje do domknięcia
+   przed flagą, np. przez przejście na `service_role` i `auth.uid()`.
+5. **Flaga funkcji nie istnieje.** Repozytorium nie ma mechanizmu feature flag;
+   PS-108 niczego nie wystawia, więc jej nie wprowadza. Wprowadzić w
+   historyjce 2 (pierwsza ekspozycja wariantów).
+6. **Szczegóły modelu.**
+   - `recipe_families.id` jest typu `uuid`.
+   - Spójność kopii `recipes.name` i `recipes.visibility` oraz `deleted_at`
+     zapewniają triggery (`recipe_family_sync_recipes`,
+     `recipe_family_guard_recipe`, `recipe_family_check_default`), a nie tylko RPC.
+   - Insert do `recipes` bez grupy dostaje grupę 1:1 automatycznie, więc stare
+     ścieżki zapisu (import, AI, seedy) działają bez zmian.
+   - Migracja backfilluje także przepisy usunięte (`deleted_at` kopiowane do grupy).
+   - Wariant migrowany ma `variant_name = 'Podstawowa'`, `is_default = true`,
+     `sort_order = 0`.
+
+### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
+
+- `deno check supabase/functions/explore/index.ts` zgłasza 6 błędów typów
+  (`RecipeDetailFullRow` bez pól `is_termorobot`, `diet_type`, `cuisine`,
+  `difficulty`, `is_grill`; `string | null` vs `string`). Występują bez zmian
+  PS-108; dotyczą widoku `recipe_details`, który historyjki 3–4 i tak dotykają.
+- Regeneracja `database.types.ts` (`supabase gen types`) przeformatowuje plik
+  i gubi `| null` w argumentach funkcji (psuje `payments-webhook`). Typy
+  aktualizować ręcznie, addytywnie, albo najpierw ujednolicić generator.

@@ -13,6 +13,9 @@ import type { MarketingConsentTextVersion } from './marketing-consent';
 /** Alias for the 'recipes' table row type. */
 export type Recipe = Tables<'recipes'>;
 
+/** Alias for the 'recipe_families' table row type. */
+export type RecipeFamily = Tables<'recipe_families'>;
+
 /** Alias for the 'recipe_details' view row type. */
 export type RecipeDetail = Tables<'recipe_details'>;
 

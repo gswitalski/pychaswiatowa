@@ -1,6 +1,6 @@
 # PychaŚwiatowa — referencja wygenerowana z kodu
 
-Wygenerowano: 2026-11-13 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
+Wygenerowano: 2026-11-20 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
 Źródła: `shared/types/database.types.ts`, `supabase/functions`, `src/app/**/*.routes.ts`,
 `src/app/core/guards`, `supabase/migrations`. Wzorce ścieżek Edge Functions są wyciągnięte
 z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
@@ -14,10 +14,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 - `plan_recipes`: added_at, recipe_id, user_id
 - `profiles`: created_at, id, marketing_consent, marketing_consent_text_version, marketing_consent_updated_at, updated_at, username
 - `recipe_collections`: collection_id, recipe_id
+- `recipe_families`: created_at, deleted_at, id, name, updated_at, user_id, visibility
 - `recipe_normalized_ingredients`: items, recipe_id, updated_at
 - `recipe_ratings`: created_at, rating, recipe_id, updated_at, user_id
 - `recipe_tags`: recipe_id, tag_id
-- `recipes`: category_id, created_at, cuisine, deleted_at, description, diet_type, difficulty, id, image_path, ingredients, is_grill, is_termorobot, name, normalized_ingredients_status, normalized_ingredients_updated_at, prep_time_minutes, search_vector, servings, steps, tips, total_time_minutes, updated_at, user_id, visibility
+- `recipes`: category_id, created_at, cuisine, deleted_at, description, diet_type, difficulty, id, image_path, ingredients, is_default, is_grill, is_termorobot, name, normalized_ingredients_status, normalized_ingredients_updated_at, prep_time_minutes, recipe_family_id, search_vector, servings, sort_order, steps, tips, total_time_minutes, updated_at, user_id, variant_name, visibility
 - `shopping_list_items`: amount, created_at, id, is_owned, kind, name, recipe_id, recipe_name, text, unit, updated_at, user_id
 - `shopping_list_recipe_contributions`: amount, created_at, id, name, recipe_id, unit, user_id
 - `tags`: created_at, id, name, user_id
@@ -165,11 +166,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 92 plików, ostatnie 5
+## Migracje: 96 plików, ostatnie 5
 
-- `20261010120000_create_user_recipe_flags.sql`
-- `20261027120000_create_recipe_ratings.sql`
-- `20261109120000_create_user_recipe_notes.sql`
-- `20261111120000_create_admin_get_recipes_page_rpc.sql`
 - `20261113130000_extend_admin_recipes_filters.sql`
+- `20261115120000_fix_ai_rate_limit_hit_ambiguous_window_start.sql`
+- `20261115140000_dedupe_create_recipe_with_tags_overloads.sql`
+- `20261120200000_create_recipe_families.sql`
+- `20261120200100_fix_recipe_family_default_triggers.sql`
 

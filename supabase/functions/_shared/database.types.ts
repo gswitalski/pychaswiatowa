@@ -311,6 +311,36 @@ export type Database = {
           },
         ]
       }
+      recipe_families: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          visibility: Database["public"]["Enums"]["recipe_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          visibility?: Database["public"]["Enums"]["recipe_visibility"]
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["recipe_visibility"]
+        }
+        Relationships: []
+      }
       recipe_normalized_ingredients: {
         Row: {
           items: Json
@@ -492,19 +522,23 @@ export type Database = {
           id: number
           image_path: string | null
           ingredients: Json
+          is_default: boolean
           is_grill: boolean
           is_termorobot: boolean
           name: string
           normalized_ingredients_status: string
           normalized_ingredients_updated_at: string | null
           prep_time_minutes: number | null
+          recipe_family_id: string
           search_vector: unknown
           servings: number | null
+          sort_order: number
           steps: Json
           tips: Json
           total_time_minutes: number | null
           updated_at: string
           user_id: string
+          variant_name: string
           visibility: Database["public"]["Enums"]["recipe_visibility"]
         }
         Insert: {
@@ -518,19 +552,23 @@ export type Database = {
           id?: number
           image_path?: string | null
           ingredients: Json
+          is_default?: boolean
           is_grill?: boolean
           is_termorobot?: boolean
           name: string
           normalized_ingredients_status?: string
           normalized_ingredients_updated_at?: string | null
           prep_time_minutes?: number | null
+          recipe_family_id?: string
           search_vector?: unknown
           servings?: number | null
+          sort_order?: number
           steps: Json
           tips?: Json
           total_time_minutes?: number | null
           updated_at?: string
           user_id?: string
+          variant_name?: string
           visibility?: Database["public"]["Enums"]["recipe_visibility"]
         }
         Update: {
@@ -544,19 +582,23 @@ export type Database = {
           id?: number
           image_path?: string | null
           ingredients?: Json
+          is_default?: boolean
           is_grill?: boolean
           is_termorobot?: boolean
           name?: string
           normalized_ingredients_status?: string
           normalized_ingredients_updated_at?: string | null
           prep_time_minutes?: number | null
+          recipe_family_id?: string
           search_vector?: unknown
           servings?: number | null
+          sort_order?: number
           steps?: Json
           tips?: Json
           total_time_minutes?: number | null
           updated_at?: string
           user_id?: string
+          variant_name?: string
           visibility?: Database["public"]["Enums"]["recipe_visibility"]
         }
         Relationships: [
@@ -566,6 +608,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_family_owner_fk"
+            columns: ["recipe_family_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "recipe_families"
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
