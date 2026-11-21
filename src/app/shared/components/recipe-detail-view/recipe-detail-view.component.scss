@@ -79,6 +79,66 @@
     padding-top: 2rem;
 }
 
+.recipe-detail-container.is-loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.variant-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.variant-label {
+    font-weight: 600;
+}
+
+.variant-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.variant-options button.active {
+    background: var(--mat-sys-primary-container);
+}
+
+.variant-select {
+    min-width: 220px;
+    margin-bottom: -1.25em;
+}
+
+.variant-resolution {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--mat-sys-on-secondary-container);
+    background: var(--mat-sys-secondary-container);
+}
+
+.saving-variant {
+    margin: 0.75rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 // Wiersz 1: Header (tytuł, opis, kategoria, tagi) + zdjęcie
 .recipe-header-section {
     display: grid;
@@ -237,6 +297,23 @@
 @media (max-width: 600px) {
     .recipe-detail-container {
         padding: 0 1rem 1.5rem;
+    }
+
+    .variant-switcher {
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+
+    .variant-options {
+        flex-wrap: nowrap;
+        overflow: auto;
+    }
+
+    .variant-options button {
+        max-width: 11rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 

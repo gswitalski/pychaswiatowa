@@ -837,6 +837,10 @@ function parseAndValidateRecipeId(recipeIdParam: string): number {
     return recipeId;
 }
 
+export function getRequestedVariant(req: Request): string | undefined {
+    return new URL(req.url).searchParams.get('variant') ?? undefined;
+}
+
 /**
  * Handles GET /recipes/{id} request.
  * Returns detailed information about a single recipe for the authenticated user.
@@ -878,7 +882,11 @@ export async function handleGetRecipeById(
         const result: RecipeDetailDto = await getRecipeById(
             client,
             recipeId,
-            user.id
+            user.id,
+            {
+                variant: getRequestedVariant(req),
+                isAdmin: getIsAdmin(req),
+            },
         );
 
         logger.info('GET /recipes/{id} completed successfully', {

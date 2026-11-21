@@ -352,6 +352,10 @@ Dla dwóch lub trzech wariantów można użyć zakładek albo segmentowanego
 przełącznika. Dla większej liczby lepsza jest lista rozwijana z nazwą
 i krótkimi cechami wariantu.
 
+Adres `/recipes/{id}` (i `/explore/recipes/{id}`) otwiera dokładnie wariant
+`{id}`; inny wariant wskazuje `?variant={recipeId}`, a wariant domyślny jest
+tylko ratunkiem przy błędnym lub nieaktualnym parametrze (z komunikatem).
+
 Po przełączeniu:
 
 - zmienia się cała treść przepisu, nie tylko etykieta,
@@ -525,17 +529,18 @@ widokach publicznych) pozostaje poprawny i nie zmienia znaczenia:
 - `{id}` jest zawsze identyfikatorem przepisu (`recipes.id`). Identyfikator
   grupy nie występuje w adresach, więc nie ma kolizji przestrzeni ID i nie są
   potrzebne przekierowania ze starych adresów,
-- adres bez parametru wariantu otwiera wariant domyślny grupy, do której
-  należy przepis `{id}`; w grupie z jednym wariantem jest to dokładnie dzisiejsze
+- adres bez parametru wariantu otwiera dokładnie wariant `{id}` (nie wariant
+  domyślny); w grupie z jednym wariantem jest to dokładnie dzisiejsze
   zachowanie,
-- opcjonalny parametr (np. `?variant={recipeId}`) wskazuje konkretny wariant
-  tej samej grupy; jeśli wariant nie należy do grupy, jest usunięty albo
-  niedostępny dla użytkownika, widok otwiera wariant domyślny i pokazuje
+- opcjonalny parametr (np. `?variant={recipeId}`) wskazuje inny wariant tej
+  samej grupy niż `{id}`; wariant domyślny służy wyłącznie jako ratunek, gdy
+  parametr jest błędny lub nieaktualny (nie należy do grupy, jest usunięty albo
+  niedostępny dla użytkownika) — widok otwiera wtedy wariant domyślny i pokazuje
   komunikat,
 - link z karty wyników zawsze zawiera parametr reprezentanta wyniku,
   a przełączenie wariantu w szczegółach aktualizuje parametr,
 - udostępniony adres z parametrem otwiera dokładnie wskazany wariant;
-  udostępniony adres bez parametru otwiera wariant domyślny.
+  udostępniony adres bez parametru otwiera wariant `{id}`.
 
 Dla `SHARED` i `PUBLIC` obowiązuje ta sama zasada; parametr wariantu nie
 omija reguł widoczności.
@@ -591,6 +596,11 @@ wariantów na prywatnym oraz publicznym widoku szczegółów. Obsłużyć adres
 `/recipes/{id}` z opcjonalnym parametrem wariantu, wariant domyślny oraz
 przypadki graniczne (usunięty wariant, nieaktualny parametr, zmiana
 widoczności).
+
+> **Dodatkowo (decyzja przy PS-110):** `SHARED` po linku **nie** wchodzi do tej
+> historyjki. Przełącznik działa dla właściciela przy `SHARED` i dla wszystkich
+> przy `PUBLIC`. Dostęp po linku (w tym lista wariantów dla niewłaściciela) to
+> osobna przyszła historyjka, która **blokuje** włączenie flagi w trybie `all`.
 
 Kryterium koncepcyjne: użytkownik zawsze wie, który wariant ogląda i może
 przejść do innego bez powrotu do wyszukiwania.
@@ -674,7 +684,8 @@ wdrożone i czym różni się od koncepcji; aktualizuj ją po każdej historyjce
 |---|---|---|---|
 | 1. Model grupy, migracja, widoczność | PS-108 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-108/PS-108-recipe-family-model-visibility-user-story.md`; plan API: `docs/results/impl-plans/endpoints/PS-108-recipe-family-model-visibility-api-implementation-plan.md`; weryfikacja: `…/PS-108-recipe-family-model-visibility-verification.md` |
 | 2. Zarządzanie wariantami przez właściciela | PS-109 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-109/PS-109-recipe-variants-owner-management-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-109-recipe-variants-owner-management-*-implementation-plan.md`; weryfikacja: `…/PS-109-recipe-variants-owner-management-verification.md` |
-| 3–5 | — | niezaplanowane | — |
+| 3. Przełącznik wariantów na szczegółach | PS-110 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-110/PS-110-recipe-variant-switcher-detail-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-110-recipe-variant-switcher-detail-*-implementation-plan.md`; weryfikacja: `…/PS-110-recipe-variant-switcher-detail-verification.md`; migracja: `20261121160000_ps110_recipe_detail_variant_metadata.sql` |
+| 4–5 | — | niezaplanowane | — |
 
 Migracje PS-108: `20261120200000_create_recipe_families.sql` i
 `20261120200100_fix_recipe_family_default_triggers.sql` (zastosowane lokalnie,
@@ -697,7 +708,9 @@ niewdrożone zdalnie).
    linku z listą wariantów. Dziś widzi go wyłącznie właściciel (endpointy
    `public` i `explore` filtrują `PUBLIC` lub własne). PS-108 przechowuje
    widoczność w grupie i kopiuje na warianty, bez nowego dostępu. Dostęp po
-   linku wymaga decyzji, w której historyjce powstanie.
+   linku wymaga decyzji, w której historyjce powstanie. **Decyzja (PS-110):**
+   nie powstaje w historyjce 3; to osobna przyszła historyjka, blokująca flagę
+   w trybie `all`.
 4. **Uprawnienia RPC.** `create_recipe_with_tags`, `update_recipe_with_tags` i
    `soft_delete_recipe` zostały przebudowane (poprzednie wersje
    `update_recipe_with_tags` i `soft_delete_recipe` zachowano jako funkcje
@@ -732,7 +745,7 @@ niewdrożone zdalnie).
 - **Luka `p_user_id` domknięta** (pkt 4): `create_recipe_with_tags`,
   `update_recipe_with_tags`, `soft_delete_recipe` oraz nowe RPC wariantów mają `execute`
   tylko dla `service_role`; `recipes` korzysta z klienta serwisowego po weryfikacji JWT.
-- **`SHARED` po linku** nadal bez zmian (pkt 3) — do historyjki 3 lub osobnej.
+- **`SHARED` po linku** nadal bez zmian (pkt 3) — osobna przyszła historyjka (decyzja PS-110).
 - Limit wariantów: 10 aktywnych w grupie (RPC pod `FOR UPDATE` na grupie).
 
 **Poprawka UX formularza edycji (pierwsza implementacja PS-109):**

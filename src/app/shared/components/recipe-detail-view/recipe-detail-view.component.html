@@ -43,8 +43,8 @@
 }
 
 <!-- Success state - recipe content -->
-@if (hasRecipe() && !isLoading() && !error()) {
-    <div class="recipe-detail-container">
+@if (hasRecipe() && !error()) {
+    <div class="recipe-detail-container" [class.is-loading]="isLoading()">
         @if (showPageHeader() && isAuthenticated()) {
             <pych-page-header
                 [title]="pageTitle()"
@@ -181,6 +181,65 @@
                             />
                         }
                     </pych-recipe-header>
+                    @if (recipe()?.variant_resolution; as resolution) {
+                        <div class="variant-resolution" role="status">
+                            <span>{{ resolution.message }}</span>
+                            <button
+                                mat-icon-button
+                                type="button"
+                                aria-label="Zamknij komunikat"
+                                (click)="dismissVariantResolution.emit()"
+                            >
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
+                    }
+                    @if (hasVariantSwitcher()) {
+                        <section class="variant-switcher" aria-labelledby="variant-switcher-label">
+                            <span id="variant-switcher-label" class="variant-label">
+                                Wariant przepisu
+                            </span>
+                            @if (variants().length <= 3) {
+                                <div class="variant-options" role="tablist" aria-live="polite">
+                                    @for (variant of variants(); track variant.recipe_id) {
+                                        <button
+                                            mat-stroked-button
+                                            type="button"
+                                            role="tab"
+                                            [attr.aria-selected]="variant.recipe_id === recipe()!.id"
+                                            [attr.aria-label]="variant.variant_name"
+                                            [title]="variant.variant_name"
+                                            [class.active]="variant.recipe_id === recipe()!.id"
+                                            (click)="selectVariant(variant.recipe_id)"
+                                        >
+                                            {{ variant.variant_name }}
+                                        </button>
+                                    }
+                                </div>
+                            } @else {
+                                <mat-form-field appearance="outline" class="variant-select">
+                                    <mat-label>Wariant przepisu</mat-label>
+                                    <mat-select
+                                        [value]="recipe()!.id"
+                                        aria-label="Wariant przepisu"
+                                        (selectionChange)="selectVariant($event.value)"
+                                    >
+                                        @for (variant of variants(); track variant.recipe_id) {
+                                            <mat-option
+                                                [value]="variant.recipe_id"
+                                                [title]="variant.variant_name"
+                                            >
+                                                {{ variant.variant_name }}
+                                            </mat-option>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+                            }
+                            <span class="sr-only" aria-live="polite">
+                                Wybrano wariant: {{ variantLabel() }}
+                            </span>
+                        </section>
+                    }
                 </div>
 
                 <pych-recipe-image

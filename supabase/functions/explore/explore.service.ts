@@ -10,6 +10,11 @@ import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
 import { buildRatingFields, getMyRatingsMap } from '../_shared/recipe-ratings.ts';
 import { getMyRecipeNote } from '../_shared/recipe-notes.ts';
+import {
+    resolveRecipeVariantDetail,
+    type RecipeVariantSummaryDto,
+    type RecipeVariantResolutionDto,
+} from '../_shared/recipe-variant-detail.ts';
 
 /**
  * DTO for a category (minimal subset).
@@ -117,6 +122,8 @@ export interface RecipeDetailDto {
     my_rating?: number | null;
     my_note?: string | null;
     author: { id: string; username: string };
+    variants?: RecipeVariantSummaryDto[];
+    variant_resolution?: RecipeVariantResolutionDto | null;
 }
 
 /**
@@ -136,6 +143,11 @@ interface RecipeDetailFullRow {
     tips: RecipeContent;
     tags: Array<{ id: number; name: string }> | null;
     servings: number | null;
+    is_termorobot: boolean | null;
+    diet_type: string | null;
+    cuisine: string | null;
+    difficulty: string | null;
+    is_grill: boolean | null;
     prep_time_minutes: number | null;
     total_time_minutes: number | null;
     created_at: string;
@@ -239,7 +251,7 @@ async function fetchAuthorProfile(
             return { id: userId, username: userId };
         }
 
-        return { id: data.id, username: data.username };
+        return { id: data.id, username: data.username ?? userId };
     } catch (err) {
         logger.warn('Unexpected error fetching author profile, using fallback', {
             userId,
@@ -270,6 +282,8 @@ async function fetchAuthorProfile(
 export async function getExploreRecipeById(params: {
     recipeId: number;
     requesterUserId: string | null;
+    rawVariantId?: string;
+    isAdmin?: boolean;
 }): Promise<RecipeDetailDto> {
     const { recipeId, requesterUserId } = params;
 
@@ -280,13 +294,22 @@ export async function getExploreRecipeById(params: {
 
     // Create service role client (bypasses RLS)
     const client = createServiceRoleClient();
+    const variantResolution = await resolveRecipeVariantDetail({
+        client,
+        recipeId,
+        requesterUserId,
+        rawVariantId: params.rawVariantId,
+        isAdmin: params.isAdmin,
+        endpoint: 'explore',
+    });
+    const targetId = variantResolution.selectedId;
 
     // Fetch recipe from recipe_details view
     // CRITICAL: Filter deleted_at IS NULL
     const { data: recipeData, error: recipeError } = await client
         .from('recipe_details')
         .select(RECIPE_DETAIL_SELECT_COLUMNS)
-        .eq('id', recipeId)
+        .eq('id', targetId)
         .is('deleted_at', null)
         .single();
 
@@ -329,17 +352,17 @@ export async function getExploreRecipeById(params: {
         
         // Check if recipe is in user's plan
         const [recipeIdsInPlan, flagsMap, ratingsMap, myNote, author] = await Promise.all([
-            getRecipeIdsInPlan(client, [recipeId], requesterUserId),
-            getRecipeFlagsMap(client, [recipeId], requesterUserId),
-            getMyRatingsMap(client, [recipeId], requesterUserId),
-            getMyRecipeNote(client, recipeId, requesterUserId),
+            getRecipeIdsInPlan(client, [targetId], requesterUserId),
+            getRecipeFlagsMap(client, [targetId], requesterUserId),
+            getMyRatingsMap(client, [targetId], requesterUserId),
+            getMyRecipeNote(client, targetId, requesterUserId),
             fetchAuthorProfile(client, recipe.user_id),
         ]);
         const inMyPlan = recipeIdsInPlan.has(recipeId);
         
         // Get collection IDs for authenticated users
         const collectionIds = requesterUserId 
-            ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
+            ? await getCollectionIdsForRecipe(client, targetId, requesterUserId)
             : [];
         
         return mapToDto(
@@ -347,10 +370,11 @@ export async function getExploreRecipeById(params: {
             inMyPlan,
             collectionIds,
             author,
-            flagsMap.get(recipeId),
-            ratingsMap.get(recipeId),
+            flagsMap.get(targetId),
+            ratingsMap.get(targetId),
             requesterUserId !== null,
-            myNote
+            myNote,
+            variantResolution
         );
     }
 
@@ -384,17 +408,17 @@ export async function getExploreRecipeById(params: {
 
     // Check if recipe is in user's plan
     const [recipeIdsInPlan, flagsMap, ratingsMap, myNote, author] = await Promise.all([
-        getRecipeIdsInPlan(client, [recipeId], requesterUserId),
-        getRecipeFlagsMap(client, [recipeId], requesterUserId),
-        getMyRatingsMap(client, [recipeId], requesterUserId),
-        getMyRecipeNote(client, recipeId, requesterUserId),
+        getRecipeIdsInPlan(client, [targetId], requesterUserId),
+        getRecipeFlagsMap(client, [targetId], requesterUserId),
+        getMyRatingsMap(client, [targetId], requesterUserId),
+        getMyRecipeNote(client, targetId, requesterUserId),
         fetchAuthorProfile(client, recipe.user_id),
     ]);
     const inMyPlan = recipeIdsInPlan.has(recipeId);
 
     // Get collection IDs for authenticated users
     const collectionIds = requesterUserId 
-        ? await getCollectionIdsForRecipe(client, recipeId, requesterUserId)
+        ? await getCollectionIdsForRecipe(client, targetId, requesterUserId)
         : [];
 
     return mapToDto(
@@ -402,10 +426,11 @@ export async function getExploreRecipeById(params: {
         inMyPlan,
         collectionIds,
         author,
-        flagsMap.get(recipeId),
-        ratingsMap.get(recipeId),
+        flagsMap.get(targetId),
+        ratingsMap.get(targetId),
         true,
-        myNote
+        myNote,
+        variantResolution
     );
 }
 
@@ -418,7 +443,7 @@ export async function getExploreRecipeById(params: {
  * @param collectionIds - Array of collection IDs that contain this recipe (empty for anonymous)
  * @returns RecipeDetailDto
  */
-function mapToDto(
+export function mapToDto(
     recipe: RecipeDetailFullRow,
     inMyPlan: boolean,
     collectionIds: number[],
@@ -426,7 +451,12 @@ function mapToDto(
     flags?: { is_favorite: boolean; is_want_to_try: boolean },
     myRating?: number,
     isAuthenticated = false,
-    myNote?: string | null
+    myNote?: string | null,
+    variantResolution?: {
+        enabled: boolean;
+        summaries: RecipeVariantSummaryDto[];
+        resolution: RecipeVariantResolutionDto | null;
+    }
 ): RecipeDetailDto {
     return {
         id: recipe.id,
@@ -462,5 +492,9 @@ function mapToDto(
         ...buildRatingFields(recipe, myRating, isAuthenticated),
         ...(myNote !== undefined && { my_note: myNote }),
         author,
+        ...(variantResolution?.enabled && {
+            variants: variantResolution.summaries,
+            variant_resolution: variantResolution.resolution,
+        }),
     };
 }

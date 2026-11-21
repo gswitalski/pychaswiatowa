@@ -11,6 +11,8 @@
     [showGuestCta]="true"
     [showAuthCtaOnError]="true"
     [isAddingToPlan]="isAddingToPlan()"
+    (variantSelected)="onVariantSelected($event)"
+    (dismissVariantResolution)="onDismissVariantResolution()"
     backLabel="Wróć do przeglądania"
     (login)="onLogin()"
     (register)="onRegister()"

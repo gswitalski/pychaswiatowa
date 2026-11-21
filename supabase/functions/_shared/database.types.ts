@@ -921,6 +921,9 @@ export type Database = {
           category_id: number | null
           category_name: string | null
           active_variant_count: number | null
+          recipe_family_id: string | null
+          is_default: boolean | null
+          sort_order: number | null
           average_rating: number | null
           collection_ids: number[] | null
           collections: Json | null

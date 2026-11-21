@@ -413,7 +413,8 @@ export const routes: Routes = [
                 redirectTo: (route) => {
                     // Przekierowanie ze starej ścieżki /recipes/:id na /explore/recipes/:id dla gości
                     const id = route.params['id'] as string;
-                    return `/explore/recipes/${id}`;
+                    const query = new URLSearchParams(route.queryParams as Record<string, string>).toString();
+                    return `/explore/recipes/${id}${query ? `?${query}` : ''}`;
                 },
                 pathMatch: 'full',
             },

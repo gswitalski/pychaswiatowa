@@ -9,6 +9,8 @@
     [isPublicView]="false"
     [showPageHeader]="showPageHeader()"
     [isAddingToPlan]="isAddingToPlan()"
+    (variantSelected)="onVariantSelected($event)"
+    (dismissVariantResolution)="onDismissVariantResolution()"
     backLabel="Wróć do listy przepisów"
     (back)="onBackToList()"
     (addToCollection)="onAddToCollection()"

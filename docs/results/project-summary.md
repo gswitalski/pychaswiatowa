@@ -37,6 +37,7 @@ summary bez ponownej weryfikacji);
 | PS-107 | Filtrowanie tabeli przepisów w panelu admina po polach kolumn | zaimplementowane, niezweryfikowane | smoke z kontami, `deno test` całego `supabase/functions` (wcześniejsze błędy typów w recipes/plan/ai), test w przeglądarce, `deno lint` |
 | PS-108 | Model grupy przepisu (`recipe_families`), migracja i widoczność (bez zmian UI) | zaimplementowane, niezweryfikowane | smoke z kontami, `deno lint`, migracja na kopii danych produkcyjnych, `deno check explore` (istniejące błędy `RecipeDetailFullRow`) |
 | PS-109 | Zarządzanie wariantami przepisu przez właściciela (flaga `feature_flags`, endpointy wariantów, ekran „Warianty” przy edycji) | zaimplementowane, niezweryfikowane | smoke z kontami i Storage (kopia zdjęcia), integracyjne GWT 3–4/7–18 i test współbieżności, `deno lint` (istniejące 14 problemów), test w przeglądarce (UX/mobile/dostępność), dialogi Material zamiast `prompt`/`confirm` |
+| PS-110 | Przełącznik wariantów na szczegółach przepisu (`?variant=`, lista wariantów w `GET /recipes/{id}` i `GET /explore/recipes/{id}`) | zaimplementowane, niezweryfikowane | smoke z kontami, integracyjne GWT 10 i 22, testy mutacyjne ACL/wyścigów, testy widoków GWT 14–17/20–23/25/27, `deno lint` (istniejące problemy), test w przeglądarce (UX/mobile/dostępność) |
 
 Znane ryzyko PS-204: funkcje `security definer` admina mają teraz `execute` tylko dla
 `service_role`; inne funkcje admin/RPC z niepełnym `revoke` nie zostały zinwentaryzowane

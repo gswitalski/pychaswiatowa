@@ -4,7 +4,10 @@ import {
     computed,
     input,
     output,
+    signal,
+    viewChild,
 } from '@angular/core';
+import { take } from 'rxjs';
 import {
     ApiError,
     RecipeDetailDto,
@@ -17,6 +20,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { PageHeaderComponent } from '../page-header/page-header.component';
 import { RecipeHeaderComponent } from '../../../pages/recipes/recipe-detail/components/recipe-header/recipe-header.component';
 import { RecipeImageComponent } from '../../../pages/recipes/recipe-detail/components/recipe-image/recipe-image.component';
@@ -35,6 +40,8 @@ export type RecipeDetailHeaderMode = 'guest' | 'addToCollection' | 'ownerActions
         MatButtonModule,
         MatIconModule,
         MatProgressSpinnerModule,
+        MatSelectModule,
+        MatFormFieldModule,
         MatTooltipModule,
         PageHeaderComponent,
         RecipeHeaderComponent,
@@ -62,6 +69,10 @@ export class RecipeDetailViewComponent {
     readonly showAuthCtaOnError = input<boolean>(false);
     readonly backLabel = input<string>('Wróć');
     readonly isAddingToPlan = input<boolean>(false);
+    readonly variantSelected = output<number>();
+    readonly dismissVariantResolution = output<void>();
+    private readonly pendingVariant = signal<number | null>(null);
+    private readonly noteComponent = viewChild(RecipeNoteComponent);
 
     readonly addToCollection = output<void>();
     readonly edit = output<void>();
@@ -99,6 +110,13 @@ export class RecipeDetailViewComponent {
         }
         return recipe.my_note !== undefined;
     });
+    protected readonly variants = computed(() => this.recipe()?.variants ?? []);
+    protected readonly hasVariantSwitcher = computed(() => this.variants().length > 1);
+    protected readonly activeVariant = computed(() => {
+        const recipe = this.recipe();
+        return this.variants().find((variant) => variant.recipe_id === recipe?.id) ?? null;
+    });
+    protected readonly variantLabel = computed(() => this.activeVariant()?.variant_name ?? '');
 
     onAddToCollection(): void {
         this.addToCollection.emit();
@@ -130,6 +148,30 @@ export class RecipeDetailViewComponent {
 
     onOpenPlan(): void {
         this.openPlan.emit();
+    }
+
+    protected selectVariant(variantId: number): void {
+        if (
+            this.pendingVariant() !== null ||
+            variantId === this.recipe()?.id ||
+            !this.hasVariantSwitcher()
+        ) {
+            return;
+        }
+
+        this.pendingVariant.set(variantId);
+        const noteComponent = this.noteComponent();
+        if (!noteComponent) {
+            this.pendingVariant.set(null);
+            this.variantSelected.emit(variantId);
+            return;
+        }
+        noteComponent.prepareForVariantChange().pipe(take(1)).subscribe((decision) => {
+            this.pendingVariant.set(null);
+            if (decision === 'proceed') {
+                this.variantSelected.emit(variantId);
+            }
+        });
     }
 }
 

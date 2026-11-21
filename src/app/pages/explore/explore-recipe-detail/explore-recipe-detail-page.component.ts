@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map, finalize } from 'rxjs';
+import { map, finalize, combineLatest } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -100,9 +100,15 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
     readonly isLoading = computed(() => this.state().isLoading);
     readonly error = computed(() => this.state().error);
     readonly hasRecipe = computed(() => this.state().recipe !== null);
+    private requestId = 0;
 
     /** Tytuł strony - nazwa przepisu lub fallback */
-    readonly pageTitle = computed(() => this.state().recipe?.name ?? 'Szczegóły przepisu');
+    readonly pageTitle = computed(() => {
+        const recipe = this.state().recipe;
+        if (!recipe) return 'Szczegóły przepisu';
+        const variant = recipe.active_variant_count >= 2 ? recipe.variant_name : null;
+        return variant ? `${recipe.name} · ${variant}` : (recipe.name ?? 'Szczegóły przepisu');
+    });
 
     /**
      * Czy aktualnie zalogowany użytkownik jest właścicielem przepisu
@@ -133,15 +139,16 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
         this.subscribeToPlanChanges();
 
         // Subskrybuj się na zmiany parametrów w URL
-        this.route.paramMap
+        combineLatest([this.route.paramMap, this.route.queryParamMap])
             .pipe(
-                map((params) => ({
+                map(([params, queryParams]) => ({
                     id: params.get('id'),
                     slug: params.get('slug'),
+                    variant: this.parseVariant(queryParams.get('variant')),
                 })),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe(({ id: idParam, slug }) => {
+            .subscribe(({ id: idParam, slug, variant }) => {
                 if (!idParam) {
                     this.handleInvalidId();
                     return;
@@ -154,7 +161,7 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
                     return;
                 }
 
-                this.loadRecipe(id, slug ?? undefined);
+                this.loadRecipe(id, slug ?? undefined, variant);
             });
     }
 
@@ -220,17 +227,23 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
      * @param id ID przepisu
      * @param slug Slug z URL (może być niepoprawny lub undefined)
      */
-    private loadRecipe(id: number, slug?: string): void {
+    private loadRecipe(id: number, slug?: string, variant?: number): void {
+        const requestId = ++this.requestId;
         this.state.update((s) => ({ ...s, isLoading: true, error: null }));
 
-        this.exploreRecipesService.getExploreRecipeById(id).subscribe({
+        this.exploreRecipesService.getExploreRecipeById(id, variant).subscribe({
             next: (recipe) => {
+                if (requestId !== this.requestId) return;
                 // Normalizacja sluga - jeśli slug w URL różni się od oczekiwanego
                 const expectedSlug = this.slugService.slugify(recipe.name ?? 'przepis');
                 
                 if (slug !== expectedSlug) {
                     // Nawiguj do kanonicznego URL z replaceUrl
-                    const canonicalPath = `/explore/recipes/${id}-${expectedSlug}`;
+                    const resolvedPathId =
+                        recipe.variant_resolution?.reason === 'VARIANT_DELETED' && recipe.id !== id
+                            ? recipe.id
+                            : id;
+                    const canonicalPath = `/explore/recipes/${resolvedPathId}-${expectedSlug}`;
                     const urlTree = this.router.createUrlTree([canonicalPath], {
                         queryParams: this.route.snapshot.queryParams,
                         queryParamsHandling: 'merge',
@@ -245,11 +258,44 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
                     recipe,
                     isLoading: false,
                 }));
+                if (recipe.variant_resolution) {
+                    this.router.navigate([], {
+                        queryParams: { variant: null },
+                        queryParamsHandling: 'merge',
+                        replaceUrl: true,
+                    });
+                }
             },
             error: (err) => {
+                if (requestId !== this.requestId) return;
                 this.handleLoadError(err);
             },
         });
+    }
+
+    private parseVariant(value: string | null): number | undefined {
+        if (!value) return undefined;
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+    }
+
+    onVariantSelected(variantId: number): void {
+        const recipe = this.recipe();
+        const id = Number(this.route.snapshot.paramMap.get('id'));
+        if (!recipe || !Number.isInteger(variantId) || variantId <= 0 || !Number.isInteger(id)) return;
+        this.router.navigate([], {
+            queryParams: { variant: variantId },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+        });
+        this.loadRecipe(id, this.route.snapshot.paramMap.get('slug') ?? undefined, variantId);
+    }
+
+    onDismissVariantResolution(): void {
+        this.state.update((state) => ({
+            ...state,
+            recipe: state.recipe ? { ...state.recipe, variant_resolution: null } : null,
+        }));
     }
 
     /**
@@ -303,7 +349,7 @@ export class ExploreRecipeDetailPageComponent implements OnInit {
 
         const dialogData: ConfirmDialogData = {
             title: 'Usuń przepis',
-            message: `Czy na pewno chcesz usunąć przepis "${recipeName}"? Ta operacja jest nieodwracalna.`,
+            message: `Czy na pewno chcesz usunąć przepis "${recipeName}" wraz z ${recipe.active_variant_count} wariantami? Ta operacja jest nieodwracalna.`,
             confirmText: 'Usuń',
             cancelText: 'Anuluj',
             confirmColor: 'warn',

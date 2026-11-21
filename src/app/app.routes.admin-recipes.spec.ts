@@ -32,3 +32,22 @@ describe('gość na /admin/recipes', () => {
         );
     });
 });
+
+describe('gość na szczegółach przepisu', () => {
+    it('zachowuje variant i pozostałe query params', () => {
+        const recipeRoute = routes
+            .flatMap((route) => route.children ?? [])
+            .find((route) => route.path === 'recipes/:id');
+        const redirect = recipeRoute?.redirectTo as (route: {
+            params: Record<string, string>;
+            queryParams: Record<string, string>;
+        }) => string;
+
+        expect(
+            redirect({
+                params: { id: '12' },
+                queryParams: { variant: '34', q: 'zupa' },
+            }),
+        ).toBe('/explore/recipes/12?variant=34&q=zupa');
+    });
+});

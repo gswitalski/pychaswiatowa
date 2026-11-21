@@ -24,6 +24,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable, catchError, map, of, switchMap, take } from 'rxjs';
 import { RecipeNoteResponseDto } from '../../../../../shared/contracts/types';
 import { RECIPE_NOTE_MAX_LENGTH } from '../../../../../shared/contracts/recipe-note';
 import { RecipeNoteService } from '../../../core/services/recipe-note.service';
@@ -70,6 +71,45 @@ export class RecipeNoteComponent {
     readonly noteChange = output<RecipeNoteResponseDto>();
     readonly sessionExpired = output<void>();
 
+    /**
+     * Rozstrzyga niezapisany draft przed zmianą wariantu.
+     * `true` i `'secondary'` odpowiadają odpowiednio Zapisz/Odrzuć.
+     */
+    prepareForVariantChange(): Observable<'proceed' | 'cancel'> {
+        if (!this.isDirty()) {
+            return of('proceed');
+        }
+
+        const data: ConfirmDialogData = {
+            title: 'Niezapisana notatka',
+            message: 'Masz niezapisane zmiany w notatce. Co chcesz zrobić przed zmianą wariantu?',
+            confirmText: 'Zapisz',
+            secondaryConfirmText: 'Odrzuć',
+            cancelText: 'Anuluj',
+            secondaryConfirmColor: 'warn',
+        };
+
+        return this.dialog
+            .open<ConfirmDialogComponent, ConfirmDialogData, boolean | 'secondary'>(
+                ConfirmDialogComponent,
+                { width: '420px', disableClose: true, data },
+            )
+            .afterClosed()
+            .pipe(
+                take(1),
+                switchMap((result) => {
+                    if (result === 'secondary') {
+                        this.discardDraft();
+                        return of<'proceed' | 'cancel'>('proceed');
+                    }
+                    if (result !== true) {
+                        return of<'proceed' | 'cancel'>('cancel');
+                    }
+                    return this.saveForVariantChange();
+                }),
+            );
+    }
+
     protected readonly maxLength = RECIPE_NOTE_MAX_LENGTH;
     protected readonly saved = linkedSignal<string | null, string | null>({
         source: this.note,
@@ -96,6 +136,35 @@ export class RecipeNoteComponent {
         !this.overLimit() &&
         this.isDirty() &&
         !(this.normalizedDraft() === null && this.saved() === null);
+
+    private discardDraft(): void {
+        this.editing.set(false);
+        this.control.reset('');
+    }
+
+    private saveForVariantChange(): Observable<'proceed' | 'cancel'> {
+        if (!this.canSave()) {
+            return of('cancel');
+        }
+        const payload = this.normalizedDraft();
+        this.pending.set(true);
+        return this.noteService.setNote(this.recipeId(), payload).pipe(
+            map((response) => {
+                this.saved.set(response.note);
+                this.editing.set(false);
+                this.control.reset('');
+                this.pending.set(false);
+                this.noteChange.emit(response);
+                this.showSuccess(response.note);
+                return 'proceed' as const;
+            }),
+            catchError((error: { status?: number }) => {
+                this.pending.set(false);
+                this.handleError(error);
+                return of<'proceed' | 'cancel'>('cancel');
+            }),
+        );
+    }
 
     constructor() {
         effect(() => this.unsavedChanges.setDirty(this.dirtyKey, this.isDirty()));

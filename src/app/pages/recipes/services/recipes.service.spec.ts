@@ -41,3 +41,33 @@ describe('RecipesService.deleteRecipeVariant', () => {
         });
     });
 });
+
+describe('RecipesService.getRecipeById', () => {
+    const invoke = vi.fn();
+
+    beforeEach(() => {
+        invoke.mockReset();
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [{ provide: SupabaseService, useValue: { functions: { invoke } } }],
+        });
+    });
+
+    it('przekazuje variant do endpointu szczegółów', async () => {
+        invoke.mockResolvedValue({ data: { id: 9 }, error: null });
+        const service = TestBed.inject(RecipesService);
+
+        await firstValueFrom(service.getRecipeById(7, 9));
+
+        expect(invoke).toHaveBeenCalledWith('recipes/7?variant=9', { method: 'GET' });
+    });
+
+    it('nie dodaje pustego parametru variant', async () => {
+        invoke.mockResolvedValue({ data: { id: 7 }, error: null });
+        const service = TestBed.inject(RecipesService);
+
+        await firstValueFrom(service.getRecipeById(7));
+
+        expect(invoke).toHaveBeenCalledWith('recipes/7', { method: 'GET' });
+    });
+});

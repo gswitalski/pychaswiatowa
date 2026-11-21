@@ -3,6 +3,7 @@ import {
     createVariantSchema,
     reorderSchema,
     setRecipeNoteSchema,
+    getRequestedVariant,
     recipesRouter,
 } from './recipes.handlers.ts';
 
@@ -46,4 +47,9 @@ Deno.test('warianty: walidują nazwę i kolejność', () => {
     assertEquals(createVariantSchema.safeParse({ variant_name: '' }).success, false);
     assertEquals(reorderSchema.safeParse({ recipe_ids: [1, 2, 2] }).success, true);
     assertEquals(reorderSchema.safeParse({ recipe_ids: ['1'] }).success, false);
+});
+
+Deno.test('PS-110 GWT 2–4: recipes przekazuje surowy variant z query stringa', () => {
+    const request = new Request('http://localhost/recipes/10?variant=abc');
+    assertEquals(getRequestedVariant(request), 'abc');
 });

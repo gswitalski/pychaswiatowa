@@ -9,6 +9,7 @@ import { logger } from '../_shared/logger.ts';
 import { getOptionalAuthenticatedUser } from '../_shared/supabase-client.ts';
 import { getExploreRecipeById } from './explore.service.ts';
 import { GetExploreRecipeByIdParams } from './explore.types.ts';
+import { decodeJwtPayload } from '../_shared/auth.ts';
 
 /**
  * Zod schema for validating recipe ID from path parameter.
@@ -22,6 +23,10 @@ const RecipeIdParamSchema = z.object({
         return num;
     }),
 });
+
+export function getRequestedVariant(req: Request): string | undefined {
+    return new URL(req.url).searchParams.get('variant') ?? undefined;
+}
 
 /**
  * Creates a successful JSON response with the given data.
@@ -86,6 +91,12 @@ export async function handleGetExploreRecipeById(
         // Extract optional user (null for anonymous, throws on invalid token)
         const user = await getOptionalAuthenticatedUser(req);
         const requesterUserId = user?.id ?? null;
+        const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') ?? '';
+        const jwtPayload = token ? decodeJwtPayload(token) : null;
+        const isAdmin = jwtPayload?.app_role === 'admin'
+            || (typeof jwtPayload?.app_metadata === 'object'
+                && jwtPayload.app_metadata !== null
+                && (jwtPayload.app_metadata as Record<string, unknown>).app_role === 'admin');
 
         logger.info('Request context determined', {
             recipeId: validatedParams.id,
@@ -97,6 +108,8 @@ export async function handleGetExploreRecipeById(
         const result = await getExploreRecipeById({
             recipeId: validatedParams.id,
             requesterUserId,
+            rawVariantId: getRequestedVariant(req),
+            isAdmin,
         });
 
         // Determine cache headers based on visibility and auth status

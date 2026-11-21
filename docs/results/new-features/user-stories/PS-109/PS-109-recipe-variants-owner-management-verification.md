@@ -69,3 +69,29 @@ a RPC wariantów mają `EXECUTE` tylko dla `service_role` → `42501 permission 
 Poprawka: `getVariantContext` zwraca `createServiceRoleClient()` (`user_id` nadal z JWT); `mapRpcError` loguje kod i komunikat nieznanych błędów.
 Weryfikacja: `GET /recipes/1/variants` i `GET /recipes/1/usage` jako `simple@` (flaga `all`) → 200; `deno test` 208 PASS.
 Luka testowa: testy handlerów nie wykryły błędu (nie sprawdzają, jakiego klienta dostaje serwis) — `WYMAGA_WERYFIKACJI`.
+
+## 2026-11-21 15:53 ps-view-implementer
+
+| Weryfikacja | Wynik |
+|---|---|
+| deno check explore | PASS |
+| deno check recipes | PASS |
+| deno test | PASS |
+| npm run lint | PASS |
+| npm run test:run | FAIL |
+| npm run build | PASS |
+
+Ostatnie linie wyjścia — npm run test:run:
+
+```text
+    226| 
+    227|     it('nie wysyła żądania dla tej samej strony i rozmiaru', () => {
+       |     ^
+    228|         const fixture = createComponent();
+    229|         fixture.componentInstance.query.set({
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+ Test Files  1 failed | 76 passed (77)
+      Tests  5 failed | 451 passed (456)
+   Start at  15:50:56
+   Duration  111.36s (transform 200.90s, setup 25.26s, import 471.81s, tests 166.26s, environment 50.10s)
+```

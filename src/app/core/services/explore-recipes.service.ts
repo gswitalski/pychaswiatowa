@@ -29,10 +29,11 @@ export class ExploreRecipesService {
      * @returns Observable ze szczegółami przepisu
      * @throws Error z właściwością status (404, 400, 401, 500)
      */
-    getExploreRecipeById(id: number): Observable<RecipeDetailDto> {
+    getExploreRecipeById(id: number, variant?: number): Observable<RecipeDetailDto> {
+        const query = variant === undefined ? '' : `?variant=${encodeURIComponent(variant)}`;
         return from(
             this.supabase.functions.invoke<RecipeDetailDto>(
-                `explore/recipes/${id}`,
+                `explore/recipes/${id}${query}`,
                 {
                     method: 'GET',
                 }

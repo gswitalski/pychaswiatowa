@@ -78,9 +78,10 @@ export class RecipesService {
     /**
      * Fetches a single recipe by its ID
      */
-    getRecipeById(id: number): Observable<RecipeDetailDto> {
+    getRecipeById(id: number, variant?: number): Observable<RecipeDetailDto> {
+        const query = variant === undefined ? '' : `?variant=${encodeURIComponent(variant)}`;
         return from(
-            this.supabase.functions.invoke<RecipeDetailDto>(`recipes/${id}`, {
+            this.supabase.functions.invoke<RecipeDetailDto>(`recipes/${id}${query}`, {
                 method: 'GET',
             })
         ).pipe(

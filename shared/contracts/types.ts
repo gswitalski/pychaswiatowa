@@ -341,6 +341,13 @@ export type RecipeDetailDto = Omit<
     variant_name: string | null;
     /** Liczba aktywnych wariantów w tej samej rodzinie przepisu. */
     active_variant_count: number;
+    /** Dostępne warianty bieżącej rodziny, gdy flaga jest aktywna. */
+    variants?: RecipeVariantSummaryDto[];
+    /** Informacja o przełączeniu na wariant domyślny. */
+    variant_resolution?: {
+        reason: 'INVALID_PARAMETER' | 'VARIANT_DELETED';
+        message: string;
+    } | null;
 };
 
 /** Request body for PUT /recipes/{id}/note. */

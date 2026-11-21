@@ -1,6 +1,6 @@
 # PychaŚwiatowa — referencja wygenerowana z kodu
 
-Wygenerowano: 2026-11-20 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
+Wygenerowano: 2026-11-21 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
 Źródła: `shared/types/database.types.ts`, `supabase/functions`, `src/app/**/*.routes.ts`,
 `src/app/core/guards`, `supabase/migrations`. Wzorce ścieżek Edge Functions są wyciągnięte
 z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
@@ -29,7 +29,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Widoki (public)
 
-- `recipe_details`: category_id, category_name, average_rating, collection_ids, collections, created_at, cuisine, deleted_at, description, diet_type, difficulty, id, image_path, ingredients, is_grill, is_termorobot, name, normalized_ingredients_status, normalized_ingredients_updated_at, prep_time_minutes, ratings_count, search_vector, servings, steps, tag_ids, tags, tips, total_time_minutes, updated_at, user_id, visibility
+- `recipe_details`: category_id, category_name, active_variant_count, average_rating, collection_ids, collections, created_at, cuisine, deleted_at, description, diet_type, difficulty, id, image_path, ingredients, is_grill, is_termorobot, name, normalized_ingredients_status, normalized_ingredients_updated_at, prep_time_minutes, ratings_count, search_vector, servings, steps, tag_ids, tags, tips, total_time_minutes, updated_at, user_id, variant_name, visibility
 
 ## Funkcje RPC (public) — argumenty
 
@@ -177,11 +177,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 97 plików, ostatnie 5
+## Migracje: 100 plików, ostatnie 5
 
-- `20261115120000_fix_ai_rate_limit_hit_ambiguous_window_start.sql`
-- `20261115140000_dedupe_create_recipe_with_tags_overloads.sql`
-- `20261120200000_create_recipe_families.sql`
 - `20261120200100_fix_recipe_family_default_triggers.sql`
 - `20261120210000_recipe_variants_owner_management.sql`
+- `20261120220000_variant_default_name_and_recipe_details.sql`
+- `20261120230000_fix_delete_recipe_variant_soft_delete.sql`
+- `20261121160000_ps110_recipe_detail_variant_metadata.sql`
 
