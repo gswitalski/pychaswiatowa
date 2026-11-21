@@ -11,6 +11,9 @@ Seeds are executed in alphabetical/numerical order during `supabase db reset`:
 3. **`02_seed_recipes.sql`** - Sample recipes for test users
 4. **`03_seed_collections.sql`** - Sample collections with recipes
 5. **`04_seed_plan_recipes.sql`** - Sample "My Plan" items for test user
+6. **`05_seed_normalized_ingredients.sql`** - Normalized ingredients for seeded recipes
+7. **`06_update_normalized_ingredients_status.sql`** - Marks normalized recipes as READY
+8. **`07_seed_recipe_variants.sql`** - Extra variants of four public recipes
 
 ## Seed Details
 
@@ -113,6 +116,21 @@ Wszystkie konta używają hasła: `12345678`.
 - **User ID**: bda00f70-6f98-4a57-9da5-2f824ab9d302
 - **Rola**: admin
 - **Username**: Admin
+
+### 07_seed_recipe_variants.sql
+
+**Purpose**: Adds extra variants to four public recipes, so later variant stories have groups of different sizes. Lasagne belongs to premium@pychaswiatowa.pl. Gołąbki, Bigos and Brownie czekoladowe belong to simple@pychaswiatowa.pl.
+
+**Recipes** (additional variants on top of the existing one):
+
+- **Lasagne** +1 — Klasyczna (domyślny), Wegetariańska
+- **Gołąbki** +2 — Mięsne (domyślny), Wegetariańskie, Z termorobota
+- **Bigos** +3 — Klasyczny (domyślny), Wegetariański, Z grzybami, Z termorobota
+- **Brownie czekoladowe** +4 — Klasyczne (domyślny), Bezglutenowe, Wegańskie, Z orzechami, Z termorobota
+
+Each extra variant has its own description, ingredients, steps and classification (`diet_type`, cuisine, difficulty, servings, times, termorobot). The original recipe stays the default. Collections and the meal plan are unchanged. The `recipe_variants` feature flag stays disabled.
+
+Idempotent: a variant that already exists is skipped. The base name changes only while it is still „Wariant podstawowy”. Classification on the base is filled only when `diet_type` is null.
 
 ## Adding New Seeds
 
