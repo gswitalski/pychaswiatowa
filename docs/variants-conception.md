@@ -43,8 +43,9 @@ przyszłych historyjek. Nie jest planem implementacji ani specyfikacją API.
   a nie `default_recipe_id` w grupie (brak cyklu kluczy).
 - Jedno źródło prawdy dla nazwy i widoczności; `recipes.name` i
   `recipes.visibility` zostają jako kopie zarządzane przez backend.
-- Wyszukiwanie po nazwie grupy ma jawny mechanizm (rozszerzony
-  `search_vector`).
+- Wyszukiwanie po nazwie grupy i wariantu zostaje przy dopasowaniu podciągiem.
+  `search_vector` nie jest rozszerzany (decyzja PS-111). Nazwy techniczne
+  („Wariant podstawowy”, „Podstawowa”) nie biorą udziału w dopasowaniu.
 - Słownik powodów wariantowości odłożono; w v1 jest nazwa wariantu i chipy
   z istniejących pól.
 - Dopisano zasady usuwania i przywracania, kopiowania zdjęć, ograniczeń
@@ -156,10 +157,12 @@ przepis. Dopasowanie może nastąpić do:
 - składników, kroków, wskazówek i tagów wariantu,
 - pól klasyfikacyjnych wariantu.
 
-Dopasowanie do nazwy grupy wymaga, aby wektor wyszukiwania wariantu zawierał
-nazwę grupy i nazwę wariantu. Zmiana nazwy grupy przelicza wektory jej
-wariantów; zdarza się to rzadko, więc koszt jest akceptowalny. Bez tego
-zapytanie „Lasagne” nie znalazłoby wariantu o nazwie „Klasyczna”.
+Dopasowanie do nazwy grupy nie wymaga `search_vector`. Nazwa grupy jest już
+kopią w `recipes.name`, a nazwa wariantu wchodzi do tego samego dopasowania
+podciągiem (nazwa przepisu i wariant w jednym tekście). Dzięki temu zapytanie
+„Lasagne” znajduje wariant „Klasyczna”, a „lasagne wegetariańska” znajduje
+wariant „Wegetariańska”. Zmiana nazwy grupy aktualizuje kopię `recipes.name`
+(trigger), bez przebudowy wektora.
 
 Wynik wyszukiwania jest zgrupowany po grupie przepisu. Jedna grupa zajmuje
 jedno miejsce na liście, nawet jeśli pasuje kilka jej wariantów.
@@ -569,8 +572,8 @@ przepisów bez wariantów, a żaden wariant nie ujawnia prywatnych danych przez
 grupę, wyszukiwanie ani link bezpośredni.
 
 > **Status: zrealizowana jako PS-108** (zaimplementowana, niezweryfikowana).
-> Zakres zawężono względem opisu powyżej: bez zmiany `search_vector` (→
-> historyjka 4) i bez zmian RLS na `recipes`. Szczegóły w sekcji 8.
+> Zakres zawężono względem opisu powyżej: bez zmiany `search_vector` (decyzja
+> w PS-111: wektor zostaje bez zmian, dopasowanie podciągiem) i bez zmian RLS na `recipes`. Szczegóły w sekcji 8.
 
 ### Historyjka 2 — Zarządzanie wariantami przez właściciela
 
@@ -612,11 +615,10 @@ dopasowywały warianty, ale zwracały grupy. Dodać reprezentanta najlepszego
 dopasowania (także dla filtrów osobistych), liczbę wariantów i pasujących
 wariantów, poprawną paginację, `total` oraz sortowanie.
 
-> **Dodatkowo (z sekcji 8):** dziś wyszukiwanie to `ilike` po `recipes.name`, a
-> `search_vector` nie jest używany. Ta historyjka musi objąć `variant_name` w
-> wyszukiwaniu i zdecydować, czy rozszerzać `search_vector` (wymaga przebudowy
-> kolumny generowanej, indeksu GIN i widoku `recipe_details`; nazwy techniczne
-> „Wariant podstawowy” i legacy „Podstawowa” nie powinny trafić do wektora).
+> **Decyzja (PS-111):** `variant_name` wchodzi do dopasowania podciągiem (nazwa
+> przepisu i wariant). `search_vector` nie jest rozszerzany. Nazwy techniczne
+> („Wariant podstawowy”, „Podstawowa”) nie biorą udziału w dopasowaniu. Limit
+> 1000 wariantów w wyszukiwaniu Explore zostaje.
 
 Kryterium koncepcyjne: warianty zachowują wyszukiwalność, a grupa nie zajmuje
 kilku miejsc na jednej stronie wyników żadnej listy.
@@ -664,8 +666,8 @@ Do potwierdzenia przy planowaniu implementacji:
   przepisu,
 - wartość limitu wariantów w grupie (propozycja: 10; egzekwowany dopiero od
   historyjki 2, w PS-108 nie da się utworzyć drugiego wariantu),
-- sposób odświeżania wektora wyszukiwania po zmianie nazwy grupy (trigger
-  czy operacja w RPC).
+- sposób odświeżania wektora wyszukiwania — nie dotyczy: PS-111 nie rozszerza
+  `search_vector` (nazwa grupy jest kopią w `recipes.name`).
 
 Przyszłe rozszerzenia (poza wersją 1): słownik powodów wariantowości
 z filtrowaniem, warianty innych autorów (np. model rozwidlenia przepisu),
@@ -695,8 +697,10 @@ niewdrożone zdalnie).
 ### Odchylenia od koncepcji (po PS-108)
 
 1. **`search_vector` bez zmian.** Sekcje 3 i 6 przewidywały rozszerzenie o nazwę
-   grupy i wariantu. Odłożone do historyjki 4 (dziś wyszukiwanie to `ilike` po
-   `recipes.name`; nazwa grupy jest tam już obecna jako kopia).
+   grupy i wariantu. **Decyzja (PS-111):** wektor nie jest używany i nie jest
+   przebudowywany. Wyszukiwanie to podciąg po nazwie przepisu i nazwie wariantu;
+   nazwa grupy jest już w `recipes.name` jako kopia. Nazwy techniczne nie biorą
+   udziału w dopasowaniu.
 2. **RLS na `recipes` poza zakresem.** W bazie jest wyłączony migracją
    `20251125121000_disable_rls_for_development.sql`, a widok `recipe_details` nie
    ma `security_invoker` (pomija RLS). Sekcja 5 zakłada działające polityki; w
