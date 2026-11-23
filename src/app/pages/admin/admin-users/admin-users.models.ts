@@ -15,6 +15,7 @@ export interface AdminUsersTableRowVm {
     readonly lastSignInAt: string | null;
     readonly lastSignInAtLabel: string;
     readonly recipesCount: number;
+    readonly variantsCount: number | null;
     readonly role: AppRole;
     readonly roleLabel: string;
     readonly roleTone: 'default' | 'accent' | 'warn' | 'neutral';

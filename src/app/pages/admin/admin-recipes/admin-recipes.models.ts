@@ -53,6 +53,8 @@ export function countActiveAdminRecipeFilters(filters: AdminRecipesFiltersVm): n
 export interface AdminRecipesTableRowVm {
     readonly id: number;
     readonly name: string;
+    readonly variantName: string | null;
+    readonly activeVariantCount: number;
     readonly authorId: string;
     readonly authorPrimaryLabel: string;
     readonly authorSecondaryLabel: string | null;

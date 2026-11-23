@@ -122,6 +122,8 @@ export interface RecipeDetailDto {
     my_rating?: number | null;
     my_note?: string | null;
     author: { id: string; username: string };
+    variant_name: string | null;
+    active_variant_count: number;
     variants?: RecipeVariantSummaryDto[];
     variant_resolution?: RecipeVariantResolutionDto | null;
 }
@@ -155,6 +157,8 @@ interface RecipeDetailFullRow {
     deleted_at: string | null;
     average_rating: number | null;
     ratings_count: number | null;
+    variant_name: string | null;
+    active_variant_count: number;
 }
 
 /**
@@ -162,7 +166,7 @@ interface RecipeDetailFullRow {
  * CRITICAL: Always includes deleted_at for filtering.
  */
 const RECIPE_DETAIL_SELECT_COLUMNS =
-    'id, user_id, name, description, image_path, visibility, category_id, category_name, ' +
+    'id, user_id, name, description, image_path, visibility, category_id, category_name, variant_name, active_variant_count, ' +
     'ingredients, steps, tips, tags, servings, prep_time_minutes, total_time_minutes, is_termorobot, diet_type, cuisine, difficulty, is_grill, created_at, updated_at, deleted_at, ratings_count, average_rating';
 
 /**
@@ -358,7 +362,7 @@ export async function getExploreRecipeById(params: {
             getMyRecipeNote(client, targetId, requesterUserId),
             fetchAuthorProfile(client, recipe.user_id),
         ]);
-        const inMyPlan = recipeIdsInPlan.has(recipeId);
+        const inMyPlan = recipeIdsInPlan.has(targetId);
         
         // Get collection IDs for authenticated users
         const collectionIds = requesterUserId 
@@ -414,7 +418,7 @@ export async function getExploreRecipeById(params: {
         getMyRecipeNote(client, targetId, requesterUserId),
         fetchAuthorProfile(client, recipe.user_id),
     ]);
-    const inMyPlan = recipeIdsInPlan.has(recipeId);
+    const inMyPlan = recipeIdsInPlan.has(targetId);
 
     // Get collection IDs for authenticated users
     const collectionIds = requesterUserId 
@@ -492,6 +496,8 @@ export function mapToDto(
         ...buildRatingFields(recipe, myRating, isAuthenticated),
         ...(myNote !== undefined && { my_note: myNote }),
         author,
+        variant_name: recipe.variant_name ?? null,
+        active_variant_count: Number(recipe.active_variant_count ?? 1),
         ...(variantResolution?.enabled && {
             variants: variantResolution.summaries,
             variant_resolution: variantResolution.resolution,

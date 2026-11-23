@@ -89,7 +89,7 @@
                             class="my-plan-drawer__item"
                             [class.my-plan-drawer__item--deleting]="isDeletingRecipe(item.recipe_id)"
                             (click)="onNavigateToRecipe(item)"
-                            [attr.aria-label]="'Przejdź do przepisu: ' + item.recipe.name"
+                            [attr.aria-label]="'Przejdź do przepisu: ' + recipeDisplayName(item)"
                         >
                             <div class="my-plan-drawer__item-content">
                                 <div class="my-plan-drawer__item-image-container">
@@ -107,20 +107,20 @@
                                     }
                                 </div>
                                 <span class="my-plan-drawer__item-name">
-                                    {{ item.recipe.name }}
+                                            {{ recipeDisplayName(item) }}
                                 </span>
                                 <div class="my-plan-drawer__item-action">
                                     @if (isDeletingRecipe(item.recipe_id)) {
                                         <mat-spinner
                                             diameter="24"
-                                            [attr.aria-label]="'Usuwanie przepisu ' + item.recipe.name"
+                                            [attr.aria-label]="'Usuwanie przepisu ' + recipeDisplayName(item)"
                                         ></mat-spinner>
                                     } @else {
                                         <button
                                             mat-icon-button
                                             (click)="onRemoveFromPlan($event, item.recipe_id)"
                                             [disabled]="isClearing()"
-                                            [attr.aria-label]="'Usuń z planu: ' + item.recipe.name"
+                                            [attr.aria-label]="'Usuń z planu: ' + recipeDisplayName(item)"
                                             matTooltip="Usuń z planu"
                                         >
                                             <mat-icon aria-hidden="true">delete_outline</mat-icon>

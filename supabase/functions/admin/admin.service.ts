@@ -3,26 +3,26 @@
  * Business logic for admin-only endpoints.
  */
 
-import { logger } from '../_shared/logger.ts';
-import { ApplicationError } from '../_shared/errors.ts';
-import { createServiceRoleClient } from '../_shared/supabase-client.ts';
-import type { AppRole } from '../_shared/auth.ts';
-import { syncAiCreditsForRole } from '../_shared/ai-credits-sync.ts';
+import { logger } from "../_shared/logger.ts";
+import { ApplicationError } from "../_shared/errors.ts";
+import { createServiceRoleClient } from "../_shared/supabase-client.ts";
+import type { AppRole } from "../_shared/auth.ts";
+import { syncAiCreditsForRole } from "../_shared/ai-credits-sync.ts";
 import {
     ADMIN_USERS_SORT_FIELDS,
-    type AdminUsersSortBy,
-    type SortDirection,
-    type GetAdminUsersQueryDto,
     type AdminUserListItemDto,
+    type AdminUsersSortBy,
+    type GetAdminUsersQueryDto,
     type GetAdminUsersResponseDto,
+    type SortDirection,
     type UpdateAdminUserRoleResponseDto,
-} from './admin.types.ts';
+} from "./admin.types.ts";
 
 const DEFAULT_ADMIN_USERS_PAGE = 1;
 const DEFAULT_ADMIN_USERS_PAGE_SIZE = 25;
 const MAX_ADMIN_USERS_PAGE_SIZE = 100;
-const DEFAULT_ADMIN_USERS_SORT_BY: AdminUsersSortBy = 'created_at';
-const DEFAULT_ADMIN_USERS_SORT_DIR: SortDirection = 'desc';
+const DEFAULT_ADMIN_USERS_SORT_BY: AdminUsersSortBy = "created_at";
+const DEFAULT_ADMIN_USERS_SORT_DIR: SortDirection = "desc";
 
 interface NormalizedAdminUsersQueryDto {
     page: number;
@@ -39,6 +39,7 @@ interface AdminUsersRpcRow {
     created_at: string | null;
     last_sign_in_at: string | null;
     recipes_count: number | string | null;
+    variants_count?: number | string | null;
     total_items: number | string | null;
 }
 
@@ -51,8 +52,13 @@ interface RpcErrorShape {
 interface AdminUsersRpcClient {
     rpc: (
         functionName: string,
-        args: Record<string, unknown>
-    ) => Promise<{ data: AdminUsersRpcRow[] | null; error: RpcErrorShape | null }>;
+        args: Record<string, unknown>,
+    ) => Promise<
+        {
+            data: AdminUsersRpcRow[] | boolean | null;
+            error: RpcErrorShape | null;
+        }
+    >;
 }
 
 interface AdminUpdateUserRoleRpcRow {
@@ -77,16 +83,16 @@ export interface AdminSummaryDto {
 }
 
 export interface AdminHealthDto {
-    status: 'ok';
+    status: "ok";
     checked_at: string;
 }
 
 function mapRole(rawRole: string | null): AppRole {
-    if (rawRole === 'admin' || rawRole === 'premium' || rawRole === 'user') {
+    if (rawRole === "admin" || rawRole === "premium" || rawRole === "user") {
         return rawRole;
     }
 
-    return 'user';
+    return "user";
 }
 
 function toSafeNonNegativeNumber(value: number | string | null): number {
@@ -94,7 +100,7 @@ function toSafeNonNegativeNumber(value: number | string | null): number {
         return 0;
     }
 
-    const parsed = typeof value === 'number' ? value : Number(value);
+    const parsed = typeof value === "number" ? value : Number(value);
     if (!Number.isFinite(parsed)) {
         return 0;
     }
@@ -102,18 +108,22 @@ function toSafeNonNegativeNumber(value: number | string | null): number {
     return Math.max(0, Math.floor(parsed));
 }
 
-function normalizeAdminUsersQuery(query: GetAdminUsersQueryDto): NormalizedAdminUsersQueryDto {
+function normalizeAdminUsersQuery(
+    query: GetAdminUsersQueryDto,
+): NormalizedAdminUsersQueryDto {
     const page = Number.isInteger(query.page) && (query.page ?? 0) >= 1
         ? (query.page as number)
         : DEFAULT_ADMIN_USERS_PAGE;
-    const requestedPageSize = Number.isInteger(query.page_size) && (query.page_size ?? 0) >= 1
-        ? (query.page_size as number)
-        : DEFAULT_ADMIN_USERS_PAGE_SIZE;
+    const requestedPageSize =
+        Number.isInteger(query.page_size) && (query.page_size ?? 0) >= 1
+            ? (query.page_size as number)
+            : DEFAULT_ADMIN_USERS_PAGE_SIZE;
     const pageSize = Math.min(requestedPageSize, MAX_ADMIN_USERS_PAGE_SIZE);
-    const sortBy = ADMIN_USERS_SORT_FIELDS.includes(query.sort_by as AdminUsersSortBy)
-        ? (query.sort_by as AdminUsersSortBy)
-        : DEFAULT_ADMIN_USERS_SORT_BY;
-    const sortDir = query.sort_dir === 'asc' || query.sort_dir === 'desc'
+    const sortBy =
+        ADMIN_USERS_SORT_FIELDS.includes(query.sort_by as AdminUsersSortBy)
+            ? (query.sort_by as AdminUsersSortBy)
+            : DEFAULT_ADMIN_USERS_SORT_BY;
+    const sortDir = query.sort_dir === "asc" || query.sort_dir === "desc"
         ? query.sort_dir
         : DEFAULT_ADMIN_USERS_SORT_DIR;
 
@@ -127,29 +137,40 @@ function normalizeAdminUsersQuery(query: GetAdminUsersQueryDto): NormalizedAdmin
 
 function mapAdminUsersRowToDto(row: AdminUsersRpcRow): AdminUserListItemDto {
     if (!row.id || !row.created_at) {
-        throw new ApplicationError('INTERNAL_ERROR', 'Invalid admin users row received from RPC');
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Invalid admin users row received from RPC",
+        );
     }
 
     return {
         id: row.id,
-        login: row.login ?? '',
-        username: row.username ?? '',
+        login: row.login ?? "",
+        username: row.username ?? "",
         role: mapRole(row.role),
         created_at: row.created_at,
         last_sign_in_at: row.last_sign_in_at ?? null,
         recipes_count: toSafeNonNegativeNumber(row.recipes_count),
+        ...(row.variants_count !== undefined
+            ? { variants_count: toSafeNonNegativeNumber(row.variants_count) }
+            : {}),
     };
 }
 
-function mapAdminUpdateUserRoleRowToDto(row: AdminUpdateUserRoleRpcRow): AdminUserListItemDto {
+function mapAdminUpdateUserRoleRowToDto(
+    row: AdminUpdateUserRoleRpcRow,
+): AdminUserListItemDto {
     if (!row.id || !row.created_at) {
-        throw new ApplicationError('INTERNAL_ERROR', 'Invalid admin user row received after role update');
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Invalid admin user row received after role update",
+        );
     }
 
     return {
         id: row.id,
-        login: row.login ?? '',
-        username: row.username ?? '',
+        login: row.login ?? "",
+        username: row.username ?? "",
         role: mapRole(row.role),
         created_at: row.created_at,
         last_sign_in_at: row.last_sign_in_at ?? null,
@@ -159,54 +180,86 @@ function mapAdminUpdateUserRoleRowToDto(row: AdminUpdateUserRoleRpcRow): AdminUs
 
 function mapAdminUpdateUserRoleRpcError(
     error: RpcErrorShape,
-    params: { adminUserId: string; targetUserId: string }
+    params: { adminUserId: string; targetUserId: string },
 ): never {
-    const errorMessage = error.message || '';
+    const errorMessage = error.message || "";
 
-    if (errorMessage.includes('NOT_FOUND')) {
-        logger.warn('[admin] Target user not found for role update', params);
-        throw new ApplicationError('NOT_FOUND', 'Uzytkownik nie zostal znaleziony.');
-    }
-
-    if (errorMessage.includes('CONFLICT: Cannot change your own role')) {
-        logger.warn('[admin] Self role change blocked', params);
-        throw new ApplicationError('CONFLICT', 'Nie mozesz zmienic wlasnej roli.');
-    }
-
-    if (errorMessage.includes('CONFLICT: Cannot demote the last administrator')) {
-        logger.warn('[admin] Last admin demotion blocked', params);
+    if (errorMessage.includes("NOT_FOUND")) {
+        logger.warn("[admin] Target user not found for role update", params);
         throw new ApplicationError(
-            'CONFLICT',
-            'Nie mozna obnizyc roli ostatniego administratora.'
+            "NOT_FOUND",
+            "Uzytkownik nie zostal znaleziony.",
         );
     }
 
-    if (errorMessage.includes('VALIDATION_ERROR')) {
-        throw new ApplicationError('VALIDATION_ERROR', 'Nieprawidlowa rola uzytkownika.');
+    if (errorMessage.includes("CONFLICT: Cannot change your own role")) {
+        logger.warn("[admin] Self role change blocked", params);
+        throw new ApplicationError(
+            "CONFLICT",
+            "Nie mozesz zmienic wlasnej roli.",
+        );
     }
 
-    logger.error('[admin] RPC error while updating user role', {
+    if (
+        errorMessage.includes("CONFLICT: Cannot demote the last administrator")
+    ) {
+        logger.warn("[admin] Last admin demotion blocked", params);
+        throw new ApplicationError(
+            "CONFLICT",
+            "Nie mozna obnizyc roli ostatniego administratora.",
+        );
+    }
+
+    if (errorMessage.includes("VALIDATION_ERROR")) {
+        throw new ApplicationError(
+            "VALIDATION_ERROR",
+            "Nieprawidlowa rola uzytkownika.",
+        );
+    }
+
+    logger.error("[admin] RPC error while updating user role", {
         ...params,
         errorCode: error.code,
         errorMessage: error.message,
         errorDetails: error.details,
     });
-    throw new ApplicationError('INTERNAL_ERROR', 'Nie udalo sie zaktualizowac roli uzytkownika.');
+    throw new ApplicationError(
+        "INTERNAL_ERROR",
+        "Nie udalo sie zaktualizowac roli uzytkownika.",
+    );
 }
 
 async function getAdminUsersPageFromRpc(
-    query: NormalizedAdminUsersQueryDto
+    query: NormalizedAdminUsersQueryDto,
 ): Promise<AdminUsersRpcRow[]> {
     const client = createServiceRoleClient() as unknown as AdminUsersRpcClient;
-    const { data, error } = await client.rpc('admin_get_users_page', {
-        p_page_number: query.page,
-        p_page_size: query.page_size,
-        p_sort_by: query.sort_by,
-        p_sort_dir: query.sort_dir,
-    });
+    const { data: groupingAllowed, error: groupingError } = await client.rpc(
+        "recipe_variants_allowed",
+        { p_is_admin: true },
+    );
+    if (groupingError) {
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to resolve recipe grouping feature",
+        );
+    }
+    const { data, error } = await client.rpc(
+        groupingAllowed === true
+            ? "admin_get_users_page_v2"
+            : "admin_get_users_page",
+        {
+            p_page_number: query.page,
+            p_page_size: query.page_size,
+            p_sort_by: query.sort_by,
+            p_sort_dir: query.sort_dir,
+        },
+    ) as {
+        data: AdminUsersRpcRow[] | null;
+        error: RpcErrorShape | null;
+    };
 
     if (error) {
-        logger.error('[admin] RPC error while fetching admin users', {
+        logger.error("[admin] RPC error while fetching admin users", {
             errorCode: error.code,
             errorMessage: error.message,
             errorDetails: error.details,
@@ -215,19 +268,23 @@ async function getAdminUsersPageFromRpc(
             sortBy: query.sort_by,
             sortDir: query.sort_dir,
         });
-        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch admin users');
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to fetch admin users",
+        );
     }
 
     return data ?? [];
 }
 
 export async function getAdminSummary(): Promise<AdminSummaryDto> {
-    logger.info('[admin] Generating summary stub');
+    logger.info("[admin] Generating summary stub");
 
     return {
-        version: 'mvp-stub',
+        version: "mvp-stub",
         generated_at: new Date().toISOString(),
-        notes: 'Admin dashboard placeholder; dane zostana dodane w kolejnych iteracjach.',
+        notes:
+            "Admin dashboard placeholder; dane zostana dodane w kolejnych iteracjach.",
         metrics: {
             users_total: null,
             recipes_total: null,
@@ -237,23 +294,25 @@ export async function getAdminSummary(): Promise<AdminSummaryDto> {
 }
 
 export async function getAdminHealth(): Promise<AdminHealthDto> {
-    logger.info('[admin] Generating health stub');
+    logger.info("[admin] Generating health stub");
 
     return {
-        status: 'ok',
+        status: "ok",
         checked_at: new Date().toISOString(),
     };
 }
 
 export async function getAdminUsers(
-    { query }: { query: GetAdminUsersQueryDto }
+    { query }: { query: GetAdminUsersQueryDto },
 ): Promise<GetAdminUsersResponseDto> {
     const normalizedQuery = normalizeAdminUsersQuery(query);
-    logger.info('[admin] Fetching admin users list', { ...normalizedQuery });
+    logger.info("[admin] Fetching admin users list", { ...normalizedQuery });
 
     const rows = await getAdminUsersPageFromRpc(normalizedQuery);
     const data = rows.map(mapAdminUsersRowToDto);
-    const totalItems = rows.length > 0 ? toSafeNonNegativeNumber(rows[0].total_items) : 0;
+    const totalItems = rows.length > 0
+        ? toSafeNonNegativeNumber(rows[0].total_items)
+        : 0;
     const totalPages = totalItems === 0
         ? 0
         : Math.ceil(totalItems / normalizedQuery.page_size);
@@ -284,10 +343,14 @@ export async function updateUserRole(params: {
     appRole: AppRole;
 }): Promise<UpdateAdminUserRoleResponseDto> {
     const { adminUserId, targetUserId, appRole } = params;
-    logger.info('[admin] Updating user role', { adminUserId, targetUserId, appRole });
+    logger.info("[admin] Updating user role", {
+        adminUserId,
+        targetUserId,
+        appRole,
+    });
 
     const client = createServiceRoleClient() as unknown as AdminUsersRpcClient;
-    const { data, error } = await client.rpc('admin_update_user_role', {
+    const { data, error } = await client.rpc("admin_update_user_role", {
         p_target_user_id: targetUserId,
         p_new_role: appRole,
         p_actor_user_id: adminUserId,
@@ -299,8 +362,14 @@ export async function updateUserRole(params: {
 
     const rows = (data ?? []) as AdminUpdateUserRoleRpcRow[];
     if (rows.length === 0) {
-        logger.error('[admin] Role update RPC returned no rows', { adminUserId, targetUserId });
-        throw new ApplicationError('INTERNAL_ERROR', 'Nie udalo sie zaktualizowac roli uzytkownika.');
+        logger.error("[admin] Role update RPC returned no rows", {
+            adminUserId,
+            targetUserId,
+        });
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Nie udalo sie zaktualizowac roli uzytkownika.",
+        );
     }
 
     await syncAiCreditsForRole({

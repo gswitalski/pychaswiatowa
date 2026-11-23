@@ -33,6 +33,8 @@ const SHOPPING_LIST_ITEM_ALL_SELECT = `
     kind,
     recipe_id,
     recipe_name,
+    variant_name,
+    active_variant_count,
     name,
     amount,
     unit,
@@ -174,6 +176,8 @@ interface ShoppingListItemRecipeDto {
     kind: 'RECIPE';
     recipe_id: number;
     recipe_name: string;
+    variant_name: string | null;
+    active_variant_count: number | null;
     name: string;
     amount: number | null;
     unit: string | null;

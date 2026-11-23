@@ -456,6 +456,16 @@ export interface RecipeVariantSummaryDto {
         difficulty: RecipeDifficulty | null;
         servings: number | null;
     };
+    user_action_state?: RecipeVariantUserActionState;
+}
+
+export interface RecipeVariantUserActionState {
+    is_favorite: boolean;
+    wants_to_try: boolean;
+    in_plan: boolean;
+    in_collection: boolean;
+    has_note: boolean;
+    my_rating: number | null;
 }
 
 export interface RecipeVariantsResponseDto { data: RecipeVariantSummaryDto[]; }
@@ -874,6 +884,7 @@ export interface AdminUserListItemDto {
     created_at: string;
     last_sign_in_at: string | null;
     recipes_count: number;
+    variants_count?: number;
 }
 
 /**
@@ -933,6 +944,8 @@ export interface AdminRecipeListItemDto {
     ratings_count: number;
     is_grill: boolean;
     is_termorobot: boolean;
+    variant_name?: string | null;
+    active_variant_count?: number;
 }
 
 export interface GetAdminRecipesResponseDto {
@@ -1091,6 +1104,8 @@ export interface PlanListItemDto {
         id: number;
         name: string;
         image_path: string | null;
+        variant_name?: string | null;
+        active_variant_count?: number;
     };
 }
 
@@ -1138,6 +1153,10 @@ export interface ShoppingListItemRecipeDto extends ShoppingListItemBase {
     recipe_id: number;
     /** Snapshot of recipe name at time of insertion. */
     recipe_name: string;
+    /** Snapshot of the recipe variant name at insertion time. */
+    variant_name?: string | null;
+    /** Number of active variants in the recipe family. */
+    active_variant_count?: number;
     /** Ingredient name (normalized, singular nominative). */
     name: string;
     /** Raw amount from normalized ingredient, or null if unspecified. */

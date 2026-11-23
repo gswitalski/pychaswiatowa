@@ -1,6 +1,6 @@
 # PychaŚwiatowa — referencja wygenerowana z kodu
 
-Wygenerowano: 2026-11-21 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
+Wygenerowano: 2026-11-23 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
 Źródła: `shared/types/database.types.ts`, `supabase/functions`, `src/app/**/*.routes.ts`,
 `src/app/core/guards`, `supabase/migrations`. Wzorce ścieżek Edge Functions są wyciągnięte
 z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
@@ -20,7 +20,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 - `recipe_ratings`: created_at, rating, recipe_id, updated_at, user_id
 - `recipe_tags`: recipe_id, tag_id
 - `recipes`: category_id, created_at, cuisine, deleted_at, description, diet_type, difficulty, id, image_path, ingredients, is_default, is_grill, is_termorobot, name, normalized_ingredients_status, normalized_ingredients_updated_at, prep_time_minutes, recipe_family_id, search_vector, servings, sort_order, steps, tips, total_time_minutes, updated_at, user_id, variant_name, visibility
-- `shopping_list_items`: amount, created_at, id, is_owned, kind, name, recipe_id, recipe_name, text, unit, updated_at, user_id
+- `shopping_list_items`: amount, created_at, id, is_owned, kind, name, recipe_id, recipe_name, variant_name, active_variant_count, text, unit, updated_at, user_id
 - `shopping_list_recipe_contributions`: amount, created_at, id, name, recipe_id, unit, user_id
 - `tags`: created_at, id, name, user_id
 - `user_ai_credits`: created_at, credits_activated_at, draft_credits_total, draft_credits_used, id, image_credits_total, image_credits_used, limit_type, next_reset_at, updated_at, user_id
@@ -177,11 +177,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 102 plików, ostatnie 5
+## Migracje: 103 plików, ostatnie 5
 
-- `20261120220000_variant_default_name_and_recipe_details.sql`
 - `20261120230000_fix_delete_recipe_variant_soft_delete.sql`
 - `20261121160000_ps110_recipe_detail_variant_metadata.sql`
 - `20261121170000_fix_recipe_family_sync_deleted_at.sql`
 - `20261121180000_ps111_grouped_recipes_list.sql`
+- `20261123210000_ps112_recipe_variant_actions_integrations.sql`
 

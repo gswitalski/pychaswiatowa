@@ -19,6 +19,8 @@ interface AdminRecipesRpcRow {
     ratings_count: number | string | null;
     is_grill: boolean | null;
     is_termorobot: boolean | null;
+    variant_name?: string | null;
+    active_variant_count?: number | string | null;
     total_items: number | string | null;
 }
 
@@ -33,7 +35,10 @@ export interface AdminRecipesRpcClient {
         functionName: string,
         args: Record<string, unknown>,
     ) => Promise<
-        { data: AdminRecipesRpcRow[] | null; error: RpcErrorShape | null }
+        {
+            data: AdminRecipesRpcRow[] | boolean | null;
+            error: RpcErrorShape | null;
+        }
     >;
 }
 
@@ -83,6 +88,12 @@ function mapRow(row: AdminRecipesRpcRow): AdminRecipeListItemDto {
         ratings_count: toSafeNonNegativeNumber(row.ratings_count),
         is_grill: row.is_grill === true,
         is_termorobot: row.is_termorobot === true,
+        ...(row.variant_name !== undefined && {
+            variant_name: normalizeText(row.variant_name),
+            active_variant_count: toSafeNonNegativeNumber(
+                row.active_variant_count ?? 1,
+            ),
+        }),
     };
 }
 
@@ -97,25 +108,44 @@ export async function getAdminRecipes(params: {
     const filters = params.query;
     const client = params.client ??
         (createServiceRoleClient() as unknown as AdminRecipesRpcClient);
-    const { data, error } = await client.rpc("admin_get_recipes_page", {
-        p_page_number: page,
-        p_page_size: pageSize,
-        p_sort_by: sortBy,
-        p_sort_dir: sortDir,
-        p_recipe_id: filters.id ?? null,
-        p_name: filters.name ?? null,
-        p_author: filters.author ?? null,
-        p_category_ids: filters.category_id ?? null,
-        p_include_uncategorized: filters.uncategorized ?? false,
-        p_created_from: filters.created_from ?? null,
-        p_created_to: filters.created_to ?? null,
-        p_rating_min: filters.rating_min ?? null,
-        p_rating_max: filters.rating_max ?? null,
-        p_ratings_count_min: filters.ratings_count_min ?? null,
-        p_ratings_count_max: filters.ratings_count_max ?? null,
-        p_is_grill: filters.is_grill ?? false,
-        p_is_termorobot: filters.is_termorobot ?? false,
-    });
+    const { data: groupingAllowed, error: groupingError } = await client.rpc(
+        "recipe_variants_allowed",
+        { p_is_admin: true },
+    );
+    if (groupingError) {
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to fetch admin recipes",
+        );
+    }
+    const rpcResult = await client.rpc(
+        groupingAllowed === true
+            ? "admin_get_recipes_page_v2"
+            : "admin_get_recipes_page",
+        {
+            p_page_number: page,
+            p_page_size: pageSize,
+            p_sort_by: sortBy,
+            p_sort_dir: sortDir,
+            p_recipe_id: filters.id ?? null,
+            p_name: filters.name ?? null,
+            p_author: filters.author ?? null,
+            p_category_ids: filters.category_id ?? null,
+            p_include_uncategorized: filters.uncategorized ?? false,
+            p_created_from: filters.created_from ?? null,
+            p_created_to: filters.created_to ?? null,
+            p_rating_min: filters.rating_min ?? null,
+            p_rating_max: filters.rating_max ?? null,
+            p_ratings_count_min: filters.ratings_count_min ?? null,
+            p_ratings_count_max: filters.ratings_count_max ?? null,
+            p_is_grill: filters.is_grill ?? false,
+            p_is_termorobot: filters.is_termorobot ?? false,
+        },
+    );
+    const { data, error } = rpcResult as {
+        data: AdminRecipesRpcRow[] | null;
+        error: RpcErrorShape | null;
+    };
     if (error) {
         logger.error("[admin] RPC error while fetching admin recipes", {
             errorCode: error.code,

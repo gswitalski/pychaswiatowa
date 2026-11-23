@@ -23,6 +23,7 @@ import {
     ApiError,
     NormalizedIngredientUnit,
 } from '../../../../shared/contracts/types';
+import { formatRecipeVariantLabel } from '../../shared/utils/recipe-variant-label';
 
 /**
  * Stan danych listy zakupów.
@@ -153,13 +154,18 @@ export class ShoppingListService {
             const recipe = item as ShoppingListItemRecipeDto;
             const groupKey = this.buildRecipeGroupKey(recipe);
             const existing = recipeGroups.get(groupKey);
+            const sourceName = formatRecipeVariantLabel(
+                recipe.recipe_name ?? recipe.name,
+                recipe.variant_name,
+                recipe.active_variant_count
+            );
 
             if (!existing) {
                 recipeGroups.set(groupKey, {
                     groupKey,
                     kind: 'RECIPE',
                     isOwned: recipe.is_owned,
-                    primaryText: recipe.name,
+                    primaryText: sourceName,
                     secondaryText: null,
                     canDelete: true,
                     rowIds: [recipe.id],
@@ -726,7 +732,8 @@ export class ShoppingListService {
     private buildRecipeGroupKey(item: ShoppingListItemRecipeDto): string {
         const unit = item.unit ?? 'null';
         const ownedFlag = item.is_owned ? '1' : '0';
-        return `${item.name}||${unit}||${ownedFlag}`;
+        const recipePrefix = item.recipe_id ? `${item.recipe_id}||` : '';
+        return `${recipePrefix}${item.name}||${unit}||${ownedFlag}`;
     }
 
     /**

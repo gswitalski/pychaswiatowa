@@ -65,6 +65,8 @@ export interface PlanRecipeRow {
         user_id: string;
         visibility: 'PRIVATE' | 'SHARED' | 'PUBLIC';
         deleted_at: string | null;
+        recipe_family_id: string | null;
+        variant_name: string | null;
     };
 }
 
@@ -94,6 +96,8 @@ export interface PlanListItemDto {
         id: number;
         name: string;
         image_path: string | null;
+        variant_name?: string | null;
+        active_variant_count?: number;
     };
 }
 

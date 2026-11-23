@@ -17,6 +17,9 @@ function clientFor(
         rpc: async (name, args) => {
             capture.name = name;
             capture.args = args;
+            if (name === "recipe_variants_allowed") {
+                return { data: false, error: null };
+            }
             return { data: data as never[], error: null };
         },
     };
@@ -55,6 +58,44 @@ Deno.test("maps RPC sentinel and forwards defaults and all four arguments", asyn
         totalItems: 61,
     });
     assertEquals(result.data, []);
+});
+
+Deno.test("uses v2 RPC and maps variant metadata when the feature is enabled", async () => {
+    const calls: string[] = [];
+    const client: AdminRecipesRpcClient = {
+        rpc: async (name) => {
+            calls.push(name);
+            if (name === "recipe_variants_allowed") {
+                return { data: true, error: null };
+            }
+            return {
+                data: [{
+                    id: 42,
+                    name: "Lasagne",
+                    author_id: "user",
+                    author_username: null,
+                    author_email: null,
+                    category_name: null,
+                    created_at: "2026-01-01",
+                    average_rating: null,
+                    ratings_count: 0,
+                    is_grill: false,
+                    is_termorobot: false,
+                    variant_name: "Wegetariańska",
+                    active_variant_count: 2,
+                    total_items: 1,
+                }],
+                error: null,
+            };
+        },
+    };
+    const result = await getAdminRecipes({ query: {}, client });
+    assertEquals(calls, [
+        "recipe_variants_allowed",
+        "admin_get_recipes_page_v2",
+    ]);
+    assertEquals(result.data[0].variant_name, "Wegetariańska");
+    assertEquals(result.data[0].active_variant_count, 2);
 });
 
 Deno.test("maps recipe fields, normalizes values, and rounds ratings", async () => {

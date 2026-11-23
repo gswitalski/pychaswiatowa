@@ -117,6 +117,9 @@ export class RecipeDetailViewComponent {
         return this.variants().find((variant) => variant.recipe_id === recipe?.id) ?? null;
     });
     protected readonly variantLabel = computed(() => this.activeVariant()?.variant_name ?? '');
+    protected readonly showPersonalVariantState = computed(
+        () => this.isAuthenticated() && this.variants().some((variant) => variant.user_action_state)
+    );
 
     onAddToCollection(): void {
         this.addToCollection.emit();

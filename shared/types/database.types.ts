@@ -592,6 +592,8 @@ export type Database = {
           name: string | null
           recipe_id: number | null
           recipe_name: string | null
+          variant_name: string | null
+          active_variant_count: number | null
           text: string | null
           unit: string | null
           updated_at: string
@@ -606,6 +608,8 @@ export type Database = {
           name?: string | null
           recipe_id?: number | null
           recipe_name?: string | null
+          variant_name?: string | null
+          active_variant_count?: number | null
           text?: string | null
           unit?: string | null
           updated_at?: string
@@ -620,6 +624,8 @@ export type Database = {
           name?: string | null
           recipe_id?: number | null
           recipe_name?: string | null
+          variant_name?: string | null
+          active_variant_count?: number | null
           text?: string | null
           unit?: string | null
           updated_at?: string

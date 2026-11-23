@@ -57,6 +57,7 @@ export class AdminRecipesPageComponent implements OnInit {
     readonly displayedColumns: readonly string[] = [
         'id',
         'name',
+        'variant',
         'author',
         'category',
         'createdAt',
@@ -294,6 +295,8 @@ export class AdminRecipesPageComponent implements OnInit {
         return {
             id: recipe.id,
             name: recipe.name,
+            variantName: recipe.variant_name?.trim() || null,
+            activeVariantCount: recipe.active_variant_count ?? 1,
             authorId: recipe.author_id,
             authorPrimaryLabel,
             authorSecondaryLabel: authorEmail || null,
@@ -306,7 +309,7 @@ export class AdminRecipesPageComponent implements OnInit {
             ratingsCount: Number.isFinite(recipe.ratings_count) ? recipe.ratings_count : 0,
             isGrill: recipe.is_grill === true,
             isTermorobot: recipe.is_termorobot === true,
-            recipeUrl: `/explore/recipes/${recipe.id}`,
+            recipeUrl: `/explore/recipes/${recipe.id}${recipe.variant_name && (recipe.active_variant_count ?? 1) >= 2 ? `?variant=${recipe.id}` : ''}`,
             openAriaLabel: `Otwórz przepis ${recipe.name} w nowej karcie`,
         };
     }

@@ -214,6 +214,16 @@
                                         >
                                             {{ variant.variant_name }}
                                         </button>
+                                        @if (showPersonalVariantState() && variant.user_action_state; as state) {
+                                            <span class="variant-state" aria-live="polite">
+                                                @if (state.is_favorite) { ulubiony }
+                                                @if (state.wants_to_try) { chcę wypróbować }
+                                                @if (state.in_plan) { w planie }
+                                                @if (state.in_collection) { w kolekcji }
+                                                @if (state.has_note) { notatka }
+                                                @if (state.my_rating !== null) { ocena {{ state.my_rating }} }
+                                            </span>
+                                        }
                                     }
                                 </div>
                             } @else {
@@ -234,6 +244,16 @@
                                         }
                                     </mat-select>
                                 </mat-form-field>
+                                @if (showPersonalVariantState() && activeVariant()?.user_action_state; as state) {
+                                    <span class="variant-state" aria-live="polite">
+                                        @if (state.is_favorite) { ulubiony }
+                                        @if (state.wants_to_try) { chcę wypróbować }
+                                        @if (state.in_plan) { w planie }
+                                        @if (state.in_collection) { w kolekcji }
+                                        @if (state.has_note) { notatka }
+                                        @if (state.my_rating !== null) { ocena {{ state.my_rating }} }
+                                    </span>
+                                }
                             }
                             <span class="sr-only" aria-live="polite">
                                 Wybrano wariant: {{ variantLabel() }}

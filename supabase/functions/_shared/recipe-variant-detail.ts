@@ -16,6 +16,16 @@ export interface RecipeVariantSummaryDto {
         difficulty: string | null;
         servings: number | null;
     };
+    user_action_state?: RecipeVariantUserActionState;
+}
+
+export interface RecipeVariantUserActionState {
+    is_favorite: boolean;
+    wants_to_try: boolean;
+    in_plan: boolean;
+    in_collection: boolean;
+    has_note: boolean;
+    my_rating: number | null;
 }
 
 export interface RecipeVariantResolutionDto {
@@ -95,6 +105,61 @@ function mapSummary(row: VariantRow, differing: Set<string>): RecipeVariantSumma
 function getDifferingFields(rows: VariantRow[]): Set<string> {
     const fields = ['diet_type', 'is_termorobot', 'is_grill', 'difficulty', 'servings'] as const;
     return new Set(fields.filter((field) => new Set(rows.map((row) => row[field])).size > 1));
+}
+
+async function getUserActionStateMap(
+    client: TypedSupabaseClient,
+    recipeIds: number[],
+    userId: string | null,
+): Promise<Map<number, RecipeVariantUserActionState>> {
+    const result = new Map<number, RecipeVariantUserActionState>();
+    if (!userId || recipeIds.length === 0) return result;
+
+    const [flags, plan, collections, notes, ratings] = await Promise.all([
+        client.from('user_recipe_flags').select('recipe_id,is_favorite,is_want_to_try')
+            .eq('user_id', userId),
+        client.from('plan_recipes').select('recipe_id').eq('user_id', userId),
+        client.from('recipe_collections').select('recipe_id,collections!inner(user_id)')
+            .eq('collections.user_id', userId),
+        client.from('user_recipe_notes').select('recipe_id').eq('user_id', userId),
+        client.from('recipe_ratings').select('recipe_id,rating').eq('user_id', userId),
+    ]);
+    if (flags.error || plan.error || collections.error || notes.error || ratings.error) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe variant action state');
+    }
+
+    const recipeIdSet = new Set(recipeIds);
+    const planIds = new Set((plan.data ?? []).map((row) => Number(row.recipe_id)).filter((id) => recipeIdSet.has(id)));
+    const collectionIds = new Set((collections.data ?? []).map((row) => Number(row.recipe_id)).filter((id) => recipeIdSet.has(id)));
+    const noteIds = new Set((notes.data ?? []).map((row) => Number(row.recipe_id)).filter((id) => recipeIdSet.has(id)));
+    const ratingMap = new Map<number, number>();
+    for (const row of ratings.data ?? []) {
+        const id = Number(row.recipe_id);
+        if (recipeIdSet.has(id)) ratingMap.set(id, Number(row.rating));
+    }
+    const flagMap = new Map<number, { is_favorite: boolean; wants_to_try: boolean }>();
+    for (const row of flags.data ?? []) {
+        const id = Number(row.recipe_id);
+        if (recipeIdSet.has(id)) {
+            flagMap.set(id, {
+                is_favorite: Boolean(row.is_favorite),
+                wants_to_try: Boolean(row.is_want_to_try),
+            });
+        }
+    }
+
+    for (const recipeId of recipeIds) {
+        const flag = flagMap.get(recipeId);
+        result.set(recipeId, {
+            is_favorite: flag?.is_favorite ?? false,
+            wants_to_try: flag?.wants_to_try ?? false,
+            in_plan: planIds.has(recipeId),
+            in_collection: collectionIds.has(recipeId),
+            has_note: noteIds.has(recipeId),
+            my_rating: ratingMap.get(recipeId) ?? null,
+        });
+    }
+    return result;
 }
 
 export async function resolveRecipeVariantDetail(params: {
@@ -179,10 +244,20 @@ export async function resolveRecipeVariantDetail(params: {
         resolution = deletedResolution();
     }
 
+    const actionState = await getUserActionStateMap(
+        serviceClient,
+        visibleRows.slice(0, 10).map((row) => Number(row.id)),
+        params.requesterUserId,
+    );
+
     return {
         enabled: true,
         selectedId,
-        summaries: visibleRows.map((row) => mapSummary(row, getDifferingFields(visibleRows))),
+        summaries: visibleRows.map((row) => {
+            const summary = mapSummary(row, getDifferingFields(visibleRows));
+            const state = actionState.get(summary.recipe_id);
+            return state ? { ...summary, user_action_state: state } : summary;
+        }),
         resolution,
     };
 }

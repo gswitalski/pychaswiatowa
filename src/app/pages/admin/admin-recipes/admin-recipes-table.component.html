@@ -47,6 +47,12 @@
                     {{ row.name }}
                 </td>
             </ng-container>
+            <ng-container matColumnDef="variant">
+                <th mat-header-cell *matHeaderCellDef>Wariant</th>
+                <td mat-cell *matCellDef="let row" [attr.title]="row.variantName || '—'">
+                    {{ row.activeVariantCount >= 2 ? (row.variantName || '—') : '—' }}
+                </td>
+            </ng-container>
             <ng-container matColumnDef="author">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Autor</th>
                 <td mat-cell *matCellDef="let row" class="admin-recipes-table__cell--wrap">

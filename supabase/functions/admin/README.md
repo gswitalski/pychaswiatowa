@@ -72,7 +72,8 @@ Zwraca paginowana liste uzytkownikow dla panelu administracyjnego.
       "role": "admin",
       "created_at": "2026-03-20T18:15:00Z",
       "last_sign_in_at": "2026-04-10T07:42:11Z",
-      "recipes_count": 12
+      "recipes_count": 12,
+      "variants_count": 17
     }
   ],
   "pagination": {
@@ -128,7 +129,9 @@ dlatego jest dostępny wyłącznie po autoryzacji administratora.
     "average_rating": 4.5,
     "ratings_count": 12,
     "is_grill": true,
-    "is_termorobot": false
+    "is_termorobot": false,
+    "variant_name": "Wegetariańska",
+    "active_variant_count": 2
   }],
   "pagination": { "currentPage": 1, "pageSize": 25, "totalPages": 1, "totalItems": 1 },
   "sorting": { "sort_by": "created_at", "sort_dir": "desc" }

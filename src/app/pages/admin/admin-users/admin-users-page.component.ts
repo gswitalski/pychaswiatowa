@@ -264,6 +264,7 @@ export class AdminUsersPageComponent implements OnInit {
             lastSignInAt: user.last_sign_in_at,
             lastSignInAtLabel,
             recipesCount: Number.isFinite(user.recipes_count) ? user.recipes_count : 0,
+            variantsCount: Number.isFinite(user.variants_count) ? user.variants_count! : null,
             role: user.role,
             roleLabel: this.mapRoleLabel(user.role),
             roleTone: this.mapRoleTone(user.role),

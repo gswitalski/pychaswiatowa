@@ -2,19 +2,18 @@
  * Business logic for Plan operations
  */
 
-import { logger } from '../_shared/logger.ts';
+import { logger } from "../_shared/logger.ts";
 import {
     ApplicationError,
     PlanLimitExceededFreeError,
-} from '../_shared/errors.ts';
-import type { AppRole } from '../_shared/auth.ts';
-import { TypedSupabaseClient, createServiceRoleClient } from '../_shared/supabase-client.ts';
-import { PLAN_LIMIT_FREE } from './plan.types.ts';
-import type {
-    RecipeAccessInfo,
-    GetPlanResponseDto,
-    PlanRecipeRow,
-} from './plan.types.ts';
+} from "../_shared/errors.ts";
+import type { AppRole } from "../_shared/auth.ts";
+import {
+    createServiceRoleClient,
+    TypedSupabaseClient,
+} from "../_shared/supabase-client.ts";
+import { PLAN_LIMIT_FREE } from "./plan.types.ts";
+import type { GetPlanResponseDto, PlanRecipeRow } from "./plan.types.ts";
 
 function logDbError(
     message: string,
@@ -38,12 +37,40 @@ function logDbError(
  */
 export async function checkFreePlanLimit(
     userId: string,
-    supabase: TypedSupabaseClient = createServiceRoleClient()
+    supabase: TypedSupabaseClient = createServiceRoleClient(),
 ): Promise<void> {
-    const { count, error } = await supabase
-        .from('plan_recipes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
+    const { data: variantsAllowed, error: flagError } = await supabase.rpc(
+        "recipe_variants_allowed",
+        { p_is_admin: false },
+    );
+    if (flagError) {
+        logDbError(
+            `[checkFreePlanLimit] Failed to resolve recipe variants flag`,
+            flagError,
+        );
+        throw new ApplicationError(
+            "INTERNAL_ERROR",
+            "Failed to check plan limit",
+        );
+    }
+    const result = await supabase
+        .from("plan_recipes")
+        .select(
+            "recipe_id, recipes!fk_plan_recipes_recipe(user_id, visibility, deleted_at)",
+        )
+        .eq("user_id", userId);
+    const { data, error } = result as unknown as {
+        data?: Array<{
+            recipe_id: number;
+            recipes: {
+                user_id: string;
+                visibility: string;
+                deleted_at: string | null;
+            } | null;
+        }>;
+        count?: number | null;
+        error: { code?: string; message?: string; details?: string } | null;
+    };
 
     if (error) {
         logDbError(
@@ -51,21 +78,35 @@ export async function checkFreePlanLimit(
             error,
         );
         throw new ApplicationError(
-            'INTERNAL_ERROR',
-            'Failed to check plan limit'
+            "INTERNAL_ERROR",
+            "Failed to check plan limit",
         );
     }
 
-    const currentCount = count ?? 0;
+    const currentCount = data
+        ? data.filter((row) => {
+            const recipe = row.recipes as {
+                user_id: string;
+                visibility: string;
+                deleted_at: string | null;
+            } | null;
+            return recipe !== null && (
+                !variantsAllowed ||
+                (recipe.deleted_at === null &&
+                    (recipe.user_id === userId ||
+                        recipe.visibility === "PUBLIC"))
+            );
+        }).length
+        : result.count ?? 0;
 
     logger.info(
-        `[checkFreePlanLimit] User ${userId}: ${currentCount}/${PLAN_LIMIT_FREE} items`
+        `[checkFreePlanLimit] User ${userId}: ${currentCount}/${PLAN_LIMIT_FREE} items`,
     );
 
     if (currentCount >= PLAN_LIMIT_FREE) {
         logger.warn(
             `[checkFreePlanLimit] Free user ${userId} reached plan limit ` +
-            `(${currentCount}/${PLAN_LIMIT_FREE})`
+                `(${currentCount}/${PLAN_LIMIT_FREE})`,
         );
         throw new PlanLimitExceededFreeError(PLAN_LIMIT_FREE);
     }
@@ -80,7 +121,7 @@ export async function checkFreePlanLimit(
  * - Recipe must exist and not be soft-deleted
  * - Recipe cannot already be in plan (enforced by DB unique constraint)
  * - Plan cannot exceed 50 items (enforced by DB trigger)
- * 
+ *
  * Side-effect (NEW):
  * - Inserts raw shopping list rows based on normalized ingredients (if status=READY)
  * - One row per normalized ingredient (no merging/aggregation)
@@ -101,9 +142,9 @@ export async function addRecipeToPlan(
     userId: string,
     recipeId: number,
     appRole: AppRole,
-    serviceRoleClient?: TypedSupabaseClient
+    serviceRoleClient?: TypedSupabaseClient,
 ): Promise<void> {
-    if (appRole === 'user') {
+    if (appRole === "user") {
         await checkFreePlanLimit(userId, serviceRoleClient);
     }
 
@@ -112,8 +153,8 @@ export async function addRecipeToPlan(
     // 2. Adds recipe to plan (with limit check)
     // 3. Updates shopping list from normalized ingredients (if READY)
     const { data, error } = await client.rpc(
-        'add_recipe_to_plan_and_update_shopping_list',
-        { p_recipe_id: recipeId }
+        "add_recipe_to_plan_and_update_shopping_list",
+        { p_recipe_id: recipeId },
     );
 
     if (error) {
@@ -132,26 +173,26 @@ export async function addRecipeToPlan(
 
         logger.info(
             `[addRecipeToPlan] Recipe ${recipeId} added to plan for user ${userId}. ` +
-            `Shopping list updated: ${metadata.shopping_list_updated} ` +
-            `(${metadata.items_added} rows added)`
+                `Shopping list updated: ${metadata.shopping_list_updated} ` +
+                `(${metadata.items_added} rows added)`,
         );
     } else {
         logger.info(
-            `[addRecipeToPlan] Recipe ${recipeId} added to plan for user ${userId}`
+            `[addRecipeToPlan] Recipe ${recipeId} added to plan for user ${userId}`,
         );
     }
 }
 
 /**
  * Maps RPC error from add_recipe_to_plan_and_update_shopping_list to ApplicationError.
- * 
+ *
  * Handles custom error codes from the RPC function:
  * - UNAUTHORIZED -> should not happen (checked by auth.uid())
  * - NOT_FOUND -> recipe not found or deleted
  * - FORBIDDEN -> access denied (private/shared recipe)
  * - CONFLICT -> recipe already in plan
  * - PLAN_LIMIT_EXCEEDED -> 50 recipes limit reached
- * 
+ *
  * @param error - The database error from RPC call
  * @param recipeId - The recipe ID (for logging)
  * @param userId - The user ID (for logging)
@@ -160,55 +201,55 @@ export async function addRecipeToPlan(
 function mapRpcErrorToApplicationError(
     error: { message: string; code?: string },
     recipeId: number,
-    userId: string
+    userId: string,
 ): never {
-    const errorMessage = error.message || '';
+    const errorMessage = error.message || "";
 
     // Handle custom RPC exceptions (raised by the function)
-    if (errorMessage.includes('UNAUTHORIZED')) {
+    if (errorMessage.includes("UNAUTHORIZED")) {
         logger.error(
-            `[addRecipeToPlan] Unauthorized RPC call for recipe ${recipeId} by user ${userId}`
+            `[addRecipeToPlan] Unauthorized RPC call for recipe ${recipeId} by user ${userId}`,
         );
-        throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+        throw new ApplicationError("UNAUTHORIZED", "Authentication required");
     }
 
-    if (errorMessage.includes('NOT_FOUND')) {
+    if (errorMessage.includes("NOT_FOUND")) {
         logger.warn(
-            `[addRecipeToPlan] Recipe ${recipeId} not found or deleted`
+            `[addRecipeToPlan] Recipe ${recipeId} not found or deleted`,
         );
-        throw new ApplicationError('NOT_FOUND', 'Recipe not found');
+        throw new ApplicationError("NOT_FOUND", "Recipe not found");
     }
 
-    if (errorMessage.includes('FORBIDDEN')) {
+    if (errorMessage.includes("FORBIDDEN")) {
         logger.warn(
-            `[addRecipeToPlan] User ${userId} forbidden from accessing recipe ${recipeId}`
+            `[addRecipeToPlan] User ${userId} forbidden from accessing recipe ${recipeId}`,
         );
         throw new ApplicationError(
-            'FORBIDDEN',
-            'You do not have access to this recipe'
+            "FORBIDDEN",
+            "You do not have access to this recipe",
         );
     }
 
-    if (errorMessage.includes('CONFLICT')) {
+    if (errorMessage.includes("CONFLICT")) {
         logger.warn(
-            `[addRecipeToPlan] Recipe ${recipeId} already in plan for user ${userId}`
+            `[addRecipeToPlan] Recipe ${recipeId} already in plan for user ${userId}`,
         );
         throw new ApplicationError(
-            'CONFLICT',
-            'Recipe is already in plan'
+            "CONFLICT",
+            "Recipe is already in plan",
         );
     }
 
     if (
-        errorMessage.includes('PLAN_LIMIT_EXCEEDED') ||
-        errorMessage.includes('Plan limit reached')
+        errorMessage.includes("PLAN_LIMIT_EXCEEDED") ||
+        errorMessage.includes("Plan limit reached")
     ) {
         logger.warn(
-            `[addRecipeToPlan] Plan limit reached for user ${userId}`
+            `[addRecipeToPlan] Plan limit reached for user ${userId}`,
         );
         throw new ApplicationError(
-            'UNPROCESSABLE_ENTITY',
-            'Plan limit reached (50 recipes)'
+            "UNPROCESSABLE_ENTITY",
+            "Plan limit reached (50 recipes)",
         );
     }
 
@@ -218,127 +259,9 @@ function mapRpcErrorToApplicationError(
         error,
     );
     throw new ApplicationError(
-        'INTERNAL_ERROR',
-        'Failed to add recipe to plan'
+        "INTERNAL_ERROR",
+        "Failed to add recipe to plan",
     );
-}
-
-/**
- * Verifies that user has access to the recipe.
- * Returns minimal recipe info if access is granted.
- *
- * @deprecated This function is no longer used by addRecipeToPlan (now handled by RPC).
- * Kept for potential future use or other endpoints.
- * 
- * @throws ApplicationError
- * - NOT_FOUND: Recipe doesn't exist or is deleted
- * - FORBIDDEN: User doesn't have access to recipe
- */
-async function verifyRecipeAccess(
-    userId: string,
-    recipeId: number
-): Promise<RecipeAccessInfo> {
-    const supabase = createServiceRoleClient();
-
-    // Fetch minimal recipe data
-    const { data: recipe, error } = await supabase
-        .from('recipes')
-        .select('id, user_id, visibility, deleted_at')
-        .eq('id', recipeId)
-        .single();
-
-    if (error || !recipe) {
-        logger.warn(
-            `[verifyRecipeAccess] Recipe ${recipeId} not found: ${error?.message}`
-        );
-        throw new ApplicationError('NOT_FOUND', 'Recipe not found');
-    }
-
-    // Check if recipe is soft-deleted
-    if (recipe.deleted_at !== null) {
-        logger.warn(
-            `[verifyRecipeAccess] Recipe ${recipeId} is soft-deleted`
-        );
-        throw new ApplicationError('NOT_FOUND', 'Recipe not found');
-    }
-
-    // Check access rules:
-    // - Own recipe: always allowed
-    // - Other's recipe: only if PUBLIC
-    const isOwner = recipe.user_id === userId;
-    const isPublic = recipe.visibility === 'PUBLIC';
-
-    if (!isOwner && !isPublic) {
-        logger.warn(
-            `[verifyRecipeAccess] User ${userId} doesn't have access to recipe ${recipeId}`
-        );
-        throw new ApplicationError(
-            'FORBIDDEN',
-            'You do not have access to this recipe'
-        );
-    }
-
-    return recipe as RecipeAccessInfo;
-}
-
-/**
- * Inserts recipe into plan_recipes table.
- * Uses user context client to enforce RLS.
- *
- * @deprecated This function is no longer used by addRecipeToPlan (now handled by RPC).
- * Kept for potential future use or other endpoints.
- * 
- * @param client - The authenticated Supabase client (user context)
- * @param recipeId - The ID of the recipe to add
- * @throws ApplicationError
- * - CONFLICT: Recipe already in plan (unique constraint violation)
- * - UNPROCESSABLE_ENTITY: Plan limit reached (trigger exception)
- */
-async function insertRecipeToPlan(
-    client: TypedSupabaseClient,
-    recipeId: number
-): Promise<void> {
-    const { error } = await client.from('plan_recipes').insert({
-        recipe_id: recipeId,
-        // user_id is auto-filled by default auth.uid()
-    });
-
-    if (error) {
-        // Handle unique constraint violation (duplicate)
-        if (error.code === '23505') {
-            logger.warn(
-                `[insertRecipeToPlan] Recipe ${recipeId} already in plan (duplicate)`
-            );
-            throw new ApplicationError(
-                'CONFLICT',
-                'Recipe is already in plan'
-            );
-        }
-
-        // Handle limit trigger exception
-        if (
-            error.message.includes('PLAN_LIMIT_EXCEEDED') ||
-            error.message.includes('Plan limit reached')
-        ) {
-            logger.warn(
-                `[insertRecipeToPlan] Plan limit reached (50 recipes)`
-            );
-            throw new ApplicationError(
-                'UNPROCESSABLE_ENTITY',
-                'Plan limit reached (50 recipes)'
-            );
-        }
-
-        // Other database errors
-        logDbError(
-            `[insertRecipeToPlan] Failed to insert recipe ${recipeId} to plan`,
-            error,
-        );
-        throw new ApplicationError(
-            'INTERNAL_ERROR',
-            'Failed to add recipe to plan'
-        );
-    }
 }
 
 /**
@@ -357,12 +280,23 @@ async function insertRecipeToPlan(
  */
 export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
     const supabase = createServiceRoleClient();
+    const { data: variantsAllowed, error: flagError } = await supabase.rpc(
+        "recipe_variants_allowed",
+        { p_is_admin: false },
+    );
+    if (flagError) {
+        logDbError(
+            `[getPlan] Failed to resolve recipe variants flag`,
+            flagError,
+        );
+        throw new ApplicationError("INTERNAL_ERROR", "Failed to fetch plan");
+    }
 
     // Query plan_recipes with join to recipes
     // Filter: user's plan + not deleted + (owner OR public)
     // Note: używamy recipes!fk_plan_recipes_recipe aby jawnie wskazać foreign key
     const { data, error } = await supabase
-        .from('plan_recipes')
+        .from("plan_recipes")
         .select(
             `
             recipe_id,
@@ -373,19 +307,21 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
                 image_path,
                 user_id,
                 visibility,
-                deleted_at
+                deleted_at,
+                recipe_family_id,
+                variant_name
             )
-        `
+        `,
         )
-        .eq('user_id', userId)
-        .order('added_at', { ascending: false })
+        .eq("user_id", userId)
+        .order("added_at", { ascending: false })
         .limit(50);
 
     if (error) {
         logDbError(`[getPlan] Failed to fetch plan for user ${userId}`, error);
         throw new ApplicationError(
-            'INTERNAL_ERROR',
-            'Failed to fetch plan'
+            "INTERNAL_ERROR",
+            "Failed to fetch plan",
         );
     }
 
@@ -399,7 +335,7 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
         // Recipe must exist (shouldn't happen with foreign key, but defensive)
         if (!recipe) {
             logger.warn(
-                `[getPlan] Plan item recipe_id=${row.recipe_id} has no recipe data (orphaned?)`
+                `[getPlan] Plan item recipe_id=${row.recipe_id} has no recipe data (orphaned?)`,
             );
             return false;
         }
@@ -407,24 +343,59 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
         // Filter out soft-deleted recipes
         if (recipe.deleted_at !== null) {
             logger.info(
-                `[getPlan] Hiding soft-deleted recipe ${recipe.id} from plan`
+                `[getPlan] Hiding soft-deleted recipe ${recipe.id} from plan`,
             );
             return false;
         }
 
         // Filter out recipes user doesn't have access to
         const isOwner = recipe.user_id === userId;
-        const isPublic = recipe.visibility === 'PUBLIC';
+        const isPublic = recipe.visibility === "PUBLIC";
 
         if (!isOwner && !isPublic) {
             logger.info(
-                `[getPlan] Hiding non-accessible recipe ${recipe.id} from plan (not owner, not public)`
+                `[getPlan] Hiding non-accessible recipe ${recipe.id} from plan (not owner, not public)`,
             );
             return false;
         }
 
         return true;
     });
+
+    const familyIds = [
+        ...new Set(
+            accessibleItems
+                .map((row) => row.recipes.recipe_family_id)
+                .filter((id): id is string => Boolean(id)),
+        ),
+    ];
+    const variantCounts = new Map<string, number>();
+    if (variantsAllowed && familyIds.length > 0) {
+        const { data: variants, error: variantsError } = await supabase
+            .from("recipes")
+            .select("recipe_family_id")
+            .in("recipe_family_id", familyIds)
+            .is("deleted_at", null);
+        if (variantsError) {
+            logDbError(
+                `[getPlan] Failed to count recipe variants for user ${userId}`,
+                variantsError,
+            );
+            throw new ApplicationError(
+                "INTERNAL_ERROR",
+                "Failed to fetch plan",
+            );
+        }
+        for (const variant of variants ?? []) {
+            const familyId = variant.recipe_family_id;
+            if (familyId) {
+                variantCounts.set(
+                    familyId,
+                    (variantCounts.get(familyId) ?? 0) + 1,
+                );
+            }
+        }
+    }
 
     // Map to DTO format
     const planItems = accessibleItems.map((row) => ({
@@ -434,13 +405,21 @@ export async function getPlan(userId: string): Promise<GetPlanResponseDto> {
             id: row.recipes.id,
             name: row.recipes.name,
             image_path: row.recipes.image_path,
+            ...(variantsAllowed
+                ? {
+                    variant_name: row.recipes.variant_name,
+                    active_variant_count: row.recipes.recipe_family_id
+                        ? variantCounts.get(row.recipes.recipe_family_id) ?? 1
+                        : 1,
+                }
+                : {}),
         },
     }));
 
     const total = planItems.length;
 
     logger.info(
-        `[getPlan] User ${userId} plan: ${total} accessible items (filtered from ${planRows.length} total)`
+        `[getPlan] User ${userId} plan: ${total} accessible items (filtered from ${planRows.length} total)`,
     );
 
     return {
@@ -478,7 +457,7 @@ export async function clearPlan(params: {
     // 2. Clears shopping_list_recipe_contributions
     // 3. Clears shopping_list_items of kind='RECIPE'
     const { data, error } = await client.rpc(
-        'clear_plan_and_update_shopping_list'
+        "clear_plan_and_update_shopping_list",
     );
 
     if (error) {
@@ -487,18 +466,18 @@ export async function clearPlan(params: {
 
     const metadata = data as
         | {
-              success: boolean;
-              plan_items_removed: number;
-              contributions_removed: number;
-              recipe_items_deleted: number;
-          }
+            success: boolean;
+            plan_items_removed: number;
+            contributions_removed: number;
+            recipe_items_deleted: number;
+        }
         | null;
 
     // Count deleted rows (0 if plan was already empty - this is OK, idempotent)
     const deletedCount = metadata?.plan_items_removed ?? 0;
 
     logger.info(
-        `[clearPlan] Plan cleared for user ${userId}: ${deletedCount} items deleted`
+        `[clearPlan] Plan cleared for user ${userId}: ${deletedCount} items deleted`,
     );
 
     return deletedCount;
@@ -506,26 +485,26 @@ export async function clearPlan(params: {
 
 /**
  * Maps RPC error from clear_plan_and_update_shopping_list to ApplicationError.
- * 
+ *
  * Handles custom error codes from the RPC function:
  * - UNAUTHORIZED -> auth.uid() missing
  * - INTERNAL_ERROR -> unexpected database error
- * 
+ *
  * @param error - The database error from RPC call
  * @param userId - The user ID (for logging)
  * @throws ApplicationError with appropriate code and message
  */
 function mapClearPlanRpcErrorToApplicationError(
     error: { message: string; code?: string },
-    userId: string
+    userId: string,
 ): never {
-    const errorMessage = error.message || '';
+    const errorMessage = error.message || "";
 
-    if (errorMessage.includes('UNAUTHORIZED')) {
+    if (errorMessage.includes("UNAUTHORIZED")) {
         logger.error(
-            `[clearPlan] Unauthorized RPC call for user ${userId}`
+            `[clearPlan] Unauthorized RPC call for user ${userId}`,
         );
-        throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+        throw new ApplicationError("UNAUTHORIZED", "Authentication required");
     }
 
     logDbError(
@@ -533,8 +512,8 @@ function mapClearPlanRpcErrorToApplicationError(
         error,
     );
     throw new ApplicationError(
-        'INTERNAL_ERROR',
-        'Failed to clear plan'
+        "INTERNAL_ERROR",
+        "Failed to clear plan",
     );
 }
 
@@ -546,7 +525,7 @@ function mapClearPlanRpcErrorToApplicationError(
  * - Uses RPC to atomically remove from plan and update shopping list
  * - Subtracts ingredient contributions from shopping list items
  * - Manual items (kind='MANUAL') are not affected
- * 
+ *
  * Side-effect:
  * - Removes contributions from shopping_list_recipe_contributions
  * - Updates/removes items from shopping_list_items:
@@ -563,15 +542,15 @@ function mapClearPlanRpcErrorToApplicationError(
 export async function removeRecipeFromPlan(
     client: TypedSupabaseClient,
     userId: string,
-    recipeId: number
+    recipeId: number,
 ): Promise<void> {
     // Call RPC function that atomically:
     // 1. Removes recipe from plan
     // 2. Removes contributions from shopping_list_recipe_contributions
     // 3. Updates/removes items from shopping_list_items
     const { data, error } = await client.rpc(
-        'remove_recipe_from_plan_and_update_shopping_list',
-        { p_recipe_id: recipeId }
+        "remove_recipe_from_plan_and_update_shopping_list",
+        { p_recipe_id: recipeId },
     );
 
     if (error) {
@@ -591,24 +570,24 @@ export async function removeRecipeFromPlan(
 
         logger.info(
             `[removeRecipeFromPlan] Recipe ${recipeId} removed from plan for user ${userId}. ` +
-            `Shopping list updated: ${metadata.contributions_removed} contributions removed, ` +
-            `${metadata.items_updated} items updated, ${metadata.items_deleted} items deleted`
+                `Shopping list updated: ${metadata.contributions_removed} contributions removed, ` +
+                `${metadata.items_updated} items updated, ${metadata.items_deleted} items deleted`,
         );
     } else {
         logger.info(
-            `[removeRecipeFromPlan] Recipe ${recipeId} removed from plan for user ${userId}`
+            `[removeRecipeFromPlan] Recipe ${recipeId} removed from plan for user ${userId}`,
         );
     }
 }
 
 /**
  * Maps RPC error from remove_recipe_from_plan_and_update_shopping_list to ApplicationError.
- * 
+ *
  * Handles custom error codes from the RPC function:
  * - UNAUTHORIZED -> should not happen (checked by auth.uid())
  * - NOT_FOUND -> recipe not in plan
  * - INTERNAL_ERROR -> unexpected database error
- * 
+ *
  * @param error - The database error from RPC call
  * @param recipeId - The recipe ID (for logging)
  * @param userId - The user ID (for logging)
@@ -617,23 +596,23 @@ export async function removeRecipeFromPlan(
 function mapRemoveRpcErrorToApplicationError(
     error: { message: string; code?: string },
     recipeId: number,
-    userId: string
+    userId: string,
 ): never {
-    const errorMessage = error.message || '';
+    const errorMessage = error.message || "";
 
     // Handle custom RPC exceptions (raised by the function)
-    if (errorMessage.includes('UNAUTHORIZED')) {
+    if (errorMessage.includes("UNAUTHORIZED")) {
         logger.error(
-            `[removeRecipeFromPlan] Unauthorized RPC call for recipe ${recipeId} by user ${userId}`
+            `[removeRecipeFromPlan] Unauthorized RPC call for recipe ${recipeId} by user ${userId}`,
         );
-        throw new ApplicationError('UNAUTHORIZED', 'Authentication required');
+        throw new ApplicationError("UNAUTHORIZED", "Authentication required");
     }
 
-    if (errorMessage.includes('NOT_FOUND')) {
+    if (errorMessage.includes("NOT_FOUND")) {
         logger.warn(
-            `[removeRecipeFromPlan] Recipe ${recipeId} not found in plan for user ${userId}`
+            `[removeRecipeFromPlan] Recipe ${recipeId} not found in plan for user ${userId}`,
         );
-        throw new ApplicationError('NOT_FOUND', 'Recipe not found in plan');
+        throw new ApplicationError("NOT_FOUND", "Recipe not found in plan");
     }
 
     // Generic database error
@@ -642,8 +621,7 @@ function mapRemoveRpcErrorToApplicationError(
         error,
     );
     throw new ApplicationError(
-        'INTERNAL_ERROR',
-        'Failed to remove recipe from plan'
+        "INTERNAL_ERROR",
+        "Failed to remove recipe from plan",
     );
 }
-

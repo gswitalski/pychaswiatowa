@@ -59,7 +59,9 @@
             <ng-container matColumnDef="recipesCount">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Liczba przepisów</th>
                 <td mat-cell *matCellDef="let row" class="admin-users-table__cell--number">
-                    {{ row.recipesCount }}
+                    {{ row.recipesCount }}@if (row.variantsCount !== null) {
+                        ({{ row.variantsCount }} wariantów)
+                    }
                 </td>
             </ng-container>
 

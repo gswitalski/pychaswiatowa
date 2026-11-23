@@ -22,6 +22,7 @@ import { SlugService } from '../../services/slug.service';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../confirm-dialog/confirm-dialog.component';
 import { PlanListItemDto, ApiError } from '../../../../../shared/contracts/types';
 import { PRICING_CONFIG } from '../../../pages/pricing/pricing.config';
+import { formatRecipeVariantLabel } from '../../utils/recipe-variant-label';
 
 /**
  * Drawer "Mój plan" - globalny panel wysuwany z prawej strony.
@@ -234,6 +235,14 @@ export class MyPlanDrawerComponent {
      */
     trackByRecipeId(_index: number, item: PlanListItemDto): number {
         return item.recipe_id;
+    }
+
+    recipeDisplayName(item: PlanListItemDto): string {
+        return formatRecipeVariantLabel(
+            item.recipe.name,
+            item.recipe.variant_name,
+            item.recipe.active_variant_count
+        );
     }
 }
 

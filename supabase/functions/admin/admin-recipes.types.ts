@@ -52,6 +52,8 @@ export interface AdminRecipeListItemDto {
     ratings_count: number;
     is_grill: boolean;
     is_termorobot: boolean;
+    variant_name?: string | null;
+    active_variant_count?: number;
 }
 
 export interface GetAdminRecipesResponseDto {
