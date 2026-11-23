@@ -29,6 +29,8 @@ export interface SearchRecipeDto {
     id: number;
     name: string;
     category: string | null;
+    variant_name?: string | null;
+    active_variant_count?: number;
 }
 
 /**

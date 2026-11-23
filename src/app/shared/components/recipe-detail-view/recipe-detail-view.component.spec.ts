@@ -4,7 +4,7 @@ import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@ang
 import { TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { describe, expect, it, beforeAll, vi } from 'vitest';
-import { render, screen } from '@testing-library/angular';
+import { render } from '@testing-library/angular';
 import { RecipeDetailViewComponent } from './recipe-detail-view.component';
 import type { RecipeDetailDto } from '../../../../../shared/contracts/types';
 import { RecipeNoteService } from '../../../core/services/recipe-note.service';
@@ -78,11 +78,10 @@ describe('RecipeDetailViewComponent — przełącznik wariantów', () => {
         TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
     });
 
-    it('ukrywa przełącznik i etykietę zapisu dla jednego wariantu', async () => {
+    it('ukrywa przełącznik dla jednego wariantu', async () => {
         const { container } = await setup(recipe());
 
         expect(container.querySelector('.variant-switcher')).toBeNull();
-        expect(screen.queryByText(/Zapisujesz wariant/)).toBeNull();
     });
 
     it('renderuje zakładki dla 2–3 wariantów i wyróżnia aktywny', async () => {
@@ -96,7 +95,6 @@ describe('RecipeDetailViewComponent — przełącznik wariantów', () => {
 
         expect(container.querySelectorAll('[role="tab"]').length).toBe(2);
         expect(container.querySelector('[role="tab"][aria-selected="true"]')).toBeTruthy();
-        expect(screen.getByText('Zapisujesz wariant: Klasyczna')).toBeTruthy();
     });
 
     it('renderuje listę rozwijaną dla co najmniej 4 wariantów', async () => {

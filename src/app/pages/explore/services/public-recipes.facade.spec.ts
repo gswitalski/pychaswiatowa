@@ -6,7 +6,7 @@ import {
     BrowserDynamicTestingModule,
     platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { PublicRecipesFacade } from './public-recipes.facade';
 import { PublicRecipesService } from '../../../core/services/public-recipes.service';
 
@@ -88,5 +88,35 @@ describe('PublicRecipesFacade', () => {
 
         expect(ready).toEqual([]);
         expect(feedMock).not.toHaveBeenCalled();
+    });
+
+    it('ignoruje odpowiedź starszego żądania, gdy odpowiedzi wracają odwrotnie', () => {
+        const firstResponse$ = new Subject<{
+            data: never[];
+            pageInfo: { hasMore: boolean; nextCursor: string | null };
+        }>();
+        const secondResponse$ = new Subject<{
+            data: never[];
+            pageInfo: { hasMore: boolean; nextCursor: string | null };
+        }>();
+        feedMock
+            .mockReset()
+            .mockReturnValueOnce(firstResponse$)
+            .mockReturnValueOnce(secondResponse$);
+
+        const facade = TestBed.inject(PublicRecipesFacade);
+        facade.initialize('explore', 350, 12);
+        facade.submitQueryImmediate('nowsze');
+
+        secondResponse$.next({
+            data: [],
+            pageInfo: { hasMore: false, nextCursor: null },
+        });
+        firstResponse$.next({
+            data: [],
+            pageInfo: { hasMore: true, nextCursor: 'stary' },
+        });
+
+        expect(facade.pageInfo()).toEqual({ hasMore: false, nextCursor: null });
     });
 });

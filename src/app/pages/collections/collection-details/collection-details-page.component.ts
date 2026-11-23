@@ -26,6 +26,7 @@ import {
     RecipeListItemViewModel,
 } from '../../../shared/components/recipe-list/recipe-list.component';
 import { CollectionHeaderComponent } from './components/collection-header/collection-header.component';
+import { mapRecipeListItemToCardData } from '../../../shared/components/recipe-card/recipe-card.mapper';
 import {
     CollectionDetailsViewModel,
     initialCollectionDetailsState,
@@ -86,14 +87,12 @@ export class CollectionDetailsPageComponent implements OnDestroy {
     
     readonly recipeListItems = computed<RecipeListItemViewModel[]>(() =>
         this.state().recipes.map((recipe) => ({
-            card: {
-                id: recipe.id,
-                name: recipe.name,
-                imageUrl: recipe.image_path,
-                categoryName: recipe.category_name ?? null,
-                isTermorobot: recipe.is_termorobot ?? false,
-                isFavorite: recipe.is_favorite ?? false,
-            },
+            card: mapRecipeListItemToCardData(
+                recipe,
+                recipe.category_name ?? null,
+                false,
+                recipe.matching_variant_count
+            ),
             isOwnRecipe: recipe.is_owner,
             inMyCollections: recipe.in_my_collections,
         }))
@@ -143,7 +142,9 @@ export class CollectionDetailsPageComponent implements OnDestroy {
      */
     onRemoveRecipe(recipeId: number): void {
         const recipe = this.state().recipes.find((r) => r.id === recipeId);
-        const recipeName = recipe?.name ?? 'ten przepis';
+        const recipeName = recipe
+            ? `${recipe.name}${recipe.variant_name ? ` · ${recipe.variant_name}` : ''}`
+            : 'ten przepis';
 
         const dialogData: ConfirmDialogData = {
             title: 'Usuń z kolekcji',

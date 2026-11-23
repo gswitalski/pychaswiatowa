@@ -111,7 +111,7 @@
                                         class="sidebar-collections-tree__recipe"
                                         [class.sidebar-collections-tree__recipe--active]="isRecipeActive(recipe.id)"
                                         [attr.aria-current]="isRecipeActive(recipe.id) ? 'page' : null"
-                                        (click)="onNavigateToRecipe(recipe.id, recipe.name)"
+                                        (click)="onNavigateToRecipe(recipe.id, recipe.name, recipe.active_variant_count)"
                                     >
                                         @if (recipe.image_path) {
                                             <img

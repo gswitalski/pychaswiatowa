@@ -35,6 +35,11 @@ export interface RecipeListItemDto {
     servings: number | null;
     is_termorobot: boolean;
     is_favorite?: boolean;
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
 }
 
 /**
@@ -44,6 +49,11 @@ export interface RecipeSidebarListItemDto {
     id: number;
     name: string;
     image_path: string | null;
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
 }
 
 /**
@@ -53,6 +63,11 @@ export interface RecipeSidebarListItemDto {
 export interface RecipeInCollectionDto {
     id: number;
     name: string;
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
 }
 
 /**

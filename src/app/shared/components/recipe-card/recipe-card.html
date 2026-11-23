@@ -1,4 +1,8 @@
-<a [routerLink]="recipeLink()" class="recipe-card-link">
+<a
+    [routerLink]="recipeLink()"
+    [queryParams]="recipeQueryParams()"
+    class="recipe-card-link"
+    [attr.aria-label]="cardAriaLabel()">
     <mat-card class="recipe-card">
         <div class="card-image-container">
             @if (fullImageUrl()) {
@@ -77,6 +81,14 @@
         </div>
         <mat-card-content>
             <h3 class="recipe-name">{{ recipe().name }}</h3>
+            @if (hasVariants()) {
+                <p class="recipe-variant" [title]="fullVariantSummary()">
+                    {{ recipe().variantName }}
+                </p>
+                <p class="recipe-variant-summary" [attr.aria-label]="fullVariantSummary()">
+                    {{ variantSummary() }}
+                </p>
+            }
             @if (shouldShowCategory()) {
             <p class="recipe-category">
                 {{ recipe().categoryName || '&nbsp;' }}

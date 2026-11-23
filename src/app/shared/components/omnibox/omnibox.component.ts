@@ -106,7 +106,10 @@ export class OmniboxComponent implements OnInit {
      * Navigate to recipe detail page
      */
     selectRecipe(recipe: SearchRecipeDto): void {
-        this.router.navigate(['/recipes', recipe.id]);
+        const queryParams = (recipe.active_variant_count ?? 1) >= 2
+            ? { variant: recipe.id }
+            : undefined;
+        this.router.navigate(['/recipes', recipe.id], { queryParams });
         this.clearSearch();
     }
 

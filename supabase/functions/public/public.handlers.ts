@@ -399,7 +399,12 @@ export async function handleGetPublicRecipes(req: Request): Promise<Response> {
         const client = createServiceRoleClient();
 
         // Fetch public recipes (with optional user context for collections)
-        const result = await getPublicRecipes(client, query, userId);
+        const result = await getPublicRecipes(
+            client,
+            query,
+            userId,
+            user?.app_metadata?.['app_role'] === 'admin'
+        );
 
         logger.info('GET /public/recipes completed successfully', {
             recipesCount: result.data.length,
@@ -566,7 +571,12 @@ export async function handleGetPublicRecipesFeed(req: Request): Promise<Response
         const client = createServiceRoleClient();
 
         // Fetch public recipes feed (with optional user context for collections)
-        const result = await getPublicRecipesFeed(client, query, userId);
+        const result = await getPublicRecipesFeed(
+            client,
+            query,
+            userId,
+            user?.app_metadata?.['app_role'] === 'admin'
+        );
 
         logger.info('GET /public/recipes/feed completed successfully', {
             recipesCount: result.data.length,

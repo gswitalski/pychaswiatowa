@@ -145,6 +145,12 @@ export type RecipeListItemDto = Pick<
     Recipe,
     'id' | 'name' | 'image_path' | 'created_at'
 > & {
+    /** Variant metadata is returned only when recipe grouping is enabled. */
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
     visibility: RecipeVisibility;
     is_owner: boolean;
     in_my_collections: boolean;
@@ -217,6 +223,12 @@ export interface PublicRecipeListItemDto {
     is_favorite?: boolean;
     /** Search relevance metadata. Present when q parameter is provided and valid, null otherwise. */
     search: RecipeSearchMeta | null;
+    /** Variant metadata is returned only when recipe grouping is enabled. */
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
 }
 
 /**
@@ -519,12 +531,24 @@ export type CollectionListItemDto = Pick<
 /**
  * DTO for a recipe item within a collection detail view.
  */
-export type RecipeInCollectionDto = Pick<Recipe, 'id' | 'name'>;
+export type RecipeInCollectionDto = Pick<Recipe, 'id' | 'name'> & {
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
+};
 
 /**
  * DTO for a minimal recipe item in the sidebar list.
  */
-export type RecipeSidebarListItemDto = Pick<Recipe, 'id' | 'name' | 'image_path'>;
+export type RecipeSidebarListItemDto = Pick<Recipe, 'id' | 'name' | 'image_path'> & {
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
+};
 
 /**
  * DTO for the detailed view of a single collection, including a batch list of its recipes.
@@ -654,6 +678,8 @@ export interface SearchRecipeDto {
     id: number;
     name: string;
     category: string | null;
+    variant_name?: string | null;
+    active_variant_count?: number;
 }
 
 /**

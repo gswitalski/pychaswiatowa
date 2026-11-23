@@ -15,6 +15,11 @@ import {
 } from '../_shared/cursor.ts';
 import { getCollectionIdsForRecipe } from '../recipes/recipes.service.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
+import {
+    getRecipeVariantSearchText,
+    groupRecipeListCandidates,
+    type GroupedRecipeListItem,
+} from '../_shared/recipe-list-grouping.ts';
 import { buildRatingFields, getMyRatingsMap } from '../_shared/recipe-ratings.ts';
 import { getMyRecipeNote } from '../_shared/recipe-notes.ts';
 
@@ -177,6 +182,11 @@ export interface PublicRecipeListItemDto {
     is_favorite?: boolean;
     /** Search relevance metadata. Present when q parameter is provided and valid, null otherwise. */
     search: RecipeSearchMeta | null;
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
 }
 
 /**
@@ -265,6 +275,12 @@ interface RecipeDetailsRow {
     diet_type: string | null;
     cuisine: string | null;
     difficulty: string | null;
+    is_grill: boolean;
+    recipe_family_id: string | null;
+    variant_name: string | null;
+    is_default: boolean;
+    sort_order: number;
+    active_variant_count: number | null;
     average_rating: number | null;
     ratings_count: number | null;
 }
@@ -294,6 +310,9 @@ interface RecipeDetailFullRow {
     diet_type: string | null;
     cuisine: string | null;
     difficulty: string | null;
+    is_grill: boolean;
+    average_rating: number | null;
+    ratings_count: number | null;
 }
 
 /**
@@ -305,7 +324,7 @@ interface ProfileRow {
 }
 
 /** Columns to select from recipe_details view. */
-const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, ingredients, tips';
+const RECIPE_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, tags, created_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, recipe_family_id, variant_name, is_default, sort_order, active_variant_count, ingredients, tips';
 
 /** Columns to select from recipe_details view for single recipe (includes JSONB and user_id). */
 const RECIPE_DETAIL_SELECT_COLUMNS = 'id, user_id, name, description, image_path, visibility, category_id, category_name, ingredients, steps, tips, tags, created_at, deleted_at, servings, is_termorobot, prep_time_minutes, total_time_minutes, diet_type, cuisine, difficulty, is_grill, ratings_count, average_rating';
@@ -450,7 +469,10 @@ function calculateRelevance(
     let hasAnyMatch = false;
 
     // Check name match (weight: 3)
-    const nameMatches = textContainsAllTokens(recipe.name, tokens);
+    const nameMatches = textContainsAllTokens(
+        getRecipeVariantSearchText(recipe),
+        tokens
+    );
     if (nameMatches) {
         totalScore += RELEVANCE_WEIGHTS.name;
         hasAnyMatch = true;
@@ -614,11 +636,19 @@ async function getRecipeIdsInPlan(
 export async function getPublicRecipes(
     client: TypedSupabaseClient,
     query: GetPublicRecipesQuery,
-    userId: string | null = null
+    userId: string | null = null,
+    isAdmin = false
 ): Promise<{
     data: PublicRecipeListItemDto[];
     pagination: PaginationDetails;
 }> {
+    const { data: groupingAllowed, error: groupingError } = await client.rpc('recipe_variants_allowed', {
+        p_is_admin: isAdmin,
+    });
+    if (groupingError) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to resolve recipe grouping feature');
+    }
+
     const hasSearch = !!query.q;
     const tokens = query.q ? tokenizeSearchQuery(query.q) : [];
 
@@ -705,10 +735,10 @@ export async function getPublicRecipes(
 
     // For search queries: fetch all results to filter and sort by relevance in app
     // For non-search queries: use DB-level pagination
-    if (hasSearch) {
+    if (hasSearch || groupingAllowed) {
         // Fetch more records to filter in app - use a reasonable limit
         // We'll apply pagination after filtering
-        dbQuery = dbQuery.order('created_at', { ascending: false }).limit(1000);
+        dbQuery = dbQuery.order('created_at', { ascending: false }).limit(groupingAllowed ? 1000 : 1000);
     } else {
         // No search - use DB-level sorting and pagination
         const ascending = query.sortDirection === 'asc';
@@ -744,9 +774,71 @@ export async function getPublicRecipes(
     }
 
     let recipeRows = data as RecipeDetailsRow[];
+    let groupingMetadata = new Map<number, GroupedRecipeListItem>();
 
     // For search queries: apply relevance filtering and sorting
     let relevanceMap = new Map<number, RelevanceResult>();
+
+    if (groupingAllowed) {
+        const relevanceById = new Map<number, RelevanceResult>();
+        const candidates = recipeRows.map((recipe) => {
+            const relevance = hasSearch
+                ? calculateRelevance(recipe, tokens)
+                : { matches: true, score: 0, match: 'name' as const };
+            relevanceById.set(recipe.id, relevance);
+            return {
+                id: recipe.id,
+                name: recipe.name,
+                recipe_family_id: recipe.recipe_family_id,
+                variant_name: recipe.variant_name,
+                is_default: recipe.is_default,
+                sort_order: recipe.sort_order,
+                created_at: recipe.created_at,
+                matches: relevance.matches,
+                relevance_score: relevance.score,
+            };
+        });
+        const grouped = groupRecipeListCandidates(candidates);
+        const rowById = new Map(recipeRows.map((row) => [row.id, row]));
+        const sortedGroups = grouped
+            .sort((left, right) => {
+                const leftRelevance = relevanceById.get(left.representative.id)?.score ?? 0;
+                const rightRelevance = relevanceById.get(right.representative.id)?.score ?? 0;
+                if (hasSearch && leftRelevance !== rightRelevance) {
+                    return rightRelevance - leftRelevance;
+                }
+                if (query.sortField === 'name') {
+                    return left.representative.name.localeCompare(right.representative.name);
+                }
+                const dateComparison = new Date(right.representative.created_at).getTime()
+                    - new Date(left.representative.created_at).getTime();
+                return dateComparison || right.representative.id - left.representative.id;
+            });
+        groupingMetadata = new Map(sortedGroups.map((group) => [group.representative.id, group]));
+        const offset = (query.page - 1) * query.limit;
+        const selectedGroups = sortedGroups.slice(offset, offset + query.limit);
+        recipeRows = selectedGroups
+            .map((group) => rowById.get(group.representative.id))
+            .filter((row): row is RecipeDetailsRow => row !== undefined);
+        const totalItems = sortedGroups.length;
+        const totalPages = Math.ceil(totalItems / query.limit);
+        const selectedRelevance = new Map<number, RelevanceResult>();
+        for (const row of recipeRows) {
+            const relevance = relevanceById.get(row.id);
+            if (relevance) {
+                selectedRelevance.set(row.id, relevance);
+            }
+        }
+        return await buildRecipeListResponse(
+            client,
+            recipeRows,
+            selectedRelevance,
+            hasSearch,
+            userId,
+            { currentPage: query.page, totalPages, totalItems },
+            groupingMetadata,
+        );
+    }
 
     if (hasSearch && tokens.length > 0) {
         // Calculate relevance for each recipe
@@ -827,7 +919,8 @@ export async function getPublicRecipes(
                 currentPage: query.page,
                 totalPages,
                 totalItems,
-            }
+            },
+            groupingMetadata,
         );
     }
 
@@ -845,7 +938,8 @@ export async function getPublicRecipes(
             currentPage: query.page,
             totalPages,
             totalItems,
-        }
+        },
+        groupingMetadata,
     );
 }
 
@@ -859,7 +953,8 @@ async function buildRecipeListResponse(
     relevanceMap: Map<number, RelevanceResult>,
     hasSearch: boolean,
     userId: string | null,
-    pagination: PaginationDetails
+    pagination: PaginationDetails,
+    groupingMetadata: Map<number, GroupedRecipeListItem> = new Map(),
 ): Promise<{
     data: PublicRecipeListItemDto[];
     pagination: PaginationDetails;
@@ -974,6 +1069,7 @@ async function buildRecipeListResponse(
         const searchMeta: RecipeSearchMeta | null = hasSearch && relevance
             ? { relevance_score: relevance.score, match: relevance.match }
             : null;
+        const grouping = groupingMetadata.get(recipe.id);
 
         return {
             id: recipe.id,
@@ -1005,6 +1101,13 @@ async function buildRecipeListResponse(
                 is_favorite: flagsMap.get(recipe.id)?.is_favorite ?? false,
             }),
             search: searchMeta,
+            ...(grouping && {
+                variant_name: recipe.variant_name,
+                active_variant_count: grouping.active_variant_count,
+                matching_variant_count: grouping.matching_variant_count,
+                matching_variant_names: grouping.matching_variant_names,
+                matching_variant_overflow: grouping.matching_variant_overflow,
+            }),
         };
     });
 
@@ -1168,6 +1271,7 @@ export async function getPublicRecipeById(
             is_want_to_try: flags?.is_want_to_try ?? false,
         }),
         ...buildRatingFields(recipe, myRating, userId !== null),
+        ratings_count: Number(recipe.ratings_count ?? 0),
         ...(myNote !== undefined && { my_note: myNote }),
     };
 
@@ -1207,8 +1311,15 @@ export async function getPublicRecipeById(
 export async function getPublicRecipesFeed(
     client: TypedSupabaseClient,
     query: GetPublicRecipesFeedQuery,
-    userId: string | null = null
+    userId: string | null = null,
+    isAdmin = false
 ): Promise<CursorPaginatedResponse<PublicRecipeListItemDto>> {
+    const { data: groupingAllowed, error: groupingError } = await client.rpc('recipe_variants_allowed', {
+        p_is_admin: isAdmin,
+    });
+    if (groupingError) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to resolve recipe grouping feature');
+    }
     const hasSearch = !!query.q;
     const tokens = query.q ? tokenizeSearchQuery(query.q) : [];
 
@@ -1332,7 +1443,7 @@ export async function getPublicRecipesFeed(
 
     // For search queries: fetch all results to filter and sort by relevance in app
     // For non-search queries: use DB-level pagination
-    if (hasSearch) {
+    if (hasSearch || groupingAllowed) {
         // Fetch more records to filter in app - use a reasonable limit
         dbQuery = dbQuery.order('created_at', { ascending: false }).limit(1000);
     } else {
@@ -1373,10 +1484,49 @@ export async function getPublicRecipesFeed(
 
     let recipeRows = data as RecipeDetailsRow[];
     let relevanceMap = new Map<number, RelevanceResult>();
+    let groupingMetadata = new Map<number, GroupedRecipeListItem>();
     let hasMore = false;
     let recipesToReturn: RecipeDetailsRow[];
 
-    if (hasSearch && tokens.length > 0) {
+    if (groupingAllowed) {
+        const rowById = new Map(recipeRows.map((row) => [row.id, row]));
+        const candidates = recipeRows.map((recipe) => {
+            const relevance = hasSearch
+                ? calculateRelevance(recipe, tokens)
+                : { matches: true, score: 0, match: 'name' as const };
+            relevanceMap.set(recipe.id, relevance);
+            return {
+                id: recipe.id,
+                name: recipe.name,
+                recipe_family_id: recipe.recipe_family_id,
+                variant_name: recipe.variant_name,
+                is_default: recipe.is_default,
+                sort_order: recipe.sort_order,
+                created_at: recipe.created_at,
+                matches: relevance.matches,
+                relevance_score: relevance.score,
+            };
+        });
+        const grouped = groupRecipeListCandidates(candidates).sort((left, right) => {
+            const leftScore = relevanceMap.get(left.representative.id)?.score ?? 0;
+            const rightScore = relevanceMap.get(right.representative.id)?.score ?? 0;
+            if (hasSearch && leftScore !== rightScore) {
+                return rightScore - leftScore;
+            }
+            if (query.sortField === 'name') {
+                return left.representative.name.localeCompare(right.representative.name);
+            }
+            return new Date(right.representative.created_at).getTime()
+                - new Date(left.representative.created_at).getTime()
+                || right.representative.id - left.representative.id;
+        });
+        groupingMetadata = new Map(grouped.map((group) => [group.representative.id, group]));
+        const selectedGroups = grouped.slice(offset, offset + query.limit);
+        recipesToReturn = selectedGroups
+            .map((group) => rowById.get(group.representative.id))
+            .filter((row): row is RecipeDetailsRow => row !== undefined);
+        hasMore = offset + query.limit < grouped.length;
+    } else if (hasSearch && tokens.length > 0) {
         // Calculate relevance for each recipe
         const recipesWithRelevance = recipeRows.map((recipe) => ({
             recipe,
@@ -1569,6 +1719,7 @@ export async function getPublicRecipesFeed(
         const searchMeta: RecipeSearchMeta | null = hasSearch && relevance
             ? { relevance_score: relevance.score, match: relevance.match }
             : null;
+        const grouping = groupingMetadata.get(recipe.id);
 
         return {
             id: recipe.id,
@@ -1600,6 +1751,13 @@ export async function getPublicRecipesFeed(
                 is_favorite: flagsMap.get(recipe.id)?.is_favorite ?? false,
             }),
             search: searchMeta,
+            ...(grouping && {
+                variant_name: recipe.variant_name,
+                active_variant_count: grouping.active_variant_count,
+                matching_variant_count: grouping.matching_variant_count,
+                matching_variant_names: grouping.matching_variant_names,
+                matching_variant_overflow: grouping.matching_variant_overflow,
+            }),
         };
     });
 

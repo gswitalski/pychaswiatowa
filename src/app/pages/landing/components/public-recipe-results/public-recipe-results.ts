@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { RecipeCardComponent, RecipeCardData } from '../../../../shared/components/recipe-card/recipe-card';
+import { mapPublicRecipeToCardData } from '../../../../shared/components/recipe-card/recipe-card.mapper';
 import { SlugService } from '../../../../shared/services/slug.service';
 import { PublicRecipeListItemDto } from '../../../../../../shared/contracts/types';
 import {
@@ -120,15 +121,14 @@ export class PublicRecipeResultsComponent {
      * Mapuje DTO na dane karty przepisu.
      */
     mapToCardData(dto: PublicRecipeListItemDto): RecipeCardData {
+        const card = mapPublicRecipeToCardData(
+            dto,
+            dto.category?.name ?? null,
+            this.mode() === 'search'
+        );
         return {
-            id: dto.id,
-            name: dto.name,
-            imageUrl: dto.image_path,
-            categoryName: dto.category?.name ?? null,
+            ...card,
             slug: this.slugService.slugify(dto.name),
-            isTermorobot: dto.is_termorobot ?? false,
-            isGrill: dto.is_grill ?? false,
-            isFavorite: dto.is_favorite ?? false,
         };
     }
 

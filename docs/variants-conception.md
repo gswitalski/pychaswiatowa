@@ -685,7 +685,8 @@ wdrożone i czym różni się od koncepcji; aktualizuj ją po każdej historyjce
 | 1. Model grupy, migracja, widoczność | PS-108 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-108/PS-108-recipe-family-model-visibility-user-story.md`; plan API: `docs/results/impl-plans/endpoints/PS-108-recipe-family-model-visibility-api-implementation-plan.md`; weryfikacja: `…/PS-108-recipe-family-model-visibility-verification.md` |
 | 2. Zarządzanie wariantami przez właściciela | PS-109 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-109/PS-109-recipe-variants-owner-management-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-109-recipe-variants-owner-management-*-implementation-plan.md`; weryfikacja: `…/PS-109-recipe-variants-owner-management-verification.md` |
 | 3. Przełącznik wariantów na szczegółach | PS-110 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-110/PS-110-recipe-variant-switcher-detail-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-110-recipe-variant-switcher-detail-*-implementation-plan.md`; weryfikacja: `…/PS-110-recipe-variant-switcher-detail-verification.md`; migracja: `20261121160000_ps110_recipe_detail_variant_metadata.sql` |
-| 4–5 | — | niezaplanowane | — |
+| 4. Grupowanie list i wyszukiwania | PS-111 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-111/PS-111-recipe-list-search-grouping-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-111-recipe-list-search-grouping-*-implementation-plan.md`; weryfikacja: `…/PS-111-recipe-list-search-grouping-verification.md`; migracja: `20261121180000_ps111_grouped_recipes_list.sql` |
+| 5 | — | niezaplanowane | — |
 
 Migracje PS-108: `20261120200000_create_recipe_families.sql` i
 `20261120200100_fix_recipe_family_default_triggers.sql` (zastosowane lokalnie,
@@ -802,6 +803,25 @@ niewdrożone zdalnie).
   `recipe_family_guard_recipe` nie cofnął `deleted_at`.
 - Po usunięciu wariantu otwartego w formularzu edycja przechodzi na pozostały
   wariant domyślny albo pierwszy z listy.
+
+### Zmiany wprowadzone w PS-111 (stan względem sekcji 3 i historyjki 4)
+
+- **Grupowanie w backendzie przed paginacją** (Explore, feed i tryb kursorowy, „Moje przepisy”, kolekcje, pasek
+  boczny kolekcji, wyszukiwarka globalna); `total`/`totalItems`/`totalCount`/`hasMore` liczą grupy. Tylko przy
+  fladze `recipe_variants` włączonej dla pytającego; przy wyłączonej odpowiedzi bez zmian.
+- **`search_vector` bez zmian** (odchylenie 1 pozostaje): wyszukiwanie to nadal podciąg, z dodaną „nazwą
+  wyświetlaną” (nazwa przepisu + wariant). Nazwy techniczne („Wariant podstawowy”, „Podstawowa”) nie biorą
+  udziału w dopasowaniu. Limit 1000 wariantów w wyszukiwaniu Explore zostaje (grupowanie następuje po nim).
+- **Brak sortowania i filtra po ocenie**: listy nigdy ich nie miały, więc zapis o „sortowaniu po ocenie
+  reprezentanta” w sekcji 3 nie jest realizowany; karta pokazuje wskaźniki reprezentanta.
+- **Reprezentant** zawsze należy do zbioru wariantów spełniających wyszukiwanie i filtry (także osobiste). W
+  kolekcji jest nim zapisany wariant (domyślny, inaczej pierwszy wg `sort_order`), a „Usuń z kolekcji” usuwa
+  tylko jego.
+- **Link karty** niesie `?variant={id reprezentanta}` przy ≥2 wariantach (także w pasku bocznym kolekcji).
+- **Poza zakresem (osobna kontynuacja):** oznaczenie „wariant spełnił filtr” na szczegółach i powrót do wyników z
+  zachowanymi filtrami.
+- RPC `get_recipes_list` przebudowane migracją `20261121180000` z `revoke` dla `public`/`anon`/`authenticated`
+  i `grant` tylko dla `service_role`.
 
 ### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
 

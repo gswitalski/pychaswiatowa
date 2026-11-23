@@ -801,6 +801,7 @@ export async function handleGetRecipes(req: Request): Promise<Response> {
                 cuisine: params['filter[cuisine]'],
                 difficulty: params['filter[difficulty]'],
                 grill: params['filter[grill]'],
+                isAdmin: user.app_metadata?.['app_role'] === 'admin',
             }
         );
 
@@ -1777,6 +1778,7 @@ export async function handleGetRecipesFeed(req: Request): Promise<Response> {
             cuisine: params['filter[cuisine]'],
             difficulty: params['filter[difficulty]'],
             grill: params['filter[grill]'],
+            isAdmin: user.app_metadata?.['app_role'] === 'admin',
         });
 
         logger.info('GET /recipes/feed completed successfully', {

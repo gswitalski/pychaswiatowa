@@ -250,7 +250,8 @@ async function handleGetCollectionById(req: Request, collectionId: number): Prom
             collectionId,
             limit,
             sortField,
-            sortDirection
+            sortDirection,
+            user.app_metadata?.['app_role'] === 'admin'
         );
 
         logger.info('GET /collections/:id completed successfully', {
@@ -393,7 +394,8 @@ async function handleGetCollectionRecipes(req: Request, collectionId: number): P
             collectionId,
             limit,
             sortField,
-            sortDirection
+            sortDirection,
+            user.app_metadata?.['app_role'] === 'admin'
         );
 
         logger.info('GET /collections/:id/recipes completed successfully', {

@@ -1117,6 +1117,7 @@ export type Database = {
           p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
           p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
           p_grill?: boolean
+          p_group_variants?: boolean
           p_limit?: number
           p_page?: number
           p_search?: string
@@ -1148,6 +1149,11 @@ export type Database = {
           servings: number
           total_count: number
           total_time_minutes: number
+          variant_name: string
+          active_variant_count: number
+          matching_variant_count: number
+          matching_variant_names: string[]
+          matching_variant_overflow: number
           visibility: Database["public"]["Enums"]["recipe_visibility"]
         }[]
       }

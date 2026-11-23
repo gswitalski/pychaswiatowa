@@ -7,6 +7,7 @@ import {
     RecipeCardData,
 } from '../../../../shared/components/recipe-card/recipe-card';
 import { RecipeListItemDto } from '../../../../../../shared/contracts/types';
+import { mapRecipeListItemToCardData } from '../../../../shared/components/recipe-card/recipe-card.mapper';
 
 @Component({
     selector: 'pych-recent-recipes-list',
@@ -24,15 +25,7 @@ export class RecentRecipesListComponent {
     }
 
     toCardData(recipe: RecipeListItemDto): RecipeCardData {
-        return {
-            id: recipe.id,
-            name: recipe.name,
-            imageUrl: recipe.image_path,
-            categoryName: recipe.category_name,
-            isTermorobot: recipe.is_termorobot,
-            isGrill: recipe.is_grill,
-            isFavorite: recipe.is_favorite ?? false,
-        };
+        return mapRecipeListItemToCardData(recipe, recipe.category_name ?? null);
     }
 }
 

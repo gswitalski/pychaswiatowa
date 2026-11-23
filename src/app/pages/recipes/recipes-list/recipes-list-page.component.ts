@@ -30,6 +30,7 @@ import {
     TagDto,
     CursorPageInfoDto,
 } from '../../../../../shared/contracts/types';
+import { mapRecipeListItemToCardData } from '../../../shared/components/recipe-card/recipe-card.mapper';
 import {
     DEFAULT_FILTERS,
     RecipesFiltersViewModel,
@@ -99,15 +100,17 @@ export class RecipesListPageComponent implements OnInit {
     readonly error = computed(() => this.state().error);
     readonly recipeListItems = computed<RecipeListItemViewModel[]>(() =>
         this.recipes().map((recipe) => ({
-            card: {
-                id: recipe.id,
-                name: recipe.name,
-                imageUrl: recipe.image_path,
-                categoryName: recipe.category_name ?? null,
-                isTermorobot: recipe.is_termorobot ?? false,
-                isGrill: recipe.is_grill ?? false,
-                isFavorite: recipe.is_favorite ?? false,
-            },
+            card: mapRecipeListItemToCardData(
+                recipe,
+                recipe.category_name ?? null,
+                Boolean(
+                    this.filters().searchQuery ||
+                    this.filters().categoryId ||
+                    this.filters().tags.length ||
+                    this.filters().termorobot ||
+                    this.filters().grill
+                )
+            ),
             isOwnRecipe: recipe.is_owner,
             inMyCollections: recipe.in_my_collections,
             visibility: recipe.visibility,

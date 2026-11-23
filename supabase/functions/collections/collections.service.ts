@@ -7,6 +7,7 @@ import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { getRecipeFlagsMap } from '../_shared/recipe-flags.ts';
+import { groupRecipeListCandidates } from '../_shared/recipe-list-grouping.ts';
 import {
     CollectionListItemDto,
     CollectionDetailDto,
@@ -33,11 +34,15 @@ const RECIPE_SELECT_COLUMNS = `
     user_id,
     category_id,
     servings,
-    is_termorobot
+    is_termorobot,
+    recipe_family_id,
+    variant_name,
+    is_default,
+    sort_order
 `;
 
 /** Columns to select for sidebar recipe list in collection. */
-const RECIPE_SIDEBAR_SELECT_COLUMNS = 'id, name, image_path';
+const RECIPE_SIDEBAR_SELECT_COLUMNS = 'id, name, image_path, recipe_family_id, variant_name, is_default, sort_order, created_at';
 
 // #region --- Collection CRUD Operations ---
 
@@ -97,7 +102,8 @@ export async function getCollectionById(
     collectionId: number,
     limit: number = 500,
     sortField: string = 'created_at',
-    sortDirection: 'asc' | 'desc' = 'desc'
+    sortDirection: 'asc' | 'desc' = 'desc',
+    isAdmin = false
 ): Promise<CollectionDetailDto> {
     logger.info('Fetching collection by ID (batch mode)', { 
         userId, 
@@ -129,6 +135,13 @@ export async function getCollectionById(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch collection');
     }
 
+    const { data: groupingAllowed, error: groupingError } = await client.rpc('recipe_variants_allowed', {
+        p_is_admin: isAdmin,
+    });
+    if (groupingError) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to resolve recipe grouping feature');
+    }
+
     // Get total count of recipes in collection (only non-deleted)
     // We need to count through recipes table to respect deleted_at
     const { count: totalItems, error: countError } = await client
@@ -146,18 +159,21 @@ export async function getCollectionById(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to count recipes in collection');
     }
 
-    const totalCount = totalItems ?? 0;
+    let totalCount = totalItems ?? 0;
 
     // Fetch recipes in batch with sorting and limit (limit AFTER sort)
     const ascending = sortDirection === 'asc';
-    const { data: recipeData, error: recipeDetailsError } = await client
+    let recipesQuery = client
         .from('recipes')
         .select(`${RECIPE_SELECT_COLUMNS}, recipe_collections!inner(collection_id)`)
         .eq('recipe_collections.collection_id', collectionId)
         .is('deleted_at', null)
         .order(sortField, { ascending })
-        .order('id', { ascending: true })
-        .range(0, limit - 1);
+        .order('id', { ascending: true });
+    if (!groupingAllowed) {
+        recipesQuery = recipesQuery.range(0, limit - 1);
+    }
+    const { data: fetchedRecipeData, error: recipeDetailsError } = await recipesQuery;
 
     if (recipeDetailsError) {
         logger.error('Database error while fetching recipe details', {
@@ -166,6 +182,36 @@ export async function getCollectionById(
             errorMessage: recipeDetailsError.message,
         });
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe details');
+    }
+
+    let recipeData = fetchedRecipeData ?? [];
+    const groupingMetadata = new Map<number, ReturnType<typeof groupRecipeListCandidates>[number]>();
+    if (groupingAllowed) {
+        const grouped = groupRecipeListCandidates(recipeData.map((recipe: any) => ({
+            id: Number(recipe.id),
+            name: recipe.name,
+            recipe_family_id: recipe.recipe_family_id,
+            variant_name: recipe.variant_name,
+            is_default: Boolean(recipe.is_default),
+            sort_order: Number(recipe.sort_order ?? 0),
+            created_at: recipe.created_at,
+            matches: true,
+        }))).sort((left, right) => {
+            if (sortField === 'name') {
+                return left.representative.name.localeCompare(right.representative.name)
+                    * (ascending ? 1 : -1);
+            }
+            return (new Date(right.representative.created_at).getTime()
+                - new Date(left.representative.created_at).getTime()) * (ascending ? -1 : 1);
+        });
+        for (const group of grouped) {
+            groupingMetadata.set(group.representative.id, group);
+        }
+        totalCount = grouped.length;
+        const byId = new Map(recipeData.map((recipe: any) => [Number(recipe.id), recipe]));
+        recipeData = grouped.slice(0, limit)
+            .map((group) => byId.get(group.representative.id))
+            .filter((recipe): recipe is NonNullable<typeof recipe> => recipe !== undefined);
     }
 
     // Pobierz unikalne user_id przepisów
@@ -248,6 +294,13 @@ export async function getCollectionById(
             servings: recipe.servings,
             is_termorobot: recipe.is_termorobot,
             is_favorite: flagsMap.get(Number(recipe.id))?.is_favorite ?? false,
+            ...(groupingMetadata.has(Number(recipe.id)) && {
+                variant_name: recipe.variant_name,
+                active_variant_count: groupingMetadata.get(Number(recipe.id))?.active_variant_count,
+                matching_variant_count: groupingMetadata.get(Number(recipe.id))?.matching_variant_count,
+                matching_variant_names: groupingMetadata.get(Number(recipe.id))?.matching_variant_names,
+                matching_variant_overflow: groupingMetadata.get(Number(recipe.id))?.matching_variant_overflow,
+            }),
         };
     });
 
@@ -296,7 +349,8 @@ export async function getCollectionRecipes(
     collectionId: number,
     limit: number = 500,
     sortField: string = 'name',
-    sortDirection: 'asc' | 'desc' = 'asc'
+    sortDirection: 'asc' | 'desc' = 'asc',
+    isAdmin = false
 ): Promise<GetCollectionRecipesResponseDto> {
     logger.info('Fetching collection recipes (sidebar list)', {
         userId,
@@ -305,6 +359,13 @@ export async function getCollectionRecipes(
         sortField,
         sortDirection,
     });
+
+    const { data: groupingAllowed, error: groupingError } = await client.rpc('recipe_variants_allowed', {
+        p_is_admin: isAdmin,
+    });
+    if (groupingError) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to resolve recipe grouping feature');
+    }
 
     const { error: collectionError } = await client
         .from('collections')
@@ -343,14 +404,17 @@ export async function getCollectionRecipes(
     }
 
     const ascending = sortDirection === 'asc';
-    const { data: recipesData, error: recipesError } = await client
+    let recipesQuery = client
         .from('recipes')
         .select(`${RECIPE_SIDEBAR_SELECT_COLUMNS}, recipe_collections!inner(collection_id)`)
         .eq('recipe_collections.collection_id', collectionId)
         .is('deleted_at', null)
         .order(sortField, { ascending })
-        .order('id', { ascending: true })
-        .range(0, limit - 1);
+        .order('id', { ascending: true });
+    if (!groupingAllowed) {
+        recipesQuery = recipesQuery.range(0, limit - 1);
+    }
+    const { data: fetchedRecipesData, error: recipesError } = await recipesQuery;
 
     if (recipesError) {
         logger.error('Database error while fetching collection recipes', {
@@ -361,14 +425,45 @@ export async function getCollectionRecipes(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch collection recipes');
     }
 
-    const recipes: RecipeSidebarListItemDto[] = (recipesData ?? []).map((recipe: any) => ({
+    let recipesData = fetchedRecipesData ?? [];
+    const sidebarGrouping = new Map<number, ReturnType<typeof groupRecipeListCandidates>[number]>();
+    if (groupingAllowed) {
+        const grouped = groupRecipeListCandidates(recipesData.map((recipe: any) => ({
+            id: Number(recipe.id),
+            name: recipe.name,
+            recipe_family_id: recipe.recipe_family_id,
+            variant_name: recipe.variant_name,
+            is_default: Boolean(recipe.is_default),
+            sort_order: Number(recipe.sort_order ?? 0),
+            created_at: recipe.created_at,
+            matches: true,
+        })));
+        const byId = new Map(recipesData.map((recipe: any) => [Number(recipe.id), recipe]));
+        recipesData = grouped.slice(0, limit)
+            .map((group) => {
+                sidebarGrouping.set(group.representative.id, group);
+                return byId.get(group.representative.id);
+            })
+            .filter((recipe): recipe is NonNullable<typeof recipe> => recipe !== undefined);
+    }
+
+    const recipes: RecipeSidebarListItemDto[] = recipesData.map((recipe: any) => ({
         id: recipe.id,
         name: recipe.name,
         image_path: recipe.image_path,
+        ...(sidebarGrouping.has(Number(recipe.id)) && {
+            variant_name: recipe.variant_name,
+            active_variant_count: sidebarGrouping.get(Number(recipe.id))?.active_variant_count,
+            matching_variant_count: sidebarGrouping.get(Number(recipe.id))?.matching_variant_count,
+            matching_variant_names: sidebarGrouping.get(Number(recipe.id))?.matching_variant_names,
+            matching_variant_overflow: sidebarGrouping.get(Number(recipe.id))?.matching_variant_overflow,
+        }),
     }));
 
     const returned = recipes.length;
-    const totalCount = totalItems ?? 0;
+    const totalCount = groupingAllowed
+        ? new Set((fetchedRecipesData ?? []).map((recipe: any) => recipe.recipe_family_id ?? `recipe:${recipe.id}`)).size
+        : (totalItems ?? 0);
     const truncated = totalCount > limit;
 
     logger.info('Collection recipes fetched successfully', {

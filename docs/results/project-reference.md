@@ -43,7 +43,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 - `delete_recipe_family()`
 - `delete_recipe_variant()`
 - `enqueue_normalized_ingredients_refresh()`
-- `get_recipes_list(p_category_id, p_cuisine, p_diet_type, p_difficulty, p_grill, p_limit, p_page, p_search, p_sort_direction, p_sort_field, p_tag_ids, p_termorobot, p_user_id, p_view)`
+- `get_recipes_list(p_category_id, p_cuisine, p_diet_type, p_difficulty, p_grill, p_group_variants, p_limit, p_page, p_search, p_sort_direction, p_sort_field, p_tag_ids, p_termorobot, p_user_id, p_view)`
 - `recipe_variant_usage()`
 - `recipe_variants_allowed()`
 - `recipe_variants_list()`
@@ -177,11 +177,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 100 plików, ostatnie 5
+## Migracje: 102 plików, ostatnie 5
 
-- `20261120200100_fix_recipe_family_default_triggers.sql`
-- `20261120210000_recipe_variants_owner_management.sql`
 - `20261120220000_variant_default_name_and_recipe_details.sql`
 - `20261120230000_fix_delete_recipe_variant_soft_delete.sql`
 - `20261121160000_ps110_recipe_detail_variant_metadata.sql`
+- `20261121170000_fix_recipe_family_sync_deleted_at.sql`
+- `20261121180000_ps111_grouped_recipes_list.sql`
 

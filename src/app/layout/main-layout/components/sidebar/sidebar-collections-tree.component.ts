@@ -149,13 +149,20 @@ export class SidebarCollectionsTreeComponent {
         this.loadRecipesForCollection(collectionId, true);
     }
 
-    onNavigateToRecipe(recipeId: number, recipeName: string): void {
+    onNavigateToRecipe(
+        recipeId: number,
+        recipeName: string,
+        activeVariantCount?: number
+    ): void {
         if (recipeId <= 0) {
             return;
         }
 
         const slug = this.slugService.slugify(recipeName);
-        this.router.navigate(['/recipes', `${recipeId}-${slug}`]);
+        const queryParams = activeVariantCount !== undefined && activeVariantCount >= 2
+            ? { variant: recipeId }
+            : undefined;
+        this.router.navigate(['/recipes', `${recipeId}-${slug}`], { queryParams });
         this.navigationClick.emit();
     }
 

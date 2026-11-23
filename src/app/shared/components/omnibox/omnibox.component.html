@@ -43,7 +43,11 @@
                     <mat-option (click)="selectRecipe(recipe)" class="omnibox__option">
                         <mat-icon class="omnibox__option-icon">menu_book</mat-icon>
                         <div class="omnibox__option-content">
-                            <span class="omnibox__option-name">{{ recipe.name }}</span>
+                            <span class="omnibox__option-name">
+                                {{ recipe.name }}@if ((recipe.active_variant_count ?? 1) >= 2) {
+                                    {{ recipe.variant_name ? ' · ' + recipe.variant_name : '' }}
+                                }
+                            </span>
                             @if (recipe.category) {
                                 <span class="omnibox__option-meta">{{ recipe.category }}</span>
                             }

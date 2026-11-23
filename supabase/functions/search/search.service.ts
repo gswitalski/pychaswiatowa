@@ -8,9 +8,13 @@ import { TypedSupabaseClient } from '../_shared/supabase-client.ts';
 import { ApplicationError } from '../_shared/errors.ts';
 import { logger } from '../_shared/logger.ts';
 import { SearchRecipeDto, SearchCollectionDto } from './search.types.ts';
+import {
+    getRecipeVariantSearchText,
+    groupRecipeListCandidates,
+} from '../_shared/recipe-list-grouping.ts';
 
 /** Columns to select for recipe search results. */
-const RECIPE_SEARCH_SELECT = 'id, name, category:categories(name)';
+const RECIPE_SEARCH_SELECT = 'id, name, category:categories(name), recipe_family_id, variant_name, is_default, sort_order, created_at';
 
 /** Columns to select for collection search results. */
 const COLLECTION_SEARCH_SELECT = 'id, name';
@@ -33,17 +37,32 @@ const MAX_RESULTS_PER_TYPE = 10;
 export async function searchRecipes(
     client: TypedSupabaseClient,
     userId: string,
-    query: string
+    query: string,
+    isAdmin = false
 ): Promise<SearchRecipeDto[]> {
     logger.info('Searching recipes', { userId, query });
 
-    const { data, error } = await client
+    const { data: groupingAllowed, error: flagError } = await client.rpc('recipe_variants_allowed', {
+        p_is_admin: isAdmin,
+    });
+    if (flagError) {
+        logger.error('Database error while checking recipe grouping flag', {
+            userId,
+            errorCode: flagError.code,
+            errorMessage: flagError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to resolve recipe grouping feature');
+    }
+
+    let recipeQuery = client
         .from('recipes')
         .select(RECIPE_SEARCH_SELECT)
         .eq('user_id', userId)
-        .is('deleted_at', null)
-        .ilike('name', `%${query}%`)
-        .limit(MAX_RESULTS_PER_TYPE);
+        .is('deleted_at', null);
+    if (!groupingAllowed) {
+        recipeQuery = recipeQuery.ilike('name', `%${query}%`);
+    }
+    const { data, error } = await recipeQuery.limit(groupingAllowed ? 1000 : MAX_RESULTS_PER_TYPE);
 
     if (error) {
         logger.error('Database error while searching recipes', {
@@ -55,17 +74,49 @@ export async function searchRecipes(
         throw new ApplicationError('INTERNAL_ERROR', 'Failed to search recipes');
     }
 
-    logger.info('Recipes search completed', {
-        userId,
-        query,
-        resultsCount: data?.length ?? 0,
-    });
+    if (!groupingAllowed) {
+        const results = (data ?? []).filter((recipe) => recipe.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+        logger.info('Recipes search completed', {
+            userId,
+            query,
+            resultsCount: results.length,
+        });
+        return results.slice(0, MAX_RESULTS_PER_TYPE).map((recipe) => ({
+            id: recipe.id,
+            name: recipe.name,
+            category: extractCategoryName(recipe.category),
+        }));
+    }
 
-    return (data ?? []).map((recipe) => ({
+    const candidates = (data ?? []).map((recipe) => ({
         id: recipe.id,
         name: recipe.name,
-        category: extractCategoryName(recipe.category),
+        recipe_family_id: recipe.recipe_family_id,
+        variant_name: recipe.variant_name,
+        is_default: recipe.is_default,
+        sort_order: recipe.sort_order,
+        created_at: recipe.created_at,
+        matches: getRecipeVariantSearchText(recipe).toLocaleLowerCase().includes(query.toLocaleLowerCase()),
     }));
+    const grouped = groupRecipeListCandidates(candidates).slice(0, MAX_RESULTS_PER_TYPE);
+    const recipeById = new Map((data ?? []).map((recipe) => [recipe.id, recipe]));
+
+    logger.info('Grouped recipes search completed', {
+        userId,
+        query,
+        resultsCount: grouped.length,
+    });
+
+    return grouped.map((group) => {
+        const recipe = recipeById.get(group.representative.id);
+        return {
+            id: group.representative.id,
+            name: recipe?.name ?? group.representative.name,
+            category: extractCategoryName(recipe?.category ?? null),
+            variant_name: group.representative.variant_name,
+            active_variant_count: group.active_variant_count,
+        };
+    });
 }
 
 /**

@@ -132,7 +132,12 @@ async function handleGlobalSearch(req: Request): Promise<Response> {
 
         // Execute searches in parallel for better performance
         const [recipes, collections] = await Promise.all([
-            searchRecipes(client, user.id, searchQuery),
+            searchRecipes(
+                client,
+                user.id,
+                searchQuery,
+                user.app_metadata?.['app_role'] === 'admin'
+            ),
             searchCollections(client, user.id, searchQuery),
         ]);
 

@@ -19,6 +19,7 @@ import {
     GetPublicRecipesParams,
 } from '../../core/services/public-recipes.service';
 import { PublicRecipeListItemDto } from '../../../../shared/contracts/types';
+import { mapPublicRecipeToCardData } from '../../shared/components/recipe-card/recipe-card.mapper';
 import { AuthService } from '../../core/services/auth.service';
 
 /**
@@ -202,13 +203,8 @@ export class LandingPageComponent implements OnInit {
      */
     private mapToCardData(dto: PublicRecipeListItemDto): RecipeCardData {
         return {
-            id: dto.id,
-            name: dto.name,
+            ...mapPublicRecipeToCardData(dto, dto.category?.name ?? null, false),
             slug: this.slugify(dto.name),
-            imageUrl: dto.image_path,
-            categoryName: dto.category?.name ?? null,
-            isTermorobot: dto.is_termorobot ?? false,
-            isFavorite: dto.is_favorite ?? false,
         };
     }
 

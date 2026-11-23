@@ -81,4 +81,36 @@ describe('RecipeCardComponent', () => {
 
         expect(element.querySelector('.favorite-indicator')).toBeNull();
     });
+
+    it('pokazuje metadane grupy, skraca nazwy i dodaje parametr variant', () => {
+        fixture.componentRef.setInput('recipe', {
+            id: 42,
+            name: 'Lasagne',
+            imageUrl: null,
+            variantName: 'Wegetariańska',
+            activeVariantCount: 4,
+            matchingVariantCount: 2,
+            matchingVariantNames: ['Klasyczna', 'Wegetariańska', 'Pikantna', 'Bezglutenowa'],
+            matchingVariantOverflow: 1,
+            variantFilterActive: true,
+        });
+        fixture.detectChanges();
+
+        const element = fixture.nativeElement as HTMLElement;
+        expect(element.querySelector('.recipe-variant')?.textContent).toContain('Wegetariańska');
+        expect(element.querySelector('.recipe-variant-summary')?.textContent)
+            .toContain('pasują 2 z 4');
+        expect(element.querySelector('.recipe-variant-summary')?.textContent)
+            .toContain('+1');
+        expect(element.querySelector('a')?.getAttribute('href')).toContain('variant=42');
+        expect(element.querySelector('a')?.getAttribute('aria-label'))
+            .toContain('4');
+    });
+
+    it('zachowuje dotychczasowy link i wygląd dla pojedynczego wariantu', () => {
+        const element = renderCard(false);
+
+        expect(element.querySelector('.recipe-variant')).toBeNull();
+        expect(element.querySelector('a')?.getAttribute('href')).not.toContain('variant=');
+    });
 });

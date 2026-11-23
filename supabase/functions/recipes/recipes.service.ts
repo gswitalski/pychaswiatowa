@@ -116,6 +116,11 @@ export interface RecipeListItemDto {
     difficulty: RecipeDifficulty | null;
     is_grill: boolean;
     is_favorite?: boolean;
+    variant_name?: string | null;
+    active_variant_count?: number;
+    matching_variant_count?: number;
+    matching_variant_names?: string[];
+    matching_variant_overflow?: number;
 }
 
 /**
@@ -259,6 +264,7 @@ export interface GetRecipesOptions {
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
     grill?: boolean;
+    isAdmin?: boolean;
 }
 
 /**
@@ -279,6 +285,7 @@ export interface GetRecipesFeedOptions {
     cuisine?: RecipeCuisine;
     difficulty?: RecipeDifficulty;
     grill?: boolean;
+    isAdmin?: boolean;
 }
 
 /** Columns to select for recipe list queries. */
@@ -510,6 +517,7 @@ export async function getRecipes(
         cuisine,
         difficulty,
         grill,
+        isAdmin = false,
     } = options;
 
     logger.info('Fetching recipes', {
@@ -554,8 +562,16 @@ export async function getRecipes(
         }
     }
 
+    const { data: groupingAllowed, error: groupingError } = await client.rpc('recipe_variants_allowed', {
+        p_is_admin: isAdmin,
+    });
+    if (groupingError) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to resolve recipe grouping feature');
+    }
+
     // Call the RPC function to get recipes
-    const { data, error } = await client.rpc('get_recipes_list', {
+    const rpcClient = createServiceRoleClient();
+    const { data, error } = await rpcClient.rpc('get_recipes_list', {
         p_user_id: requesterUserId,
         p_view: view,
         p_page: page,
@@ -570,6 +586,7 @@ export async function getRecipes(
         p_cuisine: cuisine ?? undefined,
         p_difficulty: difficulty ?? undefined,
         p_grill: grill ?? undefined,
+        p_group_variants: Boolean(groupingAllowed),
     });
 
     if (error) {
@@ -637,6 +654,13 @@ export async function getRecipes(
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(recipe.is_grill),
         is_favorite: flagsMap.get(Number(recipe.id))?.is_favorite ?? false,
+        ...(groupingAllowed && {
+            variant_name: recipe.variant_name ?? null,
+            active_variant_count: Number(recipe.active_variant_count ?? 1),
+            matching_variant_count: Number(recipe.matching_variant_count ?? 1),
+            matching_variant_names: recipe.matching_variant_names ?? [],
+            matching_variant_overflow: Number(recipe.matching_variant_overflow ?? 0),
+        }),
     }));
 
     return {
@@ -681,6 +705,7 @@ export async function getRecipesFeed(
         cuisine,
         difficulty,
         grill,
+        isAdmin = false,
     } = options;
 
     logger.info('Fetching recipes feed', {
@@ -779,8 +804,16 @@ export async function getRecipesFeed(
         }
     }
 
+    const { data: groupingAllowed, error: groupingError } = await client.rpc('recipe_variants_allowed', {
+        p_is_admin: isAdmin,
+    });
+    if (groupingError) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to resolve recipe grouping feature');
+    }
+
     // Call the RPC function to get recipes
-    const { data, error } = await client.rpc('get_recipes_list', {
+    const rpcClient = createServiceRoleClient();
+    const { data, error } = await rpcClient.rpc('get_recipes_list', {
         p_user_id: requesterUserId,
         p_view: view,
         p_page: page,
@@ -795,6 +828,7 @@ export async function getRecipesFeed(
         p_cuisine: cuisine ?? undefined,
         p_difficulty: difficulty ?? undefined,
         p_grill: grill ?? undefined,
+        p_group_variants: Boolean(groupingAllowed),
     });
 
     if (error) {
@@ -866,6 +900,13 @@ export async function getRecipesFeed(
         difficulty: (recipe.difficulty as RecipeDifficulty) ?? null,
         is_grill: Boolean(recipe.is_grill),
         is_favorite: flagsMap.get(Number(recipe.id))?.is_favorite ?? false,
+        ...(groupingAllowed && {
+            variant_name: recipe.variant_name ?? null,
+            active_variant_count: Number(recipe.active_variant_count ?? 1),
+            matching_variant_count: Number(recipe.matching_variant_count ?? 1),
+            matching_variant_names: recipe.matching_variant_names ?? [],
+            matching_variant_overflow: Number(recipe.matching_variant_overflow ?? 0),
+        }),
     }));
 
     // Create next cursor if there are more results

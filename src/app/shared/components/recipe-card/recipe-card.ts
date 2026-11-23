@@ -35,6 +35,13 @@ export interface RecipeCardData {
     isGrill?: boolean;
     /** Czy zalogowany użytkownik oznaczył przepis jako ulubiony */
     isFavorite?: boolean;
+    variantName?: string | null;
+    activeVariantCount?: number;
+    matchingVariantCount?: number;
+    matchingVariantNames?: string[];
+    matchingVariantOverflow?: number;
+    variantFilterActive?: boolean;
+    savedVariantCount?: number;
 }
 
 /**
@@ -97,6 +104,40 @@ export class RecipeCardComponent {
     /** Placeholder dla brakującego obrazka */
     readonly placeholderImage = '/placeholder-recipe.svg';
 
+    readonly hasVariants = computed(() => (this.recipe().activeVariantCount ?? 1) >= 2);
+
+    readonly variantSummary = computed(() => {
+        const recipe = this.recipe();
+        const total = recipe.activeVariantCount ?? 1;
+        const saved = recipe.savedVariantCount;
+        if (saved !== undefined) {
+            return `zapisano ${saved} z ${total}`;
+        }
+
+        const matching = recipe.matchingVariantCount ?? total;
+        if (recipe.variantFilterActive && matching < total) {
+            const names = (recipe.matchingVariantNames ?? []).slice(0, 3).join(' · ');
+            const overflow = recipe.matchingVariantOverflow ?? Math.max(0, matching - 3);
+            return `pasują ${matching} z ${total}: ${names}${overflow > 0 ? ` +${overflow}` : ''}`;
+        }
+
+        return `${total} wariantów`;
+    });
+
+    readonly fullVariantSummary = computed(() => {
+        const recipe = this.recipe();
+        const names = recipe.matchingVariantNames ?? [];
+        return names.length > 0 ? names.join(' · ') : this.variantSummary();
+    });
+
+    readonly cardAriaLabel = computed(() => {
+        const recipe = this.recipe();
+        if (!this.hasVariants()) {
+            return recipe.name;
+        }
+        return `${recipe.name}, ${recipe.variantName ?? 'wariant'}, ${this.variantSummary()}`;
+    });
+
     /**
      * Computed: full image URL
      * Converts storage path to public URL if needed
@@ -152,6 +193,10 @@ export class RecipeCardComponent {
         }
 
         return `/recipes/${recipeSegment}`;
+    });
+
+    readonly recipeQueryParams = computed(() => {
+        return this.hasVariants() ? { variant: this.recipe().id } : null;
     });
 
     /**
