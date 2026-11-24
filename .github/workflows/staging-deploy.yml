@@ -119,7 +119,7 @@ jobs:
                       printf "%s='%s'\n" "$name" "$value" >> secrets.env
                     fi
                   done
-                  supabase secrets set --env-file secrets.env
+                  supabase secrets set --yes --env-file secrets.env
                   rm -f secrets.env
               env:
                   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
