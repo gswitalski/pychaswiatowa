@@ -1,6 +1,8 @@
 import 'zone.js';
 import 'zone.js/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatTooltip } from '@angular/material/tooltip';
+import { By } from '@angular/platform-browser';
 import {
     BrowserDynamicTestingModule,
     platformBrowserDynamicTesting,
@@ -82,7 +84,7 @@ describe('RecipeCardComponent', () => {
         expect(element.querySelector('.favorite-indicator')).toBeNull();
     });
 
-    it('pokazuje metadane grupy, skraca nazwy i dodaje parametr variant', () => {
+    it('pokazuje pełny wiersz nazw, separator i parametr variant', () => {
         fixture.componentRef.setInput('recipe', {
             id: 42,
             name: 'Lasagne',
@@ -90,27 +92,78 @@ describe('RecipeCardComponent', () => {
             variantName: 'Wegetariańska',
             activeVariantCount: 4,
             matchingVariantCount: 2,
-            matchingVariantNames: ['Klasyczna', 'Wegetariańska', 'Pikantna', 'Bezglutenowa'],
+            matchingVariantNames: [' Klasyczna ', 'Wegetariańska'],
             matchingVariantOverflow: 1,
             variantFilterActive: true,
         });
         fixture.detectChanges();
 
         const element = fixture.nativeElement as HTMLElement;
-        expect(element.querySelector('.recipe-variant')?.textContent).toContain('Wegetariańska');
-        expect(element.querySelector('.recipe-variant-summary')?.textContent)
-            .toContain('pasują 2 z 4');
-        expect(element.querySelector('.recipe-variant-summary')?.textContent)
-            .toContain('+1');
+        const line = element.querySelector('.recipe-title-line');
+        const summary = line?.querySelector('.recipe-variant-summary');
+        expect(line?.querySelector('.recipe-name')?.textContent).toContain('Lasagne');
+        expect(summary?.textContent).toContain('· Klasyczna · Wegetariańska');
+        expect(line?.textContent).not.toContain('+1');
+        expect(element.querySelector('.recipe-variant')).toBeNull();
         expect(element.querySelector('a')?.getAttribute('href')).toContain('variant=42');
         expect(element.querySelector('a')?.getAttribute('aria-label'))
-            .toContain('4');
+            .toContain('Klasyczna · Wegetariańska');
+        expect(fixture.componentInstance.titleLineText()).toBe(
+            'Lasagne · Klasyczna · Wegetariańska'
+        );
     });
 
-    it('zachowuje dotychczasowy link i wygląd dla pojedynczego wariantu', () => {
+    it('pokazuje kategorię jako drugą linię i tooltip tylko przy obcięciu', () => {
+        fixture.componentRef.setInput('recipe', {
+            id: 42,
+            name: 'Lasagne',
+            imageUrl: null,
+            categoryName: 'Danie główne',
+            activeVariantCount: 2,
+            matchingVariantNames: ['Klasyczna', 'Wegetariańska'],
+        });
+        fixture.componentRef.setInput('showCategory', true);
+        fixture.detectChanges();
+
+        const element = fixture.nativeElement as HTMLElement;
+        expect(element.querySelector('.recipe-category')?.textContent)
+            .toContain('Danie główne');
+        const tooltip = fixture.debugElement
+            .query(By.css('.recipe-title-line'))
+            .injector.get(MatTooltip);
+        expect(tooltip.message).toBe('Lasagne · Klasyczna · Wegetariańska');
+        expect(tooltip.disabled).toBe(true);
+
+        const line = element.querySelector('.recipe-title-line') as HTMLElement;
+        Object.defineProperty(line, 'scrollWidth', { configurable: true, value: 240 });
+        Object.defineProperty(line, 'clientWidth', { configurable: true, value: 120 });
+        fixture.componentInstance.measureTitleOverflow();
+        fixture.detectChanges();
+
+        expect(fixture.componentInstance.titleOverflow()).toBe(true);
+        expect(tooltip.disabled).toBe(false);
+    });
+
+    it('nie pokazuje wiersza dla pojedynczego wariantu', () => {
         const element = renderCard(false);
 
         expect(element.querySelector('.recipe-variant')).toBeNull();
+        expect(element.querySelector('.recipe-variant-summary')).toBeNull();
         expect(element.querySelector('a')?.getAttribute('href')).not.toContain('variant=');
+    });
+
+    it('nie pokazuje pustego wiersza, gdy nazwy są puste', () => {
+        fixture.componentRef.setInput('recipe', {
+            id: 42,
+            name: 'Lasagne',
+            imageUrl: null,
+            activeVariantCount: 2,
+            matchingVariantNames: ['  ', ''],
+        });
+        fixture.detectChanges();
+
+        expect(
+            (fixture.nativeElement as HTMLElement).querySelector('.recipe-variant-summary')
+        ).toBeNull();
     });
 });

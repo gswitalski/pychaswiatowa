@@ -689,6 +689,7 @@ wdrożone i czym różni się od koncepcji; aktualizuj ją po każdej historyjce
 | 3. Przełącznik wariantów na szczegółach | PS-110 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-110/PS-110-recipe-variant-switcher-detail-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-110-recipe-variant-switcher-detail-*-implementation-plan.md`; weryfikacja: `…/PS-110-recipe-variant-switcher-detail-verification.md`; migracja: `20261121160000_ps110_recipe_detail_variant_metadata.sql` |
 | 4. Grupowanie list i wyszukiwania | PS-111 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-111/PS-111-recipe-list-search-grouping-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-111-recipe-list-search-grouping-*-implementation-plan.md`; weryfikacja: `…/PS-111-recipe-list-search-grouping-verification.md`; migracja: `20261121180000_ps111_grouped_recipes_list.sql` |
 | 5. Działania użytkownika na wariancie i integracje | PS-112 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-112/PS-112-recipe-variant-user-actions-integrations-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-112-recipe-variant-user-actions-integrations-*-implementation-plan.md`; weryfikacja: `…/PS-112-recipe-variant-user-actions-integrations-verification.md`; migracja: `20261123210000_ps112_recipe_variant_actions_integrations.sql` |
+| Doprecyzowanie karty i stanu na szczegółach | PS-115 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-115/PS-115-recipe-card-variant-names-row-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-115-recipe-card-variant-names-row-*-implementation-plan.md`; weryfikacja: `…/PS-115-recipe-card-variant-names-row-verification.md`; migracja: `20261124170000_ps115_full_variant_names.sql` |
 
 Migracje PS-108: `20261120200000_create_recipe_families.sql` i
 `20261120200100_fix_recipe_family_default_triggers.sql` (zastosowane lokalnie,
@@ -826,6 +827,17 @@ niewdrożone zdalnie).
   zachowanymi filtrami.
 - RPC `get_recipes_list` przebudowane migracją `20261121180000` z `revoke` dla `public`/`anon`/`authenticated`
   i `grant` tylko dla `service_role`.
+
+### Zmiany wprowadzone w PS-115 (karta i stan na szczegółach)
+
+- Przy co najmniej dwóch wariantach karta pokazuje pod nazwą przepisu jeden wiersz nazw
+  rozdzielonych „ · ”, bez liczby, bez „pasują M z N”, bez „+N” i bez osobnej nazwy
+  reprezentanta. Szkic karty z sekcji 3 (osobna nazwa i linia „3 warianty”) nie obowiązuje.
+- Lista zwraca pełne nazwy pasujących wariantów (kolejność `sort_order`, potem `id`,
+  po `trim()`, puste pominięte, do 10). `matching_variant_overflow` wynosi 0.
+  Migracja `20261124170000`. Typów bazy nie regenerowano (`gen types` gubi `| null`).
+- Na szczegółach z `span.variant-state` znikają „w planie” i „ocena N”. Zostają:
+  ulubiony, chcę wypróbować, w kolekcji, notatka. Widget oceny i przycisk planu zostają.
 
 ### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
 

@@ -31,17 +31,28 @@ Deno.test('groups variants before pagination and chooses default on a tie', () =
     assertEquals(result[0].matching_variant_count, 2);
 });
 
-Deno.test('chooses the best matching variant and limits match labels', () => {
+Deno.test('chooses the best matching variant and returns all names in family order', () => {
     const result = groupRecipeListCandidates([
-        candidate({ id: 1, variant_name: 'Klasyczna', is_default: true, sort_order: 0, relevance_score: 2 }),
-        candidate({ id: 2, variant_name: 'Wegetariańska', sort_order: 1, relevance_score: 5 }),
-        candidate({ id: 3, variant_name: 'Bezglutenowa', sort_order: 2, relevance_score: 4 }),
         candidate({ id: 4, variant_name: 'Keto', sort_order: 3, relevance_score: 3 }),
+        candidate({ id: 2, variant_name: 'Wegetariańska', sort_order: 1, relevance_score: 5 }),
+        candidate({ id: 1, variant_name: 'Klasyczna', is_default: true, sort_order: 0, relevance_score: 2 }),
+        candidate({ id: 3, variant_name: 'Bezglutenowa', sort_order: 2, relevance_score: 4 }),
     ]);
 
     assertEquals(result[0].representative.id, 2);
-    assertEquals(result[0].matching_variant_names, ['Klasyczna', 'Wegetariańska', 'Bezglutenowa']);
-    assertEquals(result[0].matching_variant_overflow, 1);
+    assertEquals(result[0].matching_variant_names, ['Klasyczna', 'Wegetariańska', 'Bezglutenowa', 'Keto']);
+    assertEquals(result[0].matching_variant_overflow, 0);
+});
+
+Deno.test('trims names, skips empty names, and keeps technical names', () => {
+    const result = groupRecipeListCandidates([
+        candidate({ id: 3, variant_name: ' Wariant podstawowy ', sort_order: 2 }),
+        candidate({ id: 2, variant_name: '   ', sort_order: 1 }),
+        candidate({ id: 1, variant_name: ' Klasyczna ', sort_order: 0 }),
+    ]);
+
+    assertEquals(result[0].matching_variant_names, ['Klasyczna', 'Wariant podstawowy']);
+    assertEquals(result[0].matching_variant_overflow, 0);
 });
 
 Deno.test('excludes technical names from variant matching text', () => {

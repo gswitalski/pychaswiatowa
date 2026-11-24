@@ -86,10 +86,15 @@ export function groupRecipeListCandidates(candidates: RecipeListCandidate[]): Gr
                 return compareCandidates(left, right);
             });
             const representative = orderedMatching[0];
-            const names = matching
+            const names = [...matching]
+                .sort((left, right) => {
+                    if (left.sort_order !== right.sort_order) {
+                        return left.sort_order - right.sort_order;
+                    }
+                    return left.id - right.id;
+                })
                 .map((row) => row.variant_name?.trim())
-                .filter((name): name is string => Boolean(name))
-                .slice(0, 3);
+                .filter((name): name is string => Boolean(name));
 
             return {
                 representative,
@@ -97,7 +102,7 @@ export function groupRecipeListCandidates(candidates: RecipeListCandidate[]): Gr
                 active_variant_count: rows.length,
                 matching_variant_count: matching.length,
                 matching_variant_names: names,
-                matching_variant_overflow: Math.max(0, matching.length - names.length),
+                matching_variant_overflow: 0,
             };
         })
         .filter((group): group is GroupedRecipeListItem => group !== null);

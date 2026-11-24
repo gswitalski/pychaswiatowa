@@ -1,6 +1,14 @@
+:host {
+    display: block;
+    min-width: 0;
+    height: 100%;
+}
+
 .recipe-card-link {
     text-decoration: none;
     display: block;
+    min-width: 0;
+    height: 100%;
 }
 
 .recipe-card {
@@ -220,17 +228,21 @@ mat-card-content {
     padding: 1rem !important;
 }
 
-.recipe-name {
+.recipe-title-line {
     margin: 0;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.recipe-name {
     font-size: 1.125rem;
     font-weight: 500;
     color: var(--mat-sys-on-surface);
     line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .recipe-category {
@@ -239,5 +251,12 @@ mat-card-content {
     color: var(--mat-sys-on-surface-variant);
     font-weight: 400;
     min-height: 1.25rem; // Zapewnia stałą wysokość nawet gdy kategoria jest pusta
+    line-height: 1.25rem;
+}
+
+.recipe-variant-summary {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--mat-sys-on-surface-variant);
     line-height: 1.25rem;
 }

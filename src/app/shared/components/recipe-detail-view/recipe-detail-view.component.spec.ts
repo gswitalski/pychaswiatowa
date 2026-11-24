@@ -49,7 +49,7 @@ function recipe(overrides: Partial<RecipeDetailDto> = {}): RecipeDetailDto {
     } as RecipeDetailDto;
 }
 
-async function setup(current: RecipeDetailDto) {
+async function setup(current: RecipeDetailDto, isAuthenticated = false) {
     const rendered = await render(RecipeDetailViewComponent, {
         imports: [NoopAnimationsModule],
         providers: [
@@ -62,7 +62,7 @@ async function setup(current: RecipeDetailDto) {
             recipe: current,
             isLoading: false,
             error: null,
-            isAuthenticated: false,
+            isAuthenticated,
             isOwner: false,
             headerMode: 'guest',
             pageTitle: 'Zupa',
@@ -97,6 +97,51 @@ describe('RecipeDetailViewComponent — przełącznik wariantów', () => {
         expect(container.querySelector('[role="tab"][aria-selected="true"]')).toBeTruthy();
     });
 
+    it('pokazuje tylko dozwolone stany wariantów i nie tworzy pustego spanu', async () => {
+        const { container } = await setup(recipe({
+            active_variant_count: 2,
+            variants: [
+                {
+                    recipe_id: 1,
+                    variant_name: 'Klasyczna',
+                    is_default: true,
+                    sort_order: 0,
+                    image_path: null,
+                    user_action_state: {
+                        is_favorite: true,
+                        wants_to_try: false,
+                        in_plan: true,
+                        in_collection: false,
+                        has_note: false,
+                        my_rating: 5,
+                    },
+                    chips: { diet_type: null, is_termorobot: false, is_grill: false, difficulty: null, servings: null },
+                },
+                {
+                    recipe_id: 2,
+                    variant_name: 'Wegańska',
+                    is_default: false,
+                    sort_order: 1,
+                    image_path: null,
+                    user_action_state: {
+                        is_favorite: false,
+                        wants_to_try: false,
+                        in_plan: true,
+                        in_collection: false,
+                        has_note: false,
+                        my_rating: 4,
+                    },
+                    chips: { diet_type: null, is_termorobot: false, is_grill: false, difficulty: null, servings: null },
+                },
+            ],
+        }), true);
+
+        expect(container.querySelectorAll('.variant-state').length).toBe(1);
+        expect(container.textContent).toContain('ulubiony');
+        expect(container.textContent).not.toContain('w planie');
+        expect(container.textContent).not.toContain('ocena 5');
+    });
+
     it('renderuje listę rozwijaną dla co najmniej 4 wariantów', async () => {
         const { container } = await setup(recipe({
             active_variant_count: 4,
@@ -113,6 +158,40 @@ describe('RecipeDetailViewComponent — przełącznik wariantów', () => {
         expect(container.querySelector('mat-select')).toBeTruthy();
         expect(container.querySelectorAll('mat-option').length).toBe(0);
         expect(container.querySelector('mat-select[aria-label="Wariant przepisu"]')).toBeTruthy();
+    });
+
+    it('dla listy rozwijanej nie renderuje stanu zawierającego tylko plan i ocenę', async () => {
+        const { container } = await setup(recipe({
+            active_variant_count: 4,
+            variants: Array.from({ length: 4 }, (_, index) => ({
+                recipe_id: index + 1,
+                variant_name: `Wariant ${index + 1}`,
+                is_default: index === 0,
+                sort_order: index,
+                image_path: null,
+                user_action_state: index === 0
+                    ? {
+                        is_favorite: false,
+                        wants_to_try: false,
+                        in_plan: true,
+                        in_collection: false,
+                        has_note: false,
+                        my_rating: 3,
+                    }
+                    : {
+                        is_favorite: false,
+                        wants_to_try: false,
+                        in_plan: false,
+                        in_collection: true,
+                        has_note: false,
+                        my_rating: null,
+                    },
+                chips: { diet_type: null, is_termorobot: false, is_grill: false, difficulty: null, servings: null },
+            })),
+        }));
+
+        expect(container.querySelector('.variant-state')).toBeNull();
+        expect(container.textContent).not.toContain('ocena 3');
     });
 
     it('pokazuje baner ratunku z powodem odpowiedzi API', async () => {

@@ -1,10 +1,16 @@
 import {
+    afterEveryRender,
+    afterNextRender,
     ChangeDetectionStrategy,
     Component,
+    computed,
+    DestroyRef,
+    ElementRef,
+    inject,
     input,
     output,
-    computed,
-    inject,
+    signal,
+    viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -73,6 +79,24 @@ export type RecipeCardRouteType = 'private' | 'public';
 export class RecipeCardComponent {
     private readonly supabase = inject(SupabaseService);
     private readonly slugService = inject(SlugService);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly titleLine = viewChild<ElementRef<HTMLElement>>('titleLine');
+
+    /** Pierwsza linia jest ucięta i tooltip ma pokazać pełną treść. */
+    readonly titleOverflow = signal(false);
+
+    constructor() {
+        afterEveryRender(() => this.measureTitleOverflow());
+        afterNextRender(() => {
+            const node = this.titleLine()?.nativeElement;
+            if (!node || typeof ResizeObserver === 'undefined') {
+                return;
+            }
+            const observer = new ResizeObserver(() => this.measureTitleOverflow());
+            observer.observe(node);
+            this.destroyRef.onDestroy(() => observer.disconnect());
+        });
+    }
 
     /** Dane przepisu do wyświetlenia */
     readonly recipe = input.required<RecipeCardData>();
@@ -106,28 +130,30 @@ export class RecipeCardComponent {
 
     readonly hasVariants = computed(() => (this.recipe().activeVariantCount ?? 1) >= 2);
 
-    readonly variantSummary = computed(() => {
-        const recipe = this.recipe();
-        const total = recipe.activeVariantCount ?? 1;
-        const saved = recipe.savedVariantCount;
-        if (saved !== undefined) {
-            return `zapisano ${saved} z ${total}`;
-        }
+    readonly variantNames = computed(() =>
+        (this.recipe().matchingVariantNames ?? [])
+            .map((name) => name.trim())
+            .filter((name) => name.length > 0)
+    );
 
-        const matching = recipe.matchingVariantCount ?? total;
-        if (recipe.variantFilterActive && matching < total) {
-            const names = (recipe.matchingVariantNames ?? []).slice(0, 3).join(' · ');
-            const overflow = recipe.matchingVariantOverflow ?? Math.max(0, matching - 3);
-            return `pasują ${matching} z ${total}: ${names}${overflow > 0 ? ` +${overflow}` : ''}`;
-        }
+    readonly shouldShowVariantNames = computed(
+        () => this.hasVariants() && this.variantNames().length > 0
+    );
 
-        return `${total} wariantów`;
+    readonly fullVariantSummary = computed(() => this.variantNames().join(' · '));
+
+    /** Pełna pierwsza linia: nazwa oraz, gdy są, wszystkie warianty. */
+    readonly titleLineText = computed(() => {
+        const name = this.recipe().name;
+        if (!this.shouldShowVariantNames()) {
+            return name;
+        }
+        return `${name} · ${this.fullVariantSummary()}`;
     });
 
-    readonly fullVariantSummary = computed(() => {
+    readonly variantNamesAriaLabel = computed(() => {
         const recipe = this.recipe();
-        const names = recipe.matchingVariantNames ?? [];
-        return names.length > 0 ? names.join(' · ') : this.variantSummary();
+        return `${recipe.name}: ${this.fullVariantSummary()}`;
     });
 
     readonly cardAriaLabel = computed(() => {
@@ -135,8 +161,19 @@ export class RecipeCardComponent {
         if (!this.hasVariants()) {
             return recipe.name;
         }
-        return `${recipe.name}, ${recipe.variantName ?? 'wariant'}, ${this.variantSummary()}`;
+        return this.shouldShowVariantNames()
+            ? this.variantNamesAriaLabel()
+            : recipe.name;
     });
+
+    measureTitleOverflow(): void {
+        const element = this.titleLine()?.nativeElement;
+        if (!element) {
+            this.titleOverflow.set(false);
+            return;
+        }
+        this.titleOverflow.set(element.scrollWidth > element.clientWidth + 1);
+    }
 
     /**
      * Computed: full image URL

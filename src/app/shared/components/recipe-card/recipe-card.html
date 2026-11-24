@@ -80,15 +80,16 @@
             }
         </div>
         <mat-card-content>
-            <h3 class="recipe-name">{{ recipe().name }}</h3>
-            @if (hasVariants()) {
-                <p class="recipe-variant" [title]="fullVariantSummary()">
-                    {{ recipe().variantName }}
-                </p>
-                <p class="recipe-variant-summary" [attr.aria-label]="fullVariantSummary()">
-                    {{ variantSummary() }}
-                </p>
-            }
+            <h3
+                #titleLine
+                class="recipe-title-line"
+                [matTooltip]="titleLineText()"
+                [matTooltipDisabled]="!titleOverflow()">
+                <span class="recipe-name">{{ recipe().name }}</span>
+                @if (shouldShowVariantNames()) {
+                    <span class="recipe-variant-summary"> · {{ fullVariantSummary() }}</span>
+                }
+            </h3>
             @if (shouldShowCategory()) {
             <p class="recipe-category">
                 {{ recipe().categoryName || '&nbsp;' }}
