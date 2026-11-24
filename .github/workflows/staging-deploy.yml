@@ -96,7 +96,7 @@ jobs:
                   SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
             - name: Push database migrations
-              run: supabase db push --remote --yes
+              run: supabase db push --db-url "${{ secrets.STAGING_DB_URL }}" --yes
               env:
                   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
                   SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
