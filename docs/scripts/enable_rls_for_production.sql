@@ -250,18 +250,28 @@ BEGIN
 END $$;
 
 -- ==================================================================================
--- STEP 4: CREATE RLS POLICIES FOR RECIPES TABLE
+-- STEP 4: CREATE RLS POLICY FOR RECIPES TABLE
 -- ==================================================================================
--- Creating 4 policies for recipes table (select, insert, update, delete)
+-- Creating one read policy; all direct writes use the service role.
 -- ==================================================================================
 
 DO $$
+DECLARE
+    policy_record record;
 BEGIN
-    RAISE NOTICE '📝 Creating policies for RECIPES table...';
+    RAISE NOTICE '📝 Configuring policies for RECIPES table...';
+    FOR policy_record IN
+        SELECT policyname
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'recipes'
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.recipes', policy_record.policyname);
+    END LOOP;
 END $$;
 
 -- rls policy: authenticated users can select own recipes and public recipes (non-deleted)
-CREATE POLICY "authenticated users can select own recipes"
+CREATE POLICY "authenticated users can select visible recipes"
     on public.recipes
     for select
     to authenticated
@@ -273,41 +283,29 @@ CREATE POLICY "authenticated users can select own recipes"
         )
     );
 
--- rls policy: authenticated users can insert their own recipes
-create policy "authenticated users can insert own recipes"
-    on public.recipes
-    for insert
-    to authenticated
-    with check (auth.uid() = user_id);
-
--- rls policy: authenticated users can update their own recipes
-create policy "authenticated users can update own recipes"
-    on public.recipes
-    for update
-    to authenticated
-    using (auth.uid() = user_id)
-    with check (auth.uid() = user_id);
-
--- rls policy: authenticated users can delete their own recipes
-CREATE POLICY "authenticated users can delete own recipes"
-    ON public.recipes
-    FOR DELETE
-    TO authenticated
-    USING (auth.uid() = user_id);
-
 -- Verification after Step 4
 DO $$
 DECLARE
     policy_count INTEGER;
+    write_policy_exists BOOLEAN;
 BEGIN
     SELECT COUNT(*) INTO policy_count
     FROM pg_policies 
     WHERE schemaname = 'public' AND tablename = 'recipes';
-    
-    IF policy_count != 4 THEN
-        RAISE EXCEPTION '❌ STEP 4 FAILED: Expected 4 policies for recipes, found %', policy_count;
+
+    SELECT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'recipes'
+          AND cmd IN ('INSERT', 'UPDATE', 'DELETE')
+    ) INTO write_policy_exists;
+
+    IF policy_count != 1 OR write_policy_exists THEN
+        RAISE EXCEPTION '❌ STEP 4 FAILED: Expected 1 read-only policy for recipes, found % (write policy: %)',
+            policy_count, write_policy_exists;
     ELSE
-        RAISE NOTICE '✅ STEP 4 COMPLETED: 4 policies created for RECIPES';
+        RAISE NOTICE '✅ STEP 4 COMPLETED: 1 read-only policy created for RECIPES';
     END IF;
 END $$;
 
@@ -627,8 +625,8 @@ DECLARE
     new_table_policies INTEGER;
     rls_enabled_count INTEGER;
     expected_all_tables INTEGER := 12;
-    expected_total_policies INTEGER := 39;
-    expected_old_policies INTEGER := 24;
+    expected_total_policies INTEGER := 36;
+    expected_old_policies INTEGER := 21;
 BEGIN
     -- Count total policies
     SELECT COUNT(*) INTO total_policies
@@ -742,7 +740,7 @@ END $$;
 -- ORDER BY source, tablename, cmd, policyname;
 
 -- Query 3: Count policies per table
--- Expected OLD tables: profiles:4, categories:2, recipes:4, tags:4, collections:4, recipe_tags:3, recipe_collections:3
+-- Expected OLD tables: profiles:4, categories:2, recipes:1, tags:4, collections:4, recipe_tags:3, recipe_collections:3
 -- Expected NEW tables: plan_recipes:3, shopping_list_items:4, shopping_list_recipe_contributions:3,
 --                      normalized_ingredients_jobs:3, recipe_normalized_ingredients:2
 

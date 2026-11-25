@@ -1,6 +1,6 @@
 # PychaŚwiatowa — referencja wygenerowana z kodu
 
-Wygenerowano: 2026-11-24 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
+Wygenerowano: 2026-11-26 przez `.cursor/hooks/generate-reference.ps1`. Nie edytuj ręcznie.
 Źródła: `shared/types/database.types.ts`, `supabase/functions`, `src/app/**/*.routes.ts`,
 `src/app/core/guards`, `supabase/migrations`. Wzorce ścieżek Edge Functions są wyciągnięte
 z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
@@ -177,11 +177,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 104 plików, ostatnie 5
+## Migracje: 105 plików, ostatnie 5
 
-- `20261121160000_ps110_recipe_detail_variant_metadata.sql`
 - `20261121170000_fix_recipe_family_sync_deleted_at.sql`
 - `20261121180000_ps111_grouped_recipes_list.sql`
 - `20261123210000_ps112_recipe_variant_actions_integrations.sql`
 - `20261124170000_ps115_full_variant_names.sql`
+- `20261125200000_ps116_recipe_rls_variant_group_policies.sql`
 

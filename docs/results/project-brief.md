@@ -37,8 +37,10 @@ Używaj `rg -n "<fraza>"` i `Read` z `offset`/`limit`. Przy sprzeczności prawd�
   `recipe_collections`, `recipe_tags`, `user_ai_credits`, `user_recipe_flags`,
   `user_recipe_notes`, `recipe_ratings`, plan i lista zakupów, joby
   normalizacji składników.
-- RLS włączone na tabelach użytkownika (własność `auth.uid() = user_id`;
-  przepisy `PUBLIC` czytelne dla wszystkich). Funkcje `security definer`:
+- Od PS-116 RLS na `recipes` jest włączone: `authenticated` czyta nieusunięty
+  własny albo `PUBLIC` (gość nie czyta tabeli); zapisu z konta nie ma
+  (`service_role`). Widok `recipe_details` ma `security_invoker`. RLS profili,
+  tagów i kolekcji w migracjach pozostaje wyłączone. Funkcje `security definer`:
   `revoke` dla `public/anon/authenticated`, jawny `grant` (zwykle `service_role`).
 - Migracje: `supabase/migrations/{timestamp}_{opis}.sql`.
 

@@ -1017,9 +1017,33 @@ export async function getRecipeById(
         endpoint: 'recipes',
     });
     const targetId = variantResolution.selectedId;
+    const serviceClient = createServiceRoleClient();
 
-    // Step A: Try to fetch with authenticated client (respects RLS)
-    const { data, error } = await client
+    const { data: recipeCheck, error: checkError } = await serviceClient
+        .from('recipes')
+        .select('id, user_id, visibility, deleted_at')
+        .eq('id', targetId)
+        .maybeSingle();
+
+    if (checkError) {
+        logger.error('Database error while checking recipe existence', {
+            recipeId: targetId,
+            errorCode: checkError.code,
+            errorMessage: checkError.message,
+        });
+        throw new ApplicationError('INTERNAL_ERROR', 'Failed to fetch recipe');
+    }
+
+    if (!recipeCheck || recipeCheck.deleted_at !== null) {
+        throw new ApplicationError('NOT_FOUND', `Recipe with ID ${id} not found`);
+    }
+
+    if (recipeCheck.visibility !== 'PUBLIC' && recipeCheck.user_id !== requesterUserId) {
+        throw new ApplicationError('FORBIDDEN', 'You do not have permission to access this recipe');
+    }
+
+    // The detail view is read with service role so rating aggregates include all votes.
+    const { data, error } = await serviceClient
         .from('recipe_details')
         .select(RECIPE_DETAIL_SELECT_COLUMNS)
         .eq('id', targetId)
@@ -1038,7 +1062,7 @@ export async function getRecipeById(
             getRecipeFlagsMap(client, [targetId], requesterUserId),
             getMyRatingsMap(client, [targetId], requesterUserId),
             getMyRecipeNote(client, targetId, requesterUserId),
-            fetchAuthorProfile(client, data.user_id!),
+            fetchAuthorProfile(serviceClient, data.user_id!),
         ]);
         const inMyPlan = recipeIdsInPlan.has(targetId);
         return mapToRecipeDetailDto(
@@ -2094,18 +2118,21 @@ export async function uploadRecipeImage(
     });
 
     // Step 4: Update recipes.image_path in database
-    const { error: updateError } = await client
+    const { data: updatedRecipe, error: updateError } = await createServiceRoleClient()
         .from('recipes')
         .update({ image_path: storagePath })
         .eq('id', recipeId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .select('id')
+        .maybeSingle();
 
-    if (updateError) {
+    if (updateError || !updatedRecipe) {
         logger.error('Database update error after upload, performing rollback', {
             recipeId,
             storagePath,
-            errorCode: updateError.code,
-            errorMessage: updateError.message,
+            errorCode: updateError?.code,
+            errorMessage: updateError?.message,
         });
 
         // Rollback: Remove the newly uploaded file
@@ -2251,18 +2278,20 @@ export async function deleteRecipeImage(
     });
 
     // Step 3: Update recipes.image_path to NULL in database
-    const { error: updateError } = await client
+    const { data: updatedRecipe, error: updateError } = await createServiceRoleClient()
         .from('recipes')
         .update({ image_path: null })
         .eq('id', recipeId)
         .eq('user_id', userId)
-        .is('deleted_at', null);
+        .is('deleted_at', null)
+        .select('id')
+        .maybeSingle();
 
-    if (updateError) {
+    if (updateError || !updatedRecipe) {
         logger.error('Database error while updating recipe to remove image', {
             recipeId,
-            errorCode: updateError.code,
-            errorMessage: updateError.message,
+            errorCode: updateError?.code,
+            errorMessage: updateError?.message,
         });
         throw new ApplicationError(
             'INTERNAL_ERROR',

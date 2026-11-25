@@ -690,6 +690,7 @@ wdrożone i czym różni się od koncepcji; aktualizuj ją po każdej historyjce
 | 4. Grupowanie list i wyszukiwania | PS-111 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-111/PS-111-recipe-list-search-grouping-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-111-recipe-list-search-grouping-*-implementation-plan.md`; weryfikacja: `…/PS-111-recipe-list-search-grouping-verification.md`; migracja: `20261121180000_ps111_grouped_recipes_list.sql` |
 | 5. Działania użytkownika na wariancie i integracje | PS-112 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-112/PS-112-recipe-variant-user-actions-integrations-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-112-recipe-variant-user-actions-integrations-*-implementation-plan.md`; weryfikacja: `…/PS-112-recipe-variant-user-actions-integrations-verification.md`; migracja: `20261123210000_ps112_recipe_variant_actions_integrations.sql` |
 | Doprecyzowanie karty i stanu na szczegółach | PS-115 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-115/PS-115-recipe-card-variant-names-row-user-story.md`; plany: `docs/results/impl-plans/endpoints/` i `…/views/PS-115-recipe-card-variant-names-row-*-implementation-plan.md`; weryfikacja: `…/PS-115-recipe-card-variant-names-row-verification.md`; migracja: `20261124170000_ps115_full_variant_names.sql` |
+| 6. RLS przepisów i widok szczegółów | PS-116 | zaimplementowana, niezweryfikowana | historyjka: `docs/results/new-features/user-stories/PS-116/PS-116-recipe-rls-variant-group-policies-user-story.md`; plan API: `docs/results/impl-plans/endpoints/PS-116-recipe-rls-variant-group-policies-api-implementation-plan.md`; widoki pominięte; weryfikacja: `…/PS-116-recipe-rls-variant-group-policies-verification.md`; migracja: `20261125200000_ps116_recipe_rls_variant_group_policies.sql` |
 
 Migracje PS-108: `20261120200000_create_recipe_families.sql` i
 `20261120200100_fix_recipe_family_default_triggers.sql` (zastosowane lokalnie,
@@ -710,6 +711,10 @@ niewdrożone zdalnie).
    **Warunek przed włączeniem flagi wariantów:** osobna historyjka włączająca
    RLS na `recipes`, dostosowująca polityki do grup i ustawiająca
    `security_invoker` na `recipe_details`.
+   **Domknięcie w repozytorium (PS-116):** migracja `20261125200000` włącza RLS
+   (jedna polityka odczytu dla `authenticated`: nieusunięty własny albo `PUBLIC`)
+   i `security_invoker` na `recipe_details`. Zapisu z konta nie ma. Nie jest
+   wdrożona zdalnie; smoke z kontami pozostaje otwarty.
 3. **`SHARED` bez dostępu po linku.** Sekcja 5 opisuje `SHARED` jako dostępny po
    linku z listą wariantów. Dziś widzi go wyłącznie właściciel (endpointy
    `public` i `explore` filtrują `PUBLIC` lub własne). PS-108 przechowuje
@@ -838,6 +843,19 @@ niewdrożone zdalnie).
   Migracja `20261124170000`. Typów bazy nie regenerowano (`gen types` gubi `| null`).
 - Na szczegółach z `span.variant-state` znikają „w planie” i „ocena N”. Zostają:
   ulubiony, chcę wypróbować, w kolekcji, notatka. Widget oceny i przycisk planu zostają.
+
+### Zmiany wprowadzone w PS-116 (stan względem odchylenia 2)
+
+- RLS na `recipes` jest włączone migracją w repozytorium. Zalogowany czyta własne
+  nieusunięte przepisy (prywatne, udostępnione i publiczne) oraz cudze nieusunięte
+  publiczne. Gość nie czyta tabeli ani widoku. Zapis zostaje przy roli serwisowej.
+- `recipe_details` ma `security_invoker`. Ekran szczegółów i zapis `image_path`
+  idą rolą serwisową, więc średnia ocen na ekranie obejmuje wszystkie głosy.
+  Bezpośredni odczyt kontem liczy tylko własny głos.
+- Tryb `all` flagi `recipe_variants` nadal nie powinien być włączany przed
+  domknięciem pkt 3 (`SHARED` po linku) i przed zastosowaniem migracji PS-116
+  na środowisku, na którym flaga miałaby działać. RLS profili, tagów i kolekcji
+  bez zmian.
 
 ### Dług techniczny niezwiązany z wariantami, wykryty przy PS-108
 
