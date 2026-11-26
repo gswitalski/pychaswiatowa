@@ -80,6 +80,26 @@ describe('RecipeVariantsSectionComponent', () => {
         expect(fixture.nativeElement.querySelector('.variants-section')).toBeTruthy();
     });
 
+    it('ukrywa listę przy jednym wariancie i pokazuje wiersze przy dwóch', () => {
+        meApi.getMe.mockReturnValue(of({
+            features: { recipe_variants: { enabled: true, mode: 'admin' } },
+        }));
+        recipes.getRecipeVariants.mockReturnValue(of([variant(1, 'Klasyczny')]));
+        fixture = TestBed.createComponent(RecipeVariantsSectionComponent);
+        fixture.componentRef.setInput('recipeId', 7);
+        fixture.componentRef.setInput('editingRecipeId', 1);
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector('.variant-list')).toBeNull();
+        expect(fixture.nativeElement.querySelector('.variant-row')).toBeNull();
+        expect(fixture.nativeElement.querySelector('.variants-section')).toBeTruthy();
+
+        fixture.componentInstance.variants.set([variant(1, 'Klasyczny'), variant(2, 'Ostry')]);
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelectorAll('.variant-row').length).toBe(2);
+    });
+
     it('ignoruje spóźnioną odpowiedź poprzedniego żądania', () => {
         const first = new Subject<RecipeVariantSummaryDto[]>();
         const second = new Subject<RecipeVariantSummaryDto[]>();

@@ -26,47 +26,49 @@
                     </button>
                 </div>
                 <p class="scope-note">Nazwę przepisu i widoczność ustaw w formularzu powyżej — dotyczą wszystkich wariantów.</p>
-                <div class="variant-list">
-                    @for (variant of variants(); track variant.recipe_id; let i = $index) {
-                        <article class="variant-row" [class.is-editing]="isEditingVariant(variant)">
-                            @if (variantImageUrl(variant.image_path); as imageUrl) {
-                                <img [src]="imageUrl" [alt]="'Miniatura wariantu ' + variant.variant_name" />
-                            } @else {
-                                <div class="thumbnail-placeholder" aria-hidden="true"><mat-icon>restaurant</mat-icon></div>
-                            }
-                            <div class="variant-info">
-                                <h3>{{ displayVariantName(variant) }}</h3>
-                                @if (variant.is_default) { <span class="default-badge">Domyślny</span> }
-                                <div class="chips">
-                                    @if (variant.chips.diet_type) { <span>{{ variant.chips.diet_type }}</span> }
-                                    @if (variant.chips.difficulty) { <span>{{ variant.chips.difficulty }}</span> }
-                                    @if (variant.chips.servings) { <span>{{ variant.chips.servings }} porcji</span> }
-                                    @if (variant.chips.is_termorobot) { <span>Termorobot</span> }
-                                    @if (variant.chips.is_grill) { <span>Grill</span> }
+                @if (variants().length >= 2) {
+                    <div class="variant-list">
+                        @for (variant of variants(); track variant.recipe_id; let i = $index) {
+                            <article class="variant-row" [class.is-editing]="isEditingVariant(variant)">
+                                @if (variantImageUrl(variant.image_path); as imageUrl) {
+                                    <img [src]="imageUrl" [alt]="'Miniatura wariantu ' + variant.variant_name" />
+                                } @else {
+                                    <div class="thumbnail-placeholder" aria-hidden="true"><mat-icon>restaurant</mat-icon></div>
+                                }
+                                <div class="variant-info">
+                                    <h3>{{ displayVariantName(variant) }}</h3>
+                                    @if (variant.is_default) { <span class="default-badge">Domyślny</span> }
+                                    <div class="chips">
+                                        @if (variant.chips.diet_type) { <span>{{ variant.chips.diet_type }}</span> }
+                                        @if (variant.chips.difficulty) { <span>{{ variant.chips.difficulty }}</span> }
+                                        @if (variant.chips.servings) { <span>{{ variant.chips.servings }} porcji</span> }
+                                        @if (variant.chips.is_termorobot) { <span>Termorobot</span> }
+                                        @if (variant.chips.is_grill) { <span>Grill</span> }
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="actions">
-                                <button mat-icon-button type="button" (click)="editVariant(variant)" [disabled]="busy()" [attr.aria-label]="'Edytuj wariant ' + variant.variant_name">
-                                    <mat-icon>edit</mat-icon>
-                                </button>
-                                <button mat-icon-button type="button" (click)="setDefault(variant)" [disabled]="busy() || variant.is_default" [attr.aria-label]="'Ustaw jako domyślny: ' + variant.variant_name">
-                                    <mat-icon>star</mat-icon>
-                                </button>
-                                <button mat-icon-button type="button" (click)="move(variant, -1)" [disabled]="busy() || i === 0" [attr.aria-label]="'Przenieś wariant ' + variant.variant_name + ' w górę'">
-                                    <mat-icon>arrow_upward</mat-icon>
-                                </button>
-                                <button mat-icon-button type="button" (click)="move(variant, 1)" [disabled]="busy() || i === variants().length - 1" [attr.aria-label]="'Przenieś wariant ' + variant.variant_name + ' w dół'">
-                                    <mat-icon>arrow_downward</mat-icon>
-                                </button>
-                                <button mat-icon-button type="button" (click)="removeVariant(variant)" [disabled]="busy() || variants().length < 2" [attr.aria-label]="'Usuń wariant ' + variant.variant_name">
-                                    <mat-icon>delete</mat-icon>
-                                </button>
-                            </div>
-                        </article>
-                    } @empty {
-                        <p>Brak wariantów.</p>
-                    }
-                </div>
+                                <div class="actions">
+                                    <button mat-icon-button type="button" (click)="editVariant(variant)" [disabled]="busy()" [attr.aria-label]="'Edytuj wariant ' + variant.variant_name">
+                                        <mat-icon>edit</mat-icon>
+                                    </button>
+                                    <button mat-icon-button type="button" (click)="setDefault(variant)" [disabled]="busy() || variant.is_default" [attr.aria-label]="'Ustaw jako domyślny: ' + variant.variant_name">
+                                        <mat-icon>star</mat-icon>
+                                    </button>
+                                    <button mat-icon-button type="button" (click)="move(variant, -1)" [disabled]="busy() || i === 0" [attr.aria-label]="'Przenieś wariant ' + variant.variant_name + ' w górę'">
+                                        <mat-icon>arrow_upward</mat-icon>
+                                    </button>
+                                    <button mat-icon-button type="button" (click)="move(variant, 1)" [disabled]="busy() || i === variants().length - 1" [attr.aria-label]="'Przenieś wariant ' + variant.variant_name + ' w dół'">
+                                        <mat-icon>arrow_downward</mat-icon>
+                                    </button>
+                                    <button mat-icon-button type="button" (click)="removeVariant(variant)" [disabled]="busy() || variants().length < 2" [attr.aria-label]="'Usuń wariant ' + variant.variant_name">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </div>
+                            </article>
+                        } @empty {
+                            <p>Brak wariantów.</p>
+                        }
+                    </div>
+                }
             }
         </mat-card-content>
     </mat-card>
