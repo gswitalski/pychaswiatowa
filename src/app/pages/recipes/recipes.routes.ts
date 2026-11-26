@@ -67,6 +67,14 @@ export const recipesRoutes: Routes = [
         data: { context: 'private', urlPrefix: 'recipes' },
     },
     {
+        path: ':id/edit/assist',
+        loadComponent: () =>
+            import('./recipe-variant-ai-assist/recipe-variant-ai-assist-page.component').then(
+                (m) => m.RecipeVariantAiAssistPageComponent,
+            ),
+        data: { breadcrumb: 'Dodaj wariant przepisu (AI)' },
+    },
+    {
         path: ':id/edit',
         loadComponent: () =>
             import('./recipe-form/recipe-form-page.component').then(

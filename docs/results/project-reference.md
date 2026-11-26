@@ -7,64 +7,15 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Tabele (public) — kolumny
 
-- `ai_rate_limits`: count, created_at, key, updated_at, user_id, window_start
-- `categories`: created_at, id, name
-- `collections`: created_at, description, id, name, updated_at, user_id
-- `feature_flags`: name, mode, updated_at
-- `normalized_ingredients_jobs`: attempts, created_at, id, last_error, next_run_at, recipe_id, status, updated_at, user_id
-- `plan_recipes`: added_at, recipe_id, user_id
-- `profiles`: created_at, id, marketing_consent, marketing_consent_text_version, marketing_consent_updated_at, updated_at, username
-- `recipe_collections`: collection_id, recipe_id
-- `recipe_families`: created_at, deleted_at, id, name, updated_at, user_id, visibility
-- `recipe_normalized_ingredients`: items, recipe_id, updated_at
-- `recipe_ratings`: created_at, rating, recipe_id, updated_at, user_id
-- `recipe_tags`: recipe_id, tag_id
-- `recipes`: category_id, created_at, cuisine, deleted_at, description, diet_type, difficulty, id, image_path, ingredients, is_default, is_grill, is_termorobot, name, normalized_ingredients_status, normalized_ingredients_updated_at, prep_time_minutes, recipe_family_id, search_vector, servings, sort_order, steps, tips, total_time_minutes, updated_at, user_id, variant_name, visibility
-- `shopping_list_items`: amount, created_at, id, is_owned, kind, name, recipe_id, recipe_name, variant_name, active_variant_count, text, unit, updated_at, user_id
-- `shopping_list_recipe_contributions`: amount, created_at, id, name, recipe_id, unit, user_id
-- `tags`: created_at, id, name, user_id
-- `user_ai_credits`: created_at, credits_activated_at, draft_credits_total, draft_credits_used, id, image_credits_total, image_credits_used, limit_type, next_reset_at, updated_at, user_id
-- `user_recipe_flags`: created_at, is_favorite, is_want_to_try, recipe_id, updated_at, user_id
-- `user_recipe_notes`: created_at, note, recipe_id, updated_at, user_id
 
 ## Widoki (public)
 
-- `recipe_details`: category_id, category_name, active_variant_count, average_rating, collection_ids, collections, created_at, cuisine, deleted_at, description, diet_type, difficulty, id, image_path, ingredients, is_grill, is_termorobot, name, normalized_ingredients_status, normalized_ingredients_updated_at, prep_time_minutes, ratings_count, search_vector, servings, steps, tag_ids, tags, tips, total_time_minutes, updated_at, user_id, variant_name, visibility
 
 ## Funkcje RPC (public) — argumenty
 
-- `add_recipe_to_plan_and_update_shopping_list()`
-- `admin_get_recipes_page(p_author, p_category_ids, p_created_from, p_created_to, p_include_uncategorized, p_is_grill, p_is_termorobot, p_name, p_page_number, p_page_size, p_rating_max, p_rating_min, p_ratings_count_max, p_ratings_count_min, p_recipe_id, p_sort_by, p_sort_dir)`
-- `admin_get_users_page(p_page_number, p_page_size, p_sort_by, p_sort_dir)`
-- `admin_update_user_role(p_actor_user_id, p_new_role, p_target_user_id)`
-- `ai_rate_limit_hit(p_key, p_limit, p_now, p_window_seconds)`
-- `claim_normalized_ingredients_jobs()`
-- `create_recipe_variant(p_is_admin, p_recipe_id, p_source_recipe_id, p_user_id, p_variant_name)`
-- `delete_recipe_family()`
-- `delete_recipe_variant()`
-- `enqueue_normalized_ingredients_refresh()`
-- `get_recipes_list(p_category_id, p_cuisine, p_diet_type, p_difficulty, p_grill, p_group_variants, p_limit, p_page, p_search, p_sort_direction, p_sort_field, p_tag_ids, p_termorobot, p_user_id, p_view)`
-- `recipe_variant_usage()`
-- `recipe_variants_allowed()`
-- `recipe_variants_list()`
-- `remove_recipe_from_plan_and_update_shopping_list()`
-- `rename_recipe_variant(p_is_admin, p_recipe_id, p_user_id, p_variant_name)`
-- `reorder_recipe_variants(p_is_admin, p_recipe_id, p_recipe_ids, p_user_id)`
-- `resolve_signup_marketing_consent()`
-- `set_default_recipe_variant()`
-- `set_recipe_flags(p_is_favorite, p_is_want_to_try, p_recipe_id)`
-- `set_recipe_note(p_note, p_recipe_id)`
-- `set_recipe_rating(p_rating, p_recipe_id)`
-- `supported_marketing_consent_text_versions()`
-- `update_recipe_family(p_is_admin, p_name, p_recipe_id, p_user_id, p_visibility)`
 
 ## Enumy
 
-- `ai_credit_limit_type`: lifetime, monthly
-- `recipe_cuisine`: POLISH, ASIAN, MEXICAN, MIDDLE_EASTERN, AFRICAN, AMERICAN, BALKAN, BRAZILIAN, BRITISH, CARIBBEAN, CHINESE, FRENCH, GERMAN, GREEK, INDIAN, ITALIAN, JAPANESE, KOREAN, MEDITERRANEAN, RUSSIAN, SCANDINAVIAN, SPANISH, THAI, TURKISH, VIETNAMESE
-- `recipe_diet_type`: MEAT, VEGETARIAN, VEGAN
-- `recipe_difficulty`: EASY, MEDIUM, HARD
-- `recipe_visibility`: PRIVATE, SHARED, PUBLIC
 
 ## Edge Functions
 
@@ -135,7 +86,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 ### recipes
 - pliki: index.ts, recipes.handlers.ts, recipes.service.ts, recipes.variants.ts
 - metody: DELETE, GET, POST, PUT
-- wzorce ścieżek: `/(\.[a-z0-9]+)$/i` · `/\/recipes\/([^/]+)$/` · `/\/recipes\/([^/]+)\/collections\/?$/` · `/\/recipes\/([^/]+)\/default\/?$/` · `/\/recipes\/([^/]+)\/family\/?$/` · `/\/recipes\/([^/]+)\/flags\/?$/` · `/\/recipes\/([^/]+)\/image\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/refresh\/?$/` · `/\/recipes\/([^/]+)\/note\/?$/` · `/\/recipes\/([^/]+)\/order\/?$/` · `/\/recipes\/([^/]+)\/rating\/?$/` · `/\/recipes\/([^/]+)\/usage\/?$/` · `/\/recipes\/([^/]+)\/variant-name\/?$/` · `/\/recipes\/([^/]+)\/variants\/([^/]+)\/?$/` · `/\/recipes\/([^/]+)\/variants\/?$/` · `/\/recipes\/feed\/?$/`
+- wzorce ścieżek: `/(\.[a-z0-9]+)$/i` · `/\/recipes\/([^/]+)$/` · `/\/recipes\/([^/]+)\/collections\/?$/` · `/\/recipes\/([^/]+)\/default\/?$/` · `/\/recipes\/([^/]+)\/family\/?$/` · `/\/recipes\/([^/]+)\/flags\/?$/` · `/\/recipes\/([^/]+)\/image\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/?$/` · `/\/recipes\/([^/]+)\/normalized-ingredients\/refresh\/?$/` · `/\/recipes\/([^/]+)\/note\/?$/` · `/\/recipes\/([^/]+)\/order\/?$/` · `/\/recipes\/([^/]+)\/rating\/?$/` · `/\/recipes\/([^/]+)\/usage\/?$/` · `/\/recipes\/([^/]+)\/variant-name\/?$/` · `/\/recipes\/([^/]+)\/variants\/([^/]+)\/?$/` · `/\/recipes\/([^/]+)\/variants\/?$/` · `/\/recipes\/([^/]+)\/variants\/ai\/?$/` · `/\/recipes\/feed\/?$/`
 
 ### search
 - pliki: index.ts, search.handlers.ts, search.service.ts, search.types.ts
@@ -161,7 +112,7 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 - `src/app/app.routes.ts`: (root), explore, pricing, checkout/success, checkout/cancel, checkout, legal/subscription, legal/terms, legal/privacy, legal/publisher, dashboard, my-recipies, my-recipes, recipes, collections, shopping, admin, settings, register, register/verify-sent, login, auth/callback, auth/complete-profile, email-confirmed, email-confirmation-invalid, forbidden, admin/dashboard, admin/users, admin/recipes, recipes/:id
 - `src/app/pages/admin/admin.routes.ts`: (root), dashboard, users, recipes
 - `src/app/pages/collections/collections.routes.ts`: (root), :id
-- `src/app/pages/recipes/recipes.routes.ts`: (root), new, start, assist, import, :id/edit
+- `src/app/pages/recipes/recipes.routes.ts`: (root), new, start, assist, import, :id/edit/assist, :id/edit
 
 ## Guardy (`src/app/core/guards`)
 
@@ -177,11 +128,11 @@ z kodu heurystycznie (orientacyjnie): szczegóły sprawdź w `*.handlers.ts`.
 
 ## Strony (`src/app/pages`): admin, auth, checkout, collections, dashboard, explore, forbidden, landing, legal, login, pricing, recipes, register, settings, shopping
 
-## Migracje: 105 plików, ostatnie 5
+## Migracje: 106 plików, ostatnie 5
 
-- `20261121170000_fix_recipe_family_sync_deleted_at.sql`
 - `20261121180000_ps111_grouped_recipes_list.sql`
 - `20261123210000_ps112_recipe_variant_actions_integrations.sql`
 - `20261124170000_ps115_full_variant_names.sql`
 - `20261125200000_ps116_recipe_rls_variant_group_policies.sql`
+- `20261126230000_ps118_ai_recipe_variant.sql`
 

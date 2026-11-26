@@ -42,6 +42,7 @@ summary bez ponownej weryfikacji);
 | PS-112 | Działania użytkownika na wariancie i integracje (znaczniki stanu w przełączniku, `Nazwa · wariant` w planie/zakupach, limit Free tylko dla dostępnych wpisów, czyszczenie przy usuwaniu wariantu/grupy, panel admina: kolumna „Wariant” i `variants_count`; RPC `admin_get_*_page_v2`) | zaimplementowane, niezweryfikowane | smoke z kontami, GWT na realnej bazie (wiele kont, wyścig limitu, czyszczenie), niewielkie pokrycie testami nowych scenariuszy (Deno +1, Vitest +2), migawka `active_variant_count` w `shopping_list_items`, `deno lint` (istniejące ostrzeżenia), test w przeglądarce (UX/mobile/dostępność) |
 | PS-115 | Nazwy wariantów w jednym wierszu karty (bez licznika) i krótszy stan na szczegółach (bez „w planie” i „ocena N”) | zaimplementowane, niezweryfikowane | smoke z kontami, `deno lint` (istniejące problemy poza tą zmianą) |
 | PS-116 | RLS przepisów: odczyt własnych i publicznych dla zalogowanych, zapis tylko rolą serwisową, `security_invoker` na `recipe_details` | zaimplementowane, niezweryfikowane | smoke z kontami, `deno lint` (istniejące problemy repozytorium) |
+| PS-118 | Wariant przepisu utworzony przez AI („Dodaj z AI”, ekran „Dodaj wariant przepisu (AI)”, zapis `POST /recipes/{id}/variants/ai`) | zaimplementowane, niezweryfikowane | smoke z kontami, współbieżny zapis, test w przeglądarce |
 
 Znane ryzyko PS-204: funkcje `security definer` admina mają teraz `execute` tylko dla
 `service_role`; inne funkcje admin/RPC z niepełnym `revoke` nie zostały zinwentaryzowane

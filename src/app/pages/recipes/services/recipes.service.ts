@@ -19,6 +19,8 @@ import {
     UpdateRecipeFamilyCommand,
     ReorderRecipeVariantsCommand,
     RecipeUsageDto,
+    CreateAiRecipeVariantCommand,
+    CreateAiRecipeVariantResponseDto,
 } from '../../../../../shared/contracts/types';
 
 /**
@@ -303,6 +305,17 @@ export class RecipesService {
         command: CreateRecipeVariantCommand,
     ): Observable<{ recipe_id: number; image_warning?: string | null }> {
         return this.invokeVariantCommand(`recipes/${recipeId}/variants`, 'POST', command);
+    }
+
+    createAiRecipeVariant(
+        recipeId: number,
+        command: CreateAiRecipeVariantCommand,
+    ): Observable<CreateAiRecipeVariantResponseDto> {
+        return this.invokeVariantCommand(
+            `recipes/${recipeId}/variants/ai`,
+            'POST',
+            command,
+        );
     }
 
     updateRecipeFamily(

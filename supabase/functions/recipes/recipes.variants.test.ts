@@ -5,6 +5,7 @@ import { assertRejects } from 'https://deno.land/std@0.224.0/assert/assert_rejec
 import { ApplicationError } from '../_shared/errors.ts';
 import {
     createRecipeVariant,
+    createAiRecipeVariant,
     listRecipeVariants,
     reorderRecipeVariants,
 } from './recipes.variants.ts';
@@ -94,4 +95,34 @@ Deno.test('warianty: błąd Storage nie wycofuje utworzonego wariantu', async ()
     const result = await createRecipeVariant(client, 7, USER_ID, 'Nowa', 7, false);
     assertEquals(result.recipe_id, 8);
     assertEquals(result.image_warning !== null, true);
+});
+
+Deno.test('PS-118: zapis AI przekazuje dane formularza do RPC', async () => {
+    const { client, calls } = mockClient({
+        data: { recipe_id: 12 },
+        error: null,
+    });
+    const recipeId = await createAiRecipeVariant(client, 7, USER_ID, {
+        variantName: 'AI',
+        familyName: 'Rodzina',
+        visibility: 'PRIVATE',
+        description: null,
+        ingredientsRaw: 'mąka',
+        stepsRaw: 'mieszaj',
+        tags: ['szybkie'],
+        tipsRaw: null,
+        categoryId: null,
+        servings: null,
+        prepTimeMinutes: null,
+        totalTimeMinutes: null,
+        dietType: null,
+        cuisine: null,
+        difficulty: null,
+        isTermorobot: false,
+        isGrill: false,
+    }, false);
+    assertEquals(recipeId, 12);
+    assertEquals(calls[0].name, 'create_recipe_variant_from_ai');
+    assertEquals((calls[0].args as Record<string, unknown>).p_user_id, USER_ID);
+    assertEquals((calls[0].args as Record<string, unknown>).p_tag_names, ['szybkie']);
 });

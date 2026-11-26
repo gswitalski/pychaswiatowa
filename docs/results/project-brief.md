@@ -32,7 +32,9 @@ Używaj `rg -n "<fraza>"` i `Read` z `offset`/`limit`. Przy sprzeczności prawd�
   JSONB: składniki/kroki/wskazówki; od PS-108 każdy przepis należy do grupy
   `recipe_families` z wariantem `Podstawowa`, a `recipes.name`/`visibility` to
   kopie grupy; od PS-109 operacje wariantów przez `recipes` na kliencie
-  `service_role`, flaga `feature_flags` `disabled`/`admin`/`all` w `/me`),
+  `service_role`, flaga `feature_flags` `disabled`/`admin`/`all` w `/me`;
+  od PS-118 zapis szkicu AI jako wariantu to `POST /recipes/{id}/variants/ai`
+  i trasa `/recipes/:id/edit/assist`),
   `tags`, `collections`,
   `recipe_collections`, `recipe_tags`, `user_ai_credits`, `user_recipe_flags`,
   `user_recipe_notes`, `recipe_ratings`, plan i lista zakupów, joby

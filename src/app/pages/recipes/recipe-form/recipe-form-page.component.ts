@@ -61,7 +61,10 @@ import { AiCreditsExhaustedApiError } from '../../../core/models/ai-credits.mode
 import { RecipesService } from '../services/recipes.service';
 import { MeApiService } from '../../../core/services/me-api.service';
 import { of, switchMap } from 'rxjs';
-import { RecipeDraftStateService } from '../services/recipe-draft-state.service';
+import {
+    RecipeDraftStateService,
+    RecipeVariantDraftContext,
+} from '../services/recipe-draft-state.service';
 import { SlugService } from '../../../shared/services/slug.service';
 import { ImageCompressionService } from '../../../shared/services/image-compression.service';
 import {
@@ -201,9 +204,13 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly savedVariantName = signal<string>('');
     /** Wartość pola „Wariant” — live sync z listą wariantów na dole. */
     readonly liveVariantName = signal<string>('');
+    private readonly variantDraftContext = signal<RecipeVariantDraftContext | null>(null);
+    private readonly loadedVariants = signal<RecipeVariantSummaryDto[]>([]);
+    readonly isVariantReview = computed(() => this.variantDraftContext() !== null);
 
     readonly showVariantNameField = computed(
-        () => this.recipeVariantsEnabled() && this.activeVariantCount() >= 2,
+        () => this.recipeVariantsEnabled() &&
+            (this.isEditMode() || this.isVariantReview()),
     );
 
     readonly multiVariantVisibilityHint = computed(() => this.recipeVariantsEnabled());
@@ -221,7 +228,13 @@ export class RecipeFormPageComponent implements OnInit {
     private readonly pendingImageFile = signal<File | null>(null);
 
     /** Page title computed based on mode */
-    readonly pageTitle = computed(() => (this.isEditMode() ? 'Edytuj przepis' : 'Nowy przepis'));
+    readonly pageTitle = computed(() =>
+        this.isVariantReview()
+            ? 'Przegląd wariantu przepisu'
+            : this.isEditMode()
+              ? 'Edytuj przepis'
+              : 'Nowy przepis',
+    );
 
     /** Signal: track form validity manually */
     private readonly formValid = signal<boolean>(false);
@@ -452,6 +465,69 @@ export class RecipeFormPageComponent implements OnInit {
         this.openUnsavedVariantSwitchDialog(targetId);
     }
 
+    onAiVariantRequest(): void {
+        const id = this.recipeId();
+        if (id == null || this.isVariantReview()) {
+            return;
+        }
+        if (this.form.dirty) {
+            this.openUnsavedAiVariantDialog();
+            return;
+        }
+        void this.router.navigate(['/recipes', id, 'edit', 'assist']);
+    }
+
+    private openUnsavedAiVariantDialog(): void {
+        const data: ConfirmDialogData = {
+            title: 'Niezapisane zmiany',
+            message:
+                'Masz niezapisane zmiany w tym wariancie. Co chcesz zrobić przed dodaniem wariantu przez AI?',
+            confirmText: 'Zapisz zmiany',
+            secondaryConfirmText: 'Odrzuć',
+            cancelText: 'Anuluj',
+            secondaryConfirmColor: 'warn',
+        };
+        this.dialog
+            .open<ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult>(ConfirmDialogComponent, {
+                width: '420px',
+                disableClose: true,
+                data,
+            })
+            .afterClosed()
+            .subscribe((result) => {
+                if (result === 'secondary') {
+                    this.navigateToAiVariantAssist();
+                    return;
+                }
+                if (result === true) {
+                    this.saveAndNavigateToAiVariant();
+                }
+            });
+    }
+
+    private saveAndNavigateToAiVariant(): void {
+        if (this.form.invalid) {
+            this.form.markAllAsTouched();
+            return;
+        }
+        if (this.imageUploading() || this.recipeId() == null) {
+            return;
+        }
+        this.saving.set(true);
+        this.error.set(null);
+        this.updateRecipe(this.recipeId()!, this.mapFormToCommand(this.form.getRawValue()), () => {
+            this.navigateToAiVariantAssist();
+        });
+    }
+
+    private navigateToAiVariantAssist(): void {
+        const id = this.recipeId();
+        if (id == null) {
+            return;
+        }
+        void this.router.navigate(['/recipes', id, 'edit', 'assist']);
+    }
+
     private openUnsavedVariantSwitchDialog(targetRecipeId: number): void {
         const data: ConfirmDialogData = {
             title: 'Niezapisane zmiany',
@@ -514,7 +590,18 @@ export class RecipeFormPageComponent implements OnInit {
             return;
         }
 
+        this.variantDraftContext.set(
+            draftData.variantContext
+                ? {
+                      ...draftData.variantContext,
+                      familyName:
+                          this.variantDraftContext()?.familyName ?? draftData.variantContext.familyName,
+                      visibility: this.variantDraftContext()?.visibility ?? draftData.variantContext.visibility,
+                  }
+                : null,
+        );
         this.populateFormFromDraft(draftData.draft);
+        this.applyVariantNameFieldState();
         this.setDraftImageWarnings(draftData.meta);
         this.isPrefilledFromDraft.set(true);
     }
@@ -542,7 +629,8 @@ export class RecipeFormPageComponent implements OnInit {
     private populateFormFromDraft(draft: AiRecipeDraftDto): void {
         // Set basic fields
         this.form.patchValue({
-            name: draft.name || '',
+            name: this.isVariantReview() ? this.form.controls.name.value : draft.name || '',
+            variantName: this.isVariantReview() ? draft.name || '' : this.form.controls.variantName.value,
             description: draft.description || '',
             servings: draft.servings ?? null,
             prepTimeMinutes: draft.prep_time_minutes ?? null,
@@ -649,6 +737,14 @@ export class RecipeFormPageComponent implements OnInit {
         this.recipesService.getRecipeById(id).subscribe({
             next: (recipe) => {
                 this.populateForm(recipe);
+                if (this.draftStateService.hasDraft()) {
+                    this.checkAndApplyDraft();
+                    this.variantDraftContext.update((context) =>
+                        context
+                            ? { ...context, familyName: recipe.name, visibility: recipe.visibility }
+                            : context,
+                    );
+                }
                 this.loading.set(false);
             },
             error: (err) => {
@@ -664,8 +760,10 @@ export class RecipeFormPageComponent implements OnInit {
     }
 
     onVariantsLoaded(variants: RecipeVariantSummaryDto[]): void {
+        this.loadedVariants.set(variants);
         this.onVariantsCountChange(variants.length);
         this.syncVariantNameFromList(variants);
+        this.form.controls.variantName.updateValueAndValidity({ emitEvent: false });
     }
 
     private syncVariantNameFromList(variants: RecipeVariantSummaryDto[]): void {
@@ -690,7 +788,11 @@ export class RecipeFormPageComponent implements OnInit {
     private applyVariantNameFieldState(): void {
         const control = this.form.controls.variantName;
         if (this.showVariantNameField()) {
-            control.setValidators([Validators.required, Validators.maxLength(150)]);
+            control.setValidators([
+                Validators.required,
+                Validators.maxLength(150),
+                this.variantNameConflictValidator(),
+            ]);
             if (!control.value.trim() && this.savedVariantName()) {
                 control.setValue(this.savedVariantName(), { emitEvent: false });
             }
@@ -815,7 +917,9 @@ export class RecipeFormPageComponent implements OnInit {
         const formValue = this.form.getRawValue();
         const command = this.mapFormToCommand(formValue);
 
-        if (this.isEditMode() && this.recipeId()) {
+        if (this.isVariantReview() && this.recipeId()) {
+            this.createAiVariant(this.recipeId()!, formValue);
+        } else if (this.isEditMode() && this.recipeId()) {
             this.updateRecipe(this.recipeId()!, command);
         } else {
             this.createRecipe(command);
@@ -863,6 +967,56 @@ export class RecipeFormPageComponent implements OnInit {
             cuisine: formValue.cuisine ?? null,
             difficulty: formValue.difficulty ?? null,
         };
+    }
+
+    private createAiVariant(
+        sourceId: number,
+        formValue: ReturnType<FormGroup<RecipeFormViewModel>['getRawValue']>,
+    ): void {
+        const context = this.variantDraftContext();
+        if (!context || !formValue.variantName.trim()) {
+            this.form.controls.variantName.markAsTouched();
+            this.saving.set(false);
+            return;
+        }
+        const command = this.mapFormToCommand(formValue);
+        this.recipesService.createAiRecipeVariant(sourceId, {
+            variant_name: formValue.variantName.trim(),
+            family_name: formValue.name.trim(),
+            visibility: formValue.visibility,
+            description: command.description ?? null,
+            ingredients_raw: command.ingredients_raw,
+            steps_raw: command.steps_raw,
+            tips_raw: command.tips_raw,
+            tags: command.tags,
+            category_id: command.category_id,
+            servings: command.servings ?? null,
+            prep_time_minutes: command.prep_time_minutes ?? null,
+            total_time_minutes: command.total_time_minutes ?? null,
+            diet_type: command.diet_type ?? null,
+            cuisine: command.cuisine ?? null,
+            difficulty: command.difficulty ?? null,
+            is_termorobot: command.is_termorobot ?? false,
+            is_grill: command.is_grill ?? false,
+        }).subscribe({
+            next: (result) => {
+                this.saving.set(false);
+                this.draftStateService.clearDraft();
+                const responseRecipe = result.recipe as (RecipeDetailDto & {
+                    slug?: string;
+                    id?: number;
+                }) | undefined;
+                this.navigateToRecipe(
+                    responseRecipe?.id ?? result.recipe_id,
+                    responseRecipe?.slug ?? context.familyName ?? formValue.name,
+                    responseRecipe?.slug,
+                );
+            },
+            error: (err) => {
+                this.error.set(err.message || 'Nie udało się utworzyć wariantu');
+                this.saving.set(false);
+            },
+        });
     }
 
     /**
@@ -1283,6 +1437,15 @@ export class RecipeFormPageComponent implements OnInit {
     }
 
     onCancel(): void {
+        if (this.isVariantReview()) {
+            if (!this.form.dirty) {
+                this.draftStateService.clearDraft();
+                this.navigateToVariantEdit(this.variantDraftContext()!.sourceRecipeId);
+                return;
+            }
+            this.openUnsavedReviewExitDialog();
+            return;
+        }
         if (this.isEditMode() && this.recipeId()) {
             const recipeName = this.form.get('name')?.value ?? 'przepis';
             this.navigateToRecipe(this.recipeId()!, recipeName);
@@ -1294,10 +1457,57 @@ export class RecipeFormPageComponent implements OnInit {
     /**
      * Nawiguje do szczegółów przepisu w formacie kanonicznym :id-:slug
      */
-    private navigateToRecipe(id: number, recipeName: string): void {
-        const slug = this.slugService.slugify(recipeName);
+    private navigateToRecipe(id: number, recipeName: string, responseSlug?: string): void {
+        const slug = responseSlug ?? this.slugService.slugify(recipeName);
         const recipeSegment = `${id}-${slug}`;
         this.router.navigate(['/recipes', recipeSegment]);
+    }
+
+    private openUnsavedReviewExitDialog(): void {
+        const data: ConfirmDialogData = {
+            title: 'Niezapisane zmiany',
+            message: 'Masz niezapisane zmiany w przeglądzie wariantu. Co chcesz zrobić?',
+            confirmText: 'Zapisz zmiany',
+            secondaryConfirmText: 'Odrzuć',
+            cancelText: 'Anuluj',
+            secondaryConfirmColor: 'warn',
+        };
+        this.dialog
+            .open<ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult>(ConfirmDialogComponent, {
+                width: '420px',
+                disableClose: true,
+                data,
+            })
+            .afterClosed()
+            .subscribe((result) => {
+                if (result === 'secondary') {
+                    const sourceId = this.variantDraftContext()?.sourceRecipeId;
+                    this.draftStateService.clearDraft();
+                    if (sourceId != null) {
+                        this.navigateToVariantEdit(sourceId);
+                    }
+                    return;
+                }
+                if (result === true) {
+                    this.onSubmit();
+                }
+            });
+    }
+
+    private variantNameConflictValidator() {
+        return (control: AbstractControl): ValidationErrors | null => {
+            const candidate = String(control.value ?? '').trim().toLocaleLowerCase();
+            if (!candidate) {
+                return null;
+            }
+            const sourceId = this.recipeId();
+            const conflict = this.loadedVariants().some(
+                (variant) =>
+                    variant.variant_name.trim().toLocaleLowerCase() === candidate &&
+                    (this.isVariantReview() || variant.recipe_id !== sourceId),
+            );
+            return conflict ? { variantNameTaken: true } : null;
+        };
     }
 
     /** Custom validator to check minimum array length */

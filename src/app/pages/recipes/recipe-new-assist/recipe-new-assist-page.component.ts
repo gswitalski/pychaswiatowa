@@ -43,6 +43,7 @@ import { ClipboardImageService } from '../../../shared/services/clipboard-image.
 import { CLIPBOARD_IMAGE_UI_MESSAGES } from '../../../shared/services/clipboard-image.messages';
 import { CLIPBOARD_IMAGE_ACCEPTED_MIME_TYPES } from '../../../shared/services/clipboard-image.types';
 import { ImageCompressionService } from '../../../shared/services/image-compression.service';
+import { RecipesService } from '../services/recipes.service';
 import { RecipeAssistUrlInputComponent } from './components/recipe-assist-url-input/recipe-assist-url-input.component';
 import {
     AI_DRAFT_ANALYZING_HINT_MIN_IMAGES,
@@ -93,16 +94,17 @@ interface AssistImageItem {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeNewAssistPageComponent {
-    private readonly router = inject(Router);
-    private readonly route = inject(ActivatedRoute);
+    protected readonly router = inject(Router);
+    protected readonly route = inject(ActivatedRoute);
     private readonly aiDraftService = inject(AiRecipeDraftService);
-    private readonly draftStateService = inject(RecipeDraftStateService);
+    protected readonly draftStateService = inject(RecipeDraftStateService);
     private readonly creditsService = inject(AiCreditsService);
     private readonly dialog = inject(MatDialog);
     private readonly clipboardImageService = inject(ClipboardImageService);
     private readonly imageCompression = inject(ImageCompressionService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly injector = inject(Injector);
+    private readonly recipesService = inject(RecipesService, { optional: true });
 
     readonly clipboardSupported = this.clipboardImageService.isClipboardReadSupported();
 
@@ -155,6 +157,13 @@ export class RecipeNewAssistPageComponent {
     /** Loading state during API call */
     readonly isLoading = signal<boolean>(false);
 
+    readonly isVariantAssist = computed(() => this.route.snapshot.paramMap?.get('id') != null);
+    readonly variantCountKnown = signal(true);
+    readonly variantCount = signal<number | null>(null);
+    readonly pageTitle = computed(() =>
+        this.isVariantAssist() ? 'Dodaj wariant przepisu (AI)' : 'Dodaj przepis (AI)',
+    );
+
     /** Error message for display */
     readonly errorMessage = signal<string | null>(null);
 
@@ -176,6 +185,7 @@ export class RecipeNewAssistPageComponent {
             (this.source() === 'url' && this.urlValue() === null) ||
             this.isProcessingImages() ||
             (this.source() === 'image' && this.readyImages().length === 0) ||
+            (this.isVariantAssist() && (!this.variantCountKnown() || (this.variantCount() ?? 0) >= 10)) ||
             (this.hasAiInput() && this.isCreditsExhausted()),
     );
 
@@ -191,6 +201,25 @@ export class RecipeNewAssistPageComponent {
 
     constructor() {
         this.destroyRef.onDestroy(() => this.clearAllImages());
+        if (this.isVariantAssist()) {
+            this.loadVariantCount();
+        }
+    }
+
+    private loadVariantCount(): void {
+        const sourceId = Number(this.route.snapshot.paramMap?.get('id'));
+        if (!Number.isInteger(sourceId) || !this.recipesService) {
+            this.variantCountKnown.set(false);
+            return;
+        }
+        this.variantCountKnown.set(false);
+        this.recipesService.getRecipeVariants(sourceId).subscribe({
+            next: (variants) => {
+                this.variantCount.set(variants.length);
+                this.variantCountKnown.set(true);
+            },
+            error: () => this.variantCountKnown.set(false),
+        });
     }
 
     /**
@@ -473,6 +502,12 @@ export class RecipeNewAssistPageComponent {
      * If input is provided, calls AI API and navigates with draft.
      */
     async onNext(): Promise<void> {
+        if (this.isVariantAssist() && (!this.variantCountKnown() || (this.variantCount() ?? 0) >= 10)) {
+            if (this.variantCount() !== null && this.variantCount()! >= 10) {
+                this.errorMessage.set('Osiągnięto maksymalną liczbę wariantów (10).');
+            }
+            return;
+        }
         const currentSource = this.source();
         const hasText = currentSource === 'text' && this.text().trim().length > 0;
         const hasImage = currentSource === 'image' && this.readyImages().length > 0;
@@ -507,8 +542,20 @@ export class RecipeNewAssistPageComponent {
             this.creditsService.refreshCredits();
 
             // Save draft and navigate to form
-            this.draftStateService.setDraft(response.draft, response.meta);
-            this.router.navigate(['/recipes/new']);
+            const sourceRecipeId = Number(this.route.snapshot.paramMap.get('id'));
+            const variantContext = this.isVariantAssist() && Number.isInteger(sourceRecipeId)
+                ? {
+                      sourceRecipeId,
+                      familyName: null,
+                      visibility: 'PRIVATE' as const,
+                  }
+                : null;
+            this.draftStateService.setDraft(response.draft, response.meta, variantContext);
+            if (this.isVariantAssist()) {
+                this.router.navigate(['/recipes', sourceRecipeId, 'edit']);
+            } else {
+                this.router.navigate(['/recipes/new']);
+            }
         } catch (error) {
             this.handleError(error);
         } finally {
@@ -608,6 +655,10 @@ export class RecipeNewAssistPageComponent {
      * Handle "Wróć" (Back) button click
      */
     onBack(): void {
+        if (this.isVariantAssist()) {
+            this.router.navigate(['/recipes', this.route.snapshot.paramMap.get('id'), 'edit']);
+            return;
+        }
         this.router.navigate(['/recipes/new/start']);
     }
 

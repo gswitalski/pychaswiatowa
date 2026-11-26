@@ -208,6 +208,43 @@ describe('RecipeVariantsSectionComponent', () => {
 
         expect(recipes.deleteRecipeVariant).not.toHaveBeenCalled();
     });
+
+    it('emituje żądanie dodania wariantu przez AI', () => {
+        const variants = [variant(1, 'Klasyczny')];
+        meApi.getMe.mockReturnValue(of({
+            features: { recipe_variants: { enabled: true, mode: 'admin' } },
+        }));
+        recipes.getRecipeVariants.mockReturnValue(of(variants));
+        fixture = TestBed.createComponent(RecipeVariantsSectionComponent);
+        fixture.componentRef.setInput('recipeId', 7);
+        fixture.componentRef.setInput('editingRecipeId', 1);
+        fixture.detectChanges();
+
+        const emitted: unknown[] = [];
+        fixture.componentInstance.aiVariantRequest.subscribe((value) => emitted.push(value));
+        fixture.componentInstance.addAiVariant();
+
+        expect(emitted).toEqual([undefined]);
+    });
+
+    it('blokuje dodanie AI przy limicie dziesięciu wariantów', () => {
+        const variants = Array.from({ length: 10 }, (_, index) => variant(index + 1, `Wariant ${index + 1}`));
+        meApi.getMe.mockReturnValue(of({
+            features: { recipe_variants: { enabled: true, mode: 'admin' } },
+        }));
+        recipes.getRecipeVariants.mockReturnValue(of(variants));
+        fixture = TestBed.createComponent(RecipeVariantsSectionComponent);
+        fixture.componentRef.setInput('recipeId', 7);
+        fixture.componentRef.setInput('editingRecipeId', 1);
+        fixture.detectChanges();
+
+        const emitted: unknown[] = [];
+        fixture.componentInstance.aiVariantRequest.subscribe((value) => emitted.push(value));
+        fixture.componentInstance.addAiVariant();
+
+        expect(emitted).toEqual([]);
+        expect(fixture.componentInstance.error()).toContain('10');
+    });
 });
 
 function variant(recipeId: number, name: string): RecipeVariantSummaryDto {

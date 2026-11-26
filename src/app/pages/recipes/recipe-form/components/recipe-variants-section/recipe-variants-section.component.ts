@@ -59,6 +59,7 @@ export class RecipeVariantsSectionComponent implements OnInit {
     readonly variantsCountChange = output<number>();
     readonly variantsLoaded = output<RecipeVariantSummaryDto[]>();
     readonly editVariantRequest = output<RecipeVariantSummaryDto>();
+    readonly aiVariantRequest = output<void>();
 
     private loadedVariantsForRecipeId: number | null = null;
     private pendingCreatedVariant: { recipe_id: number; variant_name: string } | null = null;
@@ -168,6 +169,18 @@ export class RecipeVariantsSectionComponent implements OnInit {
             },
             (name) => this.create({ variant_name: name, source_recipe_id: sourceId }),
         );
+    }
+
+    addAiVariant(): void {
+        if (this.loading() || this.busy() || this.variants().length >= 10) {
+            this.error.set(
+                this.variants().length >= 10
+                    ? 'Osiągnięto maksymalną liczbę wariantów (10).'
+                    : null,
+            );
+            return;
+        }
+        this.aiVariantRequest.emit();
     }
 
     editVariant(variant: RecipeVariantSummaryDto): void {

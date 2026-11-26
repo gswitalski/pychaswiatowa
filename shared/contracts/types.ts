@@ -473,6 +473,29 @@ export interface CreateRecipeVariantCommand {
     variant_name: string;
     source_recipe_id?: number | null;
 }
+export interface CreateAiRecipeVariantCommand {
+    variant_name: string;
+    family_name: string | null;
+    visibility: RecipeVisibility;
+    description: string | null;
+    ingredients_raw: string;
+    steps_raw: string;
+    tips_raw?: string;
+    tags?: string[];
+    category_id: number | null;
+    servings: number | null;
+    prep_time_minutes: number | null;
+    total_time_minutes: number | null;
+    diet_type: RecipeDietType | null;
+    cuisine: RecipeCuisine | null;
+    difficulty: RecipeDifficulty | null;
+    is_termorobot: boolean;
+    is_grill: boolean;
+}
+export interface CreateAiRecipeVariantResponseDto {
+    recipe_id: number;
+    recipe: RecipeDetailDto;
+}
 export interface RenameRecipeVariantCommand {
     variant_name: string;
 }

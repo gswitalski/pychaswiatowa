@@ -1,4 +1,4 @@
-<pych-page-header title="Dodaj przepis (AI)">
+<pych-page-header [title]="pageTitle()">
     <button mat-stroked-button type="button" (click)="onBack()" [disabled]="isLoading()">
         Wróć
     </button>
@@ -45,7 +45,11 @@
                 }
             </div>
             <mat-card-subtitle>
-                Wklej tekst, zdjęcie lub link do przepisu, a AI pomoże Ci zaimportować dane
+                @if (isVariantAssist()) {
+                    Powstanie kolejna wersja tego przepisu. AI odczyta tylko wklejony tekst, zdjęcia albo link.
+                } @else {
+                    Wklej tekst, zdjęcie lub link do przepisu, a AI pomoże Ci zaimportować dane
+                }
             </mat-card-subtitle>
         </mat-card-header>
 

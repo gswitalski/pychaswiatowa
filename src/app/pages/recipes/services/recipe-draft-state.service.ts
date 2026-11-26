@@ -4,6 +4,12 @@ import {
     AiRecipeDraftMetaDto,
 } from '../../../../../shared/contracts/types';
 
+export interface RecipeVariantDraftContext {
+    sourceRecipeId: number;
+    familyName: string | null;
+    visibility: 'PRIVATE' | 'SHARED' | 'PUBLIC';
+}
+
 /** Time-to-live for draft in milliseconds (10 minutes) */
 const DRAFT_TTL_MS = 10 * 60 * 1000;
 
@@ -49,9 +55,14 @@ export class RecipeDraftStateService {
     /**
      * Set new draft data
      */
-    setDraft(draft: AiRecipeDraftDto, meta: AiRecipeDraftMetaDto): void {
+    setDraft(
+        draft: AiRecipeDraftDto,
+        meta: AiRecipeDraftMetaDto,
+        variantContext: RecipeVariantDraftContext | null = null,
+    ): void {
         this._draft.set(draft);
         this._meta.set(meta);
+        this._variantContext.set(variantContext);
         this._createdAt.set(Date.now());
     }
 
@@ -61,6 +72,7 @@ export class RecipeDraftStateService {
     clearDraft(): void {
         this._draft.set(null);
         this._meta.set(null);
+        this._variantContext.set(null);
         this._createdAt.set(null);
     }
 
@@ -70,7 +82,11 @@ export class RecipeDraftStateService {
      *
      * @returns Draft and meta if available and valid, null otherwise
      */
-    consumeDraft(): { draft: AiRecipeDraftDto; meta: AiRecipeDraftMetaDto } | null {
+    consumeDraft(): {
+        draft: AiRecipeDraftDto;
+        meta: AiRecipeDraftMetaDto;
+        variantContext: RecipeVariantDraftContext | null;
+    } | null {
         if (!this.isDraftValid()) {
             this.clearDraft();
             return null;
@@ -78,16 +94,19 @@ export class RecipeDraftStateService {
 
         const draft = this._draft();
         const meta = this._meta();
+        const variantContext = this._variantContext();
 
         // Clear after consuming
         this.clearDraft();
 
         if (draft && meta) {
-            return { draft, meta };
+            return { draft, meta, variantContext };
         }
 
         return null;
     }
+
+    private readonly _variantContext = signal<RecipeVariantDraftContext | null>(null);
 
     /**
      * Check if current draft is valid (exists and not expired)

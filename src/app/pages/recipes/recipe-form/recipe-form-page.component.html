@@ -179,13 +179,16 @@
             </mat-card>
         </form>
         @if (recipeId(); as id) {
+            @if (!isVariantReview()) {
             <pych-recipe-variants-section
                 [recipeId]="id"
                 [editingRecipeId]="id"
                 [editingVariantName]="liveVariantName()"
                 (variantsLoaded)="onVariantsLoaded($event)"
                 (editVariantRequest)="onEditVariantRequest($event)"
+                (aiVariantRequest)="onAiVariantRequest()"
             />
+            }
         }
     }
 </div>

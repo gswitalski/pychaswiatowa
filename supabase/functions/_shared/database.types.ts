@@ -1,1819 +1,1689 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-  public: {
-    Tables: {
-      feature_flags: {
-        Row: {
-          name: string
-          mode: "disabled" | "admin" | "all"
-          updated_at: string
-        }
-        Insert: {
-          name: string
-          mode: "disabled" | "admin" | "all"
-          updated_at?: string
-        }
-        Update: {
-          name?: string
-          mode?: "disabled" | "admin" | "all"
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      ai_rate_limits: {
-        Row: {
-          count: number
-          created_at: string
-          key: string
-          updated_at: string
-          user_id: string
-          window_start: string
-        }
-        Insert: {
-          count?: number
-          created_at?: string
-          key: string
-          updated_at?: string
-          user_id: string
-          window_start: string
-        }
-        Update: {
-          count?: number
-          created_at?: string
-          key?: string
-          updated_at?: string
-          user_id?: string
-          window_start?: string
-        }
-        Relationships: []
-      }
-      billing_customers: {
-        Row: {
-          created_at: string
-          provider: string
-          provider_customer_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          provider?: string
-          provider_customer_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          provider?: string
-          provider_customer_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      categories: {
-        Row: {
-          created_at: string
-          id: number
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          name: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          name?: string
-        }
-        Relationships: []
-      }
-      collections: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: number
-          name: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: number
-          name: string
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: number
-          name?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      payment_webhook_events: {
-        Row: {
-          attempts: number
-          error_message: string | null
-          event_id: string
-          livemode: boolean
-          processed_at: string | null
-          received_at: string
-          status: string
-          type: string
-        }
-        Insert: {
-          attempts?: number
-          error_message?: string | null
-          event_id: string
-          livemode: boolean
-          processed_at?: string | null
-          received_at?: string
-          status?: string
-          type: string
-        }
-        Update: {
-          attempts?: number
-          error_message?: string | null
-          event_id?: string
-          livemode?: boolean
-          processed_at?: string | null
-          received_at?: string
-          status?: string
-          type?: string
-        }
-        Relationships: []
-      }
-      normalized_ingredients_jobs: {
-        Row: {
-          attempts: number
-          created_at: string
-          id: number
-          last_error: string | null
-          next_run_at: string
-          recipe_id: number
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          attempts?: number
-          created_at?: string
-          id?: number
-          last_error?: string | null
-          next_run_at?: string
-          recipe_id: number
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          attempts?: number
-          created_at?: string
-          id?: number
-          last_error?: string | null
-          next_run_at?: string
-          recipe_id?: number
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "normalized_ingredients_jobs_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipe_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "normalized_ingredients_jobs_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      plan_recipes: {
-        Row: {
-          added_at: string
-          recipe_id: number
-          user_id: string
-        }
-        Insert: {
-          added_at?: string
-          recipe_id: number
-          user_id?: string
-        }
-        Update: {
-          added_at?: string
-          recipe_id?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_plan_recipes_recipe"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipe_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_plan_recipes_recipe"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          id: string
-          marketing_consent: boolean
-          marketing_consent_text_version: string | null
-          marketing_consent_updated_at: string | null
-          updated_at: string
-          username: string | null
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          marketing_consent?: boolean
-          marketing_consent_text_version?: string | null
-          marketing_consent_updated_at?: string | null
-          updated_at?: string
-          username?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          marketing_consent?: boolean
-          marketing_consent_text_version?: string | null
-          marketing_consent_updated_at?: string | null
-          updated_at?: string
-          username?: string | null
-        }
-        Relationships: []
-      }
-      recipe_collections: {
-        Row: {
-          collection_id: number
-          recipe_id: number
-        }
-        Insert: {
-          collection_id: number
-          recipe_id: number
-        }
-        Update: {
-          collection_id?: number
-          recipe_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipe_collections_collection_id_fkey"
-            columns: ["collection_id"]
-            isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipe_collections_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipe_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipe_collections_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recipe_families: {
-        Row: {
-          created_at: string
-          deleted_at: string | null
-          id: string
-          name: string
-          updated_at: string
-          user_id: string
-          visibility: Database["public"]["Enums"]["recipe_visibility"]
-        }
-        Insert: {
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-          user_id: string
-          visibility?: Database["public"]["Enums"]["recipe_visibility"]
-        }
-        Update: {
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-          user_id?: string
-          visibility?: Database["public"]["Enums"]["recipe_visibility"]
-        }
-        Relationships: []
-      }
-      recipe_normalized_ingredients: {
-        Row: {
-          items: Json
-          recipe_id: number
-          updated_at: string
-        }
-        Insert: {
-          items: Json
-          recipe_id: number
-          updated_at?: string
-        }
-        Update: {
-          items?: Json
-          recipe_id?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipe_normalized_ingredients_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: true
-            referencedRelation: "recipe_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipe_normalized_ingredients_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: true
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recipe_tags: {
-        Row: {
-          recipe_id: number
-          tag_id: number
-        }
-        Insert: {
-          recipe_id: number
-          tag_id: number
-        }
-        Update: {
-          recipe_id?: number
-          tag_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipe_tags_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipe_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipe_tags_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipe_tags_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_recipe_flags: {
-        Row: {
-          created_at: string
-          is_favorite: boolean
-          is_want_to_try: boolean
-          recipe_id: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          is_favorite?: boolean
-          is_want_to_try?: boolean
-          recipe_id: number
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          is_favorite?: boolean
-          is_want_to_try?: boolean
-          recipe_id?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_recipe_flags_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_recipe_notes: {
-        Row: {
-          created_at: string
-          note: string
-          recipe_id: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          note: string
-          recipe_id: number
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          note?: string
-          recipe_id?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_recipe_notes_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recipe_ratings: {
-        Row: {
-          created_at: string
-          rating: number
-          recipe_id: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          rating: number
-          recipe_id: number
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          rating?: number
-          recipe_id?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipe_ratings_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recipes: {
-        Row: {
-          category_id: number | null
-          created_at: string
-          cuisine: Database["public"]["Enums"]["recipe_cuisine"] | null
-          deleted_at: string | null
-          description: string | null
-          diet_type: Database["public"]["Enums"]["recipe_diet_type"] | null
-          difficulty: Database["public"]["Enums"]["recipe_difficulty"] | null
-          id: number
-          image_path: string | null
-          ingredients: Json
-          is_default: boolean
-          is_grill: boolean
-          is_termorobot: boolean
-          name: string
-          normalized_ingredients_status: string
-          normalized_ingredients_updated_at: string | null
-          prep_time_minutes: number | null
-          recipe_family_id: string
-          search_vector: unknown
-          servings: number | null
-          sort_order: number
-          steps: Json
-          tips: Json
-          total_time_minutes: number | null
-          updated_at: string
-          user_id: string
-          variant_name: string
-          visibility: Database["public"]["Enums"]["recipe_visibility"]
-        }
-        Insert: {
-          category_id?: number | null
-          created_at?: string
-          cuisine?: Database["public"]["Enums"]["recipe_cuisine"] | null
-          deleted_at?: string | null
-          description?: string | null
-          diet_type?: Database["public"]["Enums"]["recipe_diet_type"] | null
-          difficulty?: Database["public"]["Enums"]["recipe_difficulty"] | null
-          id?: number
-          image_path?: string | null
-          ingredients: Json
-          is_default?: boolean
-          is_grill?: boolean
-          is_termorobot?: boolean
-          name: string
-          normalized_ingredients_status?: string
-          normalized_ingredients_updated_at?: string | null
-          prep_time_minutes?: number | null
-          recipe_family_id?: string
-          search_vector?: unknown
-          servings?: number | null
-          sort_order?: number
-          steps: Json
-          tips?: Json
-          total_time_minutes?: number | null
-          updated_at?: string
-          user_id?: string
-          variant_name?: string
-          visibility?: Database["public"]["Enums"]["recipe_visibility"]
-        }
-        Update: {
-          category_id?: number | null
-          created_at?: string
-          cuisine?: Database["public"]["Enums"]["recipe_cuisine"] | null
-          deleted_at?: string | null
-          description?: string | null
-          diet_type?: Database["public"]["Enums"]["recipe_diet_type"] | null
-          difficulty?: Database["public"]["Enums"]["recipe_difficulty"] | null
-          id?: number
-          image_path?: string | null
-          ingredients?: Json
-          is_default?: boolean
-          is_grill?: boolean
-          is_termorobot?: boolean
-          name?: string
-          normalized_ingredients_status?: string
-          normalized_ingredients_updated_at?: string | null
-          prep_time_minutes?: number | null
-          recipe_family_id?: string
-          search_vector?: unknown
-          servings?: number | null
-          sort_order?: number
-          steps?: Json
-          tips?: Json
-          total_time_minutes?: number | null
-          updated_at?: string
-          user_id?: string
-          variant_name?: string
-          visibility?: Database["public"]["Enums"]["recipe_visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipes_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipes_family_owner_fk"
-            columns: ["recipe_family_id", "user_id"]
-            isOneToOne: false
-            referencedRelation: "recipe_families"
-            referencedColumns: ["id", "user_id"]
-          },
-        ]
-      }
-      shopping_list_items: {
-        Row: {
-          amount: number | null
-          created_at: string
-          id: number
-          is_owned: boolean
-          kind: string
-          name: string | null
-          recipe_id: number | null
-          recipe_name: string | null
-          variant_name: string | null
-          active_variant_count: number | null
-          text: string | null
-          unit: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount?: number | null
-          created_at?: string
-          id?: number
-          is_owned?: boolean
-          kind: string
-          name?: string | null
-          recipe_id?: number | null
-          recipe_name?: string | null
-          variant_name?: string | null
-          active_variant_count?: number | null
-          text?: string | null
-          unit?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          amount?: number | null
-          created_at?: string
-          id?: number
-          is_owned?: boolean
-          kind?: string
-          name?: string | null
-          recipe_id?: number | null
-          recipe_name?: string | null
-          variant_name?: string | null
-          active_variant_count?: number | null
-          text?: string | null
-          unit?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      shopping_list_recipe_contributions: {
-        Row: {
-          amount: number | null
-          created_at: string
-          id: number
-          name: string
-          recipe_id: number
-          unit: string | null
-          user_id: string
-        }
-        Insert: {
-          amount?: number | null
-          created_at?: string
-          id?: number
-          name: string
-          recipe_id: number
-          unit?: string | null
-          user_id?: string
-        }
-        Update: {
-          amount?: number | null
-          created_at?: string
-          id?: number
-          name?: string
-          recipe_id?: number
-          unit?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_shopping_list_contributions_recipe"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipe_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_shopping_list_contributions_recipe"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tags: {
-        Row: {
-          created_at: string
-          id: number
-          name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          name: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          name?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      subscription_payments: {
-        Row: {
-          amount_gross: number
-          confirmation_email_sent_at: string | null
-          created_at: string
-          currency: string
-          document_number: string | null
-          document_pdf_url: string | null
-          document_url: string | null
-          id: number
-          paid_at: string | null
-          payment_method_type: string
-          plan_id: string
-          provider_invoice_id: string | null
-          provider_payment_intent_id: string | null
-          provider_session_id: string
-          status: string
-          subscription_id: string | null
-          terms_accepted_at: string | null
-          terms_version: string | null
-          user_id: string
-        }
-        Insert: {
-          amount_gross: number
-          confirmation_email_sent_at?: string | null
-          created_at?: string
-          currency?: string
-          document_number?: string | null
-          document_pdf_url?: string | null
-          document_url?: string | null
-          id?: never
-          paid_at?: string | null
-          payment_method_type: string
-          plan_id: string
-          provider_invoice_id?: string | null
-          provider_payment_intent_id?: string | null
-          provider_session_id: string
-          status: string
-          subscription_id?: string | null
-          terms_accepted_at?: string | null
-          terms_version?: string | null
-          user_id: string
-        }
-        Update: {
-          amount_gross?: number
-          confirmation_email_sent_at?: string | null
-          created_at?: string
-          currency?: string
-          document_number?: string | null
-          document_pdf_url?: string | null
-          document_url?: string | null
-          id?: never
-          paid_at?: string | null
-          payment_method_type?: string
-          plan_id?: string
-          provider_invoice_id?: string | null
-          provider_payment_intent_id?: string | null
-          provider_session_id?: string
-          status?: string
-          subscription_id?: string | null
-          terms_accepted_at?: string | null
-          terms_version?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscription_payments_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      subscriptions: {
-        Row: {
-          auto_renew: boolean
-          canceled_at: string | null
-          created_at: string
-          current_period_end: string
-          current_period_start: string
-          id: string
-          payment_method_type: string
-          plan_id: string
-          provider_subscription_id: string | null
-          started_at: string
-          status: string
-          trial_ends_at: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          auto_renew: boolean
-          canceled_at?: string | null
-          created_at?: string
-          current_period_end: string
-          current_period_start: string
-          id?: string
-          payment_method_type: string
-          plan_id: string
-          provider_subscription_id?: string | null
-          started_at: string
-          status: string
-          trial_ends_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          auto_renew?: boolean
-          canceled_at?: string | null
-          created_at?: string
-          current_period_end?: string
-          current_period_start?: string
-          id?: string
-          payment_method_type?: string
-          plan_id?: string
-          provider_subscription_id?: string | null
-          started_at?: string
-          status?: string
-          trial_ends_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_ai_credits: {
-        Row: {
-          created_at: string
-          credits_activated_at: string
-          draft_credits_total: number
-          draft_credits_used: number
-          id: string
-          image_credits_total: number
-          image_credits_used: number
-          limit_type: Database["public"]["Enums"]["ai_credit_limit_type"]
-          next_reset_at: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          credits_activated_at?: string
-          draft_credits_total?: number
-          draft_credits_used?: number
-          id?: string
-          image_credits_total?: number
-          image_credits_used?: number
-          limit_type?: Database["public"]["Enums"]["ai_credit_limit_type"]
-          next_reset_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          credits_activated_at?: string
-          draft_credits_total?: number
-          draft_credits_used?: number
-          id?: string
-          image_credits_total?: number
-          image_credits_used?: number
-          limit_type?: Database["public"]["Enums"]["ai_credit_limit_type"]
-          next_reset_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-    }
-    Views: {
-      recipe_details: {
-        Row: {
-          category_id: number | null
-          category_name: string | null
-          active_variant_count: number | null
-          recipe_family_id: string | null
-          is_default: boolean | null
-          sort_order: number | null
-          average_rating: number | null
-          collection_ids: number[] | null
-          collections: Json | null
-          created_at: string | null
-          cuisine: Database["public"]["Enums"]["recipe_cuisine"] | null
-          deleted_at: string | null
-          description: string | null
-          diet_type: Database["public"]["Enums"]["recipe_diet_type"] | null
-          difficulty: Database["public"]["Enums"]["recipe_difficulty"] | null
-          id: number | null
-          image_path: string | null
-          ingredients: Json | null
-          is_grill: boolean | null
-          is_termorobot: boolean | null
-          name: string | null
-          normalized_ingredients_status: string | null
-          normalized_ingredients_updated_at: string | null
-          prep_time_minutes: number | null
-          ratings_count: number | null
-          search_vector: unknown
-          servings: number | null
-          steps: Json | null
-          tag_ids: number[] | null
-          tags: Json | null
-          tips: Json | null
-          total_time_minutes: number | null
-          updated_at: string | null
-          user_id: string | null
-          variant_name: string | null
-          visibility: Database["public"]["Enums"]["recipe_visibility"] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipes_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Functions: {
-      create_recipe_variant: {
-        Args: {
-          p_is_admin?: boolean
-          p_recipe_id: number
-          p_source_recipe_id?: number | null
-          p_user_id: string
-          p_variant_name: string
-        }
-        Returns: Json
-      }
-      delete_recipe_family: {
-        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
-        Returns: boolean
-      }
-      delete_recipe_variant: {
-        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
-        Returns: boolean
-      }
-      recipe_variant_usage: {
-        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
-        Returns: Json
-      }
-      recipe_variants_allowed: {
-        Args: { p_is_admin?: boolean }
-        Returns: boolean
-      }
-      recipe_variants_list: {
-        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
-        Returns: {
-          recipe_id: number
-          variant_name: string
-          is_default: boolean
-          sort_order: number
-          image_path: string | null
-          diet_type: Database["public"]["Enums"]["recipe_diet_type"]
-          is_termorobot: boolean
-          is_grill: boolean
-          difficulty: Database["public"]["Enums"]["recipe_difficulty"]
-          servings: number
-        }[]
-      }
-      rename_recipe_variant: {
-        Args: {
-          p_is_admin?: boolean
-          p_recipe_id: number
-          p_user_id: string
-          p_variant_name: string
-        }
-        Returns: boolean
-      }
-      reorder_recipe_variants: {
-        Args: {
-          p_is_admin?: boolean
-          p_recipe_id: number
-          p_recipe_ids: number[]
-          p_user_id: string
-        }
-        Returns: boolean
-      }
-      set_default_recipe_variant: {
-        Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string }
-        Returns: boolean
-      }
-      update_recipe_family: {
-        Args: {
-          p_is_admin?: boolean
-          p_name?: string | null
-          p_recipe_id: number
-          p_user_id: string
-          p_visibility?: Database["public"]["Enums"]["recipe_visibility"] | null
-        }
-        Returns: boolean
-      }
-      set_recipe_rating: {
-        Args: {
-          p_rating?: number
-          p_recipe_id: number
-        }
-        Returns: {
-          out_average_rating: number | null
-          out_my_rating: number | null
-          out_ratings_count: number
-          out_recipe_id: number
-        }[]
-      }
-      set_recipe_flags: {
-        Args: {
-          p_is_favorite?: boolean
-          p_is_want_to_try?: boolean
-          p_recipe_id: number
-        }
-        Returns: {
-          out_is_favorite: boolean
-          out_is_want_to_try: boolean
-          out_recipe_id: number
-        }[]
-      }
-      set_recipe_note: {
-        Args: {
-          p_note?: string
-          p_recipe_id: number
-        }
-        Returns: {
-          out_note: string | null
-          out_recipe_id: number
-          out_updated_at: string | null
-        }[]
-      }
-      add_recipe_to_plan_and_update_shopping_list: {
-        Args: { p_recipe_id: number }
-        Returns: Json
-      }
-      admin_get_recipes_page: {
-        Args: {
-          p_author?: string
-          p_category_ids?: number[]
-          p_created_from?: string
-          p_created_to?: string
-          p_include_uncategorized?: boolean
-          p_is_grill?: boolean
-          p_is_termorobot?: boolean
-          p_name?: string
-          p_page_number?: number
-          p_page_size?: number
-          p_rating_max?: number
-          p_rating_min?: number
-          p_ratings_count_max?: number
-          p_ratings_count_min?: number
-          p_recipe_id?: number
-          p_sort_by?: string
-          p_sort_dir?: string
-        }
-        Returns: {
-          author_email: string
-          author_id: string
-          author_username: string
-          average_rating: number
-          category_name: string
-          created_at: string
-          id: number
-          is_grill: boolean
-          is_termorobot: boolean
-          name: string
-          ratings_count: number
-          total_items: number
-        }[]
-      }
-      admin_get_users_page: {
-        Args: {
-          p_page_number?: number
-          p_page_size?: number
-          p_sort_by?: string
-          p_sort_dir?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          last_sign_in_at: string
-          login: string
-          recipes_count: number
-          role: string
-          total_items: number
-          username: string
-        }[]
-      }
-      admin_update_user_role: {
-        Args: {
-          p_actor_user_id: string
-          p_new_role: string
-          p_target_user_id: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          last_sign_in_at: string
-          login: string
-          recipes_count: number
-          role: string
-          username: string
-        }[]
-      }
-      ai_rate_limit_hit: {
-        Args: {
-          p_key: string
-          p_limit: number
-          p_now?: string
-          p_window_seconds: number
-        }
-        Returns: {
-          allowed: boolean
-          current_count: number
-          retry_after_seconds: number
-          window_start: string
-        }[]
-      }
-      billing_activate_premium: {
-        Args: {
-          p_auto_renew: boolean
-          p_payment: Json
-          p_payment_method: string
-          p_period_end: string
-          p_period_start: string
-          p_plan_id: string
-          p_provider_subscription_id: string | null
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      billing_attach_invoice_document: {
-        Args: {
-          p_number: string | null
-          p_pdf_url: string | null
-          p_provider_invoice_id: string
-          p_url: string | null
-        }
-        Returns: number
-      }
-      billing_claim_webhook_event: {
-        Args: {
-          p_event_id: string
-          p_livemode: boolean
-          p_type: string
-        }
-        Returns: string
-      }
-      billing_expire_subscriptions: {
-        Args: { p_grace_days?: number }
-        Returns: { user_id: string }[]
-      }
-      billing_record_failed_payment: {
-        Args: { p_payment: Json; p_user_id: string }
-        Returns: boolean
-      }
-      billing_renew_subscription: {
-        Args: {
-          p_payment: Json
-          p_period_end: string
-          p_period_start: string
-          p_provider_subscription_id: string
-        }
-        Returns: Json
-      }
-      claim_normalized_ingredients_jobs: {
-        Args: { p_limit?: number }
-        Returns: Json
-      }
-      clear_plan_and_update_shopping_list: { Args: never; Returns: Json }
-      create_recipe_with_tags:
-        | {
-            Args: {
-              p_category_id: number
-              p_description: string
-              p_ingredients_raw: string
-              p_name: string
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_user_id: string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_description: string
-              p_ingredients_raw: string
-              p_name: string
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_description: string
-              p_ingredients_raw: string
-              p_is_termorobot?: boolean
-              p_name: string
-              p_servings?: number
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_description: string
-              p_ingredients_raw: string
-              p_is_termorobot?: boolean
-              p_name: string
-              p_prep_time_minutes?: number
-              p_servings?: number
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_total_time_minutes?: number
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_ingredients_raw: string
-              p_is_termorobot?: boolean
-              p_name: string
-              p_prep_time_minutes?: number
-              p_servings?: number
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_total_time_minutes?: number
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_ingredients_raw: string
-              p_is_grill?: boolean
-              p_is_termorobot?: boolean
-              p_name: string
-              p_prep_time_minutes?: number
-              p_servings?: number
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_total_time_minutes?: number
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_ingredients_raw: string
-              p_is_grill?: boolean
-              p_is_termorobot?: boolean
-              p_name: string
-              p_prep_time_minutes?: number
-              p_servings?: number
-              p_steps_raw: string
-              p_tag_names: string[]
-              p_tips_raw?: string
-              p_total_time_minutes?: number
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-      enqueue_normalized_ingredients_refresh: {
-        Args: { p_recipe_id: number }
-        Returns: Json
-      }
-      get_recipes_list: {
-        Args: {
-          p_category_id?: number
-          p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-          p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-          p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-          p_grill?: boolean
-          p_group_variants?: boolean
-          p_limit?: number
-          p_page?: number
-          p_search?: string
-          p_sort_direction?: string
-          p_sort_field?: string
-          p_tag_ids?: number[]
-          p_termorobot?: boolean
-          p_user_id: string
-          p_view?: string
-        }
-        Returns: {
-          author_id: string
-          author_username: string
-          category_id: number
-          category_name: string
-          created_at: string
-          cuisine: Database["public"]["Enums"]["recipe_cuisine"]
-          diet_type: Database["public"]["Enums"]["recipe_diet_type"]
-          difficulty: Database["public"]["Enums"]["recipe_difficulty"]
-          id: number
-          image_path: string
-          in_my_collections: boolean
-          in_my_plan: boolean
-          is_grill: boolean
-          is_owner: boolean
-          is_termorobot: boolean
-          name: string
-          prep_time_minutes: number
-          servings: number
-          total_count: number
-          total_time_minutes: number
-          variant_name: string
-          active_variant_count: number
-          matching_variant_count: number
-          matching_variant_names: string[]
-          matching_variant_overflow: number
-          visibility: Database["public"]["Enums"]["recipe_visibility"]
-        }[]
-      }
-      jsonb_to_text: { Args: { input_jsonb: Json }; Returns: string }
-      parse_text_to_jsonb: { Args: { input_text: string }; Returns: Json }
-      refund_ai_credit: {
-        Args: { p_credit_type: string; p_user_id: string }
-        Returns: boolean
-      }
-      remove_recipe_from_plan_and_update_shopping_list: {
-        Args: { p_recipe_id: number }
-        Returns: Json
-      }
-      reserve_ai_credit: {
-        Args: {
-          p_credit_type: string
-          p_free_draft_credits?: number
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      resolve_signup_marketing_consent: {
-        Args: { p_raw_user_meta_data: Json }
-        Returns: {
-          marketing_consent: boolean
-          marketing_consent_text_version: string
-          marketing_consent_updated_at: string
-        }[]
-      }
-      run_ai_credits_monthly_reset: { Args: never; Returns: number }
-      soft_delete_recipe: {
-        Args: { p_recipe_id: number; p_user_id: string }
-        Returns: boolean
-      }
-      supported_marketing_consent_text_versions: {
-        Args: never
-        Returns: string[]
-      }
-      update_recipe_with_tags:
-        | {
-            Args: {
-              p_category_id?: number
-              p_description?: string
-              p_ingredients_raw?: string
-              p_name?: string
-              p_recipe_id: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_update_tags?: boolean
-              p_user_id: string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_description?: string
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_name?: string
-              p_recipe_id: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_update_tags?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_description?: string
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_name?: string
-              p_recipe_id: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_update_category?: boolean
-              p_update_tags?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_description?: string
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_update_category?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_description?: string
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_prep_time_minutes?: number
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_total_time_minutes?: number
-              p_update_category?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_prep_time?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_update_total_time?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description?: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_prep_time_minutes?: number
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_total_time_minutes?: number
-              p_update_category?: boolean
-              p_update_cuisine?: boolean
-              p_update_diet_type?: boolean
-              p_update_difficulty?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_prep_time?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_update_total_time?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description?: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_grill?: boolean
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_prep_time_minutes?: number
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_total_time_minutes?: number
-              p_update_category?: boolean
-              p_update_cuisine?: boolean
-              p_update_diet_type?: boolean
-              p_update_difficulty?: boolean
-              p_update_is_grill?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_prep_time?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_update_total_time?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_category_id?: number
-              p_cuisine?: Database["public"]["Enums"]["recipe_cuisine"]
-              p_description?: string
-              p_diet_type?: Database["public"]["Enums"]["recipe_diet_type"]
-              p_difficulty?: Database["public"]["Enums"]["recipe_difficulty"]
-              p_image_path?: string
-              p_ingredients_raw?: string
-              p_is_grill?: boolean
-              p_is_termorobot?: boolean
-              p_name?: string
-              p_prep_time_minutes?: number
-              p_recipe_id: number
-              p_servings?: number
-              p_steps_raw?: string
-              p_tag_names?: string[]
-              p_tips_raw?: string
-              p_total_time_minutes?: number
-              p_update_category?: boolean
-              p_update_cuisine?: boolean
-              p_update_diet_type?: boolean
-              p_update_difficulty?: boolean
-              p_update_is_grill?: boolean
-              p_update_is_termorobot?: boolean
-              p_update_prep_time?: boolean
-              p_update_servings?: boolean
-              p_update_tags?: boolean
-              p_update_tips?: boolean
-              p_update_total_time?: boolean
-              p_user_id: string
-              p_visibility?: Database["public"]["Enums"]["recipe_visibility"]
-            }
-            Returns: number
-          }
-    }
-    Enums: {
-      ai_credit_limit_type: "lifetime" | "monthly"
-      recipe_cuisine:
-        | "POLISH"
-        | "ASIAN"
-        | "MEXICAN"
-        | "MIDDLE_EASTERN"
-        | "AFRICAN"
-        | "AMERICAN"
-        | "BALKAN"
-        | "BRAZILIAN"
-        | "BRITISH"
-        | "CARIBBEAN"
-        | "CHINESE"
-        | "FRENCH"
-        | "GERMAN"
-        | "GREEK"
-        | "INDIAN"
-        | "ITALIAN"
-        | "JAPANESE"
-        | "KOREAN"
-        | "MEDITERRANEAN"
-        | "RUSSIAN"
-        | "SCANDINAVIAN"
-        | "SPANISH"
-        | "THAI"
-        | "TURKISH"
-        | "VIETNAMESE"
-      recipe_diet_type: "MEAT" | "VEGETARIAN" | "VEGAN"
-      recipe_difficulty: "EASY" | "MEDIUM" | "HARD"
-      recipe_visibility: "PRIVATE" | "SHARED" | "PUBLIC"
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+    graphql_public: {
+        Tables: {
+            [_ in never]: never;
+        };
+        Views: {
+            [_ in never]: never;
+        };
+        Functions: {
+            graphql: {
+                Args: {
+                    extensions?: Json;
+                    operationName?: string;
+                    query?: string;
+                    variables?: Json;
+                };
+                Returns: Json;
+            };
+        };
+        Enums: {
+            [_ in never]: never;
+        };
+        CompositeTypes: {
+            [_ in never]: never;
+        };
+    };
+    public: {
+        Tables: {
+            ai_rate_limits: {
+                Row: {
+                    count: number;
+                    created_at: string;
+                    key: string;
+                    updated_at: string;
+                    user_id: string;
+                    window_start: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    count?: number;
+                    created_at?: string;
+                    key: string;
+                    updated_at?: string;
+                    user_id: string;
+                    window_start: string;
+                };
+                Update: {
+                    count?: number;
+                    created_at?: string;
+                    key?: string;
+                    updated_at?: string;
+                    user_id?: string;
+                    window_start?: string;
+                };
+                Relationships: [];
+            };
+            billing_customers: {
+                Row: {
+                    created_at: string;
+                    provider: string;
+                    provider_customer_id: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    provider?: string;
+                    provider_customer_id: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    provider?: string;
+                    provider_customer_id?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
+            categories: {
+                Row: {
+                    created_at: string;
+                    id: number;
+                    name: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    id?: number;
+                    name: string;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: number;
+                    name?: string;
+                };
+                Relationships: [];
+            };
+            collections: {
+                Row: {
+                    created_at: string;
+                    description: string | null;
+                    id: number;
+                    name: string;
+                    updated_at: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    description?: string | null;
+                    id?: number;
+                    name: string;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Update: {
+                    created_at?: string;
+                    description?: string | null;
+                    id?: number;
+                    name?: string;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
+            feature_flags: {
+                Row: {
+                    mode: string;
+                    name: string;
+                    updated_at: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    mode: string;
+                    name: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    mode?: string;
+                    name?: string;
+                    updated_at?: string;
+                };
+                Relationships: [];
+            };
+            normalized_ingredients_jobs: {
+                Row: {
+                    attempts: number;
+                    created_at: string;
+                    id: number;
+                    last_error: string | null;
+                    next_run_at: string;
+                    recipe_id: number;
+                    status: string;
+                    updated_at: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    attempts?: number;
+                    created_at?: string;
+                    id?: number;
+                    last_error?: string | null;
+                    next_run_at?: string;
+                    recipe_id: number;
+                    status?: string;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    attempts?: number;
+                    created_at?: string;
+                    id?: number;
+                    last_error?: string | null;
+                    next_run_at?: string;
+                    recipe_id?: number;
+                    status?: string;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'normalized_ingredients_jobs_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'normalized_ingredients_jobs_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            payment_webhook_events: {
+                Row: {
+                    attempts: number;
+                    error_message: string | null;
+                    event_id: string;
+                    livemode: boolean;
+                    processed_at: string | null;
+                    received_at: string;
+                    status: string;
+                    type: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    attempts?: number;
+                    error_message?: string | null;
+                    event_id: string;
+                    livemode: boolean;
+                    processed_at?: string | null;
+                    received_at?: string;
+                    status?: string;
+                    type: string;
+                };
+                Update: {
+                    attempts?: number;
+                    error_message?: string | null;
+                    event_id?: string;
+                    livemode?: boolean;
+                    processed_at?: string | null;
+                    received_at?: string;
+                    status?: string;
+                    type?: string;
+                };
+                Relationships: [];
+            };
+            plan_recipes: {
+                Row: {
+                    added_at: string;
+                    recipe_id: number;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    added_at?: string;
+                    recipe_id: number;
+                    user_id?: string;
+                };
+                Update: {
+                    added_at?: string;
+                    recipe_id?: number;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'fk_plan_recipes_recipe';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'fk_plan_recipes_recipe';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            profiles: {
+                Row: {
+                    created_at: string;
+                    id: string;
+                    marketing_consent: boolean;
+                    marketing_consent_text_version: string | null;
+                    marketing_consent_updated_at: string | null;
+                    updated_at: string;
+                    username: string | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    id: string;
+                    marketing_consent?: boolean;
+                    marketing_consent_text_version?: string | null;
+                    marketing_consent_updated_at?: string | null;
+                    updated_at?: string;
+                    username?: string | null;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: string;
+                    marketing_consent?: boolean;
+                    marketing_consent_text_version?: string | null;
+                    marketing_consent_updated_at?: string | null;
+                    updated_at?: string;
+                    username?: string | null;
+                };
+                Relationships: [];
+            };
+            recipe_collections: {
+                Row: {
+                    collection_id: number;
+                    recipe_id: number;
+                };
+                ComputedFields: never;
+                Insert: {
+                    collection_id: number;
+                    recipe_id: number;
+                };
+                Update: {
+                    collection_id?: number;
+                    recipe_id?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'recipe_collections_collection_id_fkey';
+                        columns: ['collection_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'collections';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipe_collections_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipe_collections_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            recipe_families: {
+                Row: {
+                    created_at: string;
+                    deleted_at: string | null;
+                    id: string;
+                    name: string;
+                    updated_at: string;
+                    user_id: string;
+                    visibility: Database['public']['Enums']['recipe_visibility'];
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    deleted_at?: string | null;
+                    id?: string;
+                    name: string;
+                    updated_at?: string;
+                    user_id: string;
+                    visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Update: {
+                    created_at?: string;
+                    deleted_at?: string | null;
+                    id?: string;
+                    name?: string;
+                    updated_at?: string;
+                    user_id?: string;
+                    visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Relationships: [];
+            };
+            recipe_normalized_ingredients: {
+                Row: {
+                    items: NonNullable<Json>;
+                    recipe_id: number;
+                    updated_at: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    items: NonNullable<Json>;
+                    recipe_id: number;
+                    updated_at?: string;
+                };
+                Update: {
+                    items?: NonNullable<Json>;
+                    recipe_id?: number;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'recipe_normalized_ingredients_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: true;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipe_normalized_ingredients_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: true;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            recipe_ratings: {
+                Row: {
+                    created_at: string;
+                    rating: number;
+                    recipe_id: number;
+                    updated_at: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    rating: number;
+                    recipe_id: number;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    rating?: number;
+                    recipe_id?: number;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'recipe_ratings_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipe_ratings_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            recipe_tags: {
+                Row: {
+                    recipe_id: number;
+                    tag_id: number;
+                };
+                ComputedFields: never;
+                Insert: {
+                    recipe_id: number;
+                    tag_id: number;
+                };
+                Update: {
+                    recipe_id?: number;
+                    tag_id?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'recipe_tags_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipe_tags_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipe_tags_tag_id_fkey';
+                        columns: ['tag_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'tags';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            recipes: {
+                Row: {
+                    category_id: number | null;
+                    created_at: string;
+                    cuisine: Database['public']['Enums']['recipe_cuisine'] | null;
+                    deleted_at: string | null;
+                    description: string | null;
+                    diet_type: Database['public']['Enums']['recipe_diet_type'] | null;
+                    difficulty: Database['public']['Enums']['recipe_difficulty'] | null;
+                    id: number;
+                    image_path: string | null;
+                    ingredients: NonNullable<Json>;
+                    is_default: boolean;
+                    is_grill: boolean;
+                    is_termorobot: boolean;
+                    name: string;
+                    normalized_ingredients_status: string;
+                    normalized_ingredients_updated_at: string | null;
+                    prep_time_minutes: number | null;
+                    recipe_family_id: string;
+                    search_vector: unknown;
+                    servings: number | null;
+                    sort_order: number;
+                    steps: NonNullable<Json>;
+                    tips: NonNullable<Json>;
+                    total_time_minutes: number | null;
+                    updated_at: string;
+                    user_id: string;
+                    variant_name: string;
+                    visibility: Database['public']['Enums']['recipe_visibility'];
+                };
+                ComputedFields: never;
+                Insert: {
+                    category_id?: number | null;
+                    created_at?: string;
+                    cuisine?: Database['public']['Enums']['recipe_cuisine'] | null;
+                    deleted_at?: string | null;
+                    description?: string | null;
+                    diet_type?: Database['public']['Enums']['recipe_diet_type'] | null;
+                    difficulty?: Database['public']['Enums']['recipe_difficulty'] | null;
+                    id?: number;
+                    image_path?: string | null;
+                    ingredients: NonNullable<Json>;
+                    is_default: boolean;
+                    is_grill?: boolean;
+                    is_termorobot?: boolean;
+                    name: string;
+                    normalized_ingredients_status?: string;
+                    normalized_ingredients_updated_at?: string | null;
+                    prep_time_minutes?: number | null;
+                    recipe_family_id: string;
+                    search_vector?: never;
+                    servings?: number | null;
+                    sort_order: number;
+                    steps: NonNullable<Json>;
+                    tips?: NonNullable<Json>;
+                    total_time_minutes?: number | null;
+                    updated_at?: string;
+                    user_id?: string;
+                    variant_name: string;
+                    visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Update: {
+                    category_id?: number | null;
+                    created_at?: string;
+                    cuisine?: Database['public']['Enums']['recipe_cuisine'] | null;
+                    deleted_at?: string | null;
+                    description?: string | null;
+                    diet_type?: Database['public']['Enums']['recipe_diet_type'] | null;
+                    difficulty?: Database['public']['Enums']['recipe_difficulty'] | null;
+                    id?: number;
+                    image_path?: string | null;
+                    ingredients?: NonNullable<Json>;
+                    is_default?: boolean;
+                    is_grill?: boolean;
+                    is_termorobot?: boolean;
+                    name?: string;
+                    normalized_ingredients_status?: string;
+                    normalized_ingredients_updated_at?: string | null;
+                    prep_time_minutes?: number | null;
+                    recipe_family_id?: string;
+                    search_vector?: never;
+                    servings?: number | null;
+                    sort_order?: number;
+                    steps?: NonNullable<Json>;
+                    tips?: NonNullable<Json>;
+                    total_time_minutes?: number | null;
+                    updated_at?: string;
+                    user_id?: string;
+                    variant_name?: string;
+                    visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'recipes_category_id_fkey';
+                        columns: ['category_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'categories';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipes_family_owner_fk';
+                        columns: ['recipe_family_id', 'user_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_families';
+                        referencedColumns: ['id', 'user_id'];
+                    },
+                ];
+            };
+            shopping_list_items: {
+                Row: {
+                    active_variant_count: number | null;
+                    amount: number | null;
+                    created_at: string;
+                    id: number;
+                    is_owned: boolean;
+                    kind: string;
+                    name: string | null;
+                    recipe_id: number | null;
+                    recipe_name: string | null;
+                    text: string | null;
+                    unit: string | null;
+                    updated_at: string;
+                    user_id: string;
+                    variant_name: string | null;
+                };
+                ComputedFields: never;
+                Insert: {
+                    active_variant_count?: number | null;
+                    amount?: number | null;
+                    created_at?: string;
+                    id?: number;
+                    is_owned?: boolean;
+                    kind: string;
+                    name?: string | null;
+                    recipe_id?: number | null;
+                    recipe_name?: string | null;
+                    text?: string | null;
+                    unit?: string | null;
+                    updated_at?: string;
+                    user_id?: string;
+                    variant_name?: string | null;
+                };
+                Update: {
+                    active_variant_count?: number | null;
+                    amount?: number | null;
+                    created_at?: string;
+                    id?: number;
+                    is_owned?: boolean;
+                    kind?: string;
+                    name?: string | null;
+                    recipe_id?: number | null;
+                    recipe_name?: string | null;
+                    text?: string | null;
+                    unit?: string | null;
+                    updated_at?: string;
+                    user_id?: string;
+                    variant_name?: string | null;
+                };
+                Relationships: [];
+            };
+            shopping_list_recipe_contributions: {
+                Row: {
+                    amount: number | null;
+                    created_at: string;
+                    id: number;
+                    name: string;
+                    recipe_id: number;
+                    unit: string | null;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    amount?: number | null;
+                    created_at?: string;
+                    id?: number;
+                    name: string;
+                    recipe_id: number;
+                    unit?: string | null;
+                    user_id?: string;
+                };
+                Update: {
+                    amount?: number | null;
+                    created_at?: string;
+                    id?: number;
+                    name?: string;
+                    recipe_id?: number;
+                    unit?: string | null;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'fk_shopping_list_contributions_recipe';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'fk_shopping_list_contributions_recipe';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            subscription_payments: {
+                Row: {
+                    amount_gross: number;
+                    confirmation_email_sent_at: string | null;
+                    created_at: string;
+                    currency: string;
+                    document_number: string | null;
+                    document_pdf_url: string | null;
+                    document_url: string | null;
+                    id: number;
+                    paid_at: string | null;
+                    payment_method_type: string;
+                    plan_id: string;
+                    provider_invoice_id: string | null;
+                    provider_payment_intent_id: string | null;
+                    provider_session_id: string;
+                    status: string;
+                    subscription_id: string | null;
+                    terms_accepted_at: string | null;
+                    terms_version: string | null;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    amount_gross: number;
+                    confirmation_email_sent_at?: string | null;
+                    created_at?: string;
+                    currency?: string;
+                    document_number?: string | null;
+                    document_pdf_url?: string | null;
+                    document_url?: string | null;
+                    id?: never;
+                    paid_at?: string | null;
+                    payment_method_type: string;
+                    plan_id: string;
+                    provider_invoice_id?: string | null;
+                    provider_payment_intent_id?: string | null;
+                    provider_session_id: string;
+                    status: string;
+                    subscription_id?: string | null;
+                    terms_accepted_at?: string | null;
+                    terms_version?: string | null;
+                    user_id: string;
+                };
+                Update: {
+                    amount_gross?: number;
+                    confirmation_email_sent_at?: string | null;
+                    created_at?: string;
+                    currency?: string;
+                    document_number?: string | null;
+                    document_pdf_url?: string | null;
+                    document_url?: string | null;
+                    id?: never;
+                    paid_at?: string | null;
+                    payment_method_type?: string;
+                    plan_id?: string;
+                    provider_invoice_id?: string | null;
+                    provider_payment_intent_id?: string | null;
+                    provider_session_id?: string;
+                    status?: string;
+                    subscription_id?: string | null;
+                    terms_accepted_at?: string | null;
+                    terms_version?: string | null;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'subscription_payments_subscription_id_fkey';
+                        columns: ['subscription_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'subscriptions';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            subscriptions: {
+                Row: {
+                    auto_renew: boolean;
+                    canceled_at: string | null;
+                    created_at: string;
+                    current_period_end: string;
+                    current_period_start: string;
+                    id: string;
+                    payment_method_type: string;
+                    plan_id: string;
+                    provider_subscription_id: string | null;
+                    started_at: string;
+                    status: string;
+                    trial_ends_at: string | null;
+                    updated_at: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    auto_renew: boolean;
+                    canceled_at?: string | null;
+                    created_at?: string;
+                    current_period_end: string;
+                    current_period_start: string;
+                    id?: string;
+                    payment_method_type: string;
+                    plan_id: string;
+                    provider_subscription_id?: string | null;
+                    started_at: string;
+                    status: string;
+                    trial_ends_at?: string | null;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    auto_renew?: boolean;
+                    canceled_at?: string | null;
+                    created_at?: string;
+                    current_period_end?: string;
+                    current_period_start?: string;
+                    id?: string;
+                    payment_method_type?: string;
+                    plan_id?: string;
+                    provider_subscription_id?: string | null;
+                    started_at?: string;
+                    status?: string;
+                    trial_ends_at?: string | null;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
+            tags: {
+                Row: {
+                    created_at: string;
+                    id: number;
+                    name: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    id?: number;
+                    name: string;
+                    user_id?: string;
+                };
+                Update: {
+                    created_at?: string;
+                    id?: number;
+                    name?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
+            user_ai_credits: {
+                Row: {
+                    created_at: string;
+                    credits_activated_at: string;
+                    draft_credits_total: number;
+                    draft_credits_used: number;
+                    id: string;
+                    image_credits_total: number;
+                    image_credits_used: number;
+                    limit_type: Database['public']['Enums']['ai_credit_limit_type'];
+                    next_reset_at: string | null;
+                    updated_at: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    credits_activated_at?: string;
+                    draft_credits_total?: number;
+                    draft_credits_used?: number;
+                    id?: string;
+                    image_credits_total?: number;
+                    image_credits_used?: number;
+                    limit_type?: Database['public']['Enums']['ai_credit_limit_type'];
+                    next_reset_at?: string | null;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    credits_activated_at?: string;
+                    draft_credits_total?: number;
+                    draft_credits_used?: number;
+                    id?: string;
+                    image_credits_total?: number;
+                    image_credits_used?: number;
+                    limit_type?: Database['public']['Enums']['ai_credit_limit_type'];
+                    next_reset_at?: string | null;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
+            user_recipe_flags: {
+                Row: {
+                    created_at: string;
+                    is_favorite: boolean;
+                    is_want_to_try: boolean;
+                    recipe_id: number;
+                    updated_at: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    is_favorite?: boolean;
+                    is_want_to_try?: boolean;
+                    recipe_id: number;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    is_favorite?: boolean;
+                    is_want_to_try?: boolean;
+                    recipe_id?: number;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'user_recipe_flags_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'user_recipe_flags_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            user_recipe_notes: {
+                Row: {
+                    created_at: string;
+                    note: string;
+                    recipe_id: number;
+                    updated_at: string;
+                    user_id: string;
+                };
+                ComputedFields: never;
+                Insert: {
+                    created_at?: string;
+                    note: string;
+                    recipe_id: number;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    note?: string;
+                    recipe_id?: number;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'user_recipe_notes_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_details';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'user_recipe_notes_recipe_id_fkey';
+                        columns: ['recipe_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipes';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+        };
+        Views: {
+            recipe_details: {
+                Row: {
+                    active_variant_count: number | null;
+                    average_rating: number | null;
+                    category_id: number | null;
+                    category_name: string | null;
+                    collection_ids: number[] | null;
+                    collections: Json | null;
+                    created_at: string | null;
+                    cuisine: Database['public']['Enums']['recipe_cuisine'] | null;
+                    deleted_at: string | null;
+                    description: string | null;
+                    diet_type: Database['public']['Enums']['recipe_diet_type'] | null;
+                    difficulty: Database['public']['Enums']['recipe_difficulty'] | null;
+                    id: number | null;
+                    image_path: string | null;
+                    ingredients: Json | null;
+                    is_default: boolean | null;
+                    is_grill: boolean | null;
+                    is_termorobot: boolean | null;
+                    name: string | null;
+                    normalized_ingredients_status: string | null;
+                    normalized_ingredients_updated_at: string | null;
+                    prep_time_minutes: number | null;
+                    ratings_count: number | null;
+                    recipe_family_id: string | null;
+                    search_vector: unknown;
+                    servings: number | null;
+                    sort_order: number | null;
+                    steps: Json | null;
+                    tag_ids: number[] | null;
+                    tags: Json | null;
+                    tips: Json | null;
+                    total_time_minutes: number | null;
+                    updated_at: string | null;
+                    user_id: string | null;
+                    variant_name: string | null;
+                    visibility: Database['public']['Enums']['recipe_visibility'] | null;
+                };
+                ComputedFields: never;
+                Relationships: [
+                    {
+                        foreignKeyName: 'recipes_category_id_fkey';
+                        columns: ['category_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'categories';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'recipes_family_owner_fk';
+                        columns: ['recipe_family_id', 'user_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'recipe_families';
+                        referencedColumns: ['id', 'user_id'];
+                    },
+                ];
+            };
+        };
+        Functions: {
+            add_recipe_to_plan_and_update_shopping_list: {
+                Args: { p_recipe_id: number };
+                Returns: Json;
+            };
+            admin_get_recipes_page: {
+                Args: {
+                    p_author?: string;
+                    p_category_ids?: number[];
+                    p_created_from?: string;
+                    p_created_to?: string;
+                    p_include_uncategorized?: boolean;
+                    p_is_grill?: boolean;
+                    p_is_termorobot?: boolean;
+                    p_name?: string;
+                    p_page_number?: number;
+                    p_page_size?: number;
+                    p_rating_max?: number;
+                    p_rating_min?: number;
+                    p_ratings_count_max?: number;
+                    p_ratings_count_min?: number;
+                    p_recipe_id?: number;
+                    p_sort_by?: string;
+                    p_sort_dir?: string;
+                };
+                Returns: {
+                    author_email: string;
+                    author_id: string;
+                    author_username: string;
+                    average_rating: number;
+                    category_name: string;
+                    created_at: string;
+                    id: number;
+                    is_grill: boolean;
+                    is_termorobot: boolean;
+                    name: string;
+                    ratings_count: number;
+                    total_items: number;
+                }[];
+            };
+            admin_get_recipes_page_v2: {
+                Args: {
+                    p_author?: string;
+                    p_category_ids?: number[];
+                    p_created_from?: string;
+                    p_created_to?: string;
+                    p_include_uncategorized?: boolean;
+                    p_is_grill?: boolean;
+                    p_is_termorobot?: boolean;
+                    p_name?: string;
+                    p_page_number?: number;
+                    p_page_size?: number;
+                    p_rating_max?: number;
+                    p_rating_min?: number;
+                    p_ratings_count_max?: number;
+                    p_ratings_count_min?: number;
+                    p_recipe_id?: number;
+                    p_sort_by?: string;
+                    p_sort_dir?: string;
+                };
+                Returns: {
+                    active_variant_count: number;
+                    author_email: string;
+                    author_id: string;
+                    author_username: string;
+                    average_rating: number;
+                    category_name: string;
+                    created_at: string;
+                    id: number;
+                    is_grill: boolean;
+                    is_termorobot: boolean;
+                    name: string;
+                    ratings_count: number;
+                    total_items: number;
+                    variant_name: string;
+                }[];
+            };
+            admin_get_users_page: {
+                Args: {
+                    p_page_number?: number;
+                    p_page_size?: number;
+                    p_sort_by?: string;
+                    p_sort_dir?: string;
+                };
+                Returns: {
+                    created_at: string;
+                    id: string;
+                    last_sign_in_at: string;
+                    login: string;
+                    recipes_count: number;
+                    role: string;
+                    total_items: number;
+                    username: string;
+                }[];
+            };
+            admin_get_users_page_v2: {
+                Args: {
+                    p_page_number?: number;
+                    p_page_size?: number;
+                    p_sort_by?: string;
+                    p_sort_dir?: string;
+                };
+                Returns: {
+                    created_at: string;
+                    id: string;
+                    last_sign_in_at: string;
+                    login: string;
+                    recipes_count: number;
+                    role: string;
+                    total_items: number;
+                    username: string;
+                    variants_count: number;
+                }[];
+            };
+            admin_update_user_role: {
+                Args: { p_actor_user_id: string; p_new_role: string; p_target_user_id: string };
+                Returns: {
+                    created_at: string;
+                    id: string;
+                    last_sign_in_at: string;
+                    login: string;
+                    recipes_count: number;
+                    role: string;
+                    username: string;
+                }[];
+            };
+            ai_rate_limit_hit: {
+                Args: { p_key: string; p_limit: number; p_now?: string; p_window_seconds: number };
+                Returns: {
+                    allowed: boolean;
+                    current_count: number;
+                    retry_after_seconds: number;
+                    window_start: string;
+                }[];
+            };
+            billing_activate_premium: {
+                Args: {
+                    p_auto_renew: boolean;
+                    p_payment: Json;
+                    p_payment_method: string;
+                    p_period_end: string;
+                    p_period_start: string;
+                    p_plan_id: string;
+                    p_provider_subscription_id: string | null;
+                    p_user_id: string;
+                };
+                Returns: Json;
+            };
+            billing_attach_invoice_document: {
+                Args: {
+                    p_number: string | null;
+                    p_pdf_url: string | null;
+                    p_provider_invoice_id: string;
+                    p_url: string | null;
+                };
+                Returns: number;
+            };
+            billing_claim_webhook_event: {
+                Args: { p_event_id: string; p_livemode: boolean; p_type: string };
+                Returns: string;
+            };
+            billing_expire_subscriptions: {
+                Args: { p_grace_days?: number };
+                Returns: {
+                    user_id: string;
+                }[];
+            };
+            billing_record_failed_payment: {
+                Args: { p_payment: Json; p_user_id: string };
+                Returns: boolean;
+            };
+            billing_renew_subscription: {
+                Args: {
+                    p_payment: Json;
+                    p_period_end: string;
+                    p_period_start: string;
+                    p_provider_subscription_id: string;
+                };
+                Returns: Json;
+            };
+            claim_normalized_ingredients_jobs: { Args: { p_limit?: number }; Returns: Json };
+            cleanup_recipe_operational_data: {
+                Args: { p_recipe_id: number; p_user_id: string };
+                Returns: Json;
+            };
+            clear_plan_and_update_shopping_list: {
+                Args: Record<PropertyKey, never>;
+                Returns: Json;
+            };
+            create_recipe_variant: {
+                Args: {
+                    p_is_admin?: boolean;
+                    p_recipe_id: number;
+                    p_source_recipe_id?: number;
+                    p_user_id: string;
+                    p_variant_name: string;
+                };
+                Returns: Json;
+            };
+            create_recipe_variant_from_ai: {
+                Args: {
+                    p_category_id?: number;
+                    p_cuisine?: Database['public']['Enums']['recipe_cuisine'];
+                    p_description: string;
+                    p_diet_type?: Database['public']['Enums']['recipe_diet_type'];
+                    p_difficulty?: Database['public']['Enums']['recipe_difficulty'];
+                    p_family_name: string;
+                    p_ingredients_raw: string;
+                    p_is_admin: boolean;
+                    p_is_grill?: boolean;
+                    p_is_termorobot?: boolean;
+                    p_prep_time_minutes?: number;
+                    p_recipe_id: number;
+                    p_servings?: number;
+                    p_steps_raw: string;
+                    p_tag_names: string[];
+                    p_tips_raw?: string;
+                    p_total_time_minutes?: number;
+                    p_user_id: string;
+                    p_variant_name: string;
+                    p_visibility: Database['public']['Enums']['recipe_visibility'];
+                };
+                Returns: Json;
+            };
+            create_recipe_with_tags: {
+                Args: {
+                    p_category_id: number;
+                    p_cuisine?: Database['public']['Enums']['recipe_cuisine'];
+                    p_description: string;
+                    p_diet_type?: Database['public']['Enums']['recipe_diet_type'];
+                    p_difficulty?: Database['public']['Enums']['recipe_difficulty'];
+                    p_ingredients_raw: string;
+                    p_is_grill?: boolean;
+                    p_is_termorobot?: boolean;
+                    p_name: string;
+                    p_prep_time_minutes?: number;
+                    p_servings?: number;
+                    p_steps_raw: string;
+                    p_tag_names: string[];
+                    p_tips_raw?: string;
+                    p_total_time_minutes?: number;
+                    p_user_id: string;
+                    p_visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Returns: number;
+            };
+            delete_recipe_family: {
+                Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string };
+                Returns: boolean;
+            };
+            delete_recipe_variant: {
+                Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string };
+                Returns: boolean;
+            };
+            enqueue_normalized_ingredients_refresh: {
+                Args: { p_recipe_id: number };
+                Returns: Json;
+            };
+            get_recipes_list: {
+                Args: {
+                    p_category_id?: number;
+                    p_cuisine?: Database['public']['Enums']['recipe_cuisine'];
+                    p_diet_type?: Database['public']['Enums']['recipe_diet_type'];
+                    p_difficulty?: Database['public']['Enums']['recipe_difficulty'];
+                    p_grill?: boolean;
+                    p_group_variants?: boolean;
+                    p_limit?: number;
+                    p_page?: number;
+                    p_search?: string;
+                    p_sort_direction?: string;
+                    p_sort_field?: string;
+                    p_tag_ids?: number[];
+                    p_termorobot?: boolean;
+                    p_user_id: string;
+                    p_view?: string;
+                };
+                Returns: {
+                    active_variant_count: number;
+                    author_id: string;
+                    author_username: string;
+                    category_id: number;
+                    category_name: string;
+                    created_at: string;
+                    cuisine: Database['public']['Enums']['recipe_cuisine'];
+                    diet_type: Database['public']['Enums']['recipe_diet_type'];
+                    difficulty: Database['public']['Enums']['recipe_difficulty'];
+                    id: number;
+                    image_path: string;
+                    in_my_collections: boolean;
+                    in_my_plan: boolean;
+                    is_grill: boolean;
+                    is_owner: boolean;
+                    is_termorobot: boolean;
+                    matching_variant_count: number;
+                    matching_variant_names: string[];
+                    matching_variant_overflow: number;
+                    name: string;
+                    prep_time_minutes: number;
+                    servings: number;
+                    total_count: number;
+                    total_time_minutes: number;
+                    variant_name: string;
+                    visibility: Database['public']['Enums']['recipe_visibility'];
+                }[];
+            };
+            jsonb_to_text: { Args: { input_jsonb: Json }; Returns: string };
+            parse_text_to_jsonb: { Args: { input_text: string }; Returns: Json };
+            recipe_variant_usage: {
+                Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string };
+                Returns: Json;
+            };
+            recipe_variants_allowed: { Args: { p_is_admin: boolean }; Returns: boolean };
+            recipe_variants_list: {
+                Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string };
+                Returns: {
+                    diet_type: Database['public']['Enums']['recipe_diet_type'];
+                    difficulty: Database['public']['Enums']['recipe_difficulty'];
+                    image_path: string;
+                    is_default: boolean;
+                    is_grill: boolean;
+                    is_termorobot: boolean;
+                    recipe_id: number;
+                    servings: number;
+                    sort_order: number;
+                    variant_name: string;
+                }[];
+            };
+            refund_ai_credit: {
+                Args: { p_credit_type: string; p_user_id: string };
+                Returns: boolean;
+            };
+            remove_recipe_from_plan_and_update_shopping_list: {
+                Args: { p_recipe_id: number };
+                Returns: Json;
+            };
+            rename_recipe_variant: {
+                Args: {
+                    p_is_admin?: boolean;
+                    p_recipe_id: number;
+                    p_user_id: string;
+                    p_variant_name: string;
+                };
+                Returns: boolean;
+            };
+            reorder_recipe_variants: {
+                Args: {
+                    p_is_admin?: boolean;
+                    p_recipe_id: number;
+                    p_recipe_ids: number[];
+                    p_user_id: string;
+                };
+                Returns: boolean;
+            };
+            reserve_ai_credit: {
+                Args: { p_credit_type: string; p_free_draft_credits?: number; p_user_id: string };
+                Returns: Json;
+            };
+            resolve_signup_marketing_consent: {
+                Args: { p_raw_user_meta_data: Json };
+                Returns: {
+                    marketing_consent: boolean;
+                    marketing_consent_text_version: string;
+                    marketing_consent_updated_at: string;
+                }[];
+            };
+            run_ai_credits_monthly_reset: { Args: Record<PropertyKey, never>; Returns: number };
+            set_default_recipe_variant: {
+                Args: { p_is_admin?: boolean; p_recipe_id: number; p_user_id: string };
+                Returns: boolean;
+            };
+            set_recipe_flags: {
+                Args: { p_is_favorite?: boolean; p_is_want_to_try?: boolean; p_recipe_id: number };
+                Returns: {
+                    out_is_favorite: boolean;
+                    out_is_want_to_try: boolean;
+                    out_recipe_id: number;
+                }[];
+            };
+            set_recipe_note: {
+                Args: { p_note?: string; p_recipe_id: number };
+                Returns: {
+                    out_note: string;
+                    out_recipe_id: number;
+                    out_updated_at: string;
+                }[];
+            };
+            set_recipe_rating: {
+                Args: { p_rating?: number; p_recipe_id: number };
+                Returns: {
+                    out_average_rating: number;
+                    out_my_rating: number;
+                    out_ratings_count: number;
+                    out_recipe_id: number;
+                }[];
+            };
+            soft_delete_recipe:
+                | { Args: { p_recipe_id: number }; Returns: boolean }
+                | { Args: { p_recipe_id: number; p_user_id: string }; Returns: boolean };
+            soft_delete_recipe_legacy: { Args: { p_recipe_id: number }; Returns: boolean };
+            supported_marketing_consent_text_versions: {
+                Args: Record<PropertyKey, never>;
+                Returns: string[];
+            };
+            update_recipe_family: {
+                Args: {
+                    p_is_admin?: boolean;
+                    p_name?: string;
+                    p_recipe_id: number;
+                    p_user_id: string;
+                    p_visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Returns: boolean;
+            };
+            update_recipe_with_tags: {
+                Args: {
+                    p_category_id?: number;
+                    p_cuisine?: Database['public']['Enums']['recipe_cuisine'];
+                    p_description?: string;
+                    p_diet_type?: Database['public']['Enums']['recipe_diet_type'];
+                    p_difficulty?: Database['public']['Enums']['recipe_difficulty'];
+                    p_image_path?: string;
+                    p_ingredients_raw?: string;
+                    p_is_grill?: boolean;
+                    p_is_termorobot?: boolean;
+                    p_name?: string;
+                    p_prep_time_minutes?: number;
+                    p_recipe_id: number;
+                    p_servings?: number;
+                    p_steps_raw?: string;
+                    p_tag_names?: string[];
+                    p_tips_raw?: string;
+                    p_total_time_minutes?: number;
+                    p_update_category?: boolean;
+                    p_update_cuisine?: boolean;
+                    p_update_diet_type?: boolean;
+                    p_update_difficulty?: boolean;
+                    p_update_is_grill?: boolean;
+                    p_update_is_termorobot?: boolean;
+                    p_update_prep_time?: boolean;
+                    p_update_servings?: boolean;
+                    p_update_tags?: boolean;
+                    p_update_tips?: boolean;
+                    p_update_total_time?: boolean;
+                    p_user_id: string;
+                    p_visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Returns: number;
+            };
+            update_recipe_with_tags_legacy: {
+                Args: {
+                    p_category_id?: number;
+                    p_cuisine?: Database['public']['Enums']['recipe_cuisine'];
+                    p_description?: string;
+                    p_diet_type?: Database['public']['Enums']['recipe_diet_type'];
+                    p_difficulty?: Database['public']['Enums']['recipe_difficulty'];
+                    p_image_path?: string;
+                    p_ingredients_raw?: string;
+                    p_is_grill?: boolean;
+                    p_is_termorobot?: boolean;
+                    p_name?: string;
+                    p_prep_time_minutes?: number;
+                    p_recipe_id: number;
+                    p_servings?: number;
+                    p_steps_raw?: string;
+                    p_tag_names?: string[];
+                    p_tips_raw?: string;
+                    p_total_time_minutes?: number;
+                    p_update_category?: boolean;
+                    p_update_cuisine?: boolean;
+                    p_update_diet_type?: boolean;
+                    p_update_difficulty?: boolean;
+                    p_update_is_grill?: boolean;
+                    p_update_is_termorobot?: boolean;
+                    p_update_prep_time?: boolean;
+                    p_update_servings?: boolean;
+                    p_update_tags?: boolean;
+                    p_update_tips?: boolean;
+                    p_update_total_time?: boolean;
+                    p_user_id: string;
+                    p_visibility?: Database['public']['Enums']['recipe_visibility'];
+                };
+                Returns: number;
+            };
+        };
+        Enums: {
+            ai_credit_limit_type: 'lifetime' | 'monthly';
+            recipe_cuisine:
+                | 'POLISH'
+                | 'ASIAN'
+                | 'MEXICAN'
+                | 'MIDDLE_EASTERN'
+                | 'AFRICAN'
+                | 'AMERICAN'
+                | 'BALKAN'
+                | 'BRAZILIAN'
+                | 'BRITISH'
+                | 'CARIBBEAN'
+                | 'CHINESE'
+                | 'FRENCH'
+                | 'GERMAN'
+                | 'GREEK'
+                | 'INDIAN'
+                | 'ITALIAN'
+                | 'JAPANESE'
+                | 'KOREAN'
+                | 'MEDITERRANEAN'
+                | 'RUSSIAN'
+                | 'SCANDINAVIAN'
+                | 'SPANISH'
+                | 'THAI'
+                | 'TURKISH'
+                | 'VIETNAMESE';
+            recipe_diet_type: 'MEAT' | 'VEGETARIAN' | 'VEGAN';
+            recipe_difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+            recipe_visibility: 'PRIVATE' | 'SHARED' | 'PUBLIC';
+        };
+        CompositeTypes: {
+            [_ in never]: never;
+        };
+    };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+    DefaultSchemaTableNameOrOptions extends
+        | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+        | { schema: keyof DatabaseWithoutInternals },
+    TableName extends (DefaultSchemaTableNameOrOptions extends {
+        schema: keyof DatabaseWithoutInternals;
     }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+        ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+              DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+        : never) = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+    ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+          DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+          Row: infer R;
       }
-      ? R
-      : never
-    : never
+        ? R
+        : never
+    : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+            DefaultSchema['Views'])
+      ? (DefaultSchema['Tables'] &
+            DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+            Row: infer R;
+        }
+          ? R
+          : never
+      : never;
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+    DefaultSchemaTableNameOrOptions extends
+        | keyof DefaultSchema['Tables']
+        | { schema: keyof DatabaseWithoutInternals },
+    TableName extends (DefaultSchemaTableNameOrOptions extends {
+        schema: keyof DatabaseWithoutInternals;
     }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+        : never) = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+          Insert: infer I;
       }
-      ? I
-      : never
-    : never
+        ? I
+        : never
+    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+      ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+            Insert: infer I;
+        }
+          ? I
+          : never
+      : never;
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+    DefaultSchemaTableNameOrOptions extends
+        | keyof DefaultSchema['Tables']
+        | { schema: keyof DatabaseWithoutInternals },
+    TableName extends (DefaultSchemaTableNameOrOptions extends {
+        schema: keyof DatabaseWithoutInternals;
     }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+        : never) = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+          Update: infer U;
       }
-      ? U
-      : never
-    : never
+        ? U
+        : never
+    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+      ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+            Update: infer U;
+        }
+          ? U
+          : never
+      : never;
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    DefaultSchemaEnumNameOrOptions extends
+        | keyof DefaultSchema['Enums']
+        | { schema: keyof DatabaseWithoutInternals },
+    EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+        schema: keyof DatabaseWithoutInternals;
+    }
+        ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+        : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+    ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+    : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+      ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+      : never;
 
 export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    PublicCompositeTypeNameOrOptions extends
+        | keyof DefaultSchema['CompositeTypes']
+        | { schema: keyof DatabaseWithoutInternals },
+    CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+        schema: keyof DatabaseWithoutInternals;
+    }
+        ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+        : never) = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+    ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+    : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+      ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+      : never;
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
-  public: {
-    Enums: {
-      ai_credit_limit_type: ["lifetime", "monthly"],
-      recipe_cuisine: [
-        "POLISH",
-        "ASIAN",
-        "MEXICAN",
-        "MIDDLE_EASTERN",
-        "AFRICAN",
-        "AMERICAN",
-        "BALKAN",
-        "BRAZILIAN",
-        "BRITISH",
-        "CARIBBEAN",
-        "CHINESE",
-        "FRENCH",
-        "GERMAN",
-        "GREEK",
-        "INDIAN",
-        "ITALIAN",
-        "JAPANESE",
-        "KOREAN",
-        "MEDITERRANEAN",
-        "RUSSIAN",
-        "SCANDINAVIAN",
-        "SPANISH",
-        "THAI",
-        "TURKISH",
-        "VIETNAMESE",
-      ],
-      recipe_diet_type: ["MEAT", "VEGETARIAN", "VEGAN"],
-      recipe_difficulty: ["EASY", "MEDIUM", "HARD"],
-      recipe_visibility: ["PRIVATE", "SHARED", "PUBLIC"],
+    graphql_public: {
+        Enums: {},
     },
-  },
-} as const
-
+    public: {
+        Enums: {
+            ai_credit_limit_type: ['lifetime', 'monthly'],
+            recipe_cuisine: [
+                'POLISH',
+                'ASIAN',
+                'MEXICAN',
+                'MIDDLE_EASTERN',
+                'AFRICAN',
+                'AMERICAN',
+                'BALKAN',
+                'BRAZILIAN',
+                'BRITISH',
+                'CARIBBEAN',
+                'CHINESE',
+                'FRENCH',
+                'GERMAN',
+                'GREEK',
+                'INDIAN',
+                'ITALIAN',
+                'JAPANESE',
+                'KOREAN',
+                'MEDITERRANEAN',
+                'RUSSIAN',
+                'SCANDINAVIAN',
+                'SPANISH',
+                'THAI',
+                'TURKISH',
+                'VIETNAMESE',
+            ],
+            recipe_diet_type: ['MEAT', 'VEGETARIAN', 'VEGAN'],
+            recipe_difficulty: ['EASY', 'MEDIUM', 'HARD'],
+            recipe_visibility: ['PRIVATE', 'SHARED', 'PUBLIC'],
+        },
+    },
+} as const;

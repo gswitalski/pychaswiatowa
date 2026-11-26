@@ -1,6 +1,7 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
 import {
     createVariantSchema,
+    createAiRecipeVariantSchema,
     reorderSchema,
     setRecipeNoteSchema,
     getRequestedVariant,
@@ -47,6 +48,36 @@ Deno.test('warianty: walidują nazwę i kolejność', () => {
     assertEquals(createVariantSchema.safeParse({ variant_name: '' }).success, false);
     assertEquals(reorderSchema.safeParse({ recipe_ids: [1, 2, 2] }).success, true);
     assertEquals(reorderSchema.safeParse({ recipe_ids: ['1'] }).success, false);
+});
+
+Deno.test('PS-118: schemat zapisu AI normalizuje tekst i odrzuca pustą treść', () => {
+    const result = createAiRecipeVariantSchema.safeParse({
+        variant_name: '  Wersja AI  ',
+        family_name: ' Rodzina ',
+        visibility: 'PRIVATE',
+        description: null,
+        ingredients_raw: '  mąka  ',
+        steps_raw: ' mieszaj ',
+        tags: [],
+        category_id: null,
+        servings: null,
+        prep_time_minutes: null,
+        total_time_minutes: null,
+        diet_type: null,
+        cuisine: null,
+        difficulty: null,
+        is_termorobot: false,
+        is_grill: false,
+    });
+    assertEquals(result.success, true);
+    if (result.success) {
+        assertEquals(result.data.variant_name, 'Wersja AI');
+        assertEquals(result.data.ingredients_raw, 'mąka');
+    }
+    assertEquals(createAiRecipeVariantSchema.safeParse({
+        ...result.success ? result.data : {},
+        ingredients_raw: '',
+    }).success, false);
 });
 
 Deno.test('PS-110 GWT 2–4: recipes przekazuje surowy variant z query stringa', () => {

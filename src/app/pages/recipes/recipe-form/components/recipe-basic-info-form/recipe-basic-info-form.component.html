@@ -26,7 +26,10 @@
                 maxlength="150"
             />
             @if (variantNameControl.hasError('required') && variantNameControl.touched) {
-                <mat-error>Wariant jest wymagany przy kilku wersjach przepisu</mat-error>
+                <mat-error>Wariant jest wymagany</mat-error>
+            }
+            @if (variantNameControl.hasError('variantNameTaken')) {
+                <mat-error>Taka nazwa wariantu już istnieje</mat-error>
             }
             @if (variantNameControl.hasError('maxlength')) {
                 <mat-error>Nazwa może mieć maksymalnie 150 znaków</mat-error>

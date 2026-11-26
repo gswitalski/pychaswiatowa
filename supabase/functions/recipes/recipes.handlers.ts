@@ -45,6 +45,7 @@ import {
     getRecipeVariantUsage,
     deleteRecipeVariant,
     deleteRecipeFamily,
+    createAiRecipeVariant,
 } from './recipes.variants.ts';
 import { extractAndValidateAppRole, extractAuthToken } from '../_shared/auth.ts';
 import {
@@ -1946,6 +1947,36 @@ export const reorderSchema = z.object({
     recipe_ids: z.array(z.number().int().positive()),
 }).strict();
 export const variantNameSchema = z.object({ variant_name: z.string().min(1).max(150).transform((value) => value.trim()) }).strict();
+export const createAiRecipeVariantSchema = z.object({
+    variant_name: z.string().min(1).max(150).transform((value) => value.trim()),
+    family_name: z.string().min(1).max(150).transform((value) => value.trim()).nullable(),
+    visibility: z.enum(['PRIVATE', 'SHARED', 'PUBLIC']),
+    description: z.string().nullable().transform((value) => value?.trim() || null),
+    ingredients_raw: z.string().min(1).transform((value) => value.trim()),
+    steps_raw: z.string().min(1).transform((value) => value.trim()),
+    tags: z.array(z.string().min(1).max(50).transform((value) => value.trim())).max(20).default([]),
+    tips_raw: z.string().optional().transform((value) => value?.trim() || null),
+    category_id: z.number().int().positive().nullable(),
+    servings: z.number().int().min(1).max(99).nullable(),
+    prep_time_minutes: z.number().int().min(0).max(999).nullable(),
+    total_time_minutes: z.number().int().min(0).max(999).nullable(),
+    diet_type: z.enum(['MEAT', 'VEGETARIAN', 'VEGAN']).nullable(),
+    cuisine: z.enum([
+        'AFRICAN', 'AMERICAN', 'ASIAN', 'BALKAN', 'BRAZILIAN', 'BRITISH',
+        'CARIBBEAN', 'CHINESE', 'FRENCH', 'GERMAN', 'GREEK', 'INDIAN',
+        'ITALIAN', 'JAPANESE', 'KOREAN', 'MEDITERRANEAN', 'MEXICAN',
+        'MIDDLE_EASTERN', 'POLISH', 'RUSSIAN', 'SCANDINAVIAN', 'SPANISH',
+        'THAI', 'TURKISH', 'VIETNAMESE',
+    ]).nullable(),
+    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).nullable(),
+    is_termorobot: z.boolean(),
+    is_grill: z.boolean(),
+}).strict().refine(
+    (data) => data.total_time_minutes === null
+        || data.prep_time_minutes === null
+        || data.total_time_minutes >= data.prep_time_minutes,
+    { message: 'Total time must be greater than or equal to preparation time', path: ['total_time_minutes'] },
+);
 
 async function getVariantContext(req: Request) {
     const context = await getAuthenticatedContext(req);
@@ -1974,6 +2005,44 @@ export async function handleCreateRecipeVariant(req: Request, recipeIdParam: str
         const result = await createRecipeVariant(client, recipeId, user.id, parsed.data.variant_name, parsed.data.source_recipe_id ?? null, isAdmin);
         return createCreatedResponse(result);
     } catch (error) { return handleError(error); }
+}
+
+export async function handleCreateAiRecipeVariant(req: Request, recipeIdParam: string): Promise<Response> {
+    try {
+        const recipeId = parseAndValidateRecipeId(recipeIdParam);
+        const { client, user, isAdmin } = await getVariantContext(req);
+        let body: unknown;
+        try {
+            body = await req.json();
+        } catch {
+            throw new ApplicationError('VALIDATION_ERROR', 'Invalid JSON in request body');
+        }
+        const parsed = createAiRecipeVariantSchema.safeParse(body);
+        if (!parsed.success) jsonBodyError(parsed);
+        const createdRecipeId = await createAiRecipeVariant(client, recipeId, user.id, {
+            variantName: parsed.data.variant_name,
+            familyName: parsed.data.family_name,
+            visibility: parsed.data.visibility,
+            description: parsed.data.description,
+            ingredientsRaw: parsed.data.ingredients_raw,
+            stepsRaw: parsed.data.steps_raw,
+            tags: parsed.data.tags,
+            tipsRaw: parsed.data.tips_raw ?? null,
+            categoryId: parsed.data.category_id,
+            servings: parsed.data.servings,
+            prepTimeMinutes: parsed.data.prep_time_minutes,
+            totalTimeMinutes: parsed.data.total_time_minutes,
+            dietType: parsed.data.diet_type,
+            cuisine: parsed.data.cuisine,
+            difficulty: parsed.data.difficulty,
+            isTermorobot: parsed.data.is_termorobot,
+            isGrill: parsed.data.is_grill,
+        }, isAdmin);
+        const recipe = await getRecipeById(client, createdRecipeId, user.id, { isAdmin });
+        return createCreatedResponse({ recipe_id: createdRecipeId, recipe });
+    } catch (error) {
+        return handleError(error);
+    }
 }
 
 export async function handleRenameRecipeVariant(req: Request, recipeIdParam: string): Promise<Response> {
@@ -2093,6 +2162,7 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     const noteRecipeId = extractRecipeIdFromNotePath(url);
     const variantsPath = url.pathname.match(/\/recipes\/([^/]+)\/variants\/?$/);
+    const aiVariantPath = url.pathname.match(/\/recipes\/([^/]+)\/variants\/ai\/?$/);
     const variantNamePath = url.pathname.match(/\/recipes\/([^/]+)\/variant-name\/?$/);
     const familyPath = url.pathname.match(/\/recipes\/([^/]+)\/family\/?$/);
     const defaultPath = url.pathname.match(/\/recipes\/([^/]+)\/default\/?$/);
@@ -2120,6 +2190,18 @@ export async function recipesRouter(req: Request): Promise<Response> {
 
     if (variantDeletePath && method === 'DELETE') {
         return handleDeleteRecipeVariant(req, variantDeletePath[1], variantDeletePath[2]);
+    }
+    if (aiVariantPath) {
+        if (method === 'POST') {
+            return handleCreateAiRecipeVariant(req, aiVariantPath[1]);
+        }
+        return new Response(JSON.stringify({
+            code: 'METHOD_NOT_ALLOWED',
+            message: `Method ${method} not allowed for /recipes/{id}/variants/ai. Use POST.`,
+        }), {
+            status: 405,
+            headers: { 'Content-Type': 'application/json', 'Allow': 'POST, OPTIONS' },
+        });
     }
     if (familyPath) {
         if (method === 'PUT') return handleUpdateRecipeFamily(req, familyPath[1]);

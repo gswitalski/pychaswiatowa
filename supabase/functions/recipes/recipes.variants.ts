@@ -32,6 +32,7 @@ function mapRpcError(error: { code?: string; message?: string }): never {
     if (error.code === 'P0002') throw new ApplicationError('NOT_FOUND', 'Recipe not found');
     if (error.code === 'P0009') throw new ApplicationError('CONFLICT', error.message ?? 'Operation conflicts with recipe variant rules');
     if (error.code === '23505') throw new ApplicationError('CONFLICT', 'Variant name already exists');
+    if (error.code === 'P0001') throw new ApplicationError('VALIDATION_ERROR', error.message ?? 'Invalid recipe content');
     if (error.code === '22023') throw new ApplicationError('VALIDATION_ERROR', error.message ?? 'Invalid variant data');
     logger.error('Recipe variant RPC failed', {
         errorCode: error.code,
@@ -60,6 +61,25 @@ interface CreateVariantResult {
     recipe_id: number;
     source_image_path?: string | null;
     image_warning?: string | null;
+}
+export interface CreateAiRecipeVariantInput {
+    variantName: string;
+    familyName: string | null;
+    visibility: 'PRIVATE' | 'SHARED' | 'PUBLIC';
+    description: string | null;
+    ingredientsRaw: string;
+    stepsRaw: string;
+    tags: string[];
+    tipsRaw: string | null;
+    categoryId: number | null;
+    servings: number | null;
+    prepTimeMinutes: number | null;
+    totalTimeMinutes: number | null;
+    dietType: string | null;
+    cuisine: string | null;
+    difficulty: string | null;
+    isTermorobot: boolean;
+    isGrill: boolean;
 }
 interface UsageResult { plan: number; collections: number; shopping_list: number }
 
@@ -142,6 +162,43 @@ export async function createRecipeVariant(
     }
 
     return { recipe_id: Number(result.recipe_id), image_warning: null };
+}
+
+export async function createAiRecipeVariant(
+    client: TypedSupabaseClient,
+    recipeId: number,
+    userId: string,
+    input: CreateAiRecipeVariantInput,
+    isAdmin: boolean,
+): Promise<number> {
+    const { data, error } = await rpcClient(client).rpc('create_recipe_variant_from_ai', {
+        p_recipe_id: recipeId,
+        p_user_id: userId,
+        p_is_admin: isAdmin,
+        p_variant_name: input.variantName,
+        p_family_name: input.familyName,
+        p_visibility: input.visibility,
+        p_description: input.description,
+        p_ingredients_raw: input.ingredientsRaw,
+        p_steps_raw: input.stepsRaw,
+        p_tag_names: input.tags,
+        p_tips_raw: input.tipsRaw,
+        p_category_id: input.categoryId,
+        p_servings: input.servings,
+        p_prep_time_minutes: input.prepTimeMinutes,
+        p_total_time_minutes: input.totalTimeMinutes,
+        p_diet_type: input.dietType,
+        p_cuisine: input.cuisine,
+        p_difficulty: input.difficulty,
+        p_is_termorobot: input.isTermorobot,
+        p_is_grill: input.isGrill,
+    });
+    if (error) mapRpcError(error);
+    const result = data as { recipe_id?: number } | null;
+    if (!result?.recipe_id) {
+        throw new ApplicationError('INTERNAL_ERROR', 'Recipe variant RPC returned no recipe ID');
+    }
+    return Number(result.recipe_id);
 }
 
 function getImageExtension(path: string): string {

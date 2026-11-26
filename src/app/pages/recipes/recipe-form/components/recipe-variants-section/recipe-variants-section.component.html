@@ -24,6 +24,15 @@
                     <button mat-stroked-button type="button" (click)="copyVariant()" [disabled]="busy()">
                         <mat-icon>content_copy</mat-icon> Utwórz kopię
                     </button>
+                    <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="addAiVariant()"
+                        [disabled]="busy()"
+                        aria-label="Dodaj z AI"
+                    >
+                        <mat-icon>auto_awesome</mat-icon> Dodaj z AI
+                    </button>
                 </div>
                 <p class="scope-note">Nazwę przepisu i widoczność ustaw w formularzu powyżej — dotyczą wszystkich wariantów.</p>
                 @if (variants().length >= 2) {
